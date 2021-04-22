@@ -17,6 +17,7 @@ ADD ./${REQUIREMENTS_FILE} ${AIRFLOW_HOME}
 ADD ./wait_for_db.py ${AIRFLOW_HOME}
 ADD ./dags ${AIRFLOW_HOME}/dags
 
+RUN pip install --user Cython numpy==1.17.4
 RUN pip install --user -r ${REQUIREMENTS_FILE}
 
 CMD python wait_for_db.py && \
