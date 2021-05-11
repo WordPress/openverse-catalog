@@ -235,7 +235,7 @@ def _process_image_data(image_data):
 
     image_store.add_item(
         foreign_landing_url=image_info.get('descriptionshorturl'),
-        image_url=image_url,
+        media_url=image_url,
         license_url=_get_license_url(image_info),
         foreign_identifier=foreign_id,
         width=image_info.get('width'),

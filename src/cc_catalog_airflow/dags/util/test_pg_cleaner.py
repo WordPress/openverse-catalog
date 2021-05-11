@@ -3,7 +3,7 @@ import os
 import psycopg2
 from unittest.mock import patch, call
 
-from airflow.hooks.postgres_hook import PostgresHook
+from airflow.providers.postgres.hooks.postgres import PostgresHook
 import pytest
 
 from util.loader import test_sql
@@ -558,7 +558,7 @@ def test_clean_single_row_inits_image_store_and_adds_row():
         ),
         call().add_item(
             foreign_landing_url="https://n2t.net/ark:/65665/3f07eb37b-d022-4d44-90de-179a4aaf1c82",
-            image_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
+            media_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
             thumbnail_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c/90",
             license_url="https://creativecommons.org/publicdomain/zero/1.0/",
             license_="cc0",
@@ -665,7 +665,7 @@ def test_clean_single_row_handles_uppercase_license_and_adds_row():
         ),
         call().add_item(
             foreign_landing_url="https://n2t.net/ark:/65665/3f07eb37b-d022-4d44-90de-179a4aaf1c82",
-            image_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
+            media_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
             thumbnail_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c/90",
             license_url="https://creativecommons.org/publicdomain/zero/1.0/",
             license_="cc0",
@@ -772,7 +772,7 @@ def test_clean_single_row_handles_missing_license_and_adds_row():
         ),
         call().add_item(
             foreign_landing_url="https://n2t.net/ark:/65665/3f07eb37b-d022-4d44-90de-179a4aaf1c82",
-            image_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
+            media_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
             thumbnail_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c/90",
             license_url="https://creativecommons.org/publicdomain/zero/1.0/",
             license_=None,
@@ -882,7 +882,7 @@ def test_clean_single_row_handles_defective_tags_and_adds_row():
         ),
         call().add_item(
             foreign_landing_url="https://n2t.net/ark:/65665/3f07eb37b-d022-4d44-90de-179a4aaf1c82",
-            image_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
+            media_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
             thumbnail_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c/90",
             license_url="https://creativecommons.org/publicdomain/zero/1.0/",
             license_="cc0",
@@ -983,7 +983,7 @@ def test_clean_single_row_handles_missing_tags_and_adds_row():
         ),
         call().add_item(
             foreign_landing_url="https://n2t.net/ark:/65665/3f07eb37b-d022-4d44-90de-179a4aaf1c82",
-            image_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
+            media_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
             thumbnail_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c/90",
             license_url="https://creativecommons.org/publicdomain/zero/1.0/",
             license_="cc0",
@@ -1078,7 +1078,7 @@ def test_clean_single_row_reuses_image_store_and_adds_row():
     expected_calls = [
         call().add_item(
             foreign_landing_url="https://n2t.net/ark:/65665/3f07eb37b-d022-4d44-90de-179a4aaf1c82",
-            image_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
+            media_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
             thumbnail_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c/90",
             license_url="https://creativecommons.org/publicdomain/zero/1.0/",
             license_="cc0",
@@ -1183,7 +1183,7 @@ def test_clean_single_row_doesnt_reuse_wrong_image_store_and_adds_row():
     expected_calls = [
         call().add_item(
             foreign_landing_url="https://n2t.net/ark:/65665/3f07eb37b-d022-4d44-90de-179a4aaf1c82",
-            image_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
+            media_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
             thumbnail_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c/90",
             license_url="https://creativecommons.org/publicdomain/zero/1.0/",
             license_="cc0",
@@ -1222,7 +1222,7 @@ def test_clean_single_row_doesnt_reuse_wrong_image_store_and_adds_row():
 def test_log_and_check_totals_raises_when_number_of_images_cleaned_is_wrong(
     monkeypatch,
 ):
-    monkeypatch.setattr(pg_cleaner.image.ImageStore, "total_images", 1)
+    monkeypatch.setattr(pg_cleaner.image.ImageStore, "total_items", 1)
     expected_calls = [
         call.info("Total images cleaned:  2"),
         call.info(
@@ -1243,7 +1243,7 @@ def test_log_and_check_totals_raises_when_number_of_images_cleaned_is_wrong(
 
 
 def test_log_and_check_totals_logs(monkeypatch):
-    monkeypatch.setattr(pg_cleaner.image.ImageStore, "total_images", 1)
+    monkeypatch.setattr(pg_cleaner.image.ImageStore, "total_items", 1)
     expected_calls = [
         call.info("Total images cleaned:  2"),
         call.info(

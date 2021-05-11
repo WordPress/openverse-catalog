@@ -61,7 +61,7 @@ def _check_all_arguments_exist(**kwargs):
 def create_tsv_list_row(
         foreign_identifier=None,
         foreign_landing_url=None,
-        image_url=None,
+        media_url=None,
         thumbnail=None,
         width=None,
         height=None,
@@ -80,7 +80,7 @@ def create_tsv_list_row(
     raw_output_list = [
         foreign_identifier,
         foreign_landing_url,
-        image_url,
+        media_url,
         thumbnail,
         width,
         height,
@@ -99,7 +99,7 @@ def create_tsv_list_row(
 
     if _check_all_arguments_exist(
             foreign_landing_url=foreign_landing_url,
-            image_url=image_url,
+            media_url=media_url,
             license_=license_,
             license_version=license_version):
         return [_prepare_output_string(item) for item in raw_output_list]

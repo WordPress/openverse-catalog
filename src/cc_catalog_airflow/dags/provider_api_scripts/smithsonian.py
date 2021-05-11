@@ -458,7 +458,7 @@ def _process_image_list(
         ):
             total_images = image_store.add_item(
                 foreign_landing_url=foreign_landing_url,
-                image_url=image_data.get('content'),
+                media_url=image_data.get('content'),
                 thumbnail_url=image_data.get('thumbnail'),
                 license_url=license_url,
                 foreign_identifier=image_data.get('idsId'),

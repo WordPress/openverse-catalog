@@ -14,17 +14,15 @@ def test_create_day_partitioned_ingestion_dag_with_single_layer_dependencies():
     finish_id = 'test_dag_Finished'
     today_task = dag.get_task(today_id)
     assert today_task.upstream_task_ids == set()
-    assert today_task.downstream_task_ids == set([wait0_id, finish_id])
+    assert today_task.downstream_task_ids == {wait0_id, finish_id}
     ingest1_task = dag.get_task(ingest1_id)
-    assert ingest1_task.upstream_task_ids == set([wait0_id])
-    assert ingest1_task.downstream_task_ids == set([finish_id])
+    assert ingest1_task.upstream_task_ids == {wait0_id}
+    assert ingest1_task.downstream_task_ids == {finish_id}
     ingest2_task = dag.get_task(ingest2_id)
-    assert ingest2_task.upstream_task_ids == set([wait0_id])
-    assert ingest2_task.downstream_task_ids == set([finish_id])
+    assert ingest2_task.upstream_task_ids == {wait0_id}
+    assert ingest2_task.downstream_task_ids == {finish_id}
     finish_task = dag.get_task(finish_id)
-    assert finish_task.upstream_task_ids == set(
-        [today_id, ingest1_id, ingest2_id]
-    )
+    assert finish_task.upstream_task_ids == {today_id, ingest1_id, ingest2_id}
     assert finish_task.downstream_task_ids == set()
 
 

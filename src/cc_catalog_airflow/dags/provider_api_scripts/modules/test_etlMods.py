@@ -5,7 +5,7 @@ def test_create_tsv_list_row_returns_none_if_missing_foreign_landing_url():
     expect_row = None
     actual_row = etlMods.create_tsv_list_row(
         foreign_identifier='a',
-        image_url='a',
+        media_url='a',
         license_='abc',
         license_version='123'
     )
@@ -16,7 +16,7 @@ def test_create_tsv_list_row_returns_none_if_missing_license():
     expect_row = None
     actual_row = etlMods.create_tsv_list_row(
         foreign_identifier='a',
-        image_url='a',
+        media_url='a',
         license_version='123',
         foreign_landing_url='www.testurl.com'
     )
@@ -27,14 +27,14 @@ def test_create_tsv_list_row_returns_none_if_missing_license_version():
     expect_row = None
     actual_row = etlMods.create_tsv_list_row(
         foreign_identifier='a',
-        image_url='a',
+        media_url='a',
         license_='abc',
         foreign_landing_url='www.testurl.com'
     )
     assert expect_row == actual_row
 
 
-def test_create_tsv_list_row_returns_none_if_missing_image_url():
+def test_create_tsv_list_row_returns_none_if_missing_media_url():
     expect_row = None
     actual_row = etlMods.create_tsv_list_row(
         foreign_identifier='a',
@@ -55,7 +55,7 @@ def test_create_tsv_list_row_casts_to_strings():
 
     actual_row = etlMods.create_tsv_list_row(
         foreign_landing_url='www.testurl.comk',
-        image_url='a',
+        media_url='a',
         license_='abc',
         license_version='234',
         width=width,
@@ -72,7 +72,7 @@ def test_create_tsv_list_row_handles_empty_dict_and_tags():
 
     actual_row = etlMods.create_tsv_list_row(
         foreign_landing_url='www.testurl.comk',
-        image_url='a',
+        media_url='a',
         license_='abc',
         license_version='123',
         meta_data=meta_data,
@@ -87,7 +87,7 @@ def test_create_tsv_list_row_handles_empty_dict_and_tags():
 def test_create_tsv_list_row_turns_empty_into_nullchar():
     req_args_dict = {
         'foreign_landing_url': 'landing_page.com',
-        'image_url': 'imageurl.com',
+        'media_url': 'imageurl.com',
         'license_': 'testlicense',
         'license_version': '1.0'
     }
@@ -136,7 +136,7 @@ def test_create_tsv_list_row_turns_empty_into_nullchar():
 def test_create_tsv_list_row_properly_places_entries():
     req_args_dict = {
         'foreign_landing_url': 'landing_page.com',
-        'image_url': 'imageurl.com',
+        'media_url': 'imageurl.com',
         'license_': 'testlicense',
         'license_version': '1.0',
     }
@@ -191,7 +191,7 @@ def test_create_tsv_row_sanitizes_dicts_and_lists(monkeypatch):
     )
     actual_row = etlMods.create_tsv_list_row(
         foreign_landing_url='landing_page.com',
-        image_url='imageurl.com',
+        media_url='imageurl.com',
         license_='testlicense',
         license_version='1.0',
         meta_data={"key1": "val1"},

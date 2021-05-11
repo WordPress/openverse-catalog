@@ -127,7 +127,7 @@ def _handle_object_data(data, license_url):
 
             image_store.add_item(
                     foreign_landing_url=foreign_url,
-                    image_url=image_url,
+                    media_url=image_url,
                     license_url=license_url,
                     foreign_identifier=foreign_id,
                     width=width,

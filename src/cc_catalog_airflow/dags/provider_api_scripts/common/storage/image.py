@@ -52,18 +52,32 @@ class ImageStore(MediaStore):
         super().__init__(provider, output_file, output_dir, buffer_length, media_type)
         self.columns = tsv_columns if tsv_columns is not None else IMAGE_TSV_COLUMNS
 
-    def _get_media(self, **kwargs):
+    def add_item(
+            self,
+            foreign_landing_url=None,
+            media_url=None,
+            thumbnail_url=None,
+            license_url=None,
+            license_=None,
+            license_version=None,
+            foreign_identifier=None,
+            width=None,
+            height=None,
+            creator=None,
+            creator_url=None,
+            title=None,
+            meta_data=None,
+            raw_tags=None,
+            watermarked='f',
+            source=None
+    ):
         """
         Add information for a single image to the ImageStore.
-
         Required Arguments:
-
         foreign_landing_url:  URL of page where the image lives on the
                               source website.
         image_url:            Direct link to the image file
-
         Semi-Required Arguments
-
         license_url:      URL of the license for the image on the
                           Creative Commons website.
         license_:         String representation of a Creative Commons
@@ -73,14 +87,11 @@ class ImageStore(MediaStore):
                           the `publicdomain` license, which has no
                           version, one shoud pass
                           `common.license.constants.NO_VERSION` here.
-
         Note on license arguments: These are 'semi-required' in that
         either a valid `license_url` must be given, or a valid
         `license_`, `license_version` pair must be given. Otherwise, the
         image data will be discarded.
-
         Optional Arguments:
-
         thumbnail_url:       Direct link to a thumbnail-sized version of
                              the image
         foreign_identifier:  Unique identifier for the image on the
@@ -107,9 +118,73 @@ class ImageStore(MediaStore):
                              ImageStore init function is the specific
                              provider of the image.
         """
-        kwargs["provider"] = self._PROVIDER
+
+        image = self._get_image(
+            foreign_landing_url=foreign_landing_url,
+            media_url=media_url,
+            thumbnail_url=thumbnail_url,
+            license_url=license_url,
+            license_=license_,
+            license_version=license_version,
+            foreign_identifier=foreign_identifier,
+            width=width,
+            height=height,
+            creator=creator,
+            creator_url=creator_url,
+            title=title,
+            meta_data=meta_data,
+            raw_tags=raw_tags,
+            watermarked=watermarked,
+            source=source
+        )
+        self.save_item(image)
+        return self._total_items
+
+    def _get_image(
+            self,
+            foreign_identifier,
+            foreign_landing_url,
+            media_url,
+            thumbnail_url,
+            width,
+            height,
+            license_url,
+            license_,
+            license_version,
+            creator,
+            creator_url,
+            title,
+            meta_data,
+            raw_tags,
+            watermarked,
+            source,
+    ):
+        valid_license_info, source, meta_data, tags = self.parse_item_metadata(
+            license_url,
+            license_,
+            license_version,
+            source,
+            meta_data,
+            raw_tags,
+        )
         return Image(
-            **kwargs,
+            foreign_identifier=foreign_identifier,
+            foreign_landing_url=foreign_landing_url,
+            media_url=media_url,
+            thumbnail_url=thumbnail_url,
+            license_=valid_license_info.license,
+            license_version=valid_license_info.version,
+            filesize=None,
+            creator=creator,
+            creator_url=creator_url,
+            title=title,
+            meta_data=meta_data,
+            tags=tags,
+            provider=self._PROVIDER,
+            source=source,
+            width=width,
+            height=height,
+            watermarked=watermarked,
         )
 
 

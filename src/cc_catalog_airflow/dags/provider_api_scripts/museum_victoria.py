@@ -151,7 +151,7 @@ def _get_media_info(media_data):
             image_data.append(
                 {
                     "image_id": image_id,
-                    "image_url": image_url,
+                    "media_url": image_url,
                     "height": height,
                     "width": width,
                     "license_url": license_url,

@@ -171,7 +171,7 @@ def _handle_object_data(batch_data):
             image_count = image_store.add_item(
                     foreign_identifier=foreign_id,
                     foreign_landing_url=foreign_landing_url,
-                    image_url=image_url,
+                    media_url=image_url,
                     height=height,
                     width=width,
                     license_=license_,

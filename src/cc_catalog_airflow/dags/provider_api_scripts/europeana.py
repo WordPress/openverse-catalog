@@ -190,7 +190,7 @@ def _process_image_data(image_data, sub_providers=SUB_PROVIDERS,
 
     return image_store.add_item(
         foreign_landing_url=foreign_landing_url,
-        image_url=image_url,
+        media_url=image_url,
         license_url=license_url,
         thumbnail_url=thumbnail_url,
         foreign_identifier=foreign_id,
