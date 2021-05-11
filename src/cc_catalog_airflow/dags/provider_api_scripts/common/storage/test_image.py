@@ -80,7 +80,7 @@ def test_ImageStore_add_item_adds_realistic_image_to_buffer(
         image_url='https://images.org/image01.jpg',
         license_url=license_url,
     )
-    assert len(image_store._image_buffer) == 1
+    assert len(image_store._audio_buffer) == 1
 
 
 def test_ImageStore_add_item_adds_multiple_images_to_buffer(
@@ -107,7 +107,7 @@ def test_ImageStore_add_item_adds_multiple_images_to_buffer(
         image_url='https://images.org/image04.jpg',
         license_url='https://creativecommons.org/publicdomain/zero/1.0/'
     )
-    assert len(image_store._image_buffer) == 4
+    assert len(image_store._audio_buffer) == 4
 
 
 def test_ImageStore_add_item_flushes_buffer(
@@ -145,7 +145,7 @@ def test_ImageStore_add_item_flushes_buffer(
         image_url='https://images.org/image04.jpg',
         license_url='https://creativecommons.org/publicdomain/zero/1.0/'
     )
-    assert len(image_store._image_buffer) == 1
+    assert len(image_store._audio_buffer) == 1
     with open(tmp_path_full) as f:
         lines = f.read().split('\n')
     assert len(lines) == 4  # recall the last '\n' will create an empty line.
@@ -173,7 +173,7 @@ def test_ImageStore_produces_correct_total_images(mock_rewriter, setup_env):
         image_url='https://images.org/image03.jpg',
         license_url='https://creativecommons.org/publicdomain/zero/1.0/'
     )
-    assert image_store.total_images == 3
+    assert image_store.total_items == 3
 
 
 def test_ImageStore_get_image_places_given_args(

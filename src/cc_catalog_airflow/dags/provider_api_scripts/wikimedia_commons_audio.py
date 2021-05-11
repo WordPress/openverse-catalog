@@ -1,9 +1,9 @@
 """
 Content Provider:       Wikimedia Commons
 
-ETL Process:            Use the API to identify all CC-licensed images.
+ETL Process:            Use the API to identify all CC-licensed audios.
 
-Output:                 TSV file containing the image, the respective
+Output:                 TSV file containing the audio, the respective
                         meta-data.
 
 Notes:                  https://commons.wikimedia.org/wiki/API:Main_page
@@ -55,6 +55,7 @@ DEFAULT_QUERY_PARAMS = {
     'format': 'json',
 }
 PAGES_PATH = ['query', 'pages']
+# TODO: What is this for audio?
 IMAGE_MEDIATYPES = {'BITMAP'}
 
 delayed_requester = requester.DelayedRequester(DELAY)
@@ -73,29 +74,29 @@ def main(date):
            which running the script will pull data.
     """
 
-    logger.info(f'Processing Wikimedia Commons API for date: {date}')
+    logger.info(f'Processing Wikimedia Commons API Audios for date: {date}')
 
     continue_token = {}
-    total_images = 0
+    total_audios = 0
     start_timestamp, end_timestamp = _derive_timestamp_pair(date)
 
     while True:
-        image_batch, continue_token = _get_image_batch(
+        audio_batch, continue_token = _get_audio_batch(
             start_timestamp,
             end_timestamp,
             continue_token=continue_token)
         logger.info(f'Continue Token: {continue_token}')
-        image_pages = _get_image_pages(image_batch)
-        if image_pages:
-            _process_image_pages(image_pages)
-            total_images = image_store.total_items
-        logger.info(f'Total Images so far: {total_images}')
+        audio_pages = _get_image_pages(audio_batch)
+        if audio_pages:
+            _process_audio_pages(audio_pages)
+            total_audios = image_store.total_items
+        logger.info(f'Total Images so far: {total_audios}')
         if not continue_token:
             break
 
     image_store.commit()
-    total_images = image_store.total_items
-    logger.info(f'Total images: {total_images}')
+    total_audios = image_store.total_items
+    logger.info(f'Total images: {total_audios}')
     logger.info('Terminated!')
 
 
@@ -107,7 +108,7 @@ def _derive_timestamp_pair(date):
     return start_timestamp, end_timestamp
 
 
-def _get_image_batch(
+def _get_audio_batch(
         start_timestamp,
         end_timestamp,
         continue_token={},
@@ -118,7 +119,7 @@ def _get_image_batch(
         end_timestamp,
         continue_token=continue_token
     )
-    image_batch = None
+    audio_batch = None
     for _ in range(MEAN_GLOBAL_USAGE_LIMIT):
         response_json = (
             delayed_requester.
@@ -132,37 +133,37 @@ def _get_image_batch(
         )
 
         if response_json is None:
-            image_batch = None
+            audio_batch = None
             new_continue_token = None
             break
         else:
             new_continue_token = response_json.pop('continue', {})
             logger.debug(f'new_continue_token: {new_continue_token}')
             query_params.update(new_continue_token)
-            image_batch = _merge_response_jsons(image_batch, response_json)
+            audio_batch = _merge_response_jsons(audio_batch, response_json)
 
         if 'batchcomplete' in response_json:
             logger.debug('Found batchcomplete')
             break
 
-    return image_batch, new_continue_token
+    return audio_batch, new_continue_token
 
 
-def _get_image_pages(image_batch):
+def _get_image_pages(audio_batch):
     image_pages = None
 
-    if image_batch is not None:
-        image_pages = image_batch.get('query', {}).get('pages')
+    if audio_batch is not None:
+        image_pages = audio_batch.get('query', {}).get('pages')
 
     if image_pages is None:
-        logger.warning(f'No pages in the image_batch: {image_batch}')
+        logger.warning(f'No pages in the audio_batch: {audio_batch}')
     else:
         logger.info(f'Got {len(image_pages)} pages')
 
     return image_pages
 
 
-def _process_image_pages(image_pages):
+def _process_audio_pages(image_pages):
     for i in image_pages.values():
         _process_image_data(i)
 
