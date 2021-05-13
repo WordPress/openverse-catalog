@@ -14,15 +14,62 @@ from common.storage.media import (
 
 logger = logging.getLogger(__name__)
 
-IMAGE_TSV_COLUMNS = copy.deepcopy(MEDIA_TSV_COLUMNS)
-IMAGE_TSV_COLUMNS.extend(
-    [
-        # The order of this list maps to the order of the columns in the TSV.
-        columns.IntegerColumn(name="width", required=False),
-        columns.IntegerColumn(name="height", required=False),
-        columns.BooleanColumn(name="watermarked", required=False),
-    ]
-)
+IMAGE_TSV_COLUMNS = [
+    # The order of this list maps to the order of the columns in the TSV.
+    columns.StringColumn(
+        name='foreign_identifier', required=False, size=3000, truncate=False
+    ),
+    columns.URLColumn(
+        name='foreign_landing_url', required=True, size=1000
+    ),
+    columns.URLColumn(
+        # `url` in DB
+        name='image_url', required=True, size=3000
+    ),
+    columns.URLColumn(
+        # `thumbnail` in DB
+        name='thumbnail_url', required=False, size=3000
+    ),
+    columns.IntegerColumn(
+        name='width', required=False
+    ),
+    columns.IntegerColumn(
+        name='height', required=False
+    ),
+    columns.IntegerColumn(
+        name='filesize', required=False
+    ),
+    columns.StringColumn(
+        name='license_', required=True, size=50, truncate=False
+    ),
+    columns.StringColumn(
+        name='license_version', required=True, size=25, truncate=False
+    ),
+    columns.StringColumn(
+        name='creator', required=False, size=2000, truncate=True
+    ),
+    columns.URLColumn(
+        name='creator_url', required=False, size=2000
+    ),
+    columns.StringColumn(
+        name='title', required=False, size=5000, truncate=True
+    ),
+    columns.JSONColumn(
+        name='meta_data', required=False
+    ),
+    columns.JSONColumn(
+        name='tags', required=False
+    ),
+    columns.BooleanColumn(
+        name='watermarked', required=False
+    ),
+    columns.StringColumn(
+        name='provider', required=False, size=80, truncate=False
+    ),
+    columns.StringColumn(
+        name='source', required=False, size=80, truncate=False
+    )
+]
 
 Image = namedtuple("Image", [c.NAME for c in IMAGE_TSV_COLUMNS])
 
@@ -55,7 +102,7 @@ class ImageStore(MediaStore):
     def add_item(
             self,
             foreign_landing_url=None,
-            media_url=None,
+            image_url=None,
             thumbnail_url=None,
             license_url=None,
             license_=None,
@@ -121,7 +168,7 @@ class ImageStore(MediaStore):
 
         image = self._get_image(
             foreign_landing_url=foreign_landing_url,
-            media_url=media_url,
+            image_url=image_url,
             thumbnail_url=thumbnail_url,
             license_url=license_url,
             license_=license_,
@@ -144,7 +191,7 @@ class ImageStore(MediaStore):
             self,
             foreign_identifier,
             foreign_landing_url,
-            media_url,
+            image_url,
             thumbnail_url,
             width,
             height,
@@ -170,7 +217,7 @@ class ImageStore(MediaStore):
         return Image(
             foreign_identifier=foreign_identifier,
             foreign_landing_url=foreign_landing_url,
-            media_url=media_url,
+            image_url=image_url,
             thumbnail_url=thumbnail_url,
             license_=valid_license_info.license,
             license_version=valid_license_info.version,

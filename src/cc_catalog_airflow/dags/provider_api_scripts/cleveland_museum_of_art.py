@@ -122,7 +122,7 @@ def _handle_response(
 
         total_images = image_store.add_item(
                         foreign_landing_url=foreign_landing_url,
-                        media_url=image_url,
+                        image_url=image_url,
                         license_=license_,
                         license_version=license_version,
                         foreign_identifier=foreign_id,

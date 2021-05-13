@@ -108,7 +108,7 @@ def _get_data_for_image(object_id):
         foreign_id = _build_foreign_id(object_id, img)
         image_store.add_item(
             foreign_landing_url=object_json.get('objectURL'),
-            media_url=img,
+            image_url=img,
             thumbnail_url=thumb,
             license_='cc0',
             license_version='1.0',
@@ -128,8 +128,8 @@ def _get_and_validate_object_json(object_id, endpoint=ENDPOINT):
     return object_json
 
 
-def _build_foreign_id(object_id, media_url):
-    unique_identifier = media_url.split('/')[-1].split('.')[0]
+def _build_foreign_id(object_id, image_url):
+    unique_identifier = image_url.split('/')[-1].split('.')[0]
     return f'{object_id}-{unique_identifier}'
 
 

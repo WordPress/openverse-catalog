@@ -17,7 +17,7 @@ MEDIA_TSV_COLUMNS = [
     columns.URLColumn(name="foreign_landing_url", required=True, size=1000),
     columns.URLColumn(
         # `url` in DB
-        name="media_url",
+        name="image_url",
         required=True,
         size=3000,
     ),
@@ -166,7 +166,9 @@ class MediaStore:
         return self._total_items
 
     """Get total items for directly using in scripts."""
-    total_items = property(_get_total_items)
+    @property
+    def total_items(self):
+        return self._total_items
 
     def _get_media(self, **kwargs):
         raise NotImplementedError("Implement get media method")
@@ -174,17 +176,18 @@ class MediaStore:
     def _create_tsv_row(
         self,
         item,
+        columns=None
     ):
-        if self.columns is None:
-            self.columns = MEDIA_TSV_COLUMNS
+        if columns is None:
+            columns = self.columns if self.columns is not None else MEDIA_TSV_COLUMNS
         row_length = len(self.columns)
         prepared_strings = [
-            self.columns[i].prepare_string(item[i]) for i in range(row_length)
+            columns[i].prepare_string(item[i]) for i in range(row_length)
         ]
         logger.debug(f"Prepared strings list:\n{prepared_strings}")
         for i in range(row_length):
-            if self.columns[i].REQUIRED and prepared_strings[i] is None:
-                logger.warning(f"Row missing required {self.columns[i].NAME}")
+            if columns[i].REQUIRED and prepared_strings[i] is None:
+                logger.warning(f"Row missing required {columns[i].NAME}")
                 return None
         else:
             return (

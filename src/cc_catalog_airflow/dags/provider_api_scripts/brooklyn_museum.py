@@ -42,8 +42,8 @@ def main():
         objects_batch = _get_object_json(
             query_param=query_param
             )
-        logger.debug(len(objects_batch))
         if type(objects_batch) == list and len(objects_batch) > 0:
+            logger.debug(len(objects_batch))
             _process_objects_batch(objects_batch)
             logger.debug(f"Images till now {image_store.total_items}")
             offset += LIMIT
@@ -127,7 +127,7 @@ def _handle_object_data(data, license_url):
 
             image_store.add_item(
                     foreign_landing_url=foreign_url,
-                    media_url=image_url,
+                    image_url=image_url,
                     license_url=license_url,
                     foreign_identifier=foreign_id,
                     width=width,

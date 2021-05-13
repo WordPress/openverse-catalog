@@ -156,7 +156,7 @@ def _get_capture_details(
         image_store.add_item(
             foreign_identifier=image_id,
             foreign_landing_url=foreign_landing_url,
-            media_url=image_url,
+            image_url=image_url,
             license_url=license_url,
             thumbnail_url=thumbnail_url,
             title=title,

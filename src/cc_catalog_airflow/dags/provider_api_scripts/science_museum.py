@@ -137,8 +137,9 @@ def _handle_object_data(batch_data):
         RECORD_IDS.append(id_)
         links = obj_.get("links")
 
-        if links:
-            foreign_landing_url = links.get("self")
+        if not links:
+            continue
+        foreign_landing_url = links.get("self")
         if foreign_landing_url is None:
             continue
         obj_attributes = obj_.get("attributes")
@@ -171,7 +172,7 @@ def _handle_object_data(batch_data):
             image_count = image_store.add_item(
                     foreign_identifier=foreign_id,
                     foreign_landing_url=foreign_landing_url,
-                    media_url=image_url,
+                    image_url=image_url,
                     height=height,
                     width=width,
                     license_=license_,

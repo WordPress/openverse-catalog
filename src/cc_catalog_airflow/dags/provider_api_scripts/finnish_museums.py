@@ -117,7 +117,7 @@ def _process_object(obj, sub_providers=SUB_PROVIDERS, provider=PROVIDER):
             license_url=license_url,
             foreign_identifier=foreign_identifier,
             foreign_landing_url=foreign_landing_url,
-            media_url=image_url,
+            image_url=image_url,
             title=title,
             source=source,
             raw_tags=raw_tags,

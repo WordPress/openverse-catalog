@@ -558,7 +558,7 @@ def test_clean_single_row_inits_image_store_and_adds_row():
         ),
         call().add_item(
             foreign_landing_url="https://n2t.net/ark:/65665/3f07eb37b-d022-4d44-90de-179a4aaf1c82",
-            media_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
+            image_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
             thumbnail_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c/90",
             license_url="https://creativecommons.org/publicdomain/zero/1.0/",
             license_="cc0",
@@ -665,7 +665,7 @@ def test_clean_single_row_handles_uppercase_license_and_adds_row():
         ),
         call().add_item(
             foreign_landing_url="https://n2t.net/ark:/65665/3f07eb37b-d022-4d44-90de-179a4aaf1c82",
-            media_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
+            image_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
             thumbnail_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c/90",
             license_url="https://creativecommons.org/publicdomain/zero/1.0/",
             license_="cc0",
@@ -772,7 +772,7 @@ def test_clean_single_row_handles_missing_license_and_adds_row():
         ),
         call().add_item(
             foreign_landing_url="https://n2t.net/ark:/65665/3f07eb37b-d022-4d44-90de-179a4aaf1c82",
-            media_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
+            image_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
             thumbnail_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c/90",
             license_url="https://creativecommons.org/publicdomain/zero/1.0/",
             license_=None,
@@ -882,7 +882,7 @@ def test_clean_single_row_handles_defective_tags_and_adds_row():
         ),
         call().add_item(
             foreign_landing_url="https://n2t.net/ark:/65665/3f07eb37b-d022-4d44-90de-179a4aaf1c82",
-            media_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
+            image_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
             thumbnail_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c/90",
             license_url="https://creativecommons.org/publicdomain/zero/1.0/",
             license_="cc0",
@@ -983,7 +983,7 @@ def test_clean_single_row_handles_missing_tags_and_adds_row():
         ),
         call().add_item(
             foreign_landing_url="https://n2t.net/ark:/65665/3f07eb37b-d022-4d44-90de-179a4aaf1c82",
-            media_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
+            image_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
             thumbnail_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c/90",
             license_url="https://creativecommons.org/publicdomain/zero/1.0/",
             license_="cc0",
@@ -1078,7 +1078,7 @@ def test_clean_single_row_reuses_image_store_and_adds_row():
     expected_calls = [
         call().add_item(
             foreign_landing_url="https://n2t.net/ark:/65665/3f07eb37b-d022-4d44-90de-179a4aaf1c82",
-            media_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
+            image_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
             thumbnail_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c/90",
             license_url="https://creativecommons.org/publicdomain/zero/1.0/",
             license_="cc0",
@@ -1183,7 +1183,7 @@ def test_clean_single_row_doesnt_reuse_wrong_image_store_and_adds_row():
     expected_calls = [
         call().add_item(
             foreign_landing_url="https://n2t.net/ark:/65665/3f07eb37b-d022-4d44-90de-179a4aaf1c82",
-            media_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
+            image_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
             thumbnail_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c/90",
             license_url="https://creativecommons.org/publicdomain/zero/1.0/",
             license_="cc0",
