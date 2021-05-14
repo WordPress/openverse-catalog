@@ -3,6 +3,8 @@ from common.requester import DelayedRequester
 import requests
 import logging
 from urllib.parse import urlparse, parse_qs
+
+from common.licenses.licenses import get_license_info
 from util.loader import provider_details as prov
 
 DELAY = 1.0  # time delay (in seconds)
@@ -113,7 +115,7 @@ def _get_tags(image):
 
 def _process_image_data(image):
     # verify the license and extract the metadata
-    license = "cc0"
+    license_ = "cc0"
     version = "1.0"
 
     foreign_id, foreign_url = _get_foreign_id_url(image)
@@ -129,11 +131,11 @@ def _process_image_data(image):
     tags = _get_tags(image)
 
     # TODO:How to get license_url, creator_url, source, watermarked?
+    license_info = get_license_info(license_=license_, license_version=version)
     return image_store.add_item(
         foreign_landing_url=foreign_url,
         image_url=img_url,
-        license_=license,
-        license_version=str(version),
+        license_info=license_info,
         foreign_identifier=str(foreign_id),
         width=str(width) if width else None,
         height=str(height) if height else None,

@@ -1,6 +1,7 @@
 import logging
 from common.requester import DelayedRequester
 from common.storage.image import ImageStore
+from common.licenses.licenses import get_license_info
 from util.loader import provider_details as prov
 
 LIMIT = 1000
@@ -92,6 +93,7 @@ def _get_response(
 def _handle_response(
                     batch
                     ):
+    total_images = 0
     for data in batch:
         license_ = data.get('share_license_status', '').lower()
         if license_ != 'cc0':
@@ -119,12 +121,13 @@ def _handle_response(
             creator_name = data.get('creators')[0].get('description', '')
         else:
             creator_name = ''
-
+        license_info = get_license_info(
+            license_=license_, license_version=license_version
+        )
         total_images = image_store.add_item(
                         foreign_landing_url=foreign_landing_url,
                         image_url=image_url,
-                        license_=license_,
-                        license_version=license_version,
+                        license_info=license_info,
                         foreign_identifier=foreign_id,
                         width=width,
                         height=height,

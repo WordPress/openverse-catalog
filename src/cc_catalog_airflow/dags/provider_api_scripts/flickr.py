@@ -19,6 +19,7 @@ import lxml.html as html
 
 from common.requester import DelayedRequester
 from common.storage import image
+from common.licenses.licenses import get_license_info
 from util.loader import provider_details as prov
 
 logging.basicConfig(
@@ -265,13 +266,12 @@ def _process_image_data(image_data, sub_providers=SUB_PROVIDERS,
     owner = image_data.get('owner').strip()
     source = next((s for s in sub_providers if owner in sub_providers[s]),
                   provider)
-
+    license_info = get_license_info(license_ = license_, license_version=license_version)
     return image_store.add_item(
         foreign_landing_url=foreign_landing_url,
         image_url=image_url,
         thumbnail_url=image_data.get('url_s'),
-        license_=license_,
-        license_version=license_version,
+        license_info=license_info,
         foreign_identifier=foreign_id,
         width=width,
         height=height,

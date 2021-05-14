@@ -15,6 +15,7 @@ import logging
 
 import common.requester as requester
 import common.storage.image as image
+from common.licenses.licenses import get_license_info
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s:  %(message)s',
@@ -87,7 +88,7 @@ def _create_args(details, id_):
     args = {'foreign_landing_url': details[1],
             'image_url': details[2],
             'thumbnail_url': details[3],
-            'license_url': details[6],
+            'license_info': get_license_info(license_url=details[6]),
             'width': details[4],
             'height': details[5],
             'creator': details[7],

@@ -6,6 +6,7 @@ from unittest.mock import patch, call
 import pytest
 
 import smithsonian as si
+from common.licenses.licenses import LicenseInfo
 
 logger = logging.getLogger(__name__)
 
@@ -910,7 +911,7 @@ def test_check_type_with_bad_inputs(required_type, good_indices, default):
                     foreign_landing_url='https://foreignlanding.url',
                     image_url='https://image.url.one',
                     thumbnail_url='https://thumbnail.one',
-                    license_url='https://license.url',
+                    license_info=LicenseInfo('cc0', '1.0', 'https://creativecommons.org/publicdomain/zero/1.0/', 'https://license.url'),
                     foreign_identifier='id_one',
                     title='The Title',
                     creator='Alice',
@@ -922,7 +923,7 @@ def test_check_type_with_bad_inputs(required_type, good_indices, default):
                     foreign_landing_url='https://foreignlanding.url',
                     image_url='https://image.url.two',
                     thumbnail_url='https://thumbnail.two',
-                    license_url='https://license.url',
+                    license_info=LicenseInfo('cc0', '1.0', 'https://creativecommons.org/publicdomain/zero/1.0/', 'https://license.url'),
                     foreign_identifier='id_two',
                     title='The Title',
                     creator='Alice',
@@ -960,7 +961,7 @@ def test_check_type_with_bad_inputs(required_type, good_indices, default):
                     foreign_landing_url='https://foreignlanding.url',
                     image_url='https://image.url.two',
                     thumbnail_url='https://thumbnail.two',
-                    license_url='https://license.url',
+                    license_info=LicenseInfo('cc0', '1.0', 'https://creativecommons.org/publicdomain/zero/1.0/', 'https://license.url'),
                     foreign_identifier='id_two',
                     title='The Title',
                     creator='Alice',
@@ -998,7 +999,7 @@ def test_check_type_with_bad_inputs(required_type, good_indices, default):
                     foreign_landing_url='https://foreignlanding.url',
                     image_url='https://image.url.one',
                     thumbnail_url='https://thumbnail.one',
-                    license_url='https://license.url',
+                    license_info=LicenseInfo('cc0', '1.0', 'https://creativecommons.org/publicdomain/zero/1.0/', 'https://license.url'),
                     foreign_identifier='id_one',
                     title='The Title',
                     creator='Alice',
@@ -1047,7 +1048,7 @@ def test_process_image_data_with_sub_provider():
         thumbnail_url=(
             'https://ids.si.edu/ids/deliveryService?id=SIA-SIA2010-'
             '2358&max=150'),
-        license_url='https://creativecommons.org/publicdomain/zero/1.0/',
+        license_info=(LicenseInfo('cc0', '1.0', 'https://creativecommons.org/publicdomain/zero/1.0/', 'https://creativecommons.org/publicdomain/zero/1.0/')),
         foreign_identifier='SIA-SIA2010-2358',
         creator='Gruber, Martin A',
         title=(

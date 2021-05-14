@@ -15,10 +15,12 @@ import common.requester as requester
 import common.storage.image as image
 import logging
 
+from common.licenses.licenses import get_license_info
 
 DELAY = 1.0  # time delay (in seconds)
 PROVIDER = 'met'
 ENDPOINT = 'https://collectionapi.metmuseum.org/public/collection/v1/objects'
+DEFAULT_LICENSE_INFO = get_license_info(license_='cc0', license_version='1.0')
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s:  %(message)s',
@@ -110,8 +112,7 @@ def _get_data_for_image(object_id):
             foreign_landing_url=object_json.get('objectURL'),
             image_url=img,
             thumbnail_url=thumb,
-            license_='cc0',
-            license_version='1.0',
+            license_info=DEFAULT_LICENSE_INFO,
             foreign_identifier=foreign_id,
             creator=object_json.get('artistDisplayName'),
             title=object_json.get('title'),

@@ -1,6 +1,7 @@
 import logging
 from common.requester import DelayedRequester
 from common.storage.image import ImageStore
+from common.licenses.licenses import get_license_info
 from util.loader import provider_details as prov
 
 logging.basicConfig(
@@ -167,6 +168,7 @@ def _handle_object_data(batch_data):
                 continue
             license_, version = license_version.lower().split(" ")
             license_ = license_.replace("cc-", "")
+            license_info = get_license_info(license_=license_, license_version=version)
             thumbnail_url = _get_thumbnail_url(processed)
             image_count = image_store.add_item(
                     foreign_identifier=foreign_id,
@@ -174,8 +176,7 @@ def _handle_object_data(batch_data):
                     image_url=image_url,
                     height=height,
                     width=width,
-                    license_=license_,
-                    license_version=version,
+                    license_info=license_info,
                     thumbnail_url=thumbnail_url,
                     creator=creator,
                     title=title,

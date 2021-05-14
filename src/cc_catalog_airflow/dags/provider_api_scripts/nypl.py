@@ -3,6 +3,7 @@ import logging
 from urllib.parse import urlparse, parse_qs
 from common.requester import DelayedRequester
 from common.storage.image import ImageStore
+from common.licenses.licenses import get_license_info
 from util.loader import provider_details as prov
 
 logging.basicConfig(
@@ -157,7 +158,7 @@ def _get_capture_details(
             foreign_identifier=image_id,
             foreign_landing_url=foreign_landing_url,
             image_url=image_url,
-            license_url=license_url,
+            license_info=get_license_info(license_url=license_url),
             thumbnail_url=thumbnail_url,
             title=title,
             creator=creator,

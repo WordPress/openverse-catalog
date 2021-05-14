@@ -133,9 +133,7 @@ class ImageStore:
             foreign_landing_url=None,
             image_url=None,
             thumbnail_url=None,
-            license_url=None,
-            license_=None,
-            license_version=None,
+            license_info=None,
             foreign_identifier=None,
             width=None,
             height=None,
@@ -157,17 +155,13 @@ class ImageStore:
         image_url:            Direct link to the image file
 
         Semi-Required Arguments
-
-        license_url:      URL of the license for the image on the
-                          Creative Commons website.
-        license_:         String representation of a Creative Commons
-                          license.  For valid options, see
-                          `common.license.constants.get_license_path_map()`
-        license_version:  Version of the given license.  In the case of
-                          the `publicdomain` license, which has no
-                          version, one shoud pass
-                          `common.license.constants.NO_VERSION` here.
-
+        license_info:        LicenseInfo tuple containing:
+                        - the string representation of a Creative Commons license
+                        (For valid options, see `common.license.constants.get_license_path_map()`),
+                        - license version. In the case of the `publicdomain` license, which has no
+                          version, one should pass `common.license.constants.NO_VERSION` here
+                        - license url.
+                        - raw license url
         Note on license arguments: These are 'semi-required' in that
         either a valid `license_url` must be given, or a valid
         `license_`, `license_version` pair must be given. Otherwise, the
@@ -205,9 +199,7 @@ class ImageStore:
             foreign_landing_url=foreign_landing_url,
             image_url=image_url,
             thumbnail_url=thumbnail_url,
-            license_url=license_url,
-            license_=license_,
-            license_version=license_version,
+            license_info=license_info,
             foreign_identifier=foreign_identifier,
             width=width,
             height=height,
@@ -274,9 +266,7 @@ class ImageStore:
             thumbnail_url,
             width,
             height,
-            license_url,
-            license_,
-            license_version,
+            license_info,
             creator,
             creator_url,
             title,
@@ -285,16 +275,11 @@ class ImageStore:
             watermarked,
             source,
     ):
-        valid_license_info = licenses.get_license_info(
-            license_url=license_url,
-            license_=license_,
-            license_version=license_version
-        )
-        source = util.get_source(source, self._PROVIDER)
-        meta_data = self._enrich_meta_data(
+        source, meta_data, tags = self.parse_item_metadata(
+            license_info,
+            source,
             meta_data,
-            license_url=valid_license_info.url,
-            raw_license_url=license_url
+            raw_tags,
         )
         tags = self._enrich_tags(raw_tags)
 
@@ -303,8 +288,8 @@ class ImageStore:
             foreign_landing_url=foreign_landing_url,
             image_url=image_url,
             thumbnail_url=thumbnail_url,
-            license_=valid_license_info.license,
-            license_version=valid_license_info.version,
+            license_=license_info.license,
+            license_version=license_info.version,
             width=width,
             height=height,
             filesize=None,
@@ -435,9 +420,7 @@ class MockImageStore(ImageStore):
             thumbnail_url,
             width,
             height,
-            license_url,
-            license_,
-            license_version,
+            license_info,
             creator,
             creator_url,
             title,
@@ -461,8 +444,8 @@ class MockImageStore(ImageStore):
             foreign_landing_url=foreign_landing_url,
             image_url=image_url,
             thumbnail_url=thumbnail_url,
-            license_=valid_license_info.license,
-            license_version=valid_license_info.version,
+            license_=license_info.license,
+            license_version=license_info.version,
             width=width,
             height=height,
             filesize=None,
