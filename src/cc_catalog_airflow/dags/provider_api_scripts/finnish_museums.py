@@ -63,7 +63,9 @@ def _get_object_list(building, endpoint=ENDPOINT, retries=RETRIES):
         return
 
 
-def _build_params(building, default_params=DEFAULT_QUERY_PARAMS, page=1):
+def _build_params(building, default_params=None, page=1):
+    if default_params is None:
+        default_params = DEFAULT_QUERY_PARAMS
     query_params = default_params.copy()
     query_params.update(
         {
@@ -93,16 +95,17 @@ def _process_object_list(object_list):
     total_images = 0
     if object_list is not None:
         for obj in object_list:
-            total_images = _process_object(obj)
+            total_images = _process_object(obj, total_images)
 
     return total_images
 
 
-def _process_object(obj, sub_providers=SUB_PROVIDERS, provider=PROVIDER):
-    total_images = 0
-    license = obj.get("imageRights")
-    if license is not None:
-        license_url = license.get("link")
+def _process_object(obj, current_total, sub_providers=SUB_PROVIDERS, provider=PROVIDER):
+    total_images = current_total
+    license_ = obj.get("imageRights")
+    if license is None or license_.get("link") is None:
+        return current_total
+    license_url = license_.get("link")
     foreign_identifier = obj.get("id")
     title = obj.get("title")
     building = obj.get("buildings")[0].get("value")
@@ -137,9 +140,9 @@ def _get_raw_tags(obj):
 
 def _get_landing(obj, landing_url=LANDING_URL):
     l_url = None
-    id = obj.get("id")
-    if id:
-        l_url = landing_url + id
+    id_ = obj.get("id")
+    if id_:
+        l_url = landing_url + id_
     return l_url
 
 

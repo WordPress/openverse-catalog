@@ -55,19 +55,23 @@ def main():
 
 def _get_query_param(
         offset=0,
-        default_query_param=DEFAULT_QUERY_PARAM
+        default_query_param=None
         ):
+    if default_query_param is None:
+        default_query_param = DEFAULT_QUERY_PARAM
     query_param = default_query_param.copy()
     query_param.update(offset=offset)
     return query_param
 
 
 def _get_object_json(
-        headers=HEADERS,
+        headers=None,
         endpoint=ENDPOINT,
         retries=RETRIES,
         query_param=None
         ):
+    if headers is None:
+        headers = HEADERS
     for tries in range(retries):
         response = delay_request.get(
                     endpoint,
@@ -166,13 +170,14 @@ def _get_license_url(rights_info):
 
 
 def _get_metadata(data):
-    metadata = {}
-    metadata["accession_number"] = data.get("accession_number")
-    metadata["date"] = data.get("object_date")
-    metadata["description"] = data.get("description")
-    metadata["medium"] = data.get("medium")
-    metadata["credit_line"] = data.get("credit_line")
-    metadata["classification"] = data.get("classification")
+    metadata = {
+        "accession_number": data.get("accession_number"),
+        "date": data.get("object_date"),
+        "description": data.get("description"),
+        "medium": data.get("medium"),
+        "credit_line": data.get("credit_line"),
+        "classification": data.get("classification")
+    }
     return metadata
 
 

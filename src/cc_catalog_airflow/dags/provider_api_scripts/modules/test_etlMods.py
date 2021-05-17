@@ -221,9 +221,9 @@ def test_create_tsv_row_sanitizes_dicts_and_lists(monkeypatch):
 
 
 def test_sanitize_json_values_handles_flat_dict(monkeypatch):
-    def mock_sanitizeString(some_string):
+    def mock_sanitize_string(some_string):
         return some_string + ' sanitized'
-    monkeypatch.setattr(etlMods, 'sanitizeString', mock_sanitizeString)
+    monkeypatch.setattr(etlMods, 'sanitize_string', mock_sanitize_string)
     given_dict = {'key1': 'val1', 'key2': 'val2'}
     actual_dict = etlMods._sanitize_json_values(given_dict)
     expect_dict = {'key1': 'val1 sanitized', 'key2': 'val2 sanitized'}
@@ -231,9 +231,9 @@ def test_sanitize_json_values_handles_flat_dict(monkeypatch):
 
 
 def test_sanitize_json_values_handles_nested_dict(monkeypatch):
-    def mock_sanitizeString(some_string):
+    def mock_sanitize_string(some_string):
         return some_string + ' sanitized'
-    monkeypatch.setattr(etlMods, 'sanitizeString', mock_sanitizeString)
+    monkeypatch.setattr(etlMods, 'sanitize_string', mock_sanitize_string)
     given_dict = {'key1': 'val1', 'key2': {'key3': 'val3'}}
     actual_dict = etlMods._sanitize_json_values(given_dict)
     expect_dict = {
@@ -243,9 +243,9 @@ def test_sanitize_json_values_handles_nested_dict(monkeypatch):
 
 
 def test_sanitize_json_values_handles_dict_containing_list(monkeypatch):
-    def mock_sanitizeString(some_string):
+    def mock_sanitize_string(some_string):
         return some_string + ' sanitized'
-    monkeypatch.setattr(etlMods, 'sanitizeString', mock_sanitizeString)
+    monkeypatch.setattr(etlMods, 'sanitize_string', mock_sanitize_string)
     given_dict = {'key1': 'val1', 'key2': ['item1', 'item2']}
     actual_dict = etlMods._sanitize_json_values(given_dict)
     expect_dict = {
@@ -256,9 +256,9 @@ def test_sanitize_json_values_handles_dict_containing_list(monkeypatch):
 
 
 def test_sanitize_json_values_handles_list_of_str(monkeypatch):
-    def mock_sanitizeString(some_string):
+    def mock_sanitize_string(some_string):
         return some_string + ' sanitized'
-    monkeypatch.setattr(etlMods, 'sanitizeString', mock_sanitizeString)
+    monkeypatch.setattr(etlMods, 'sanitize_string', mock_sanitize_string)
     given_list = ['item1', 'item2']
     actual_list = etlMods._sanitize_json_values(given_list)
     expect_list = ['item1 sanitized', 'item2 sanitized']
@@ -266,9 +266,9 @@ def test_sanitize_json_values_handles_list_of_str(monkeypatch):
 
 
 def test_sanitize_json_values_handles_list_of_list(monkeypatch):
-    def mock_sanitizeString(some_string):
+    def mock_sanitize_string(some_string):
         return some_string + ' sanitized'
-    monkeypatch.setattr(etlMods, 'sanitizeString', mock_sanitizeString)
+    monkeypatch.setattr(etlMods, 'sanitize_string', mock_sanitize_string)
     given_list = ['item1', ['item2', ['item3'], 'item4'], 'item5']
     actual_list = etlMods._sanitize_json_values(given_list)
     expect_list = [
@@ -282,9 +282,9 @@ def test_sanitize_json_values_handles_list_of_list(monkeypatch):
 
 
 def test_sanitize_json_values_handles_list_of_dict(monkeypatch):
-    def mock_sanitizeString(some_string):
+    def mock_sanitize_string(some_string):
         return some_string + ' sanitized'
-    monkeypatch.setattr(etlMods, 'sanitizeString', mock_sanitizeString)
+    monkeypatch.setattr(etlMods, 'sanitize_string', mock_sanitize_string)
     given_list = [
         {'name': 'valuea', 'provider': 'valueb'},
         {'name': 'aname', 'provider': 'aprovider'}
@@ -298,8 +298,8 @@ def test_sanitize_json_values_handles_list_of_dict(monkeypatch):
 
 
 def test_sanitize_json_values_does_not_over_recurse():
-    L = []
-    L.extend([L])
-    actual_list = etlMods._sanitize_json_values(L, recursion_limit=3)
+    l = []
+    l.extend([l])
+    actual_list = etlMods._sanitize_json_values(l, recursion_limit=3)
     expect_list = [[['[[...]]']]]
     assert actual_list == expect_list

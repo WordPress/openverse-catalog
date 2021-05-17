@@ -56,7 +56,7 @@ ETL jobs for the following platforms, by running the linked scripts:
 
 - [Met Museum](src/cc_catalog_airflow/dags/provider_api_scripts/metropolitan_museum_of_art.py)
 - [PhyloPic](src/cc_catalog_airflow/dags/provider_api_scripts/phylopic.py)
-- [Thingiverse](src/cc_catalog_airflow/dags/provider_api_scripts/Thingiverse.py)
+- [Thingiverse](src/cc_catalog_airflow/dags/provider_api_scripts/thingiverse.py)
 
 [api_flows]: src/cc_catalog_airflow/dags/common_api_workflows.py
 

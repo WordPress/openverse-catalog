@@ -14,6 +14,7 @@ import argparse
 from datetime import datetime, timedelta, timezone
 import logging
 import os
+from typing import Optional, List, Tuple, Union
 
 import lxml.html as html
 
@@ -74,14 +75,14 @@ delayed_requester = DelayedRequester(DELAY)
 image_store = image.ImageStore(provider=PROVIDER)
 
 
-def main(date):
-    logger.info(f'Processing Flickr API for date: {date}')
+def main(date_):
+    logger.info(f'Processing Flickr API for date: {date_}')
 
-    timestamp_pairs = _derive_timestamp_pair_list(date)
+    timestamp_pairs = _derive_timestamp_pair_list(date_)
     date_type = DATE_TYPE
 
     for start_timestamp, end_timestamp in timestamp_pairs:
-        total_images = _process_interval(
+        _process_interval(
             start_timestamp,
             end_timestamp,
             date_type
@@ -92,7 +93,7 @@ def main(date):
     logger.info('Terminated!')
 
 
-def _derive_timestamp_pair_list(date, day_division=DAY_DIVISION):
+def _derive_timestamp_pair_list(date_, day_division=DAY_DIVISION):
     day_seconds = 86400
     default_day_division = 48
     portion = int(day_seconds / day_division)
@@ -107,7 +108,7 @@ def _derive_timestamp_pair_list(date, day_division=DAY_DIVISION):
         day_division = default_day_division
         portion = int(day_seconds / day_division)
 
-    utc_date = datetime.strptime(date, '%Y-%m-%d').replace(tzinfo=timezone.utc)
+    utc_date = datetime.strptime(date_, '%Y-%m-%d').replace(tzinfo=timezone.utc)
 
     def _ts_string(d):
         return str(int(d.timestamp()))
@@ -125,7 +126,6 @@ def _derive_timestamp_pair_list(date, day_division=DAY_DIVISION):
 def _process_interval(start_timestamp, end_timestamp, date_type):
     total_pages = 1
     page_number = 1
-    total_images = 0
 
     while page_number <= total_pages:
         logger.info(f'Processing page: {page_number} of {total_pages}')
@@ -150,8 +150,6 @@ def _process_interval(start_timestamp, end_timestamp, date_type):
 
     logger.info(f'Total pages processed: {page_number}')
 
-    return total_images
-
 
 def _get_image_list(
         start_timestamp,
@@ -161,6 +159,9 @@ def _get_image_list(
         endpoint=ENDPOINT,
         max_tries=6  # one original try, plus 5 retries
 ):
+    try_number, total_pages = 0, None
+    image_list = None
+
     for try_number in range(max_tries):
         query_param_dict = _build_query_param_dict(
             start_timestamp,
@@ -207,10 +208,14 @@ def _build_query_param_dict(
         cur_page,
         date_type,
         api_key=API_KEY,
-        license_info=LICENSE_INFO,
+        flickr_license_info=None,
         limit=LIMIT,
-        default_query_param=DEFAULT_QUERY_PARAMS,
+        default_query_param=None,
 ):
+    if flickr_license_info is None:
+        flickr_license_info = LICENSE_INFO
+    if default_query_param is None:
+        default_query_param = DEFAULT_QUERY_PARAMS
     query_param_dict = default_query_param.copy()
     query_param_dict.update(
         {
@@ -218,7 +223,7 @@ def _build_query_param_dict(
             f'max_{date_type}_date': end_timestamp,
             'page': cur_page,
             'api_key': api_key,
-            'license': ','.join(license_info.keys()),
+            'license': ','.join(flickr_license_info.keys()),
             'per_page': limit,
         }
     )
@@ -226,24 +231,25 @@ def _build_query_param_dict(
     return query_param_dict
 
 
-def _extract_image_list_from_json(response_json):
+def _extract_image_list_from_json(
+        response_json
+) -> Tuple[Optional[object], Optional[Union[int,str]]]:
     if (
             response_json is None or response_json.get('stat') != 'ok'
     ):
-        image_page = None
-    else:
-        image_page = response_json.get('photos')
+        return None, None
 
-    if image_page is not None:
-        image_list = image_page.get('photo')
-        total_pages = image_page.get('pages')
-    else:
-        image_list, total_pages = None, None
+    image_page = response_json.get('photos')
+    if image_page is None:
+        return None, None
+
+    image_list = image_page.get('photo')
+    total_pages = image_page.get('pages')
 
     return image_list, total_pages
 
 
-def _process_image_list(image_list):
+def _process_image_list(image_list) -> int:
     total_images = 0
     for image_data in image_list:
         total_images = _process_image_data(image_data)
@@ -252,7 +258,7 @@ def _process_image_list(image_list):
 
 
 def _process_image_data(image_data, sub_providers=SUB_PROVIDERS,
-                        provider=PROVIDER):
+                        provider=PROVIDER) -> int:
     logger.debug(f'Processing image data: {image_data}')
     image_url, height, width = _get_image_url(image_data)
     license_, license_version = _get_license(image_data.get('license'))
@@ -284,7 +290,7 @@ def _process_image_data(image_data, sub_providers=SUB_PROVIDERS,
     )
 
 
-def _build_creator_url(image_data, photo_url_base=PHOTO_URL_BASE):
+def _build_creator_url(image_data, photo_url_base=PHOTO_URL_BASE) -> Optional[str]:
     owner = image_data.get('owner')
     if owner is not None:
         creator_url = _url_join(photo_url_base, owner.strip())
@@ -296,7 +302,7 @@ def _build_creator_url(image_data, photo_url_base=PHOTO_URL_BASE):
     return creator_url
 
 
-def _build_foreign_landing_url(creator_url, foreign_id):
+def _build_foreign_landing_url(creator_url, foreign_id) -> Optional[str]:
     if creator_url and foreign_id:
         foreign_landing_url = _url_join(creator_url, foreign_id)
         logger.debug(f'foreign_landing_url: {foreign_landing_url}')
@@ -313,7 +319,7 @@ def _url_join(*args):
     )
 
 
-def _get_image_url(image_data):
+def _get_image_url(image_data) -> Tuple[Optional[str], Optional[str], Optional[str]]:
     # prefer large, then medium, then small images
     for size in ['l', 'm', 's']:
         url_key = f'url_{size}'
@@ -330,13 +336,17 @@ def _get_image_url(image_data):
     return None, None, None
 
 
-def _get_license(license_id, license_info=LICENSE_INFO):
+def _get_license(license_id, flickr_license_info=None) -> Tuple[str, str]:
+    # Flickr provides numerical ids for licenses. The CC licenses corresponding
+    # to specific ids are stored in the `LICENSE_INFO` constant
+    if flickr_license_info is None:
+        flickr_license_info = LICENSE_INFO
     license_id = str(license_id)
 
-    if license_id not in license_info:
+    if license_id not in flickr_license_info:
         logger.warning('Unknown license ID!')
 
-    license_, license_version = license_info.get(license_id, (None, None))
+    license_, license_version = flickr_license_info.get(license_id, (None, None))
 
     return license_, license_version
 
@@ -367,7 +377,7 @@ def _create_meta_data_dict(
 def _create_tags_list(
         image_data,
         max_tag_string_length=MAX_TAG_STRING_LENGTH
-):
+) -> Optional[List[object]]:
     raw_tags = None
     # We limit the input tag string length, not the number of tags,
     # since tags could otherwise be arbitrarily long, resulting in

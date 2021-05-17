@@ -32,7 +32,7 @@ delayed_requester = requester.DelayedRequester(DELAY)
 image_store = image.ImageStore(provider=PROVIDER)
 
 
-def main(date='all'):
+def main(date_='all'):
     """
     This script pulls the data for a given date from the PhyloPic
     API, and writes it into a .TSV file to be eventually read
@@ -44,12 +44,11 @@ def main(date='all'):
            which running the script will pull data.
     """
 
-    param = None
     offset = 0
 
     logger.info('Begin: PhyloPic API requests')
 
-    if date == 'all':
+    if date_ == 'all':
         logger.info('Processing all images')
         param = {'offset': offset}
 
@@ -62,8 +61,8 @@ def main(date='all'):
             param = {'offset': offset}
 
     else:
-        param = {'date': date}
-        logger.info(f'Processing date: {date}')
+        param = {'date': date_}
+        logger.info(f'Processing date: {date_}')
         _add_data_to_buffer(**param)
 
     image_store.commit()
@@ -72,10 +71,10 @@ def main(date='all'):
 
 
 def _add_data_to_buffer(**args):
-    endpoint = _create_endpoint_for_IDs(**args)
-    IDs = _get_image_IDs(endpoint)
+    endpoint = _create_endpoint_for_ids(**args)
+    ids = _get_image_ids(endpoint)
 
-    for id_ in IDs:
+    for id_ in ids:
         if id_ is not None:
             details = _get_meta_data(id_)
             if details is not None:
@@ -113,15 +112,13 @@ def _get_total_images():
     return total
 
 
-def _create_endpoint_for_IDs(**args):
+def _create_endpoint_for_ids(**args):
     limit = LIMIT
-    offset = 0
-    endpoint = ''
 
     if args.get('date'):
         # Get a list of objects uploaded/updated on a given date.
-        date = args['date']
-        endpoint = f'http://phylopic.org/api/a/image/list/modified/{date}'
+        date_ = args['date']
+        endpoint = f'http://phylopic.org/api/a/image/list/modified/{date_}'
 
     else:
         # Get all images and limit the results for each request.
@@ -130,37 +127,31 @@ def _create_endpoint_for_IDs(**args):
     return endpoint
 
 
-def _get_image_IDs(_endpoint):
+def _get_image_ids(_endpoint):
     result = delayed_requester.get_response_json(
         _endpoint,
         retries=2
     )
-    image_IDs = []
+    image_ids = []
 
     if result and result.get('success') is True:
         data = list(result.get('result'))
 
         if len(data) > 0:
             for i in range(len(data)):
-                image_IDs.append(data[i].get('uid'))
+                image_ids.append(data[i].get('uid'))
 
-    if not image_IDs:
+    if not image_ids:
         logger.warning('No content available!')
         return [None]
 
-    return image_IDs
+    return image_ids
 
 
 def _get_meta_data(_uuid):
     logger.info(f'Processing UUID: {_uuid}')
 
     base_url = 'http://phylopic.org'
-    img_url = ''
-    thumbnail = ''
-    width = ''
-    height = ''
-    foreign_id = ''
-    foreign_url = ''
     meta_data = {}
     endpoint = f"http://phylopic.org/api/a/image/{_uuid}?options=credit+" \
         "licenseURL+pngFiles+submitted+submitter+taxa+canonicalName" \
@@ -197,7 +188,6 @@ def _get_meta_data(_uuid):
 def _get_creator_details(result):
     credit_line = None
     pub_date = None
-    creator = ''
 
     first_name = result.get('submitter', {}).get('firstName')
     last_name = result.get('submitter', {}).get('lastName')
@@ -207,7 +197,7 @@ def _get_creator_details(result):
         credit_line = result.get('credit').strip()
         pub_date = result.get('submitted').strip()
 
-    return (creator, credit_line, pub_date)
+    return creator, credit_line, pub_date
 
 
 def _get_taxa_details(result):
@@ -224,7 +214,7 @@ def _get_taxa_details(result):
     if taxa_list:
         title = taxa_list[0]
 
-    return (taxa_list, title)
+    return taxa_list, title
 
 
 def _get_image_info(result, _uuid):
@@ -233,23 +223,25 @@ def _get_image_info(result, _uuid):
     thumbnail = ''
     width = ''
     height = ''
+    images = []
+    thumbnails = []
 
     image_info = result.get('pngFiles')
     if image_info:
-        img = list(filter(lambda x: (
+        images = list(filter(lambda x: (
             int(str(x.get('width', '0'))) >= 257), image_info))
-        img = sorted(img, key=lambda x: x['width'], reverse=True)
-        thb = list(filter(lambda x: str(
+        images = sorted(images, key=lambda x: x['width'], reverse=True)
+        thumbnails = list(filter(lambda x: str(
             x.get('width', '')) == '256', image_info))
 
-    if len(img) > 0:
-        img_url = img[0].get('url')
+    if len(images) > 0:
+        img_url = images[0].get('url')
         img_url = f'{base_url}{img_url}'
-        width = img[0].get('width')
-        height = img[0].get('height')
+        width = images[0].get('width')
+        height = images[0].get('height')
 
-    if len(thb) > 0:
-        thumbnail_info = thb[0].get('url')
+    if len(thumbnails) > 0:
+        thumbnail_info = thumbnails[0].get('url')
         if thumbnail_info is not None:
             thumbnail = f'{base_url}{thumbnail_info}'
 
@@ -258,7 +250,7 @@ def _get_image_info(result, _uuid):
             f'Image not detected in url: {base_url}/image/{_uuid}')
         return None, None, None, None
     else:
-        return (img_url, width, height, thumbnail)
+        return img_url, width, height, thumbnail
 
 
 if __name__ == '__main__':

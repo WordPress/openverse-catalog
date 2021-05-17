@@ -53,6 +53,8 @@ def main():
         request_response = _request_handler(
             params=query_param
         )
+        if request_response is None:
+            break
         results = request_response.get("result")
         if type(results) == list and len(results) > 0:
             _handle_results(results)
@@ -65,9 +67,11 @@ def main():
 
 
 def _get_query_param(
-        default_query_param=DEFAULT_QUERY_PARAM,
+        default_query_param=None,
         page=1,
         ):
+    if default_query_param is None:
+        default_query_param = DEFAULT_QUERY_PARAM
     query_param = default_query_param
     query_param["page"] = page
     return query_param
@@ -76,9 +80,11 @@ def _get_query_param(
 def _request_handler(
         endpoint=BASE_ENDPOINT,
         params=None,
-        headers=HEADERS,
+        headers=None,
         retries=RETRIES
         ):
+    if headers is None:
+        headers = HEADERS
     results = None
     for retry in range(retries):
         response = delay_request.get(
@@ -133,11 +139,13 @@ def _handle_results(results):
 
 
 def _get_capture_details(
-        captures=[],
+        captures=None,
         metadata=None,
         creator=None,
         title=None
         ):
+    if captures is None:
+        captures = []
     for img in captures:
         image_id = img.get("imageID", {}).get("$")
         if image_id is None:
@@ -190,10 +198,13 @@ def _get_creators(creatorinfo):
 
 def _get_images(
         images,
-        image_url_dimensions=IMAGE_URL_DIMENSIONS,
-        thumbnail_dimensions=THUMBNAIL_DIMENSIONS
+        image_url_dimensions=None,
+        thumbnail_dimensions=None
         ):
-    image_url, thumbnail_url = None, None
+    if thumbnail_dimensions is None:
+        thumbnail_dimensions = THUMBNAIL_DIMENSIONS
+    if image_url_dimensions is None:
+        image_url_dimensions = IMAGE_URL_DIMENSIONS
     image_type = {
         parse_qs(urlparse(img.get("$")).query)['t'][0]: img.get("$")
         for img in images

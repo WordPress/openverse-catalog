@@ -55,7 +55,7 @@ def main():
 
             if type(results) == list:
                 if len(results) > 0:
-                    image_count = _handle_batch_objects(results)
+                    _handle_batch_objects(results)
                     page += 1
                 else:
                     condition = False
@@ -66,8 +66,10 @@ def main():
 
 
 def _get_query_params(
-        query_params=DEFAULT_QUERY_PARAM, license_type="cc by", page=0
+        query_params=None, license_type="cc by", page=0
 ):
+    if query_params is None:
+        query_params = DEFAULT_QUERY_PARAM
     query_params["imagelicence"] = license_type
     query_params["page"] = page
     return query_params
@@ -75,8 +77,11 @@ def _get_query_params(
 
 def _get_batch_objects(
         endpoint=ENDPOINT, params=None,
-        headers=HEADERS, retries=RETRIES
+        headers=None, retries=RETRIES
 ):
+    if headers is None:
+        headers = HEADERS
+    data = None
     for retry in range(retries):
         response = delay_request.get(
             endpoint,
@@ -88,8 +93,7 @@ def _get_batch_objects(
             if type(response_json) == list:
                 data = response_json
                 break
-            else:
-                data = None
+        # Fixme: add specific Exception
         except Exception:
             data = None
     return data
@@ -99,7 +103,6 @@ def _handle_batch_objects(
         objects,
         landing_page=LANDING_PAGE
 ):
-    image_count = 0
     for obj in objects:
         object_id = obj.get("id")
         if object_id in RECORDS_IDS:
@@ -115,7 +118,7 @@ def _handle_batch_objects(
         meta_data = _get_metadata(obj)
         title = obj.get("displayTitle")
         for img in image_data:
-            image_count = image_store.add_item(
+            image_store.add_item(
                 foreign_identifier=img.get("image_id"),
                 foreign_landing_url=foreign_landing_url,
                 image_url=img.get("image_url"),
@@ -127,7 +130,6 @@ def _handle_batch_objects(
                 creator=img.get("creators"),
                 meta_data=meta_data
             )
-    return image_count
 
 
 def _get_media_info(media_data):
@@ -194,11 +196,11 @@ def _get_license_url(media):
 
 
 def _get_metadata(obj):
-    metadata = {}
-
-    metadata["datemodified"] = obj.get("dateModified")
-    metadata["category"] = obj.get("category")
-    metadata["description"] = obj.get("physicalDescription")
+    metadata = {
+        "datemodified": obj.get("dateModified"),
+        "category": obj.get("category"),
+        "description": obj.get("physicalDescription")
+    }
 
     keywords = obj.get("keywords")
     if type(keywords) == list:

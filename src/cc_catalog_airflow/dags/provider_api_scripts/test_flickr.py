@@ -130,7 +130,7 @@ def test_get_image_list_with_partial_response():
             'get',
             return_value=r
     ) as mock_get:
-        image_list, total_pages = flickr._get_image_list(
+        flickr._get_image_list(
             '1234', '5678', 'test', 4, max_tries=3
         )
 
@@ -198,7 +198,7 @@ def test_build_query_param_dict_with_givens():
         3,
         'test',
         api_key=flickr_api_key,
-        license_info={
+        flickr_license_info={
             '1': ('by-nc-sa', '2.0'),
             '2': ('by-nc', '2.0'),
         },
@@ -403,7 +403,7 @@ def test_get_license_with_int_license_id():
     }
     actual_license, actual_license_version = flickr._get_license(
         2,
-        license_info=license_info
+        flickr_license_info=license_info
     )
     expect_license, expect_license_version = 'by-nc', '2.0'
     assert expect_license == actual_license
@@ -417,7 +417,7 @@ def test_get_license_with_str_license_id():
     }
     actual_license, actual_license_version = flickr._get_license(
         '2',
-        license_info=license_info
+        flickr_license_info=license_info
     )
     expect_license, expect_license_version = 'by-nc', '2.0'
     assert expect_license == actual_license
@@ -431,7 +431,7 @@ def test_get_license_with_missing_license_id():
     }
     actual_license, actual_license_version = flickr._get_license(
         12,
-        license_info=license_info
+        flickr_license_info=license_info
     )
     assert actual_license is None
     assert actual_license_version is None

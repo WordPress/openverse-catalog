@@ -89,19 +89,19 @@ def test_get_object_list_return_none_if_none_json():
 def test_process_object_with_real_example():
     object_data = _get_resource_json("object_complete_example.json")
     with patch.object(fm.image_store, "add_item", return_value=100) as mock_add_item:
-        total_images = fm._process_object(object_data)
+        total_images = fm._process_object(object_data, 100)
 
     mock_add_item.assert_called_once_with(
-        license_url=("http://creativecommons.org/licenses/by/4.0/deed.fi"),
-        foreign_identifier=("museovirasto.CC0641BB5337F541CBD19169838BAC1F"),
+        license_url="http://creativecommons.org/licenses/by/4.0/deed.fi",
+        foreign_identifier="museovirasto.CC0641BB5337F541CBD19169838BAC1F",
         foreign_landing_url=(
             "https://www.finna.fi/Record/museovirasto.CC0641BB5337F541CBD19169838BAC1F"
         ),
         image_url=(
             "https://api.finna.fi/Cover/Show?id=museovirasto.CC0641BB5337F541CBD19169838BAC1F&index=0&size=large"
         ),
-        title=("linnunpönttö koivussa"),
-        source=("finnish_heritage_agency"),
+        title="linnunpönttö koivussa",
+        source="finnish_heritage_agency",
         raw_tags=[
             "koivu",
             "linnunpöntöt",

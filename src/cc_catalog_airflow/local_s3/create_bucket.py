@@ -32,7 +32,9 @@ def main():
         sys.exit(0)
 
 
-def _create_local_s3_buckets(bucket_list=BUCKET_LIST):
+def _create_local_s3_buckets(bucket_list=None):
+    if bucket_list is None:
+        bucket_list = BUCKET_LIST
     success = True
     for bucket in bucket_list:
         success = min(success, _create_local_s3_bucket(bucket_name=bucket))

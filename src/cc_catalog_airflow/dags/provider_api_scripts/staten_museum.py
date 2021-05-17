@@ -43,7 +43,7 @@ def main():
             )
         if type(items) == list:
             if len(items) > 0:
-                image_count = _handle_items_data(
+                _handle_items_data(
                     items
                 )
                 offset += LIMIT
@@ -57,8 +57,10 @@ def main():
 
 def _get_query_param(
         offset=0,
-        default_query_param=DEFAULT_QUERY_PARAM
+        default_query_param=None
         ):
+    if default_query_param is None:
+        default_query_param = DEFAULT_QUERY_PARAM
     query_params = default_query_param.copy()
     query_params.update(
         offset=offset
@@ -69,9 +71,12 @@ def _get_query_param(
 def _get_batch_items(
         endpoint=ENDPOINT,
         query_params=None,
-        headers=HEADERS,
+        headers=None,
         retries=RETRIES
         ):
+    if headers is None:
+        headers = HEADERS
+    items = None
     for retry in range(retries):
         response = delay_request.get(
             endpoint,
@@ -212,8 +217,7 @@ def _get_title(titles):
 
 
 def _get_metadata(item):
-    meta_data = {}
-    meta_data["created_date"] = item.get("created")
+    meta_data = {"created_date": item.get("created")}
     collection = item.get("collection")
     if type(collection) == list:
         meta_data["collection"] = ','.join(collection)

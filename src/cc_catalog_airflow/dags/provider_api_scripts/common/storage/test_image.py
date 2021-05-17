@@ -282,9 +282,9 @@ def test_ImageStore_get_image_gets_source(
     monkeypatch.setattr(image.util, 'get_source', mock_get_source)
 
     actual_image = image_store._get_image(
-        license_url='https://license/url',
-        license_='license',
-        license_version='1.5',
+        license_url='https://creativecommons.org/licenses/by/4.0/',
+        license_='by',
+        license_version='4.0',
         foreign_landing_url=None,
         image_url=None,
         thumbnail_url=None,
@@ -309,8 +309,8 @@ def test_ImageStore_get_image_replaces_non_dict_meta_data_with_no_license_url(
 
     actual_image = image_store._get_image(
         license_url=None,
-        license_='license',
-        license_version='1.5',
+        license_='by',
+        license_version='4.0',
         foreign_landing_url=None,
         image_url=None,
         thumbnail_url=None,
@@ -326,7 +326,7 @@ def test_ImageStore_get_image_replaces_non_dict_meta_data_with_no_license_url(
         source=None,
     )
     assert actual_image.meta_data == {
-        'license_url': None, 'raw_license_url': None
+        'license_url': 'https://creativecommons.org/licenses/by/4.0/', 'raw_license_url': None
     }
 
 
@@ -347,8 +347,8 @@ def test_ImageStore_get_image_creates_meta_data_with_valid_license_url(
 
     actual_image = image_store._get_image(
         license_url=license_url,
-        license_='license',
-        license_version='1.5',
+        license_='by',
+        license_version='4.0',
         foreign_landing_url=None,
         image_url=None,
         thumbnail_url=None,
@@ -426,8 +426,8 @@ def test_ImageStore_get_image_fixes_invalid_license_url(
 
     actual_image = image_store._get_image(
         license_url=original_url,
-        license_='license',
-        license_version='1.5',
+        license_='by',
+        license_version='4.0',
         foreign_landing_url=None,
         image_url=None,
         thumbnail_url=None,
@@ -453,9 +453,9 @@ def test_ImageStore_get_image_enriches_singleton_tags(
     image_store = image.ImageStore('test_provider')
 
     actual_image = image_store._get_image(
-        license_url='https://license/url',
-        license_='license',
-        license_version='1.5',
+        license_url='https://creativecommons.org/licenses/by/4.0/',
+        license_='by',
+        license_version='4.0',
         foreign_landing_url=None,
         image_url=None,
         thumbnail_url=None,
@@ -491,9 +491,9 @@ def test_ImageStore_get_image_tag_blacklist(
     image_store = image.ImageStore('test_provider')
 
     actual_image = image_store._get_image(
-        license_url='https://license/url',
-        license_='license',
-        license_version='1.5',
+        license_url='https://creativecommons.org/licenses/by/4.0/',
+        license_='by',
+        license_version='4.0',
         foreign_landing_url=None,
         image_url=None,
         thumbnail_url=None,
@@ -519,9 +519,9 @@ def test_ImageStore_get_image_enriches_multiple_tags(
 ):
     image_store = image.ImageStore('test_provider')
     actual_image = image_store._get_image(
-        license_url='https://license/url',
-        license_='license',
-        license_version='1.5',
+        license_url='https://creativecommons.org/licenses/by/4.0/',
+        license_='by',
+        license_version='4.0',
         foreign_landing_url=None,
         image_url=None,
         thumbnail_url=None,
@@ -555,9 +555,9 @@ def test_ImageStore_get_image_leaves_preenriched_tags(
     ]
 
     actual_image = image_store._get_image(
-        license_url='https://license/url',
-        license_='license',
-        license_version='1.5',
+        license_url='https://creativecommons.org/licenses/by/4.0/',
+        license_='cc-by',
+        license_version='4.0',
         foreign_landing_url=None,
         image_url=None,
         thumbnail_url=None,
@@ -583,9 +583,9 @@ def test_ImageStore_get_image_nones_nonlist_tags(
     tags = 'notalist'
 
     actual_image = image_store._get_image(
-        license_url='https://license/url',
-        license_='license',
-        license_version='1.5',
+        license_url='https://creativecommons.org/licenses/by/4.0/',
+        license_='by',
+        license_version='4.0',
         foreign_landing_url=None,
         image_url=None,
         thumbnail_url=None,

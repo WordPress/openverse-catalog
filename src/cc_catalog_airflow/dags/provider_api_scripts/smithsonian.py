@@ -128,7 +128,7 @@ def main():
 
 def gather_samples(
         units_endpoint=UNITS_ENDPOINT,
-        default_params=DEFAULT_PARAMS,
+        default_params=None,
         target_dir='/tmp'
 ):
     """
@@ -139,6 +139,8 @@ def gather_samples(
 
     This function is for gathering test data only, and is untested.
     """
+    if default_params is None:
+        default_params = DEFAULT_PARAMS
     now_str = datetime.strftime(datetime.now(), '%Y%m%d%H%M%S')
     sample_dir = os.path.join(target_dir, f'si_samples_{now_str}')
     logger.info(f'Creating sample_dir {sample_dir}')
@@ -215,18 +217,21 @@ def _process_hash_prefix(
     while row_offset < total_rows:
         logger.debug(f'Row offset:  {row_offset}')
         query_params = _build_query_params(row_offset, hash_prefix=hash_prefix)
-        response_json = delayed_requester.get_response_json(
-            endpoint,
-            retries=retries,
-            query_params=query_params
-        )
-        if response_json is None:
-            logger.warning('response_json is None!  Continuing...')
-        else:
-            new_total = _process_response_json(response_json)
-            total_images = new_total if new_total is not None else total_images
-            logger.info(f'Total images so far:  {total_images}')
-            total_rows = response_json.get('response', {}).get('rowCount', 0)
+        try:
+            response_json = delayed_requester.get_response_json(
+                endpoint,
+                retries=retries,
+                query_params=query_params
+            )
+            if response_json is None:
+                logger.warning('response_json is None!  Continuing...')
+            else:
+                new_total = _process_response_json(response_json)
+                total_images = new_total if new_total is not None else total_images
+                logger.info(f'Total images so far:  {total_images}')
+                total_rows = response_json.get('response', {}).get('rowCount', 0)
+        except Exception:
+            break
         row_offset += limit
     return total_rows
 
@@ -234,9 +239,11 @@ def _process_hash_prefix(
 def _build_query_params(
         row_offset,
         hash_prefix=None,
-        default_params=DEFAULT_PARAMS,
+        default_params=None,
         unit_code=None
 ):
+    if default_params is None:
+        default_params = DEFAULT_PARAMS
     query_params = default_params.copy()
     query_string = 'online_media_type:Images AND media_usage:CC0'
     if hash_prefix is not None:
@@ -292,7 +299,9 @@ def _get_title(row):
     return row.get('title')
 
 
-def _get_creator(row, creator_types=CREATOR_TYPES):
+def _get_creator(row, creator_types=None):
+    if creator_types is None:
+        creator_types = CREATOR_TYPES
     freetext = _get_freetext_dict(row)
     indexed_structured = _get_indexed_structured_dict(row)
     ordered_freetext_creator_objects = sorted(
@@ -336,7 +345,9 @@ def _get_creator(row, creator_types=CREATOR_TYPES):
     return creator
 
 
-def _extract_meta_data(row, description_types=DESCRIPTION_TYPES):
+def _extract_meta_data(row, description_types=None):
+    if description_types is None:
+        description_types = DESCRIPTION_TYPES
     freetext = _get_freetext_dict(row)
     descriptive_non_repeating = _get_descriptive_non_repeating_dict(row)
     description = ''
@@ -373,7 +384,9 @@ def _extract_source(meta_data, sub_providers=SUB_PROVIDERS):
     return source
 
 
-def _extract_tags(row, tag_types=TAG_TYPES):
+def _extract_tags(row, tag_types=None):
+    if tag_types is None:
+        tag_types = TAG_TYPES
     indexed_structured = _get_indexed_structured_dict(row)
     tag_lists_generator = (
         _check_type(indexed_structured.get(key), list) for key in tag_types

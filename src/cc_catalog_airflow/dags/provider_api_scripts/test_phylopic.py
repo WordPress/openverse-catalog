@@ -37,14 +37,14 @@ def test_get_total_images_correct():
 
 
 def test_create_endpoint_for_IDs_by_date():
-    actual_endpoint = pp._create_endpoint_for_IDs(**{'date': '2020-02-10'})
+    actual_endpoint = pp._create_endpoint_for_ids(**{'date': '2020-02-10'})
     expect_endpoint = str('http://phylopic.org/api'
                           '/a/image/list/modified/2020-02-10')
     assert actual_endpoint == expect_endpoint
 
 
-def test_create_endpoint_for_IDs_all():
-    actual_endpoint = pp._create_endpoint_for_IDs(**{'offset': 0})
+def test_create_endpoint_for_ids_all():
+    actual_endpoint = pp._create_endpoint_for_ids(**{'offset': 0})
     expect_endpoint = 'http://phylopic.org/api/a/image/list/0/5'
     assert actual_endpoint == expect_endpoint
 
@@ -52,17 +52,17 @@ def test_create_endpoint_for_IDs_all():
 def test_get_image_IDs_for_no_content():
     with patch.object(pp.delayed_requester, 'get_response_json',
                       return_value=None):
-        image_ids = pp._get_image_IDs('')
+        image_ids = pp._get_image_ids('')
         expect_image_ids = [None]
         assert image_ids == expect_image_ids
 
 
-def test_get_img_IDs_correct():
+def test_get_img_ids_correct():
     with open(os.path.join(RESOURCES, 'image_ids_example.json')) as f:
         r = json.load(f)
     with patch.object(pp.delayed_requester, 'get_response_json',
                       return_value=r):
-        actual_img_ids = pp._get_image_IDs('')
+        actual_img_ids = pp._get_image_ids('')
         expect_img_ids = ["863694ac-9f36-40f5-9452-1b435337d9cc",
                           "329ff574-4bec-4f94-9dd6-9acfec2a6275",
                           "9c98ff56-8044-483e-b9f1-bf368e4f3322"

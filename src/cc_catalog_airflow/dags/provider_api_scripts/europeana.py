@@ -64,8 +64,6 @@ def main(date):
 
 def _get_pagewise(start_timestamp, end_timestamp):
     cursor = '*'
-    total_number_of_images = 0
-    images_stored = 0
 
     while cursor is not None:
         image_list, next_cursor, total_number_of_images = _get_image_list(
@@ -95,6 +93,8 @@ def _get_image_list(
         endpoint=ENDPOINT,
         max_tries=6  # one original try, plus 5 retries
 ):
+    image_list, next_cursor = None, None,
+    total_number_of_images, try_number = 0, 0
     for try_number in range(max_tries):
 
         query_param_dict = _build_query_param_dict(
@@ -124,9 +124,7 @@ def _get_image_list(
             and (image_list is None or next_cursor is None)
     ):
         logger.warning('No more tries remaining. Returning None types.')
-        return None, None, None
-    else:
-        return image_list, next_cursor, total_number_of_images
+    return image_list, next_cursor, total_number_of_images
 
 
 def _extract_response_json(response):
@@ -157,19 +155,18 @@ def _extract_image_list_from_json(response_json):
 
 
 def _process_image_list(image_list):
-    prev_total = 0
+    total_images, prev_total = 0, 0
     for image_data in image_list:
         total_images = _process_image_data(image_data)
-        if total_images is None:
+        if total_images == 0:
             total_images = prev_total
         else:
             prev_total = total_images
-
     return total_images
 
 
 def _process_image_data(image_data, sub_providers=SUB_PROVIDERS,
-                        provider=PROVIDER):
+                        provider=PROVIDER) -> int:
     logger.debug(f'Processing image data: {image_data}')
     license_url = _get_license_url(image_data.get('rights'))
     image_url = image_data.get('edmIsShownBy')[0]
@@ -203,9 +200,9 @@ def _process_image_data(image_data, sub_providers=SUB_PROVIDERS,
 def _get_license_url(license_field):
     if len(license_field) > 1:
         logger.warning('More than one license field found')
-    for license in license_field:
-        if 'creativecommons' in license:
-            return license
+    for license_ in license_field:
+        if 'creativecommons' in license_:
+            return license_
     return None
 
 
@@ -256,8 +253,10 @@ def _build_query_param_dict(
         end_timestamp,
         cursor,
         api_key=API_KEY,
-        default_query_param=DEFAULT_QUERY_PARAMS,
+        default_query_param=None,
 ):
+    if default_query_param is None:
+        default_query_param = DEFAULT_QUERY_PARAMS
     query_param_dict = default_query_param.copy()
     query_param_dict.update(
         wskey=api_key,

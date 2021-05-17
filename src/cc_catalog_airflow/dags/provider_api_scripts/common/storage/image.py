@@ -146,7 +146,7 @@ class ImageStore:
             raw_tags=None,
             watermarked='f',
             source=None
-    ):
+    ) -> int:
         """
         Add information for a single image to the ImageStore.
 
@@ -290,6 +290,8 @@ class ImageStore:
             license_=license_,
             license_version=license_version
         )
+        if valid_license_info.license is None:
+            return None
         source = util.get_source(source, self._PROVIDER)
         meta_data = self._enrich_meta_data(
             meta_data,
