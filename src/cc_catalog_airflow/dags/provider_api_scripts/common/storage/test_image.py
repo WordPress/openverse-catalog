@@ -3,7 +3,8 @@ import requests
 
 import pytest
 import tldextract
-
+import sys
+sys.path.insert(0, '/opt/project/src/cc_catalog_airflow/dags/provider_api_scripts')
 from common.storage import image
 
 logging.basicConfig(
@@ -80,7 +81,7 @@ def test_ImageStore_add_item_adds_realistic_image_to_buffer(
         image_url='https://images.org/image01.jpg',
         license_url=license_url,
     )
-    assert len(image_store._image_buffer) == 1
+    assert len(image_store._media_buffer) == 1
 
 
 def test_ImageStore_add_item_adds_multiple_images_to_buffer(
@@ -107,7 +108,7 @@ def test_ImageStore_add_item_adds_multiple_images_to_buffer(
         image_url='https://images.org/image04.jpg',
         license_url='https://creativecommons.org/publicdomain/zero/1.0/'
     )
-    assert len(image_store._image_buffer) == 4
+    assert len(image_store._media_buffer) == 4
 
 
 def test_ImageStore_add_item_flushes_buffer(
@@ -145,7 +146,7 @@ def test_ImageStore_add_item_flushes_buffer(
         image_url='https://images.org/image04.jpg',
         license_url='https://creativecommons.org/publicdomain/zero/1.0/'
     )
-    assert len(image_store._image_buffer) == 1
+    assert len(image_store._media_buffer) == 1
     with open(tmp_path_full) as f:
         lines = f.read().split('\n')
     assert len(lines) == 4  # recall the last '\n' will create an empty line.
@@ -173,7 +174,7 @@ def test_ImageStore_produces_correct_total_images(mock_rewriter, setup_env):
         image_url='https://images.org/image03.jpg',
         license_url='https://creativecommons.org/publicdomain/zero/1.0/'
     )
-    assert image_store.total_images == 3
+    assert image_store.total_items == 3
 
 
 def test_ImageStore_get_image_places_given_args(
@@ -203,10 +204,10 @@ def test_ImageStore_get_image_places_given_args(
     def mock_license_chooser(license_url, license_, license_version):
         return image.licenses.LicenseInfo(
             license_, license_version, license_url
-        )
+        ), license_url
     monkeypatch.setattr(
-        image.licenses,
-        'get_license_info',
+        image_store,
+        'get_valid_license_info',
         mock_license_chooser
     )
 
@@ -243,10 +244,10 @@ def test_ImageStore_get_image_calls_license_chooser(
     def mock_license_chooser(license_url, license_, license_version):
         return image.licenses.LicenseInfo(
             'diff_license', None, license_url
-        )
+        ), license_url
     monkeypatch.setattr(
-        image.licenses,
-        'get_license_info',
+        image_store,
+        'get_valid_license_info',
         mock_license_chooser
     )
 
@@ -333,17 +334,18 @@ def test_ImageStore_get_image_replaces_non_dict_meta_data_with_no_license_url(
 def test_ImageStore_get_image_creates_meta_data_with_valid_license_url(
         monkeypatch, setup_env
 ):
+    image_store = image.ImageStore()
+
     def mock_license_chooser(license_url, license_, license_version):
         return image.licenses.LicenseInfo(
             license_, license_version, license_url
-        )
+        ), license_url
     monkeypatch.setattr(
-        image.licenses,
-        'get_license_info',
+        image_store,
+        'get_valid_license_info',
         mock_license_chooser
     )
     license_url = 'https://my.license.url'
-    image_store = image.ImageStore()
 
     actual_image = image_store._get_image(
         license_url=license_url,
@@ -371,16 +373,17 @@ def test_ImageStore_get_image_creates_meta_data_with_valid_license_url(
 def test_ImageStore_get_image_adds_valid_license_url_to_dict_meta_data(
         monkeypatch, setup_env
 ):
+    image_store = image.ImageStore()
+
     def mock_license_chooser(license_url, license_, license_version):
         return image.licenses.LicenseInfo(
             license_, license_version, license_url
-        )
+        ), license_url
     monkeypatch.setattr(
-        image.licenses,
-        'get_license_info',
+        image_store,
+        'get_valid_license_info',
         mock_license_chooser
     )
-    image_store = image.ImageStore()
 
     actual_image = image_store._get_image(
         license_url='https://license/url',
@@ -410,19 +413,22 @@ def test_ImageStore_get_image_adds_valid_license_url_to_dict_meta_data(
 def test_ImageStore_get_image_fixes_invalid_license_url(
         monkeypatch, setup_env
 ):
+    image_store = image.ImageStore()
+
     original_url = 'https://license/url',
     updated_url = 'https://updatedurl.com'
 
     def mock_license_chooser(license_url, license_, license_version):
+
         return image.licenses.LicenseInfo(
             license_, license_version, updated_url
-        )
+        ), license_url
+
     monkeypatch.setattr(
-        image.licenses,
-        'get_license_info',
+        image_store,
+        'get_valid_license_info',
         mock_license_chooser
     )
-    image_store = image.ImageStore()
 
     actual_image = image_store._get_image(
         license_url=original_url,
