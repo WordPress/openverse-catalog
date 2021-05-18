@@ -23,7 +23,7 @@ AS $$
     temp_location = '/tmp/postgres_loading.tsv'
     s3_obj.download_file(temp_location)
     with open(temp_location) as f:
-        columns = '({})'.format(column_list) if column_list else ''
+        columns = f'({column_list})' if column_list else ''
         res = plpy.execute(
             'COPY {} {} FROM {} {};'.format(
                 table_name,
