@@ -40,32 +40,59 @@ def create_loading_table(
     media_prefix = ti.xcom_pull(task_ids='stage_oldest_tsv_file', key='media_type')
     load_table = _get_load_table_name(identifier, media_prefix)
     postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
-    postgres.run(
-        dedent(
-            f'''
-            CREATE TABLE public.{load_table} (
-              {col.FOREIGN_ID} character varying(3000),
-              {col.LANDING_URL} character varying(1000),
-              {col.DIRECT_URL} character varying(3000),
-              {col.THUMBNAIL} character varying(3000),
-              {col.WIDTH} integer,
-              {col.HEIGHT} integer,
-              {col.FILESIZE} integer,
-              {col.LICENSE} character varying(50),
-              {col.LICENSE_VERSION} character varying(25),
-              {col.CREATOR} character varying(2000),
-              {col.CREATOR_URL} character varying(2000),
-              {col.TITLE} character varying(5000),
-              {col.META_DATA} jsonb,
-              {col.TAGS} jsonb,
-              {col.WATERMARKED} boolean,
-              {col.PROVIDER} character varying(80),
-              {col.SOURCE} character varying(80),
-              {col.INGESTION_TYPE} character varying(80)
-            );
-            '''
+    if media_prefix == 'image':
+        postgres.run(
+            dedent(
+                f'''
+                CREATE TABLE public.{load_table} (
+                  {col.FOREIGN_ID} character varying(3000),
+                  {col.LANDING_URL} character varying(1000),
+                  {col.DIRECT_URL} character varying(3000),
+                  {col.THUMBNAIL} character varying(3000),
+                  {col.WIDTH} integer,
+                  {col.HEIGHT} integer,
+                  {col.FILESIZE} integer,
+                  {col.LICENSE} character varying(50),
+                  {col.LICENSE_VERSION} character varying(25),
+                  {col.CREATOR} character varying(2000),
+                  {col.CREATOR_URL} character varying(2000),
+                  {col.TITLE} character varying(5000),
+                  {col.META_DATA} jsonb,
+                  {col.TAGS} jsonb,
+                  {col.WATERMARKED} boolean,
+                  {col.PROVIDER} character varying(80),
+                  {col.SOURCE} character varying(80),
+                  {col.INGESTION_TYPE} character varying(80)
+                );
+                '''
+            )
         )
-    )
+    # TODO: elif media_type == 'audio'
+    else:
+        postgres.run(
+            dedent(
+                f'''
+                CREATE TABLE public.{load_table} (
+                  {col.FOREIGN_ID} character varying(3000),
+                  {col.LANDING_URL} character varying(1000),
+                  {col.DIRECT_URL} character varying(3000),
+                  {col.THUMBNAIL} character varying(3000),
+                  {col.DURATION} integer,
+                  {col.FILESIZE} integer,
+                  {col.LICENSE} character varying(50),
+                  {col.LICENSE_VERSION} character varying(25),
+                  {col.CREATOR} character varying(2000),
+                  {col.CREATOR_URL} character varying(2000),
+                  {col.TITLE} character varying(5000),
+                  {col.META_DATA} jsonb,
+                  {col.TAGS} jsonb,
+                  {col.PROVIDER} character varying(80),
+                  {col.SOURCE} character varying(80),
+                  {col.INGESTION_TYPE} character varying(80)
+                );
+                '''
+            )
+        )
     postgres.run(
         f'ALTER TABLE public.{load_table} OWNER TO {DB_USER_NAME};'
     )
@@ -424,8 +451,9 @@ def overwrite_records_in_audio_table(
     postgres.run(update_query)
 
 
-def drop_load_table(postgres_conn_id, identifier):
-    load_table = _get_load_table_name(identifier)
+def drop_load_table(postgres_conn_id, identifier, ti):
+    media_prefix = ti.xcom_pull(task_ids='stage_oldest_tsv_file', key='media_type')
+    load_table = _get_load_table_name(identifier, media_prefix)
     postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
     postgres.run(f'DROP TABLE {load_table};')
 
