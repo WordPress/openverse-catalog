@@ -5,6 +5,10 @@ PostgreSQL.
 """
 import logging
 import os
+
+from provider_api_scripts.common.storage.audio import AUDIO_TSV_COLUMNS
+from provider_api_scripts.common.storage.image import IMAGE_TSV_COLUMNS
+
 logger = logging.getLogger(__name__)
 
 
@@ -16,8 +20,11 @@ def check_and_fix_tsv_file(tsv_file_name):
 
     It will also log a warning if the number is completely wrong.
     """
-    logger.info(f'Checking for ingestion_type column in {tsv_file_name}')
-    old_cols_number = 17
+    media_type = tsv_file_name.split('/')[-1].split('_')[1]
+    if media_type == 'audio':
+        old_cols_number = len(AUDIO_TSV_COLUMNS)
+    else:
+        old_cols_number = len(IMAGE_TSV_COLUMNS)
     new_cols_number = old_cols_number + 1
     with open(tsv_file_name) as f:
         test_line = f.readline()
