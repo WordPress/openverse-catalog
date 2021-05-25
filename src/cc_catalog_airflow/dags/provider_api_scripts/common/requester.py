@@ -41,11 +41,10 @@ class DelayedRequester:
         try:
             response = requests.get(url, params=params, **kwargs)
             if response.status_code == requests.codes.ok:
-                logger.info(f'Received response from url {response.url}')
                 return response
             else:
                 logger.warning(
-                    f'Unable to request URL: {response.url}.  '
+                    f'Unable to request URL: {url}.  '
                     f'Status code: {response.status_code}'
                 )
                 return response
