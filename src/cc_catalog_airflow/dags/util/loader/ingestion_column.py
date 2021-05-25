@@ -22,14 +22,17 @@ def check_and_fix_tsv_file(tsv_file_name):
     """
     media_type = tsv_file_name.split('/')[-1].split('_')[1]
     if media_type == 'audio':
-        old_cols_number = len(AUDIO_TSV_COLUMNS)
+        old_cols_number = len(AUDIO_TSV_COLUMNS) - 1
     else:
-        old_cols_number = len(IMAGE_TSV_COLUMNS)
+        old_cols_number = len(IMAGE_TSV_COLUMNS) - 1
     new_cols_number = old_cols_number + 1
     with open(tsv_file_name) as f:
         test_line = f.readline()
     line_list = [word.strip() for word in test_line.split('\t')]
     if len(line_list) == old_cols_number:
+        # Previously, the last column was 'source'
+        # If source is 'commoncrawl', we set the ingestion_type to
+        # 'commoncrawl', else to 'provider_api'
         _add_ingestion_type(tsv_file_name, line_list[-1])
     elif len(line_list) == new_cols_number:
         logger.info(

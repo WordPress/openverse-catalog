@@ -61,7 +61,10 @@ IMAGE_TSV_COLUMNS = [
     ),
     columns.StringColumn(
         name='source', required=False, size=80, truncate=False
-    )
+    ),
+    columns.StringColumn(
+        name="ingestion_type", required=False, size=80, truncate=False
+    ),
 ]
 
 Image = namedtuple(
@@ -95,7 +98,6 @@ class ImageStore(MediaStore):
         super().__init__(provider, output_file, output_dir, buffer_length, media_type)
         self.columns = tsv_columns if tsv_columns is not None else IMAGE_TSV_COLUMNS
 
-
     def add_item(
             self,
             foreign_landing_url=None,
@@ -113,7 +115,8 @@ class ImageStore(MediaStore):
             meta_data=None,
             raw_tags=None,
             watermarked='f',
-            source=None
+            source=None,
+            ingestion_type='provider_api'
     ):
         """
         Add information for a single image to the ImageStore.
@@ -168,6 +171,9 @@ class ImageStore(MediaStore):
                              and the `provider` argument in the
                              ImageStore init function is the specific
                              provider of the image.
+        ingestion_type:      String showing how the image was ingested:
+                             through an api - 'provider_api' or using the
+                             commoncrawl database - 'commoncrawl'
         """
         image = self._get_image(
             foreign_landing_url=foreign_landing_url,
@@ -185,7 +191,8 @@ class ImageStore(MediaStore):
             meta_data=meta_data,
             raw_tags=raw_tags,
             watermarked=watermarked,
-            source=source
+            source=source,
+            ingestion_type=ingestion_type
         )
         self.save_item(image)
         return self._total_items
@@ -208,6 +215,7 @@ class ImageStore(MediaStore):
             raw_tags,
             watermarked,
             source,
+            ingestion_type
     ):
         valid_license_info, raw_license_url = \
             self.get_valid_license_info(license_url, license_, license_version)
@@ -236,7 +244,8 @@ class ImageStore(MediaStore):
             tags=tags,
             watermarked=watermarked,
             provider=self._PROVIDER,
-            source=source
+            source=source,
+            ingestion_type=ingestion_type
         )
 
 

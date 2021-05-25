@@ -1,5 +1,5 @@
 """
-This file holds string constants for the column names in the image
+This file holds string constants for the column names in the media
 database, as well as the loading tables in the PostgreSQL DB.
 """
 IDENTIFIER = 'identifier'

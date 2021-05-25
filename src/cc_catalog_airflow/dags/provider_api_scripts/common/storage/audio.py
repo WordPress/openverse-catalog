@@ -40,6 +40,7 @@ AUDIO_TSV_COLUMNS = [
     columns.JSONColumn(name="tags", required=False),
     columns.StringColumn(name="provider", required=False, size=80, truncate=False),
     columns.StringColumn(name="source", required=False, size=80, truncate=False),
+    columns.StringColumn(name="ingestion_type", required=False, size=80, truncate=False)
 ]
 
 Audio = namedtuple("Audio", [c.NAME for c in AUDIO_TSV_COLUMNS])
