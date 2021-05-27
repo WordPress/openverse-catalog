@@ -187,7 +187,8 @@ class ImageStore(MediaStore):
             watermarked=watermarked,
             source=source
         )
-        self.save_item(image)
+        if image is not None:
+            self.save_item(image)
         return self._total_items
 
     def _get_image(
@@ -211,6 +212,8 @@ class ImageStore(MediaStore):
     ):
         valid_license_info, raw_license_url = \
             self.get_valid_license_info(license_url, license_, license_version)
+        if valid_license_info.license is None:
+            return None
         source, meta_data, tags = self.parse_item_metadata(
             valid_license_info.url,
             raw_license_url,
