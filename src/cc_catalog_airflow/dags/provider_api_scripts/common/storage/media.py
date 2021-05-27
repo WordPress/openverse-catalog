@@ -1,48 +1,15 @@
-from collections import namedtuple
+import abc
+import collections
 from datetime import datetime
 import logging
 import os
+from typing import Optional, Union
 
-from common.storage import util
-from common.storage import columns
+from provider_api_scripts.common.storage import util
 
 from provider_api_scripts.common.licenses import licenses
 
 logger = logging.getLogger(__name__)
-
-MEDIA_TSV_COLUMNS = [
-    # The order of this list maps to the order of the columns in the TSV.
-    columns.StringColumn(
-        name="foreign_identifier", required=False, size=3000, truncate=False
-    ),
-    columns.URLColumn(name="foreign_landing_url", required=True, size=1000),
-    columns.URLColumn(
-        # `url` in DB
-        name="image_url",
-        required=True,
-        size=3000,
-    ),
-    columns.URLColumn(
-        # `thumbnail` in DB
-        name="thumbnail_url",
-        required=False,
-        size=3000,
-    ),
-    columns.IntegerColumn(name="filesize", required=False),
-    columns.StringColumn(name="license_", required=True, size=50, truncate=False),
-    columns.StringColumn(
-        name="license_version", required=True, size=25, truncate=False
-    ),
-    columns.StringColumn(name="creator", required=False, size=2000, truncate=True),
-    columns.URLColumn(name="creator_url", required=False, size=2000),
-    columns.StringColumn(name="title", required=False, size=5000, truncate=True),
-    columns.JSONColumn(name="meta_data", required=False),
-    columns.JSONColumn(name="tags", required=False),
-    columns.StringColumn(name="provider", required=False, size=80, truncate=False),
-    columns.StringColumn(name="source", required=False, size=80, truncate=False),
-]
-
-Media = namedtuple("Media", [c.NAME for c in MEDIA_TSV_COLUMNS])
 
 # Filter out tags that exactly match these terms. All terms should be
 # lowercase.
@@ -66,9 +33,9 @@ TAG_CONTAINS_BLACKLIST = {
 }
 
 
-class MediaStore:
+class MediaStore(metaclass=abc.ABCMeta):
     """
-    A class that stores media information from a given provider.
+    An abstract base class that stores media information from a given provider.
 
     Optional init arguments:
     provider:       String marking the provider in the `media`(`image`, `audio` etc) table of the DB.
@@ -81,11 +48,11 @@ class MediaStore:
 
     def __init__(
         self,
-        provider=None,
-        output_file=None,
-        output_dir=None,
-        buffer_length=100,
-        media_type="generic",
+        provider: Optional[str] = None,
+        output_file: Optional[str] = None,
+        output_dir: Optional[str] = None,
+        buffer_length: int = 100,
+        media_type: Optional[str] = "generic",
     ):
         logger.info(f"Initialized {media_type} media store with provider {provider}")
         self.media_type = media_type
@@ -101,13 +68,20 @@ class MediaStore:
         )
         self.columns = None
 
-    def save_item(self, media) -> None:
+    def save_item(self, media: collections.namedtuple) -> None:
         tsv_row = self._create_tsv_row(media)
         if tsv_row:
             self._media_buffer.append(tsv_row)
             self._total_items += 1
         if len(self._media_buffer) >= self._BUFFER_LENGTH:
             self._flush_buffer()
+
+    @abc.abstractmethod
+    def add_item(self, **kwargs):
+        """
+        Abstract class to add media to be implemented by the ImageStore and AudioStore
+        """
+        pass
 
     @staticmethod
     def get_valid_license_info(
@@ -146,18 +120,17 @@ class MediaStore:
     def commit(self):
         """Writes all remaining media items in the buffer to disk."""
         self._flush_buffer()
-
         return self.total_items
 
-    def _initialize_output_path(self, output_dir, output_file, provider):
+    def _initialize_output_path(self, output_dir, output_file, provider) -> str:
         if output_dir is None:
             logger.info(
-                "No given output directory.  " "Using OUTPUT_DIR from environment."
+                "No given output directory. Using OUTPUT_DIR from environment."
             )
             output_dir = os.getenv("OUTPUT_DIR")
         if output_dir is None:
             logger.warning(
-                "OUTPUT_DIR is not set in the environment.  " "Output will go to /tmp."
+                "OUTPUT_DIR is not set in the environment. Output will go to /tmp."
             )
             output_dir = "/tmp"
 
@@ -173,26 +146,23 @@ class MediaStore:
         logger.info(f"Output path: {output_path}")
         return output_path
 
-    """Get total items for directly using in scripts."""
     @property
     def total_items(self):
+        """Get total items for directly using in scripts."""
         return self._total_items
 
     def _create_tsv_row(
         self,
-        item,
-        columns=None
+        item
     ):
-        if columns is None:
-            columns = self.columns if self.columns is not None else MEDIA_TSV_COLUMNS
         row_length = len(self.columns)
         prepared_strings = [
-            columns[i].prepare_string(item[i]) for i in range(row_length)
+            self.columns[i].prepare_string(item[i]) for i in range(row_length)
         ]
         logger.debug(f"Prepared strings list:\n{prepared_strings}")
         for i in range(row_length):
-            if columns[i].REQUIRED and prepared_strings[i] is None:
-                logger.warning(f"Row missing required {columns[i].NAME}")
+            if self.columns[i].REQUIRED and prepared_strings[i] is None:
+                logger.warning(f"Row missing required {self.columns[i].NAME}")
                 return None
         else:
             return (
@@ -200,7 +170,7 @@ class MediaStore:
                 + "\n"
             )
 
-    def _flush_buffer(self):
+    def _flush_buffer(self) -> int:
         buffer_length = len(self._media_buffer)
         if buffer_length > 0:
             logger.info(f"Writing {buffer_length} lines from buffer to disk.")
@@ -213,7 +183,7 @@ class MediaStore:
         return buffer_length
 
     @staticmethod
-    def _tag_blacklisted(tag):
+    def _tag_blacklisted(tag: Union[str, dict]) -> bool:
         """
         Tag is banned or contains a banned substring.
         :param tag: the tag to be verified against the blacklist
@@ -229,7 +199,7 @@ class MediaStore:
         return False
 
     @staticmethod
-    def _enrich_meta_data(meta_data, license_url, raw_license_url):
+    def _enrich_meta_data(meta_data, license_url, raw_license_url) -> dict:
         if type(meta_data) != dict:
             logger.debug(f"`meta_data` is not a dictionary: {meta_data}")
             enriched_meta_data = {
@@ -243,7 +213,7 @@ class MediaStore:
             )
         return enriched_meta_data
 
-    def _enrich_tags(self, raw_tags):
+    def _enrich_tags(self, raw_tags) -> Optional[list]:
         if type(raw_tags) != list:
             logger.debug("`tags` is not a list.")
             return None
