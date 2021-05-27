@@ -3,9 +3,11 @@ import requests
 
 import pytest
 import tldextract
-import sys
-sys.path.insert(0, '/opt/project/src/cc_catalog_airflow/dags/provider_api_scripts')
+
+from common.licenses import licenses
 from common.storage import image
+from common.storage import util
+
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s:  %(message)s',
@@ -14,7 +16,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # This avoids needing the internet for testing.
-image.licenses.urls.tldextract.extract = tldextract.TLDExtract(
+licenses.urls.tldextract.extract = tldextract.TLDExtract(
     suffix_list_urls=None
 )
 image.columns.urls.tldextract.extract = tldextract.TLDExtract(
@@ -32,7 +34,7 @@ def mock_rewriter(monkeypatch):
     def mock_rewrite_redirected_url(url_string):
         return url_string
     monkeypatch.setattr(
-        image.licenses.urls,
+        licenses.urls,
         'rewrite_redirected_url',
         mock_rewrite_redirected_url,
     )
@@ -42,7 +44,7 @@ def mock_rewriter(monkeypatch):
 def get_good(monkeypatch):
     def mock_get(url, timeout=60):
         return requests.Response()
-    monkeypatch.setattr(image.licenses.urls.requests, 'get', mock_get)
+    monkeypatch.setattr(licenses.urls.requests, 'get', mock_get)
 
 
 def test_ImageStore_uses_OUTPUT_DIR_variable(
@@ -185,7 +187,7 @@ def test_ImageStore_get_image_places_given_args(
     args_dict = {
         'foreign_landing_url': 'https://landing_page.com',
         'image_url': 'http://imageurl.com',
-        'license_': 'testlicense',
+        'license_': 'by-nc',
         'license_version': '1.0',
         'license_url': None,
         'foreign_identifier': 'foreign_id',
@@ -202,7 +204,7 @@ def test_ImageStore_get_image_places_given_args(
     }
 
     def mock_license_chooser(license_url, license_, license_version):
-        return image.licenses.LicenseInfo(
+        return licenses.LicenseInfo(
             license_, license_version, license_url
         ), license_url
     monkeypatch.setattr(
@@ -214,7 +216,7 @@ def test_ImageStore_get_image_places_given_args(
     def mock_get_source(source, provider):
         return source
     monkeypatch.setattr(
-        image.util,
+        util,
         'get_source',
         mock_get_source
     )
@@ -242,7 +244,7 @@ def test_ImageStore_get_image_calls_license_chooser(
     image_store = image.ImageStore()
 
     def mock_license_chooser(license_url, license_, license_version):
-        return image.licenses.LicenseInfo(
+        return licenses.LicenseInfo(
             'diff_license', None, license_url
         ), license_url
     monkeypatch.setattr(
@@ -272,6 +274,33 @@ def test_ImageStore_get_image_calls_license_chooser(
     assert actual_image.license_ == 'diff_license'
 
 
+def test_ImageStore_returns_None_when_license_is_invalid(
+        monkeypatch,
+        setup_env,
+):
+    image_store = image.ImageStore()
+
+    actual_image = image_store._get_image(
+        license_url='https://license/url',
+        license_='license',
+        license_version='1.5',
+        foreign_landing_url=None,
+        image_url=None,
+        thumbnail_url=None,
+        foreign_identifier=None,
+        width=None,
+        height=None,
+        creator=None,
+        creator_url=None,
+        title=None,
+        meta_data=None,
+        raw_tags=None,
+        watermarked=None,
+        source=None,
+    )
+    assert actual_image is None
+
+
 def test_ImageStore_get_image_gets_source(
         monkeypatch,
         setup_env,
@@ -280,12 +309,12 @@ def test_ImageStore_get_image_gets_source(
 
     def mock_get_source(source, provider):
         return 'diff_source'
-    monkeypatch.setattr(image.util, 'get_source', mock_get_source)
+    monkeypatch.setattr(util, 'get_source', mock_get_source)
 
     actual_image = image_store._get_image(
         license_url='https://license/url',
-        license_='license',
-        license_version='1.5',
+        license_='by',
+        license_version='4.0',
         foreign_landing_url=None,
         image_url=None,
         thumbnail_url=None,
@@ -310,8 +339,8 @@ def test_ImageStore_get_image_replaces_non_dict_meta_data_with_no_license_url(
 
     actual_image = image_store._get_image(
         license_url=None,
-        license_='license',
-        license_version='1.5',
+        license_='by-nc-nd',
+        license_version='4.0',
         foreign_landing_url=None,
         image_url=None,
         thumbnail_url=None,
@@ -327,7 +356,7 @@ def test_ImageStore_get_image_replaces_non_dict_meta_data_with_no_license_url(
         source=None,
     )
     assert actual_image.meta_data == {
-        'license_url': None, 'raw_license_url': None
+        'license_url': 'https://creativecommons.org/licenses/by-nc-nd/4.0/', 'raw_license_url': None
     }
 
 
@@ -337,7 +366,7 @@ def test_ImageStore_get_image_creates_meta_data_with_valid_license_url(
     image_store = image.ImageStore()
 
     def mock_license_chooser(license_url, license_, license_version):
-        return image.licenses.LicenseInfo(
+        return licenses.LicenseInfo(
             license_, license_version, license_url
         ), license_url
     monkeypatch.setattr(
@@ -376,7 +405,7 @@ def test_ImageStore_get_image_adds_valid_license_url_to_dict_meta_data(
     image_store = image.ImageStore()
 
     def mock_license_chooser(license_url, license_, license_version):
-        return image.licenses.LicenseInfo(
+        return licenses.LicenseInfo(
             license_, license_version, license_url
         ), license_url
     monkeypatch.setattr(
@@ -420,7 +449,7 @@ def test_ImageStore_get_image_fixes_invalid_license_url(
 
     def mock_license_chooser(license_url, license_, license_version):
 
-        return image.licenses.LicenseInfo(
+        return licenses.LicenseInfo(
             license_, license_version, updated_url
         ), license_url
 
@@ -460,8 +489,8 @@ def test_ImageStore_get_image_enriches_singleton_tags(
 
     actual_image = image_store._get_image(
         license_url='https://license/url',
-        license_='license',
-        license_version='1.5',
+        license_='by-sa',
+        license_version='4.0',
         foreign_landing_url=None,
         image_url=None,
         thumbnail_url=None,
@@ -498,8 +527,8 @@ def test_ImageStore_get_image_tag_blacklist(
 
     actual_image = image_store._get_image(
         license_url='https://license/url',
-        license_='license',
-        license_version='1.5',
+        license_='by',
+        license_version='4.0',
         foreign_landing_url=None,
         image_url=None,
         thumbnail_url=None,
@@ -526,8 +555,8 @@ def test_ImageStore_get_image_enriches_multiple_tags(
     image_store = image.ImageStore('test_provider')
     actual_image = image_store._get_image(
         license_url='https://license/url',
-        license_='license',
-        license_version='1.5',
+        license_='by',
+        license_version='4.0',
         foreign_landing_url=None,
         image_url=None,
         thumbnail_url=None,
@@ -562,8 +591,8 @@ def test_ImageStore_get_image_leaves_preenriched_tags(
 
     actual_image = image_store._get_image(
         license_url='https://license/url',
-        license_='license',
-        license_version='1.5',
+        license_='by',
+        license_version='4.0',
         foreign_landing_url=None,
         image_url=None,
         thumbnail_url=None,
@@ -590,8 +619,8 @@ def test_ImageStore_get_image_nones_nonlist_tags(
 
     actual_image = image_store._get_image(
         license_url='https://license/url',
-        license_='license',
-        license_version='1.5',
+        license_='by',
+        license_version='4.0',
         foreign_landing_url=None,
         image_url=None,
         thumbnail_url=None,
