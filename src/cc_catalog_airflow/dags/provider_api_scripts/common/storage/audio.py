@@ -151,7 +151,7 @@ class AudioStore(MediaStore):
             title=title,
             meta_data=meta_data,
             raw_tags=raw_tags,
-            source=source
+            source=source,
         )
         self.save_item(audio)
         return self._total_items
@@ -187,8 +187,8 @@ class AudioStore(MediaStore):
             foreign_landing_url=foreign_landing_url,
             audio_url=audio_url,
             thumbnail_url=thumbnail_url,
-            license_=license_info.license,
-            license_version=license_info.version,
+            license_=valid_license_info.license,
+            license_version=valid_license_info.version,
             filesize=None,
             creator=creator,
             creator_url=creator_url,
