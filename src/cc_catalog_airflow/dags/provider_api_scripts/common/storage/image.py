@@ -1,5 +1,6 @@
 from collections import namedtuple
 import logging
+from typing import Optional
 
 from common.storage import columns
 
@@ -95,16 +96,15 @@ class ImageStore(MediaStore):
         super().__init__(provider, output_file, output_dir, buffer_length, media_type)
         self.columns = tsv_columns if tsv_columns is not None else IMAGE_TSV_COLUMNS
 
-
     def add_item(
             self,
-            foreign_landing_url=None,
-            image_url=None,
-            thumbnail_url=None,
-            license_url=None,
-            license_=None,
-            license_version=None,
-            foreign_identifier=None,
+            foreign_landing_url: str,
+            image_url: str,
+            thumbnail_url: Optional[str] = None,
+            license_url: Optional[str] = None,
+            license_: Optional[str] = None,
+            license_version: Optional[str] = None,
+            foreign_identifier: Optional[str] = None,
             width=None,
             height=None,
             creator=None,
@@ -113,19 +113,17 @@ class ImageStore(MediaStore):
             meta_data=None,
             raw_tags=None,
             watermarked='f',
-            source=None
+            source: Optional[str] = None
     ):
         """
         Add information for a single image to the ImageStore.
 
         Required Arguments:
-
         foreign_landing_url:  URL of page where the image lives on the
                               source website.
         image_url:            Direct link to the image file
 
         Semi-Required Arguments
-
         license_url:      URL of the license for the image on the
                           Creative Commons website.
         license_:         String representation of a Creative Commons
@@ -142,7 +140,6 @@ class ImageStore(MediaStore):
         image data will be discarded.
 
         Optional Arguments:
-
         thumbnail_url:       Direct link to a thumbnail-sized version of
                              the image
         foreign_identifier:  Unique identifier for the image on the
