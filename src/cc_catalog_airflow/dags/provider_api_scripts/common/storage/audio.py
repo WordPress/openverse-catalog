@@ -151,9 +151,10 @@ class AudioStore(MediaStore):
             title=title,
             meta_data=meta_data,
             raw_tags=raw_tags,
-            source=source
+            source=source,
         )
-        self.save_item(audio)
+        if audio is not None:
+            self.save_item(audio)
         return self._total_items
 
     def _get_audio(
