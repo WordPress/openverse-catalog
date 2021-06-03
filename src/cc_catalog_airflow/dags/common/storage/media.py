@@ -1,5 +1,4 @@
 import abc
-import collections
 from datetime import datetime
 import logging
 import os
@@ -37,7 +36,8 @@ class MediaStore(metaclass=abc.ABCMeta):
     An abstract base class that stores media information from a given provider.
 
     Optional init arguments:
-    provider:       String marking the provider in the `media`(`image`, `audio` etc) table of the DB.
+    provider:       String marking the provider in the `media`
+                    (`image`, `audio` etc) table of the DB.
     output_file:    String giving a temporary .tsv filename (*not* the
                     full path) where the media info should be stored.
     output_dir:     String giving a path where `output_file` should be placed.
@@ -53,7 +53,8 @@ class MediaStore(metaclass=abc.ABCMeta):
         buffer_length: int = 100,
         media_type: Optional[str] = "generic",
     ):
-        logger.info(f"Initialized {media_type} media store with provider {provider}")
+        logger.info(f"Initialized {media_type} MediaStore"
+                    f" with provider {provider}")
         self.media_type = media_type
         self._media_buffer = []
         self._total_items = 0
@@ -67,7 +68,7 @@ class MediaStore(metaclass=abc.ABCMeta):
         )
         self.columns = None
 
-    def save_item(self, media: collections.namedtuple) -> None:
+    def save_item(self, media) -> None:
         """
         Appends item data to the buffer as a tsv row if data is valid.
         Doesn't do anything if data isn't valid.
@@ -100,6 +101,9 @@ class MediaStore(metaclass=abc.ABCMeta):
         else:
             raw_license_url = None
         return valid_license_info, raw_license_url
+
+    def get_source(self, source):
+        return util.get_source(source, self._PROVIDER)
 
     def parse_item_metadata(
         self,
@@ -165,7 +169,9 @@ class MediaStore(metaclass=abc.ABCMeta):
                 return None
         else:
             return (
-                "\t".join([s if s is not None else "\\N" for s in prepared_strings])
+                "\t".join(
+                    [s if s is not None else "\\N"
+                     for s in prepared_strings])
                 + "\n"
             )
 
@@ -200,7 +206,12 @@ class MediaStore(metaclass=abc.ABCMeta):
         return False
 
     @staticmethod
-    def _enrich_meta_data(meta_data, license_url, raw_license_url) -> dict:
+    def _enrich_meta_data(
+            meta_data, license_url, raw_license_url) -> dict:
+        """
+        Makes sure that meta_data is a dictionary, and contains
+        license_url and raw_license_url
+        """
         if type(meta_data) != dict:
             logger.debug(f"`meta_data` is not a dictionary: {meta_data}")
             enriched_meta_data = {
@@ -215,6 +226,15 @@ class MediaStore(metaclass=abc.ABCMeta):
         return enriched_meta_data
 
     def _enrich_tags(self, raw_tags) -> Optional[list]:
+        """Takes a list of tags and adds provider information to them
+
+        Args:
+            raw_tags: List of strings or dictionaries
+
+        Returns:
+            A list of 'enriched' tags:
+            {"name": "tag_name", "provider": self._PROVIDER}
+        """
         if type(raw_tags) != list:
             logger.debug("`tags` is not a list.")
             return None

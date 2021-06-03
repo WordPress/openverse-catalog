@@ -1,4 +1,6 @@
 import logging
+from unittest.mock import patch
+
 import requests
 
 import pytest
@@ -186,12 +188,12 @@ def test_ImageStore_get_image_places_given_args(
     image_store = image.ImageStore(provider='testing_provider')
     args_dict = {
         'foreign_landing_url': 'https://landing_page.com',
-        'image_url': 'http://imageurl.com',
+        'image_url': 'https://imageurl.com',
         'license_': 'testlicense',
         'license_version': '1.0',
         'license_url': None,
         'foreign_identifier': 'foreign_id',
-        'thumbnail_url': 'http://thumbnail.com',
+        'thumbnail_url': 'https://thumbnail.com',
         'width': 200,
         'height': 500,
         'creator': 'tyler',
@@ -238,7 +240,7 @@ def test_ImageStore_get_image_places_given_args(
     assert actual_image == image.Image(**args_dict)
 
 
-def test_ImageStore_get_image_calls_license_chooser(
+def test_ImageStore_add_item_calls_license_chooser(
         monkeypatch,
         setup_env,
 ):
@@ -254,12 +256,54 @@ def test_ImageStore_get_image_calls_license_chooser(
         mock_license_chooser
     )
 
-    actual_image = image_store._get_image(
+    def item_saver(arg):
+        return arg
+
+    with patch.object(
+            image_store,
+            'save_item',
+            side_effect=item_saver) as mock_save:
+        with patch.object(
+                image_store,
+                'get_valid_license_info',
+                mock_license_chooser):
+            image_store.add_item(
+                license_url='https://license/url',
+                license_='license',
+                license_version='1.5',
+                foreign_landing_url='',
+                image_url='',
+                thumbnail_url=None,
+                foreign_identifier=None,
+                width=None,
+                height=None,
+                creator=None,
+                creator_url=None,
+                title=None,
+                meta_data=None,
+                raw_tags=None,
+                watermarked=None,
+                source=None,
+            )
+            actual_image = mock_save.call_args[0][0]
+
+            assert actual_image.license_ == 'diff_license'
+            assert actual_image.meta_data['license_url'] == 'https://license/url'
+            assert mock_save.call_count == 1
+
+
+def test_ImageStore_returns_None_when_license_is_None(
+        monkeypatch,
+        setup_env,
+):
+    image_store = image.ImageStore()
+
+    actual_image = image_store.add_item(
         license_url='https://license/url',
-        license_='license',
+        license_=None,
         license_version='1.5',
-        foreign_landing_url=None,
-        image_url=None,
+        foreign_landing_url='',
+        image_url='',
         thumbnail_url=None,
         foreign_identifier=None,
         width=None,
@@ -272,7 +316,7 @@ def test_ImageStore_get_image_calls_license_chooser(
         watermarked=None,
         source=None,
     )
-    assert actual_image.license_ == 'diff_license'
+    assert actual_image is None
 
 
 def test_ImageStore_returns_None_when_license_is_invalid(
@@ -310,6 +354,7 @@ def test_ImageStore_get_image_gets_source(
 
     def mock_get_source(source, provider):
         return 'diff_source'
+
     monkeypatch.setattr(util, 'get_source', mock_get_source)
 
     actual_image = image_store._get_image(
@@ -333,36 +378,44 @@ def test_ImageStore_get_image_gets_source(
     assert actual_image.source == 'diff_source'
 
 
-def test_ImageStore_get_image_replaces_non_dict_meta_data_with_no_license_url(
+def test_ImageStore_add_image_replaces_non_dict_meta_data_with_no_license_url(
         setup_env,
 ):
     image_store = image.ImageStore()
 
-    actual_image = image_store._get_image(
-        license_url=None,
-        license_='by-nc-nd',
-        license_version='4.0',
-        foreign_landing_url=None,
-        image_url=None,
-        thumbnail_url=None,
-        foreign_identifier=None,
-        width=None,
-        height=None,
-        creator=None,
-        creator_url=None,
-        title=None,
-        meta_data='notadict',
-        raw_tags=None,
-        watermarked=None,
-        source=None,
-    )
+    def item_saver(arg):
+        pass
+
+    with patch.object(
+            image_store,
+            'save_item',
+            side_effect=item_saver) as mock_save:
+        image_store.add_item(
+            license_url=None,
+            license_='by-nc-nd',
+            license_version='4.0',
+            foreign_landing_url='',
+            image_url='',
+            thumbnail_url=None,
+            foreign_identifier=None,
+            width=None,
+            height=None,
+            creator=None,
+            creator_url=None,
+            title=None,
+            meta_data='notadict',
+            raw_tags=None,
+            watermarked=None,
+            source=None,
+        )
+    actual_image = mock_save.call_args[0][0]
     assert actual_image.meta_data == {
         'license_url': 'https://creativecommons.org/licenses/by-nc-nd/4.0/',
         'raw_license_url': None,
     }
 
 
-def test_ImageStore_get_image_creates_meta_data_with_valid_license_url(
+def test_ImageStore_add_item_creates_meta_data_with_valid_license_url(
         monkeypatch, setup_env
 ):
     image_store = image.ImageStore()
@@ -373,91 +426,117 @@ def test_ImageStore_get_image_creates_meta_data_with_valid_license_url(
     monkeypatch.setattr(image_store, 'get_valid_license_info', mock_license_chooser)
     license_url = "https://my.license.url"
 
-    actual_image = image_store._get_image(
-        license_url=license_url,
-        license_='license',
-        license_version='1.5',
-        foreign_landing_url=None,
-        image_url=None,
-        thumbnail_url=None,
-        foreign_identifier=None,
-        width=None,
-        height=None,
-        creator=None,
-        creator_url=None,
-        title=None,
-        meta_data=None,
-        raw_tags=None,
-        watermarked=None,
-        source=None,
-    )
-    assert actual_image.meta_data == {
-        'license_url': license_url, 'raw_license_url': license_url
-    }
+    def item_saver(arg):
+        pass
+
+    with patch.object(
+            image_store,
+            'save_item',
+            side_effect=item_saver) as mock_save:
+        image_store.add_item(
+            license_url=license_url,
+            license_='license',
+            license_version='1.5',
+            foreign_landing_url='',
+            image_url='',
+            thumbnail_url=None,
+            foreign_identifier=None,
+            width=None,
+            height=None,
+            creator=None,
+            creator_url=None,
+            title=None,
+            meta_data=None,
+            raw_tags=None,
+            watermarked=None,
+            source=None,
+        )
+        actual_image = mock_save.call_args[0][0]
+
+        assert actual_image.meta_data == {
+            'license_url': license_url, 'raw_license_url': license_url
+        }
 
 
-def test_ImageStore_get_image_adds_valid_license_url_to_dict_meta_data(
+def test_ImageStore_add_item_adds_valid_license_url_to_dict_meta_data(
         monkeypatch, setup_env
 ):
     image_store = image.ImageStore()
 
-    actual_image = image_store._get_image(
-        license_url='https://license/url',
-        license_='by',
-        license_version='4.0',
-        foreign_landing_url=None,
-        image_url=None,
-        thumbnail_url=None,
-        foreign_identifier=None,
-        width=None,
-        height=None,
-        creator=None,
-        creator_url=None,
-        title=None,
-        meta_data={'key1': 'val1'},
-        raw_tags=None,
-        watermarked=None,
-        source=None,
-    )
-    assert actual_image.meta_data == {
-        'key1': 'val1',
-        'license_url': 'https://creativecommons.org/licenses/by/4.0/',
-        'raw_license_url': 'https://license/url'
-    }
+    def item_saver(arg):
+        pass
+
+    with patch.object(
+            image_store,
+            'save_item',
+            side_effect=item_saver) as mock_save:
+        image_store.add_item(
+            license_url='https://license/url',
+            license_='by',
+            license_version='4.0',
+            foreign_landing_url='',
+            image_url='',
+            thumbnail_url=None,
+            foreign_identifier=None,
+            width=None,
+            height=None,
+            creator=None,
+            creator_url=None,
+            title=None,
+            meta_data={'key1': 'val1'},
+            raw_tags=None,
+            watermarked=None,
+            source=None,
+        )
+        actual_image = mock_save.call_args[0][0]
+
+        assert actual_image.meta_data == {
+            'key1': 'val1',
+            'license_url': 'https://creativecommons.org/licenses/by/4.0/',
+            'raw_license_url': 'https://license/url'
+        }
 
 
-def test_ImageStore_get_image_fixes_invalid_license_url(
+def test_ImageStore_add_item_fixes_invalid_license_url(
         monkeypatch, setup_env
 ):
     image_store = image.ImageStore()
 
-    original_url = ("https://license/url",)
+    original_url = "https://license/url"
     updated_url = "https://updatedurl.com"
 
     def mock_license_chooser(license_url, license_, license_version):
-
         return licenses.LicenseInfo(license_, license_version, updated_url), license_url
 
     monkeypatch.setattr(image_store, "get_valid_license_info", mock_license_chooser)
 
-    actual_image = image_store._get_image(
-        license_url=original_url,
-        license_='license',
-        license_version='1.5',
-        foreign_landing_url=None,
-        image_url=None,
-        thumbnail_url=None,
-        foreign_identifier=None,
-        width=None,
-        height=None,
-        creator=None,
-        creator_url=None,
-        title=None,
-        meta_data={},
-        raw_tags=None,
-        watermarked=None,
-        source=None,
-    )
+    def item_saver(arg):
+        pass
+
+    with patch.object(
+            image_store,
+            'save_item',
+            side_effect=item_saver) as mock_save:
+        image_store.add_item(
+            license_url=original_url,
+            license_='license',
+            license_version='1.5',
+            foreign_landing_url='',
+            image_url='',
+            thumbnail_url=None,
+            foreign_identifier=None,
+            width=None,
+            height=None,
+            creator=None,
+            creator_url=None,
+            title=None,
+            meta_data={},
+            raw_tags=None,
+            watermarked=None,
+            source=None,
+        )
+    actual_image = mock_save.call_args[0][0]
+
     assert actual_image.meta_data == {
         'license_url': updated_url, 'raw_license_url': original_url
     }

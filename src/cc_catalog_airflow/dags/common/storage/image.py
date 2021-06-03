@@ -1,6 +1,6 @@
 from collections import namedtuple
 import logging
-from typing import Optional
+from typing import Optional, Dict, Union
 
 from common.storage import columns
 from common.storage.media import MediaStore
@@ -89,8 +89,11 @@ class ImageStore(MediaStore):
         media_type="image",
         tsv_columns=None,
     ):
-        super().__init__(provider, output_file, output_dir, buffer_length, media_type)
-        self.columns = IMAGE_TSV_COLUMNS if tsv_columns is None else tsv_columns
+        super().__init__(
+            provider, output_file, output_dir, buffer_length, media_type
+        )
+        self.columns = IMAGE_TSV_COLUMNS \
+            if tsv_columns is None else tsv_columns
 
     def add_item(
         self,
@@ -101,14 +104,14 @@ class ImageStore(MediaStore):
         license_: Optional[str] = None,
         license_version: Optional[str] = None,
         foreign_identifier: Optional[str] = None,
-        width=None,
-        height=None,
-        creator=None,
-        creator_url=None,
-        title=None,
-        meta_data=None,
+        width: Optional[int] = None,
+        height: Optional[int] = None,
+        creator: Optional[str] = None,
+        creator_url: Optional[str] = None,
+        title: Optional[str] = None,
+        meta_data: Optional[Union[Dict, str]] = None,
         raw_tags=None,
-        watermarked="f",
+        watermarked: Optional[str] = "f",
         source: Optional[str] = None,
     ):
         """
