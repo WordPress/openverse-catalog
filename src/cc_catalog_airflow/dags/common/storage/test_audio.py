@@ -4,7 +4,7 @@ import pytest
 import tldextract
 
 from provider_api_scripts.common.licenses import licenses
-from provider_api_scripts.common.storage import audio
+from common.storage import audio
 from provider_api_scripts.common.storage import util
 
 logging.basicConfig(

@@ -3,8 +3,7 @@ import logging
 from typing import Optional
 
 from common.storage import columns
-
-from provider_api_scripts.common.storage.media import MediaStore
+from common.storage.media import MediaStore
 
 logger = logging.getLogger(__name__)
 

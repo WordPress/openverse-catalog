@@ -5,9 +5,8 @@ import logging
 import os
 from typing import Optional, Union
 
-from provider_api_scripts.common.storage import util
-
-from provider_api_scripts.common.licenses import licenses
+from common.storage import util
+from common.licenses import licenses
 
 logger = logging.getLogger(__name__)
 
