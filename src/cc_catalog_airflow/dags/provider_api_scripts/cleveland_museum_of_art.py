@@ -89,9 +89,8 @@ def _get_response(
         return response_json, total_images
 
 
-def _handle_response(
-                    batch
-                    ):
+def _handle_response(batch):
+    total_images = 0
     for data in batch:
         license_ = data.get('share_license_status', '').lower()
         if license_ != 'cc0':
@@ -121,17 +120,17 @@ def _handle_response(
             creator_name = ''
 
         total_images = image_store.add_item(
-                        foreign_landing_url=foreign_landing_url,
-                        image_url=image_url,
-                        license_=license_,
-                        license_version=license_version,
-                        foreign_identifier=foreign_id,
-                        width=width,
-                        height=height,
-                        title=title,
-                        creator=creator_name,
-                        meta_data=metadata,
-                        )
+            foreign_landing_url=foreign_landing_url,
+            image_url=image_url,
+            license_=license_,
+            license_version=license_version,
+            foreign_identifier=foreign_id,
+            width=width,
+            height=height,
+            title=title,
+            creator=creator_name,
+            meta_data=metadata,
+            )
     return total_images
 
 
