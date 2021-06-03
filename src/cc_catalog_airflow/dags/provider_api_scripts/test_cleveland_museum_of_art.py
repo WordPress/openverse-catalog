@@ -8,7 +8,9 @@ from common.licenses.licenses import LicenseInfo
 
 import cleveland_museum_of_art as clm
 
-license_info = LicenseInfo('cc0', '1.0', 'https://creativecommons.org/publicdomain/zero/1.0/', None)
+
+_license_info = ('cc0', '1.0', 'https://creativecommons.org/publicdomain/zero/1.0/')
+license_info = LicenseInfo(*_license_info)
 clm.image_store = MockImageStore(
                     provider=clm.PROVIDER,
                     license_info=license_info

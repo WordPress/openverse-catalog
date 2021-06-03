@@ -13,8 +13,7 @@ import json
 import logging
 import os
 
-from common.storage import image
-from common import requester
+from common import DelayedRequester, ImageStore
 from common.licenses.licenses import LicenseInfo
 from util.loader import provider_details as prov
 
@@ -108,8 +107,8 @@ DESCRIPTION_TYPES = {'description', 'summary', 'caption', 'notes',
                      'publication label', 'new acquisition label'}
 TAG_TYPES = ['date', 'object_type', 'topic', 'place']
 
-image_store = image.ImageStore(provider=PROVIDER)
-delayed_requester = requester.DelayedRequester(delay=DELAY)
+image_store = ImageStore(provider=PROVIDER)
+delayed_requester = DelayedRequester(delay=DELAY)
 
 
 def main():

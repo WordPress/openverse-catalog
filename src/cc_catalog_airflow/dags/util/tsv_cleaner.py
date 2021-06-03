@@ -2,8 +2,8 @@ import json
 import logging
 import os
 
-from provider_api_scripts.common.licenses.licenses import get_license_info
-from provider_api_scripts.common.storage import image
+from common.licenses.licenses import get_license_info
+from common.storage import image
 
 logger = logging.getLogger(__name__)
 

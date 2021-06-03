@@ -14,8 +14,7 @@ from datetime import datetime, timedelta, timezone
 import logging
 import os
 
-from common.requester import DelayedRequester
-from common.storage import image
+from common import DelayedRequester, ImageStore
 from common.licenses.licenses import get_license_info
 from util.loader import provider_details as prov
 
@@ -49,7 +48,7 @@ DEFAULT_QUERY_PARAMS = {
 }
 
 delayed_requester = DelayedRequester(DELAY)
-image_store = image.ImageStore(provider=PROVIDER)
+image_store = ImageStore(provider=PROVIDER)
 
 
 def main(date):

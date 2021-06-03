@@ -13,8 +13,7 @@ Notes:                  http://phylopic.org/api/
 import argparse
 import logging
 
-import common.requester as requester
-import common.storage.image as image
+from common import DelayedRequester, ImageStore
 from common.licenses.licenses import get_license_info
 
 logging.basicConfig(
@@ -29,8 +28,8 @@ ENDPOINT = f'http://{HOST}/api/a'
 PROVIDER = 'phylopic'
 LIMIT = 5
 
-delayed_requester = requester.DelayedRequester(DELAY)
-image_store = image.ImageStore(provider=PROVIDER)
+delayed_requester = DelayedRequester(DELAY)
+image_store = ImageStore(provider=PROVIDER)
 
 
 def main(date='all'):
