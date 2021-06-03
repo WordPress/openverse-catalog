@@ -35,7 +35,7 @@ def mock_rewriter(monkeypatch):
         return url_string
     monkeypatch.setattr(
         licenses.urls,
-        "rewrite_redirected_url",
+        'rewrite_redirected_url',
         mock_rewrite_redirected_url,
     )
 
@@ -44,15 +44,14 @@ def mock_rewriter(monkeypatch):
 def get_good(monkeypatch):
     def mock_get(url, timeout=60):
         return requests.Response()
-
-    monkeypatch.setattr(licenses.urls.requests, "get", mock_get)
+    monkeypatch.setattr(licenses.urls.requests, 'get', mock_get)
 
 
 def test_ImageStore_uses_OUTPUT_DIR_variable(
-    monkeypatch,
+        monkeypatch,
 ):
-    testing_output_dir = "/my_output_dir"
-    monkeypatch.setenv("OUTPUT_DIR", testing_output_dir)
+    testing_output_dir = '/my_output_dir'
+    monkeypatch.setenv('OUTPUT_DIR', testing_output_dir)
     image_store = image.ImageStore()
     assert testing_output_dir in image_store._OUTPUT_PATH
 
@@ -211,13 +210,12 @@ def test_ImageStore_get_image_places_given_args(
 
     monkeypatch.setattr(
         image_store,
-        "get_valid_license_info",
+        'get_valid_license_info',
         mock_license_chooser
     )
 
     def mock_get_source(source, provider):
         return source
-
     monkeypatch.setattr(
         util,
         'get_source',
@@ -253,7 +251,8 @@ def test_ImageStore_get_image_calls_license_chooser(
     monkeypatch.setattr(
         image_store,
         'get_valid_license_info',
-        mock_license_chooser)
+        mock_license_chooser
+    )
 
     actual_image = image_store._get_image(
         license_url='https://license/url',
@@ -273,7 +272,7 @@ def test_ImageStore_get_image_calls_license_chooser(
         watermarked=None,
         source=None,
     )
-    assert actual_image.license_ == "diff_license"
+    assert actual_image.license_ == 'diff_license'
 
 
 def test_ImageStore_returns_None_when_license_is_invalid(
@@ -283,9 +282,9 @@ def test_ImageStore_returns_None_when_license_is_invalid(
     image_store = image.ImageStore()
 
     actual_image = image_store._get_image(
-        license_url="https://license/url",
-        license_="license",
-        license_version="1.5",
+        license_url='https://license/url',
+        license_='license',
+        license_version='1.5',
         foreign_landing_url=None,
         image_url=None,
         thumbnail_url=None,
@@ -371,7 +370,7 @@ def test_ImageStore_get_image_creates_meta_data_with_valid_license_url(
     def mock_license_chooser(license_url, license_, license_version):
         return licenses.LicenseInfo(license_, license_version, license_url), license_url
 
-    monkeypatch.setattr(image_store, "get_valid_license_info", mock_license_chooser)
+    monkeypatch.setattr(image_store, 'get_valid_license_info', mock_license_chooser)
     license_url = "https://my.license.url"
 
     actual_image = image_store._get_image(
