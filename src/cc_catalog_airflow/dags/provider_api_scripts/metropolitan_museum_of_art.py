@@ -52,7 +52,7 @@ def main(date_=None):
 
 
 def _get_object_ids(date_, endpoint=ENDPOINT):
-    query_params = ''
+    query_params = None
     if date_:
         query_params = {
             'metadataDate': date_

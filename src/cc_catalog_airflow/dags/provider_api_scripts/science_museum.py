@@ -63,10 +63,7 @@ def main():
     logger.info(f"Total images pulled {image_count}")
 
 
-def _page_records(
-        from_year,
-        to_year
-        ):
+def _page_records(from_year, to_year):
     image_count = 0
     page_number = 0
     condition = True
@@ -76,9 +73,7 @@ def _page_records(
             from_year=from_year,
             to_year=to_year
             )
-        batch_data = _get_batch_objects(
-            query_param=query_param
-        )
+        batch_data = _get_batch_objects(query_param=query_param)
         if type(batch_data) == list:
             if len(batch_data) > 0:
                 image_count = _handle_object_data(batch_data)

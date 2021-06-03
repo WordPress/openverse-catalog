@@ -6,7 +6,6 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s:  %(message)s',
     level=logging.INFO
 )
-
 logger = logging.getLogger(__name__)
 
 LIMIT = 100
@@ -69,6 +68,7 @@ def _get_query_params(
 ):
     if query_params is None:
         query_params = DEFAULT_QUERY_PARAM
+    query_params = query_params.copy()
     query_params["imagelicence"] = license_type
     query_params["page"] = page
     return query_params
@@ -137,12 +137,8 @@ def _get_media_info(media_data):
         media_type = media.get("type")
         if media_type == "image":
             image_id = media.get("id")
-            image_url, height, width = _get_image_data(
-                media
-            )
-            license_url = _get_license_url(
-                media
-            )
+            image_url, height, width = _get_image_data(media)
+            license_url = _get_license_url(media)
             thumbnail_url = media.get("thumbnail", {}).get("uri")
             if (
                 image_url is None or image_id is None or license_url is None

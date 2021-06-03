@@ -164,8 +164,11 @@ def _process_image_list(image_list):
     return total_images
 
 
-def _process_image_data(image_data, sub_providers=SUB_PROVIDERS,
-                        provider=PROVIDER) -> int:
+def _process_image_data(
+        image_data,
+        sub_providers=SUB_PROVIDERS,
+        provider=PROVIDER
+) -> int:
     logger.debug(f'Processing image data: {image_data}')
     license_url = _get_license_url(image_data.get('rights'))
     image_url = image_data.get('edmIsShownBy')[0]
@@ -213,9 +216,7 @@ def _get_foreign_landing_url(image_data):
     return europeana_url
 
 
-def _create_meta_data_dict(
-        image_data
-):
+def _create_meta_data_dict(image_data):
     meta_data = {
         'country': image_data.get('country'),
         'dataProvider': image_data.get('dataProvider'),

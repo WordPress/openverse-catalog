@@ -47,12 +47,8 @@ def main():
     page = 1
     condition = True
     while condition:
-        query_param = _get_query_param(
-            page=page
-        )
-        request_response = _request_handler(
-            params=query_param
-        )
+        query_param = _get_query_param(page=page)
+        request_response = _request_handler(params=query_param)
         if request_response is None:
             break
         results = request_response.get("result")
@@ -66,13 +62,10 @@ def main():
     logger.info(f"total images {image_store.total_images}")
 
 
-def _get_query_param(
-        default_query_param=None,
-        page=1,
-        ):
+def _get_query_param(default_query_param=None, page=1,):
     if default_query_param is None:
         default_query_param = DEFAULT_QUERY_PARAM
-    query_param = default_query_param
+    query_param = default_query_param.copy()
     query_param["page"] = page
     return query_param
 
@@ -111,9 +104,7 @@ def _handle_results(results):
     for item in results:
         uuid = item.get("uuid")
 
-        item_details = _request_handler(
-            endpoint=METADATA_ENDPOINT+uuid,
-        )
+        item_details = _request_handler(endpoint=METADATA_ENDPOINT+uuid)
         if item_details is None:
             continue
 
