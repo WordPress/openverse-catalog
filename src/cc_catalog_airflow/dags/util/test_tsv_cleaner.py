@@ -54,8 +54,10 @@ def test_clean_tsv_cleans_tsv_rows(tmpdir):
             title="title_two",
             meta_data={
                 "description": "Train",
-                "license_url": "https://creativecommons.org/licenses/by-nc/4.0/",
-                "raw_license_url": "https://creativecommons.org/licenses/by-nc/4.0/",
+                "license_url":
+                    "https://creativecommons.org/licenses/by-nc/4.0/",
+                "raw_license_url":
+                    "https://creativecommons.org/licenses/by-nc/4.0/",
             },
             raw_tags=[
                 {"name": "travel", "provider": "next_provider"},
