@@ -44,7 +44,9 @@ def test_get_license_info_prefers_derived_values(monkeypatch):
         licenses, '_get_license_info_from_url', mock_get_license_from_url
     )
 
-    actual_license, actual_version, actual_url, actual_raw_url = licenses.get_license_info(
+    (
+        actual_license, actual_version, actual_url, actual_raw_url
+    ) = licenses.get_license_info(
         expected_url,
         'license',
         '1.0'
@@ -70,7 +72,9 @@ def test_get_license_info_falls_back_with_invalid_license_url(
         licenses, '_get_valid_cc_url', mock_cc_license_validator
     )
 
-    actual_license, actual_version, actual_url, actual_raw_url = licenses.get_license_info(
+    (
+        actual_license, actual_version, actual_url, actual_raw_url
+    ) = licenses.get_license_info(
         license_url='https://licenses.com/my/license',
         license_='cc0',
         license_version='1.0'
