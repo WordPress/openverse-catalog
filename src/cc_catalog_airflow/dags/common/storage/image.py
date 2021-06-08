@@ -2,8 +2,10 @@ from collections import namedtuple
 from datetime import datetime
 import logging
 import os
+from typing import Optional
 
 from common.licenses import licenses
+from common.licenses.licenses import LicenseInfo
 from common.storage import util
 from common.storage import columns
 
@@ -153,21 +155,29 @@ class ImageStore:
         foreign_landing_url:  URL of page where the image lives on the
                               source website.
         image_url:            Direct link to the image file
+        license_info:         An object of type LicenseInfo, created using
+                              either:
+                              1.
+                               - the string representation of an Open License
+                               (For valid options, see
+                               `common.license.constants.get_license_path_map()`)
+                               AND
+                               - string with license version. In the case of
+                               the `publicdomain` license, which has no
+                               version, one should pass
+                               `common.license.constants.NO_VERSION` here
 
-        license_info:         an instance of LicenseInfo class containing:
-                        - the string representation of an Open License (For valid options,
-                        see `common.license.constants.get_license_path_map()`),
-                        - license version. In the case of the `publicdomain` license, which has no
-                          version, one should pass `common.license.constants.NO_VERSION` here
-                        - license url.
-                        - raw license url
+                               AND / OR
 
+                               2.
+                                - license url.
 
         Optional Arguments:
 
         thumbnail_url:       Direct link to a thumbnail-sized version of
                              the image
-        foreign_identifier:  Unique identifier for the image on the
+
+        foreign_identifier: Unique identifier for the image on the
                              source site.
         width:               in pixels
         height:              in pixels
@@ -190,6 +200,7 @@ class ImageStore:
                              and the `provider` argument in the
                              ImageStore init function is the specific
                              provider of the image.
+
         """
         image = self._get_image(
             foreign_landing_url=foreign_landing_url,
@@ -231,7 +242,7 @@ class ImageStore:
             output_dir = os.getenv('OUTPUT_DIR')
         if output_dir is None:
             logger.warning(
-                'OUTPUT_DIR is not set in the enivronment.  '
+                'OUTPUT_DIR is not set in the environment.  '
                 'Output will go to /tmp.'
             )
             output_dir = '/tmp'
@@ -271,12 +282,12 @@ class ImageStore:
             watermarked,
             source,
     ):
-        source, meta_data, tags = self.parse_item_metadata(
-            license_info,
-            source,
+        meta_data = self._enrich_meta_data(
             meta_data,
-            raw_tags,
-        )
+            license_info.url,
+            license_info.raw_url)
+        source = util.get_source(source, self._PROVIDER)
+
         tags = self._enrich_tags(raw_tags)
 
         return Image(
