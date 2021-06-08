@@ -307,7 +307,12 @@ def test_process_image_data_with_sub_provider():
         image_url=(
             "https://iiif.wellcomecollection.org/image/V0013398.jpg/full/512,"
             "/0/default.jpg"),
-        license_info=LicenseInfo('by','4.0', "https://creativecommons.org/licenses/by/4.0/", "http://creativecommons.org/licenses/by/4.0/"),
+        license_info=LicenseInfo(
+            'by',
+            '4.0',
+            "https://creativecommons.org/licenses/by/4.0/",
+            "http://creativecommons.org/licenses/by/4.0/"
+        ),
         thumbnail_url=(
             "https://api.europeana.eu/thumbnail/v2/url.json?uri=https%3A%2F%"
             "2Fiiif.wellcomecollection.org%2Fimage%2FV0013398.jpg%2Ffull%2F"

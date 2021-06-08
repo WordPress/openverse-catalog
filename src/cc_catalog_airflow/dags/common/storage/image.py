@@ -154,18 +154,14 @@ class ImageStore:
                               source website.
         image_url:            Direct link to the image file
 
-        Semi-Required Arguments
-        license_info:        LicenseInfo tuple containing:
-                        - the string representation of a Creative Commons license
-                        (For valid options, see `common.license.constants.get_license_path_map()`),
+        license_info:         an instance of LicenseInfo class containing:
+                        - the string representation of an Open License (For valid options,
+                        see `common.license.constants.get_license_path_map()`),
                         - license version. In the case of the `publicdomain` license, which has no
                           version, one should pass `common.license.constants.NO_VERSION` here
                         - license url.
                         - raw license url
-        Note on license arguments: These are 'semi-required' in that
-        either a valid `license_url` must be given, or a valid
-        `license_`, `license_version` pair must be given. Otherwise, the
-        image data will be discarded.
+
 
         Optional Arguments:
 

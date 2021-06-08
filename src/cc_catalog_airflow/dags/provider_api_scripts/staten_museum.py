@@ -115,7 +115,10 @@ def _handle_items_data(
         title = _get_title(titles)
         meta_data = _get_metadata(item)
         for img in images:
-            license_info=get_license_info(license_=license_, license_version=version)
+            license_info = get_license_info(
+                license_=license_,
+                license_version=version
+            )
             image_count = image_store.add_item(
                     foreign_identifier=img.get("iiif_id"),
                     foreign_landing_url=foreign_landing_url,

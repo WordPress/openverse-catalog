@@ -264,7 +264,10 @@ def _process_image_data(image_data, sub_providers=SUB_PROVIDERS,
     owner = image_data.get('owner').strip()
     source = next((s for s in sub_providers if owner in sub_providers[s]),
                   provider)
-    license_info = get_license_info(license_ = license_, license_version=license_version)
+    license_info = get_license_info(
+        license_=license_,
+        license_version=license_version
+    )
     return image_store.add_item(
         foreign_landing_url=foreign_landing_url,
         image_url=image_url,

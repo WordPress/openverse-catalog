@@ -283,7 +283,11 @@ def test_process_image_data_with_real_example():
         thumbnail_url=(
             'https://live.staticflickr.com/65535/49514824541_35d1b4f8db'
             '_m.jpg'),
-        license_info=(LicenseInfo('by-nc-sa', '2.0','https://creativecommons.org/licenses/by-nc-sa/2.0/', None)),
+        license_info=LicenseInfo(
+            'by-nc-sa',
+            '2.0',
+            'https://creativecommons.org/licenses/by-nc-sa/2.0/',
+            None),
         foreign_identifier='49514824541',
         width=1024,
         height=683,
