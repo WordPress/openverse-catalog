@@ -2,10 +2,7 @@ from collections import namedtuple
 from datetime import datetime
 import logging
 import os
-from typing import Optional
 
-from common.licenses import licenses
-from common.licenses.licenses import LicenseInfo
 from common.storage import util
 from common.storage import columns
 

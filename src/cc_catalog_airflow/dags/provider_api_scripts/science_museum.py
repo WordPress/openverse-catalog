@@ -140,8 +140,8 @@ def _handle_object_data(batch_data):
 
         if links:
             foreign_landing_url = links.get("self")
-        if foreign_landing_url is None:
-            continue
+            if foreign_landing_url is None:
+                continue
         obj_attributes = obj_.get("attributes")
         if obj_attributes is None:
             continue
@@ -168,7 +168,9 @@ def _handle_object_data(batch_data):
                 continue
             license_, version = license_version.lower().split(" ")
             license_ = license_.replace("cc-", "")
-            license_info = get_license_info(license_=license_, license_version=version)
+            license_info = get_license_info(
+                license_=license_, license_version=version
+            )
             thumbnail_url = _get_thumbnail_url(processed)
             image_count = image_store.add_item(
                     foreign_identifier=foreign_id,
