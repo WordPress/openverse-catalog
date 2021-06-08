@@ -1,5 +1,5 @@
 """
-This file holds string constants for the column names in the media
+This file holds string constants for the column names in the image
 database, as well as the loading tables in the PostgreSQL DB.
 """
 IDENTIFIER = 'identifier'
@@ -25,4 +25,3 @@ CREATED_ON = 'created_on'
 UPDATED_ON = 'updated_on'
 LAST_SYNCED = 'last_synced_with_source'
 REMOVED = 'removed_from_source'
-DURATION = 'duration'

@@ -11,16 +11,13 @@ logger = logging.getLogger(__name__)
 def stage_oldest_tsv_file(
         output_dir,
         identifier,
-        minimum_file_age_minutes,
-        ti
+        minimum_file_age_minutes
 ):
     staging_directory = _get_staging_directory(output_dir, identifier)
     tsv_file_name = _get_oldest_tsv_file(output_dir, minimum_file_age_minutes)
     tsv_found = tsv_file_name is not None
     if tsv_found:
         _move_file(tsv_file_name, staging_directory)
-        media_type = tsv_file_name.split('/')[-1].split('_')[1]
-        ti.xcom_push(key='media_type', value=media_type)
     return tsv_found
 
 
