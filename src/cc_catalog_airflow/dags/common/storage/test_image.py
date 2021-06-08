@@ -197,7 +197,8 @@ def test_ImageStore_get_image_places_given_args(
         'meta_data': {'description': 'cat picture'},
         'raw_tags': [{'name': 'tag1', 'provider': 'testing'}],
         'watermarked': 'f',
-        'source': 'testing_source'
+        'source': 'testing_source',
+        'ingestion_type': 'provider_api',
     }
 
     def mock_license_chooser(license_url, license_, license_version):
@@ -267,6 +268,7 @@ def test_ImageStore_get_image_calls_license_chooser(
         raw_tags=None,
         watermarked=None,
         source=None,
+        ingestion_type='provider_api',
     )
     assert actual_image.license_ == 'diff_license'
 
@@ -298,6 +300,7 @@ def test_ImageStore_get_image_gets_source(
         raw_tags=None,
         watermarked=None,
         source=None,
+        ingestion_type='provider_api',
     )
     assert actual_image.source == 'diff_source'
 
@@ -324,6 +327,7 @@ def test_ImageStore_get_image_replaces_non_dict_meta_data_with_no_license_url(
         raw_tags=None,
         watermarked=None,
         source=None,
+        ingestion_type='provider_api',
     )
     assert actual_image.meta_data == {
         'license_url': None, 'raw_license_url': None
@@ -362,6 +366,7 @@ def test_ImageStore_get_image_creates_meta_data_with_valid_license_url(
         raw_tags=None,
         watermarked=None,
         source=None,
+        ingestion_type='provider_api',
     )
     assert actual_image.meta_data == {
         'license_url': license_url, 'raw_license_url': license_url
@@ -399,6 +404,7 @@ def test_ImageStore_get_image_adds_valid_license_url_to_dict_meta_data(
         raw_tags=None,
         watermarked=None,
         source=None,
+        ingestion_type='provider_api',
     )
     assert actual_image.meta_data == {
         'key1': 'val1',
@@ -410,6 +416,7 @@ def test_ImageStore_get_image_adds_valid_license_url_to_dict_meta_data(
 def test_ImageStore_get_image_fixes_invalid_license_url(
         monkeypatch, setup_env
 ):
+    image_store = image.ImageStore()
     original_url = 'https://license/url',
     updated_url = 'https://updatedurl.com'
 
@@ -440,6 +447,7 @@ def test_ImageStore_get_image_fixes_invalid_license_url(
         raw_tags=None,
         watermarked=None,
         source=None,
+        ingestion_type='provider_api',
     )
     assert actual_image.meta_data == {
         'license_url': updated_url, 'raw_license_url': original_url
@@ -468,6 +476,7 @@ def test_ImageStore_get_image_enriches_singleton_tags(
         raw_tags=['lone'],
         watermarked=None,
         source=None,
+        ingestion_type='provider_api',
     )
 
     assert actual_image.tags == [{'name': 'lone', 'provider': 'test_provider'}]
@@ -506,6 +515,7 @@ def test_ImageStore_get_image_tag_blacklist(
         raw_tags=raw_tags,
         watermarked=None,
         source=None,
+        ingestion_type='provider_api',
     )
 
     assert actual_image.tags == [
@@ -534,6 +544,7 @@ def test_ImageStore_get_image_enriches_multiple_tags(
         raw_tags=['tagone', 'tag2', 'tag3'],
         watermarked=None,
         source=None,
+        ingestion_type='provider_api',
     )
 
     assert actual_image.tags == [
@@ -570,6 +581,7 @@ def test_ImageStore_get_image_leaves_preenriched_tags(
         raw_tags=tags,
         watermarked=None,
         source=None,
+        ingestion_type='provider_api',
     )
 
     assert actual_image.tags == tags
@@ -598,6 +610,7 @@ def test_ImageStore_get_image_nones_nonlist_tags(
         raw_tags=tags,
         watermarked=None,
         source=None,
+        ingestion_type='provider_api',
     )
 
     assert actual_image.tags is None
@@ -625,6 +638,7 @@ def default_image_args(
         watermarked=None,
         provider=None,
         source=None,
+        ingestion_type='provider_api',
     )
 
 
@@ -716,6 +730,7 @@ def test_create_tsv_row_turns_empty_into_nullchar(
 ):
     image_store = image.ImageStore()
     image_args = default_image_args
+    image_args['ingestion_type'] = None
     test_image = image.Image(**image_args)
 
     actual_row = image_store._create_tsv_row(test_image).split('\t')
@@ -758,7 +773,8 @@ def test_create_tsv_row_properly_places_entries(
         'tags': [{'name': 'tag1', 'provider': 'testing'}],
         'watermarked': 'f',
         'provider': 'testing_provider',
-        'source': 'testing_source'
+        'source': 'testing_source',
+        'ingestion_type': 'provider_api',
     }
     args_dict.update(req_args_dict)
 
@@ -783,6 +799,7 @@ def test_create_tsv_row_properly_places_entries(
         '[{"name": "tag1", "provider": "testing"}]',
         'f',
         'testing_provider',
-        'testing_source'
+        'testing_source',
+        'provider_api'
     ]) + '\n'
     assert expect_row == actual_row

@@ -148,7 +148,8 @@ class ImageStore:
             meta_data=None,
             raw_tags=None,
             watermarked='f',
-            source=None
+            source=None,
+            ingestion_type='commoncrawl'
     ):
         """
         Add information for a single image to the ImageStore.
@@ -223,7 +224,8 @@ class ImageStore:
             meta_data=meta_data,
             raw_tags=raw_tags,
             watermarked=watermarked,
-            source=source
+            source=source,
+            ingestion_type=ingestion_type,
         )
         tsv_row = self._create_tsv_row(image)
         if tsv_row:
@@ -290,6 +292,7 @@ class ImageStore:
             raw_tags,
             watermarked,
             source,
+            ingestion_type
     ):
         valid_license_info = licenses.get_license_info(
             license_url=license_url,
@@ -452,6 +455,7 @@ class MockImageStore(ImageStore):
             raw_tags,
             watermarked,
             source,
+            ingestion_type,
     ):
         valid_license_info = self.license_info
 
@@ -480,5 +484,6 @@ class MockImageStore(ImageStore):
             tags=tags,
             watermarked=watermarked,
             provider=self._PROVIDER,
-            source=source
+            source=source,
+            ingestion_type=ingestion_type,
         )
