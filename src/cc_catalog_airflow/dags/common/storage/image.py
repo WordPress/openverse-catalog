@@ -200,7 +200,7 @@ class ImageStore:
 
         """
         if license_info.license is None:
-            logger.warning(f"Invalid license provided")
+            logger.warning("Invalid license provided")
             return None
         image = self._get_image(
             foreign_landing_url=foreign_landing_url,
@@ -283,7 +283,7 @@ class ImageStore:
             source,
     ):
         if license_info.url is None:
-            logger.warning(f"No valid license url detected")
+            logger.warning("No valid license url detected")
             return None
         meta_data = self._enrich_meta_data(
             meta_data,
