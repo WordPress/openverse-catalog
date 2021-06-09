@@ -3,19 +3,23 @@ import json
 import logging
 import requests
 from unittest.mock import MagicMock, patch
-from collections import namedtuple
 
-from common import MockImageStore
+from common import (
+    LicenseInfo,
+    MockImageStore,
+)
 import science_museum as sm
-from common.licenses.licenses import LicenseInfo
 
-_license_info = ('by-nc-sa', '4.0', 'https://creativecommons.org/licenses/by-nc-sa/4.0/')
+_license_info = (
+    'by-nc-sa', '4.0',
+    'https://creativecommons.org/licenses/by-nc-sa/4.0/',
+    None
+)
 license_info = LicenseInfo(*_license_info)
 sm.image_store = MockImageStore(
-                    provider=sm.PROVIDER,
-                    license_info=license_info
-                    )
-
+    provider=sm.PROVIDER,
+    license_info=license_info
+)
 
 RESOURCES = os.path.join(
     os.path.abspath(os.path.dirname(__file__)), 'tests/resources/sciencemuseum'
