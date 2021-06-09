@@ -94,8 +94,10 @@ def _get_query_param(
         page_number=0,
         from_year=0,
         to_year=1500,
-        default_query_param=DEFAULT_QUERY_PARAMS
+        default_query_param=None
         ):
+    if default_query_param is None:
+        default_query_param = DEFAULT_QUERY_PARAMS
     query_param = default_query_param.copy()
     query_param["page[number]"] = page_number
     query_param["date[from]"] = from_year
@@ -105,10 +107,12 @@ def _get_query_param(
 
 def _get_batch_objects(
         endpoint=ENDPOINT,
-        headers=HEADERS,
+        headers=None,
         retries=RETRIES,
         query_param=None
         ):
+    if headers is None:
+        headers = HEADERS.copy()
     for retry in range(retries):
         response = delay_request.get(
             endpoint,

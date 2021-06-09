@@ -78,9 +78,11 @@ def _get_query_param(
 def _request_handler(
         endpoint=BASE_ENDPOINT,
         params=None,
-        headers=HEADERS,
+        headers=None,
         retries=RETRIES
         ):
+    if headers is None:
+        headers = HEADERS.copy()
     results = None
     for retry in range(retries):
         response = delay_request.get(

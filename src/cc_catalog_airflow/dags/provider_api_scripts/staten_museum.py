@@ -57,8 +57,10 @@ def main():
 
 def _get_query_param(
         offset=0,
-        default_query_param=DEFAULT_QUERY_PARAMS
+        default_query_param=None
         ):
+    if default_query_param is None:
+        default_query_param = DEFAULT_QUERY_PARAMS
     query_params = default_query_param.copy()
     query_params.update(
         offset=offset
@@ -69,9 +71,11 @@ def _get_query_param(
 def _get_batch_items(
         endpoint=ENDPOINT,
         query_params=None,
-        headers=HEADERS,
+        headers=None,
         retries=RETRIES
         ):
+    if headers is None:
+        headers = HEADERS
     for retry in range(retries):
         response = delay_request.get(
             endpoint,

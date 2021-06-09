@@ -69,7 +69,8 @@ def _get_query_params(
         default_query_params=None, license_type="cc by", page=0
 ):
     if default_query_params is None:
-        default_query_params = DEFAULT_QUERY_PARAMS     query_params = default_query_params.copy()
+        default_query_params = DEFAULT_QUERY_PARAMS
+    query_params = default_query_params.copy()
     query_params["imagelicence"] = license_type
     query_params["page"] = page
     return query_params
