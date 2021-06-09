@@ -67,7 +67,7 @@ def main():
 def _get_query_param(
         default_query_params=None,
         page=1,
-        ):
+):
     if default_query_params is None:
         default_query_params = DEFAULT_QUERY_PARAMS
     query_param = default_query_params.copy()
@@ -201,7 +201,6 @@ def _get_images(
         thumbnail_dimensions = THUMBNAIL_DIMENSIONS
     if image_url_dimensions is None:
         image_url_dimensions = IMAGE_URL_DIMENSIONS
-    image_url, thumbnail_url = None, None
     image_type = {
         parse_qs(urlparse(img.get("$")).query)['t'][0]: img.get("$")
         for img in images

@@ -72,6 +72,7 @@ def _get_object_json(
         ):
     if headers is None:
         headers = HEADERS.copy()
+    data = None
     for tries in range(retries):
         response = delay_request.get(
                     endpoint,
@@ -84,12 +85,8 @@ def _get_object_json(
                     response_json.get("message", "").lower() == "success."):
                 data = response_json.get("data")
                 break
-            else:
-                data = None
         except Exception as e:
             logger.error(f"Error due to {e}")
-            data = None
-
     return data
 
 

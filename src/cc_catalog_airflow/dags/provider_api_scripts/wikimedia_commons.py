@@ -119,6 +119,7 @@ def _get_image_batch(
         continue_token=continue_token
     )
     image_batch = None
+    new_continue_token = None
     for _ in range(MEAN_GLOBAL_USAGE_LIMIT):
         response_json = (
             delayed_requester.
@@ -132,8 +133,6 @@ def _get_image_batch(
         )
 
         if response_json is None:
-            image_batch = None
-            new_continue_token = None
             break
         else:
             new_continue_token = response_json.pop('continue', {})
@@ -263,7 +262,6 @@ def _get_image_info_dict(image_data):
 def _check_mediatype(image_info, image_mediatypes=None):
     if image_mediatypes is None:
         image_mediatypes = IMAGE_MEDIATYPES
-    valid_mediatype = True
     image_mediatype = image_info.get('mediatype')
     if image_mediatype not in image_mediatypes:
         logger.debug(
@@ -289,7 +287,7 @@ def _extract_date_info(image_info):
         .get('DateTime', {})
         .get('value', '')
     )
-    return (date_originally_created, last_modified_at_source)
+    return date_originally_created, last_modified_at_source
 
 
 def _extract_creator_info(image_info):
@@ -301,14 +299,14 @@ def _extract_creator_info(image_info):
     )
 
     if not artist_string:
-        return (None, None)
+        return None, None
 
     artist_elem = html.fromstring(artist_string)
     # We take all text to replicate what is shown on Wikimedia Commons
     artist_text = ''.join(artist_elem.xpath('//text()')).strip()
     url_list = list(artist_elem.iterlinks())
     artist_url = _cleanse_url(url_list[0][2]) if url_list else None
-    return (artist_text, artist_url)
+    return artist_text, artist_url
 
 
 def _extract_category_info(image_info):

@@ -55,7 +55,7 @@ def main():
 
             if type(results) == list:
                 if len(results) > 0:
-                    image_count = _handle_batch_objects(results)
+                    _handle_batch_objects(results)
                     page += 1
                 else:
                     condition = False
@@ -69,7 +69,8 @@ def _get_query_params(
         default_query_params=None, license_type="cc by", page=0
 ):
     if default_query_params is None:
-        default_query_params = DEFAULT_QUERY_PARAMS     query_params = default_query_params.copy()
+        default_query_params = DEFAULT_QUERY_PARAMS
+    query_params = default_query_params.copy()
     query_params["imagelicence"] = license_type
     query_params["page"] = page
     return query_params
@@ -81,6 +82,7 @@ def _get_batch_objects(
 ):
     if headers is None:
         headers = HEADERS
+    data = None
     for retry in range(retries):
         response = delay_request.get(
             endpoint,
@@ -92,8 +94,6 @@ def _get_batch_objects(
             if type(response_json) == list:
                 data = response_json
                 break
-            else:
-                data = None
         except Exception:
             data = None
     return data
