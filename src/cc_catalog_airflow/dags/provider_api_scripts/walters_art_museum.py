@@ -136,18 +136,17 @@ def _build_query_param(
     return query_params
 
 
-def _extract_items_list_from_json(json_response_inpydict_form):
+def _extract_items_list_from_json(json_response):
     if (
-            json_response_inpydict_form is None
-            or str(
-        json_response_inpydict_form.get('ReturnStatus')
-    ).lower() != 'true'
-            or json_response_inpydict_form.get('Items') is None
-            or len(json_response_inpydict_form.get('Items')) == 0
+            json_response is None
+            or str(json_response.get('ReturnStatus')
+                   ).lower() != 'true'
+            or json_response.get('Items') is None
+            or len(json_response.get('Items')) == 0
     ):
         items_list = None
     else:
-        items_list = json_response_inpydict_form.get('Items')
+        items_list = json_response.get('Items')
 
     return items_list
 
