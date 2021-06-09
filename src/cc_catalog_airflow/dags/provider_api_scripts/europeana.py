@@ -255,8 +255,10 @@ def _build_query_param_dict(
         end_timestamp,
         cursor,
         api_key=API_KEY,
-        default_query_param=DEFAULT_QUERY_PARAMS,
+        default_query_param=None,
 ):
+    if default_query_param is None:
+        default_query_param = DEFAULT_QUERY_PARAMS
     query_param_dict = default_query_param.copy()
     query_param_dict.update(
         wskey=api_key,

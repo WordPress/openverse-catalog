@@ -22,7 +22,7 @@ HEADERS = {
     "Accept": "application/json"
 }
 
-DEFAULT_QUERY_PARAM = {
+DEFAULT_QUERY_PARAMS = {
     "has_image": 1,
     "image_license": "CC",
     "page[size]": LIMIT,
@@ -94,7 +94,7 @@ def _get_query_param(
         page_number=0,
         from_year=0,
         to_year=1500,
-        default_query_param=DEFAULT_QUERY_PARAM
+        default_query_param=DEFAULT_QUERY_PARAMS
         ):
     query_param = default_query_param.copy()
     query_param["page[number]"] = page_number

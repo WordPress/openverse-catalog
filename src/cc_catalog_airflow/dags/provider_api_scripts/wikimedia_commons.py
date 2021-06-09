@@ -108,9 +108,11 @@ def _derive_timestamp_pair(date):
 def _get_image_batch(
         start_timestamp,
         end_timestamp,
-        continue_token={},
+        continue_token=None,
         retries=5
 ):
+    if continue_token is None:
+        continue_token = {}
     query_params = _build_query_params(
         start_timestamp,
         end_timestamp,
@@ -168,9 +170,13 @@ def _process_image_pages(image_pages):
 def _build_query_params(
         start_date,
         end_date,
-        continue_token={},
-        default_query_params=DEFAULT_QUERY_PARAMS,
+        continue_token=None,
+        default_query_params=None,
 ):
+    if continue_token is None:
+        continue_token = {}
+    if default_query_params is None:
+        default_query_params = DEFAULT_QUERY_PARAMS
     query_params = default_query_params.copy()
     query_params.update(
         gaistart=start_date,
@@ -254,7 +260,9 @@ def _get_image_info_dict(image_data):
     return image_info
 
 
-def _check_mediatype(image_info, image_mediatypes=IMAGE_MEDIATYPES):
+def _check_mediatype(image_info, image_mediatypes=None):
+    if image_mediatypes is None:
+        image_mediatypes = IMAGE_MEDIATYPES
     valid_mediatype = True
     image_mediatype = image_info.get('mediatype')
     if image_mediatype not in image_mediatypes:

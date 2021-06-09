@@ -25,7 +25,7 @@ HEADERS = {
     "api_key": API_KEY
 }
 
-DEFAULT_QUERY_PARAM = {
+DEFAULT_QUERY_PARAMS = {
     "has_images": 1,
     "rights_type_permissive": 1,
     "limit": LIMIT,
@@ -55,19 +55,23 @@ def main():
 
 def _get_query_param(
         offset=0,
-        default_query_param=DEFAULT_QUERY_PARAM
+        default_query_param=None
         ):
+    if default_query_param is None:
+        default_query_param = DEFAULT_QUERY_PARAMS
     query_param = default_query_param.copy()
     query_param.update(offset=offset)
     return query_param
 
 
 def _get_object_json(
-        headers=HEADERS,
+        headers=None,
         endpoint=ENDPOINT,
         retries=RETRIES,
         query_param=None
         ):
+    if headers is None:
+        headers = HEADERS
     for tries in range(retries):
         response = delay_request.get(
                     endpoint,

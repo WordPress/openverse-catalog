@@ -121,10 +121,12 @@ def _get_image_list(
 
 def _build_query_param(
         class_param=None,
-        default_query_params=DEFAULT_QUERY_PARAMS,
+        default_query_params=None,
         apikey=API_KEY,
         page=1
 ):
+    if default_query_params is None:
+        default_query_params = DEFAULT_QUERY_PARAMS
     query_params = default_query_params.copy()
     query_params.update(
         {
