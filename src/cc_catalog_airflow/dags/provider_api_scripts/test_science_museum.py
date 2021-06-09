@@ -7,11 +7,8 @@ from collections import namedtuple
 
 from common import MockImageStore
 import science_museum as sm
+from common.licenses.licenses import LicenseInfo
 
-LicenseInfo = namedtuple(
-    'LicenseInfo',
-    ['license', 'version', 'url']
-)
 _license_info = ('by-nc-sa', '4.0', 'https://creativecommons.org/licenses/by-nc-sa/4.0/')
 license_info = LicenseInfo(*_license_info)
 sm.image_store = MockImageStore(
