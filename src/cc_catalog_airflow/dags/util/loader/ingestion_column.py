@@ -19,13 +19,17 @@ def check_and_fix_tsv_file(tsv_file_name):
 
     It will also log a warning if the number is completely wrong.
     """
-    media_type = tsv_file_name.split('/')[-1].split('_')[1]
+    try:
+        media_type = tsv_file_name.split('/')[-1].split('_')[1]
+    except IndexError:
+        # If no media file is set in the filename, it is
+        # probably image
+        media_type = 'image'
+    old_cols_number = len(_IMAGE_TSV_COLUMNS) - 1
     if media_type == 'audio':
-        # when audio is added:
+        # TODO: when audio is added:
         # old_cols_number = len(AUDIO_TSV_COLUMNS) - 1
         old_cols_number = 0
-    else:
-        old_cols_number = len(_IMAGE_TSV_COLUMNS) - 1
     new_cols_number = old_cols_number + 1
     with open(tsv_file_name) as f:
         test_line = f.readline()
