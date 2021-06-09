@@ -137,9 +137,9 @@ def _get_raw_tags(obj):
 
 def _get_landing(obj, landing_url=LANDING_URL):
     l_url = None
-    id = obj.get("id")
-    if id:
-        l_url = landing_url + id
+    id_ = obj.get("id")
+    if id_:
+        l_url = landing_url + id_
     return l_url
 
 
