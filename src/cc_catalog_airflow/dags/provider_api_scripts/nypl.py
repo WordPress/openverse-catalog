@@ -2,8 +2,11 @@ import os
 import logging
 from urllib.parse import urlparse, parse_qs
 
-from common import DelayedRequester, ImageStore
-from common.licenses.licenses import get_license_info
+from common import (
+    get_license_info,
+    DelayedRequester,
+    ImageStore
+)
 from util.loader import provider_details as prov
 
 logging.basicConfig(

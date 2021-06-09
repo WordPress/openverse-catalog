@@ -13,8 +13,11 @@ Notes:                  http://phylopic.org/api/
 import argparse
 import logging
 
-from common import DelayedRequester, ImageStore
-from common.licenses.licenses import get_license_info
+from common import (
+    get_license_info,
+    DelayedRequester,
+    ImageStore
+)
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s:  %(message)s',

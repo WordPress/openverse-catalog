@@ -3,8 +3,8 @@ import logging
 import os
 import requests
 from unittest.mock import patch, MagicMock
-from common.licenses.licenses import LicenseInfo
 
+from common import LicenseInfo
 import europeana
 
 RESOURCES = os.path.join(

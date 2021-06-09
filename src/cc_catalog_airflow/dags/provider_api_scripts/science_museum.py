@@ -1,7 +1,10 @@
 import logging
 
-from common.storage.image import DelayedRequester, ImageStore
-from common.licenses.licenses import get_license_info
+from common import (
+    get_license_info,
+    DelayedRequester,
+    ImageStore
+)
 from util.loader import provider_details as prov
 
 logging.basicConfig(

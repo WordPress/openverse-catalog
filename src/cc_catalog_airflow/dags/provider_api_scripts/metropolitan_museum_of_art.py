@@ -13,8 +13,11 @@ Notes:                  https://metmuseum.github.io/
 import argparse
 import logging
 
-from common import DelayedRequester, ImageStore
-from common.licenses.licenses import get_license_info
+from common import (
+    get_license_info,
+    DelayedRequester,
+    ImageStore
+)
 
 DELAY = 1.0  # time delay (in seconds)
 PROVIDER = 'met'

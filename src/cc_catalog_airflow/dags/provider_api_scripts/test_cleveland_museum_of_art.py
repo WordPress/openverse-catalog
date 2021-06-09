@@ -3,9 +3,11 @@ import json
 import requests
 import os
 from unittest.mock import patch, MagicMock
-from common.storage.image import MockImageStore
-from common.licenses.licenses import LicenseInfo
 
+from common import (
+    LicenseInfo,
+    MockImageStore
+)
 import cleveland_museum_of_art as clm
 
 
@@ -161,7 +163,7 @@ def test_get_response_failure():
                       'get',
                       return_value=r) as mock_get:
 
-        response_json, total_images = clm._get_response(query_param)
+        clm._get_response(query_param)
 
     assert mock_get.call_count == 3
 
