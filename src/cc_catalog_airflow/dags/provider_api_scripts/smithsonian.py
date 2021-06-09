@@ -104,7 +104,7 @@ DESCRIPTION_TYPES = {'description', 'summary', 'caption', 'notes',
                      'description (brief spanish)', 'gallery label',
                      'exhibition label', 'luce center label',
                      'publication label', 'new acquisition label'}
-TAG_TYPES = {'date', 'object_type', 'topic', 'place'}
+TAG_TYPES = ('date', 'object_type', 'topic', 'place')
 
 image_store = ImageStore(provider=PROVIDER)
 delayed_requester = DelayedRequester(delay=DELAY)

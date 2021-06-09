@@ -11,7 +11,6 @@ logger = logging.getLogger(__name__)
 
 logging.basicConfig(
     format='{asctime} - {name} - {levelname}:  {message}',
-    style='{',
     level=logging.DEBUG
 )
 
