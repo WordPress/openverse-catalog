@@ -473,7 +473,6 @@ def _process_image_list(
 if __name__ == '__main__':
     logging.basicConfig(
         format='{asctime} - {name} - {levelname}:  {message}',
-        style='{',
         level=logging.INFO
     )
     main()
