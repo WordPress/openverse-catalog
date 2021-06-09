@@ -1,7 +1,7 @@
 import os
 from unittest.mock import patch, call
 
-from common.licenses.licenses import get_license_info
+from common import get_license_info
 from util import tsv_cleaner
 
 RESOURCES = os.path.join(

@@ -7,7 +7,12 @@ from common import LicenseInfo, MockImageStore
 
 import raw_pixel as rwp
 
-_license_info = ('cc0', '1.0', 'https://creativecommons.org/publicdomain/zero/1.0/')
+_license_info = (
+    'cc0',
+    '1.0',
+    'https://creativecommons.org/publicdomain/zero/1.0/',
+    None
+)
 license_info = LicenseInfo(*_license_info)
 rwp.image_store = MockImageStore(
     provider=rwp.PROVIDER,

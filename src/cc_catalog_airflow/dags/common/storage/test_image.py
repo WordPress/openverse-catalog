@@ -5,7 +5,7 @@ import pytest
 import tldextract
 
 from common.storage import image
-from common.licenses.licenses import get_license_info, LicenseInfo
+from common import get_license_info, LicenseInfo
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s:  %(message)s',
@@ -13,10 +13,7 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-# This avoids needing the internet for testing.
-image.licenses.urls.tldextract.extract = tldextract.TLDExtract(
-    suffix_list_urls=None
-)
+
 image.columns.urls.tldextract.extract = tldextract.TLDExtract(
     suffix_list_urls=None
 )
@@ -30,24 +27,6 @@ PD_1_LICENSE_INFO = get_license_info(
 @pytest.fixture
 def setup_env(monkeypatch):
     monkeypatch.setenv('OUTPUT_DIR', '/tmp')
-
-
-@pytest.fixture
-def mock_rewriter(monkeypatch):
-    def mock_rewrite_redirected_url(url_string):
-        return url_string
-    monkeypatch.setattr(
-        image.licenses.urls,
-        'rewrite_redirected_url',
-        mock_rewrite_redirected_url,
-    )
-
-
-@pytest.fixture
-def get_good(monkeypatch):
-    def mock_get(url, timeout=60):
-        return requests.Response()
-    monkeypatch.setattr(image.licenses.urls.requests, 'get', mock_get)
 
 
 def test_ImageStore_uses_OUTPUT_DIR_variable(
@@ -77,7 +56,7 @@ def test_ImageStore_includes_provider_in_output_file_string(
 
 
 def test_ImageStore_add_item_adds_realistic_image_to_buffer(
-        setup_env, mock_rewriter
+        setup_env
 ):
     image_store = image.ImageStore(provider='testing_provider')
     image_store.add_item(
@@ -89,7 +68,7 @@ def test_ImageStore_add_item_adds_realistic_image_to_buffer(
 
 
 def test_ImageStore_add_item_adds_multiple_images_to_buffer(
-        mock_rewriter, setup_env,
+        setup_env,
 ):
     image_store = image.ImageStore(provider='testing_provider')
     image_store.add_item(
@@ -116,7 +95,7 @@ def test_ImageStore_add_item_adds_multiple_images_to_buffer(
 
 
 def test_ImageStore_add_item_flushes_buffer(
-        mock_rewriter, setup_env, tmpdir,
+        setup_env, tmpdir,
 ):
     output_file = 'testing.tsv'
     tmp_directory = tmpdir
@@ -161,7 +140,7 @@ def test_ImageStore_commit_writes_nothing_if_no_lines_in_buffer():
     image_store.commit()
 
 
-def test_ImageStore_produces_correct_total_images(mock_rewriter, setup_env):
+def test_ImageStore_produces_correct_total_images(setup_env):
     image_store = image.ImageStore(provider='testing_provider')
     image_store.add_item(
         foreign_landing_url='https://images.org/image01',
@@ -177,6 +156,13 @@ def test_ImageStore_produces_correct_total_images(mock_rewriter, setup_env):
         foreign_landing_url='https://images.org/image03',
         image_url='https://images.org/image03.jpg',
         license_info=PD_1_LICENSE_INFO,
+    )
+    image_store.add_item(
+        foreign_landing_url='https://images.org/image04',
+        image_url='https://images.org/image04.jpg',
+        license_info=LicenseInfo(
+            None, None, None, None
+        ),
     )
     assert image_store.total_images == 3
 
@@ -265,7 +251,7 @@ def test_ImageStore_get_media_gets_source(
     assert actual_image.source == 'diff_source'
 
 
-def test_ImageStore_get_image_replaces_non_dict_meta_data_with_no_license_url(
+def test_ImageStore_get_image_returns_none_if_license_url_is_none(
         setup_env,
 ):
     image_store = image.ImageStore()
@@ -286,9 +272,7 @@ def test_ImageStore_get_image_replaces_non_dict_meta_data_with_no_license_url(
         watermarked=None,
         source=None,
     )
-    assert actual_image.meta_data == {
-        'license_url': None, 'raw_license_url': None
-    }
+    assert actual_image is None
 
 
 def test_ImageStore_get_image_creates_meta_data_with_valid_license_url(
@@ -346,39 +330,6 @@ def test_ImageStore_get_image_adds_valid_license_url_to_dict_meta_data(
         'key1': 'val1',
         'license_url': 'https://license/url',
         'raw_license_url': 'https://license/url'
-    }
-
-
-def test_ImageStore_get_image_fixes_invalid_license_url(
-        monkeypatch, setup_env
-):
-    original_url = 'https://license/url',
-    updated_url = 'https://updatedurl.com'
-
-    def mock_license_chooser(license_url, license_, license_version):
-        return image.licenses.LicenseInfo(
-            license_, license_version, updated_url, license_url
-        )
-    image_store = image.ImageStore()
-
-    actual_image = image_store._get_image(
-        license_info=LicenseInfo('license', '1.5', updated_url, original_url),
-        foreign_landing_url=None,
-        image_url=None,
-        thumbnail_url=None,
-        foreign_identifier=None,
-        width=None,
-        height=None,
-        creator=None,
-        creator_url=None,
-        title=None,
-        meta_data={},
-        raw_tags=None,
-        watermarked=None,
-        source=None,
-    )
-    assert actual_image.meta_data == {
-        'license_url': updated_url, 'raw_license_url': original_url
     }
 
 
@@ -566,7 +517,6 @@ def default_image_args(
 
 def test_create_tsv_row_non_none_if_req_fields(
         default_image_args,
-        get_good,
         setup_env,
 ):
     image_store = image.ImageStore()

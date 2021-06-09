@@ -199,6 +199,9 @@ class ImageStore:
                              provider of the image.
 
         """
+        if license_info.license is None:
+            logger.warning(f"Invalid license provided")
+            return None
         image = self._get_image(
             foreign_landing_url=foreign_landing_url,
             image_url=image_url,
@@ -279,10 +282,14 @@ class ImageStore:
             watermarked,
             source,
     ):
+        if license_info.url is None:
+            logger.warning(f"No valid license url detected")
+            return None
         meta_data = self._enrich_meta_data(
             meta_data,
             license_info.url,
-            license_info.raw_url)
+            license_info.raw_url
+        )
         source = util.get_source(source, self._PROVIDER)
 
         tags = self._enrich_tags(raw_tags)
@@ -433,13 +440,12 @@ class MockImageStore(ImageStore):
             watermarked,
             source,
     ):
-        valid_license_info = self.license_info
 
         source = util.get_source(source, self._PROVIDER)
         meta_data = self._enrich_meta_data(
             meta_data,
-            license_url=valid_license_info.url,
-            raw_license_url=license_url
+            license_url=license_info.url,
+            raw_license_url=license_info.raw_url
         )
         tags = self._enrich_tags(raw_tags)
 

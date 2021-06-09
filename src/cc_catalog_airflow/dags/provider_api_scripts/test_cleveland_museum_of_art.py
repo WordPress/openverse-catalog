@@ -11,12 +11,17 @@ from common import (
 import cleveland_museum_of_art as clm
 
 
-_license_info = ('cc0', '1.0', 'https://creativecommons.org/publicdomain/zero/1.0/')
+_license_info = (
+    'cc0',
+    '1.0',
+    'https://creativecommons.org/publicdomain/zero/1.0/',
+    None,
+)
 license_info = LicenseInfo(*_license_info)
 clm.image_store = MockImageStore(
-                    provider=clm.PROVIDER,
-                    license_info=license_info
-                    )
+    provider=clm.PROVIDER,
+    license_info=license_info,
+)
 
 RESOURCES = os.path.join(
     os.path.abspath(os.path.dirname(__file__)),

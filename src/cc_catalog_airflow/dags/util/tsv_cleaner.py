@@ -2,7 +2,7 @@ import json
 import logging
 import os
 
-from common.licenses.licenses import get_license_info
+from common import get_license_info
 from common.storage import image
 
 logger = logging.getLogger(__name__)
