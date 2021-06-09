@@ -71,7 +71,7 @@ def _get_object_json(
         query_param=None
         ):
     if headers is None:
-        headers = HEADERS
+        headers = HEADERS.copy()
     for tries in range(retries):
         response = delay_request.get(
                     endpoint,
