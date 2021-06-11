@@ -387,7 +387,7 @@ def _extract_source(meta_data, sub_providers=SUB_PROVIDERS):
 
 def _extract_tags(row, tag_types=None):
     if tag_types is None:
-        tag_types = TAG_TYPES.copy()
+        tag_types = TAG_TYPES
     indexed_structured = _get_indexed_structured_dict(row)
     tag_lists_generator = (
         _check_type(indexed_structured.get(key), list) for key in tag_types
