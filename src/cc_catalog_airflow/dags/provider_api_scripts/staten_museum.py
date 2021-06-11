@@ -75,7 +75,7 @@ def _get_batch_items(
         retries=RETRIES
         ):
     if headers is None:
-        headers = HEADERS
+        headers = HEADERS.copy()
     for retry in range(retries):
         response = delay_request.get(
             endpoint,

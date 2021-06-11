@@ -266,7 +266,7 @@ def _get_image_info_dict(image_data):
 
 def _check_mediatype(image_info, image_mediatypes=None):
     if image_mediatypes is None:
-        image_mediatypes = IMAGE_MEDIATYPES
+        image_mediatypes = IMAGE_MEDIATYPES.copy()
     valid_mediatype = True
     image_mediatype = image_info.get('mediatype')
     if image_mediatype not in image_mediatypes:

@@ -302,7 +302,7 @@ def _get_title(row):
 
 def _get_creator(row, creator_types=None):
     if creator_types is None:
-        creator_types = CREATOR_TYPES
+        creator_types = CREATOR_TYPES.copy()
     freetext = _get_freetext_dict(row)
     indexed_structured = _get_indexed_structured_dict(row)
     ordered_freetext_creator_objects = sorted(
@@ -348,7 +348,7 @@ def _get_creator(row, creator_types=None):
 
 def _extract_meta_data(row, description_types=None):
     if description_types is None:
-        description_types = DESCRIPTION_TYPES
+        description_types = DESCRIPTION_TYPES.copy()
     freetext = _get_freetext_dict(row)
     descriptive_non_repeating = _get_descriptive_non_repeating_dict(row)
     description = ''
@@ -387,7 +387,7 @@ def _extract_source(meta_data, sub_providers=SUB_PROVIDERS):
 
 def _extract_tags(row, tag_types=None):
     if tag_types is None:
-        tag_types = TAG_TYPES
+        tag_types = TAG_TYPES.copy()
     indexed_structured = _get_indexed_structured_dict(row)
     tag_lists_generator = (
         _check_type(indexed_structured.get(key), list) for key in tag_types

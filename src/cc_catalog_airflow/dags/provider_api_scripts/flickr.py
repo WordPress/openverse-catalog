@@ -209,7 +209,7 @@ def _build_query_param_dict(
         default_query_param=None,
 ):
     if license_info is None:
-        license_info = LICENSE_INFO
+        license_info = LICENSE_INFO.copy()
     if default_query_param is None:
         default_query_param = DEFAULT_QUERY_PARAMS
     query_param_dict = default_query_param.copy()
@@ -333,7 +333,7 @@ def _get_image_url(image_data):
 
 def _get_license(license_id, license_info=None):
     if license_info is None:
-        license_info = LICENSE_INFO
+        license_info = LICENSE_INFO.copy()
     license_id = str(license_id)
 
     if license_id not in license_info:
