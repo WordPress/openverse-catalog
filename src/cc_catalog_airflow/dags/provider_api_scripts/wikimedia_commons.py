@@ -22,6 +22,10 @@ from common import DelayedRequester, ImageStore
 from util.loader import provider_details as prov
 
 logger = logging.getLogger(__name__)
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s:  %(message)s',
+    level=logging.INFO
+)
 
 LIMIT = 250
 # The 10000 is a bit arbitrary, but needs to be larger than the mean
@@ -375,10 +379,6 @@ def _cleanse_url(url_string):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(
-        format='%(asctime)s - %(name)s - %(levelname)s:  %(message)s',
-        level=logging.INFO
-    )
     parser = argparse.ArgumentParser(
         description='Wikimedia Commons API Job',
         add_help=True,

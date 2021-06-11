@@ -17,6 +17,10 @@ from common import DelayedRequester, ImageStore
 from util.loader import provider_details as prov
 
 logger = logging.getLogger(__name__)
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s:  %(message)s',
+    level=logging.INFO
+)
 
 API_KEY = os.getenv('DATA_GOV_API_KEY')
 DELAY = 5.0
@@ -482,9 +486,4 @@ def _process_image_list(
 
 
 if __name__ == '__main__':
-    logging.basicConfig(
-        format='{asctime} - {name} - {levelname}:  {message}',
-        style='{',
-        level=logging.INFO
-    )
     main()
