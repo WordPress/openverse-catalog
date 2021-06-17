@@ -472,7 +472,7 @@ def _process_image_list(
 
 if __name__ == '__main__':
     logging.basicConfig(
-        format='{asctime} - {name} - {levelname}:  {message}',
+        format='%(asctime)s - %(name)s - %(levelname)s:  %(message)s',
         level=logging.INFO
     )
     main()
