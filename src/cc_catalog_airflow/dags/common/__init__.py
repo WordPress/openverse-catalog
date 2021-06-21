@@ -1,3 +1,4 @@
+# flake8: noqa
 from .licenses import constants, licenses
 from .licenses.licenses import (
     get_license_info, get_license_info_from_license_pair
