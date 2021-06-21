@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 
-from provider_api_scripts import cleveland_museum_of_art
+from provider_api_scripts import jamendo
 from util.operator_util import get_log_operator
 
 
@@ -16,13 +16,13 @@ DAG_DEFAULT_ARGS = {
     'retry_delay': timedelta(days=1),
 }
 
-DAG_ID = "{provider_lower_case}_workflow"
+DAG_ID = "jamendo_workflow"
 
 
 def get_runner_operator(dag):
     return PythonOperator(
-        task_id="pull_{provider_lower_case}_data",
-        python_callable={provider_lower_case}.main,
+        task_id="pull_jamendo_data",
+        python_callable=jamendo.main,
         depends_on_past=False,
         dag=dag
     )

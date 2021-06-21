@@ -45,7 +45,8 @@ HEADERS = {
     "Accept": "application/json",
 }
 DEFAULT_QUERY_PARAMS = {
-    # jsonpretty can cause invalid characters in json: \u0009 tab breaks the json
+    # jsonpretty can have invalid characters in json:
+    # \u0009 tab breaks the json
     'format': 'json',
     'client_id': APP_KEY,
     'include': 'musicinfo licenses stats lyrics',
@@ -182,7 +183,10 @@ def _get_foreign_identifier(media_data):
 
 def _get_audio_info(media_data):
     audio_url = media_data.get('audio')
-    if media_data.get('audiodownload_allowed') and media_data.get('audiodownload'):
+    if (
+            media_data.get('audiodownload_allowed')
+            and media_data.get('audiodownload')
+    ):
         audio_url = media_data.get('audiodownload')
     duration = media_data.get('duration')
     if duration:
@@ -193,6 +197,7 @@ def _get_audio_info(media_data):
 
 def _get_audio_set_info(media_data):
     url = None
+    base_url = 'https://www.jamendo.com/album/'
     audio_set = media_data.get('album_name')
     position = media_data.get('position')
     thumbnail = media_data.get('album_image')
@@ -202,7 +207,7 @@ def _get_audio_set_info(media_data):
             .replace(' ', '-')\
             .replace('.', '')\
             .replace(':', '')
-        url = _cleanse_url(f'https://www.jamendo.com/album/{set_id}/{set_slug}')
+        url = _cleanse_url(f'{base_url}{set_id}/{set_slug}')
         print(set_id, set_slug, url)
     return audio_set, position, url, thumbnail
 
@@ -212,13 +217,14 @@ def _get_thumbnail_url(media_data):
 
 
 def _get_creator_data(item):
+    base_url = 'https://www.jamendo.com/artist/'
     creator_name = item.get('artist_name')
     if creator_name is None:
         return None, None
     creator_id = item.get('artist_id')
     creator_idstr = item.get('artist_idstr')
     if creator_id is not None and creator_idstr is not None:
-        creator_url = f"https://www.jamendo.com/artist/{creator_id}/{creator_idstr}"
+        creator_url = f"{base_url}{creator_id}/{creator_idstr}"
     else:
         creator_url = None
     return creator_name.strip(), creator_url
