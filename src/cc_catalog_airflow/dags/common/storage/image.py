@@ -165,24 +165,13 @@ class ImageStore(MediaStore):
                              ImageStore init function is the specific
                              provider of the image.
         """
-        valid_license, raw_license_url = self.get_valid_license_info(
-            license_url,
-            license_,
-            license_version
-        )
-        if valid_license.license is None:
-            logger.debug(
-                f"Invalid image license : {license_url},"
-                "{license_}, {license_version}")
-            return None
         image_data = {
             'foreign_landing_url': foreign_landing_url,
             'image_url': image_url,
             'thumbnail_url': thumbnail_url,
-            'license_url': valid_license.url,
-            'license_': valid_license.license,
-            'license_version': valid_license.version,
-            'raw_license_url': raw_license_url,
+            'license': license_,
+            'license_url': license_url,
+            'license_version': license_version,
             'foreign_identifier': foreign_identifier,
             'width': width,
             'height': height,
@@ -199,23 +188,13 @@ class ImageStore(MediaStore):
             self.save_item(image)
         return self.total_items
 
-    def _get_image(self, **kwargs) -> Image:
+    def _get_image(self, **kwargs) -> Optional[Image]:
         """Validates image information and returns Image namedtuple"""
+        image_metadata = self.clean_media_metadata(**kwargs)
+        if image_metadata is None:
+            return None
 
-        kwargs['source'] = self.get_source(kwargs['source'])
-        kwargs['meta_data'], kwargs['tags'] = self.parse_item_metadata(
-            kwargs['license_url'],
-            kwargs.get('raw_license_url'),
-            kwargs.get('meta_data'),
-            kwargs.get('raw_tags'),
-        )
-        kwargs.pop('raw_tags', None)
-        kwargs.pop('raw_license_url', None)
-        kwargs.pop('license_url', None)
-        kwargs['provider'] = self._PROVIDER
-        kwargs['filesize'] = None
-
-        return Image(**kwargs)
+        return Image(**image_metadata)
 
 
 class MockImageStore(ImageStore):

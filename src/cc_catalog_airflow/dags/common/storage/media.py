@@ -46,15 +46,15 @@ class MediaStore(metaclass=abc.ABCMeta):
     """
 
     def __init__(
-        self,
-        provider: Optional[str] = None,
-        output_file: Optional[str] = None,
-        output_dir: Optional[str] = None,
-        buffer_length: int = 100,
-        media_type: Optional[str] = "generic",
+            self,
+            provider: Optional[str] = None,
+            output_file: Optional[str] = None,
+            output_dir: Optional[str] = None,
+            buffer_length: int = 100,
+            media_type: Optional[str] = "generic",
     ):
         logger.info(f"Initialized {media_type} MediaStore"
-                    " with provider {provider}")
+                    f" with provider {provider}")
         self.media_type = media_type
         self._media_buffer = []
         self._total_items = 0
@@ -92,9 +92,9 @@ class MediaStore(metaclass=abc.ABCMeta):
 
     @staticmethod
     def get_valid_license_info(
-        license_url,
-        license_,
-        license_version,
+            license_url,
+            license_,
+            license_version,
     ):
         valid_license_info = licenses.get_license_info(
             license_url=license_url,
@@ -107,15 +107,43 @@ class MediaStore(metaclass=abc.ABCMeta):
             raw_license_url = None
         return valid_license_info, raw_license_url
 
+    def clean_media_metadata(self, **media_data):
+        valid_license, raw_license_url = self.get_valid_license_info(
+            media_data['license_url'],
+            media_data['license_'],
+            media_data['license_version']
+        )
+        if valid_license.license is None:
+            logger.debug(
+                f"Invalid image license : {media_data['license_url']},"
+                "{license_}, {license_version}")
+            return None
+        media_data['license_'] = valid_license.license
+        media_data['license_version'] = valid_license.version
+        media_data.pop('license_url', None)
+
+        media_data['source'] = self.get_source(media_data['source'])
+        media_data['meta_data'], media_data['tags'] = self.parse_item_metadata(
+            valid_license.url,
+            raw_license_url,
+            media_data.get('meta_data'),
+            media_data.get('raw_tags'),
+        )
+        media_data.pop('raw_tags', None)
+
+        media_data['provider'] = self._PROVIDER
+        media_data['filesize'] = None
+        return media_data
+
     def get_source(self, source):
         return util.get_source(source, self._PROVIDER)
 
     def parse_item_metadata(
-        self,
-        license_url,
-        raw_license_url,
-        meta_data,
-        raw_tags,
+            self,
+            license_url,
+            raw_license_url,
+            meta_data,
+            raw_tags,
     ):
         meta_data = self._enrich_meta_data(
             meta_data,
@@ -186,10 +214,10 @@ class MediaStore(metaclass=abc.ABCMeta):
                 return None
         else:
             return (
-                "\t".join(
-                    [s if s is not None else "\\N"
-                     for s in prepared_strings])
-                + "\n"
+                    "\t".join(
+                        [s if s is not None else "\\N"
+                         for s in prepared_strings])
+                    + "\n"
             )
 
     def _flush_buffer(self) -> int:
@@ -210,12 +238,8 @@ class MediaStore(metaclass=abc.ABCMeta):
     def _tag_blacklisted(tag: Union[str, dict]) -> bool:
         """
         Tag is banned or contains a banned substring.
-
-        Args:
-            tag: the tag to be verified against the blacklist
-
-        Returns:
-            True if tag is blacklisted, else False
+        :param tag: the tag to be verified against the blacklist
+        :return: true if tag is blacklisted, else returns false
         """
         if type(tag) == dict:  # check if the tag is already enriched
             tag = tag.get("name")
