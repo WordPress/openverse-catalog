@@ -293,14 +293,14 @@ def test_ImageStore_returns_None_when_license_is_None(
 ):
     image_store = image.ImageStore()
 
-    actual_image = image_store.add_item(
+    items_saved = image_store.add_item(
         license_url='https://license/url',
         license_=None,
         license_version='1.5',
-        foreign_landing_url='',
+        foreign_landing_url='landing.com',
         image_url='',
         thumbnail_url=None,
-        foreign_identifier=None,
+        foreign_identifier='a123',
         width=None,
         height=None,
         creator=None,
@@ -311,34 +311,7 @@ def test_ImageStore_returns_None_when_license_is_None(
         watermarked=None,
         source=None,
     )
-    assert actual_image is None
-
-
-def test_ImageStore_returns_None_when_license_is_invalid(
-    monkeypatch,
-    setup_env,
-):
-    image_store = image.ImageStore()
-
-    actual_image = image_store._get_image(
-        license_url='https://license/url',
-        license_='license',
-        license_version='1.5',
-        foreign_landing_url=None,
-        image_url=None,
-        thumbnail_url=None,
-        foreign_identifier=None,
-        width=None,
-        height=None,
-        creator=None,
-        creator_url=None,
-        title=None,
-        meta_data=None,
-        raw_tags=None,
-        watermarked=None,
-        source=None,
-    )
-    assert actual_image is None
+    assert items_saved == 0
 
 
 def test_ImageStore_get_image_gets_source(

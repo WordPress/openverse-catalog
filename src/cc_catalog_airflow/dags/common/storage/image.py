@@ -169,7 +169,7 @@ class ImageStore(MediaStore):
             'foreign_landing_url': foreign_landing_url,
             'image_url': image_url,
             'thumbnail_url': thumbnail_url,
-            'license': license_,
+            'license_': license_,
             'license_url': license_url,
             'license_version': license_version,
             'foreign_identifier': foreign_identifier,
