@@ -165,75 +165,36 @@ class ImageStore(MediaStore):
                              ImageStore init function is the specific
                              provider of the image.
         """
-        image = self._get_image(
-            foreign_landing_url=foreign_landing_url,
-            image_url=image_url,
-            thumbnail_url=thumbnail_url,
-            license_url=license_url,
-            license_=license_,
-            license_version=license_version,
-            foreign_identifier=foreign_identifier,
-            width=width,
-            height=height,
-            creator=creator,
-            creator_url=creator_url,
-            title=title,
-            meta_data=meta_data,
-            raw_tags=raw_tags,
-            watermarked=watermarked,
-            source=source,
-        )
+        image_data = {
+            'foreign_landing_url': foreign_landing_url,
+            'image_url': image_url,
+            'thumbnail_url': thumbnail_url,
+            'license': license_,
+            'license_url': license_url,
+            'license_version': license_version,
+            'foreign_identifier': foreign_identifier,
+            'width': width,
+            'height': height,
+            'creator': creator,
+            'creator_url': creator_url,
+            'title': title,
+            'meta_data': meta_data,
+            'raw_tags': raw_tags,
+            'watermarked': watermarked,
+            'source': source,
+        }
+        image = self._get_image(**image_data)
         if image is not None:
             self.save_item(image)
-        return self._total_items
+        return self.total_items
 
-    def _get_image(
-        self,
-        foreign_identifier,
-        foreign_landing_url,
-        image_url,
-        thumbnail_url,
-        width,
-        height,
-        license_url,
-        license_,
-        license_version,
-        creator,
-        creator_url,
-        title,
-        meta_data,
-        raw_tags,
-        watermarked,
-        source,
-    ):
-        valid_license_info, raw_license_url = self.get_valid_license_info(
-            license_url, license_, license_version
-        )
-        if valid_license_info.license is None:
+    def _get_image(self, **kwargs) -> Optional[Image]:
+        """Validates image information and returns Image namedtuple"""
+        image_metadata = self.clean_media_metadata(**kwargs)
+        if image_metadata is None:
             return None
-        source, meta_data, tags = self.parse_item_metadata(
-            valid_license_info.url, raw_license_url, source, meta_data, raw_tags
-        )
 
-        return Image(
-            foreign_identifier=foreign_identifier,
-            foreign_landing_url=foreign_landing_url,
-            image_url=image_url,
-            thumbnail_url=thumbnail_url,
-            license_=valid_license_info.license,
-            license_version=valid_license_info.version,
-            width=width,
-            height=height,
-            filesize=None,
-            creator=creator,
-            creator_url=creator_url,
-            title=title,
-            meta_data=meta_data,
-            tags=tags,
-            watermarked=watermarked,
-            provider=self._PROVIDER,
-            source=source,
-        )
+        return Image(**image_metadata)
 
 
 class MockImageStore(ImageStore):

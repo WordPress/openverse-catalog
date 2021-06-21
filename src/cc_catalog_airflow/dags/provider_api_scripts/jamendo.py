@@ -15,6 +15,7 @@ from urllib.parse import urlparse
 
 from common import DelayedRequester, AudioStore
 from common.licenses.licenses import get_license_info
+from urls import rewrite_redirected_url
 from util.loader import provider_details as prov
 
 # On Jamendo Music, you can enjoy a wide catalog of more than 500,000 tracks
@@ -35,19 +36,14 @@ LIMIT = 200  # number of items per page in API response
 DELAY = 1  # in seconds
 RETRIES = 3
 
-# https://api.jamendo.com/v3.0/tracks/
-# ?client_id=your_client_id&format=jsonpretty&limit=2\
-# &fuzzytags=groove+rock&speed=high+veryhigh&include=musicinfo&groupby=artist_id
-HOST = '{{host URL}}'
-ENDPOINT = f'https://api.jamendo.com/v3.0/tracks'
+HOST = 'jamendo.com'
+ENDPOINT = f'https://api.{HOST}/v3.0/tracks'
 PROVIDER = prov.JAMENDO_DEFAULT_PROVIDER
 APP_KEY = os.getenv('JAMENDO_APP_KEY', 'dd3c1077')
 
-# TODO: Add any headers necessary for API request
 HEADERS = {
     "Accept": "application/json",
 }
-# TODO: Add parameters that are necessary for each API request
 DEFAULT_QUERY_PARAMS = {
     # jsonpretty can cause invalid characters in json: \u0009 tab breaks the json
     'format': 'json',
@@ -55,6 +51,7 @@ DEFAULT_QUERY_PARAMS = {
     'include': 'musicinfo licenses stats lyrics',
     'imagesize': 200,
     'limit': 200,
+    'audioformat': 'mp32',
 }
 
 delayed_requester = DelayedRequester(DELAY)
@@ -134,7 +131,6 @@ def _process_item_batch(items_batch):
 
 
 def _extract_image_data(media_data):
-
     try:
         foreign_landing_url = media_data["shareurl"]
     except (TypeError, KeyError, AttributeError):
@@ -151,7 +147,10 @@ def _extract_image_data(media_data):
     thumbnail = _get_thumbnail_url(media_data)
     metadata = _get_metadata(media_data)
     tags = _get_tags(media_data)
-
+    # Jamendo has only music
+    category = 'music'
+    genres = _get_genres(media_data)
+    audio_set, position, url, set_thumbnail = _get_audio_set_info(media_data)
     return {
         'title': title,
         'creator': creator,
@@ -164,7 +163,13 @@ def _extract_image_data(media_data):
         'license_': item_license.license,
         'license_version': item_license.version,
         'meta_data': metadata,
-        'raw_tags': tags
+        'raw_tags': tags,
+        'category': category,
+        'genre': genres,
+        'audio_set': audio_set,
+        'set_position': position,
+        'set_url': url,
+        'set_thumbnail': set_thumbnail,
     }
 
 
@@ -177,9 +182,29 @@ def _get_foreign_identifier(media_data):
 
 def _get_audio_info(media_data):
     audio_url = media_data.get('audio')
+    if media_data.get('audiodownload_allowed') and media_data.get('audiodownload'):
+        audio_url = media_data.get('audiodownload')
     duration = media_data.get('duration')
+    if duration:
+        duration = int(duration) * 1000
     download_url = media_data.get('audiodownload')
     return audio_url, duration, download_url
+
+
+def _get_audio_set_info(media_data):
+    url = None
+    audio_set = media_data.get('album_name')
+    position = media_data.get('position')
+    thumbnail = media_data.get('album_image')
+    set_id = media_data.get('album_id')
+    if set_id and audio_set:
+        set_slug = audio_set.lower()\
+            .replace(' ', '-')\
+            .replace('.', '')\
+            .replace(':', '')
+        url = _cleanse_url(f'https://www.jamendo.com/album/{set_id}/{set_slug}')
+        print(set_id, set_slug, url)
+    return audio_set, position, url, thumbnail
 
 
 def _get_thumbnail_url(media_data):
@@ -216,6 +241,9 @@ def _get_metadata(item):
     downloads_count = item.get('stats', {}).get('rate_download_total', 0)
     listens_count = item.get('stats', {}).get('rate_listened_total', 0)
     playlists_count = item.get('stats', {}).get('rate_playlisted_total', 0)
+    release_date = item.get('releasedate')
+    if release_date is not None:
+        metadata['release_date'] = release_date
     metadata['downloads'] = downloads_count
     metadata['listens'] = listens_count
     metadata['playlists'] = playlists_count
@@ -238,13 +266,18 @@ def _get_tags(item):
         music_speed = musicinfo.get('speed')
         if music_speed:
             tags.append(f"speed_{music_speed}")
-        for tag_name in ['genres', 'instruments', 'vartags']:
+        for tag_name in ['instruments', 'vartags']:
             tag_value = musicinfo['tags'].get(tag_name)
             if tag_value:
                 tag_value = [_ for _ in tag_value if _ != 'undefined']
                 tags.extend(tag_value)
-    logger.info(f"Tags: {tags}, {item.get('id')} - {item.get('shareurl')}")
     return tags
+
+
+def _get_genres(item):
+    genres = item.get('musicinfo', {}).get('tags', {}).get('genres')
+    if genres:
+        return genres
 
 
 def _get_license(item):
@@ -276,7 +309,7 @@ def _cleanse_url(url_string):
         parse_result = urlparse(url_string, scheme='http')
 
     if parse_result.netloc or parse_result.path:
-        return parse_result.geturl()
+        return rewrite_redirected_url(parse_result.geturl())
 
 
 if __name__ == '__main__':

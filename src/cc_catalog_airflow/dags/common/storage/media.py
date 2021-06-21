@@ -46,12 +46,12 @@ class MediaStore(metaclass=abc.ABCMeta):
     """
 
     def __init__(
-        self,
-        provider: Optional[str] = None,
-        output_file: Optional[str] = None,
-        output_dir: Optional[str] = None,
-        buffer_length: int = 100,
-        media_type: Optional[str] = "generic",
+            self,
+            provider: Optional[str] = None,
+            output_file: Optional[str] = None,
+            output_dir: Optional[str] = None,
+            buffer_length: int = 100,
+            media_type: Optional[str] = "generic",
     ):
         logger.info(f"Initialized {media_type} MediaStore"
                     f" with provider {provider}")
@@ -70,8 +70,11 @@ class MediaStore(metaclass=abc.ABCMeta):
 
     def save_item(self, media) -> None:
         """
-        Appends item data to the buffer as a tsv row if data is valid.
-        Doesn't do anything if data isn't valid.
+        Appends item data to the buffer as a tsv row,
+        only if data is valid.
+
+        Args:
+            media: a namedtuple with validated media metadata
         """
         tsv_row = self._create_tsv_row(media)
         if tsv_row:
@@ -89,12 +92,14 @@ class MediaStore(metaclass=abc.ABCMeta):
 
     @staticmethod
     def get_valid_license_info(
-        license_url,
-        license_,
-        license_version,
+            license_url,
+            license_,
+            license_version,
     ):
         valid_license_info = licenses.get_license_info(
-            license_url=license_url, license_=license_, license_version=license_version
+            license_url=license_url,
+            license_=license_,
+            license_version=license_version
         )
         if valid_license_info.url != license_url:
             raw_license_url = license_url
@@ -102,50 +107,90 @@ class MediaStore(metaclass=abc.ABCMeta):
             raw_license_url = None
         return valid_license_info, raw_license_url
 
+    def clean_media_metadata(self, **media_data):
+        valid_license, raw_license_url = self.get_valid_license_info(
+            media_data['license_url'],
+            media_data['license_'],
+            media_data['license_version']
+        )
+        if valid_license.license is None:
+            logger.debug(
+                f"Invalid image license : {media_data['license_url']},"
+                "{license_}, {license_version}")
+            return None
+        media_data['license_'] = valid_license.license
+        media_data['license_version'] = valid_license.version
+        media_data.pop('license_url', None)
+
+        media_data['source'] = self.get_source(media_data['source'])
+        media_data['meta_data'], media_data['tags'] = self.parse_item_metadata(
+            valid_license.url,
+            raw_license_url,
+            media_data.get('meta_data'),
+            media_data.get('raw_tags'),
+        )
+        media_data.pop('raw_tags', None)
+
+        media_data['provider'] = self._PROVIDER
+        media_data['filesize'] = None
+        return media_data
+
     def get_source(self, source):
         return util.get_source(source, self._PROVIDER)
 
     def parse_item_metadata(
-        self,
-        license_url,
-        raw_license_url,
-        source,
-        meta_data,
-        raw_tags,
+            self,
+            license_url,
+            raw_license_url,
+            meta_data,
+            raw_tags,
     ):
-        source = util.get_source(source, self._PROVIDER)
         meta_data = self._enrich_meta_data(
-            meta_data, license_url=license_url, raw_license_url=raw_license_url
+            meta_data,
+            license_url=license_url,
+            raw_license_url=raw_license_url
         )
         tags = self._enrich_tags(raw_tags)
-        return source, meta_data, tags
+        return meta_data, tags
 
     def commit(self):
         """Writes all remaining media items in the buffer to disk."""
         self._flush_buffer()
         return self.total_items
 
-    def _initialize_output_path(self, output_dir, output_file, provider) -> str:
-        """
-        Creates the path for the tsv file. If output_dir and output_file are
-        not given, the following filename is used:
+    def _initialize_output_path(
+            self,
+            output_dir: Optional[str],
+            output_file: Optional[str],
+            provider: str,
+    ) -> str:
+        """Creates the path for the tsv file.
+        If output_dir and output_file ar not given,
+        the following filename is used:
         `/tmp/{provider_name}_{media_type}_{timestamp}.tsv`
+
+        Returns:
+            Path of the tsv file to write media data pulled from providers
         """
         if output_dir is None:
-            logger.info("No given output directory. Using OUTPUT_DIR from environment.")
+            logger.info("No given output directory. "
+                        "Using OUTPUT_DIR from environment.")
             output_dir = os.getenv("OUTPUT_DIR")
         if output_dir is None:
             logger.warning(
-                "OUTPUT_DIR is not set in the environment. Output will go to /tmp."
+                "OUTPUT_DIR is not set in the environment. "
+                "Output will go to /tmp."
             )
             output_dir = "/tmp"
 
         if output_file is not None:
             output_file = str(output_file)
         else:
+            datetime_string = datetime.strftime(
+                self._NOW, '%Y%m%d%H%M%S')
             output_file = (
-                f'{provider}_{self.media_type}_{datetime.strftime(self._NOW, "%Y%m%d%H%M%S")}'
-                f".tsv"
+                f"{provider}_{self.media_type}"
+                f"_{datetime_string}.tsv"
             )
 
         output_path = os.path.join(output_dir, output_file)
@@ -169,10 +214,10 @@ class MediaStore(metaclass=abc.ABCMeta):
                 return None
         else:
             return (
-                "\t".join(
-                    [s if s is not None else "\\N"
-                     for s in prepared_strings])
-                + "\n"
+                    "\t".join(
+                        [s if s is not None else "\\N"
+                         for s in prepared_strings])
+                    + "\n"
             )
 
     def _flush_buffer(self) -> int:

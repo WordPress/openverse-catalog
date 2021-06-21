@@ -1,3 +1,4 @@
+import json
 from collections import namedtuple
 import logging
 from typing import Optional, Dict, Union
@@ -50,23 +51,21 @@ AUDIO_TSV_COLUMNS = [
     columns.IntegerColumn(
         name='duration', required=False
     ),
-    columns.StringColumn(
-        name='bit_rate', required=False, size=80, truncate=False,
-    ),
-    columns.StringColumn(
-        name='sample_rate', required=False, size=80, truncate=False,
-    ),
-    columns.StringColumn(
-        name='type', required=False, size=80, truncate=False,
-    ),
-    columns.StringColumn(
-        name='genre', required=False, size=80, truncate=False,
-    ),
-    columns.StringColumn(
-        name='audio_set', required=False, size=80, truncate=False,
+    columns.IntegerColumn(
+        name='bit_rate', required=False,
     ),
     columns.IntegerColumn(
-        name='set_position', required=False
+        name='sample_rate', required=False,
+    ),
+    columns.StringColumn(
+        name='category', required=False, size=80, truncate=False,
+    ),
+    columns.JSONColumn(
+        name='genre', required=False,
+    ),
+    columns.JSONColumn(
+        # set name, set thumbnail, position of audio in set, set url
+        name='audio_set', required=False,
     ),
     columns.JSONColumn(
         # Alternative files: url, filesize, bit_rate, sample_rate
@@ -127,11 +126,13 @@ class AudioStore(MediaStore):
         raw_tags=None,
         duration: Optional[int] = None,
         bit_rate: Optional[str] = None,
-        sample_rate: Optional[str] = None,
-        kind: Optional[str] = None,
+        sample_rate: Optional[int] = None,
+        category: Optional[str] = None,
         genre: Optional[str] = None,
         audio_set: Optional[str] = None,
         set_position: Optional[int] = None,
+        set_thumbnail: Optional[str] = None,
+        set_url: Optional[str] = None,
         alt_audio_files: Optional[Dict] = None,
         source: Optional[str] = None,
     ):
@@ -193,6 +194,13 @@ class AudioStore(MediaStore):
                 f"Invalid audio license : {license_url},"
                 "{license_}, {license_version}")
             return None
+        audio_set_data = {
+            'audio_set': audio_set,
+            'set_url': set_url,
+            'set_position': set_position,
+            'set_thumbnail': set_thumbnail
+        }
+
         audio_data = {
             'foreign_landing_url': foreign_landing_url,
             'audio_url': audio_url,
@@ -210,10 +218,9 @@ class AudioStore(MediaStore):
             'duration': duration,
             'bit_rate': bit_rate,
             'sample_rate': sample_rate,
-            'kind': kind,
+            'category': category,
             'genre': genre,
-            'audio_set': audio_set,
-            'set_position': set_position,
+            'audio_set': audio_set_data,
             'alt_audio_files': alt_audio_files,
             'source': source,
         }
@@ -223,23 +230,13 @@ class AudioStore(MediaStore):
             self.save_item(audio)
         return self.total_items
 
-    def _get_audio(self, **kwargs) -> Audio:
+    def _get_audio(self, **kwargs) -> Optional[Audio]:
         """Validates audio information and returns Audio namedtuple"""
 
-        kwargs['source'] = self.get_source(kwargs['source'])
-        kwargs['meta_data'], kwargs['tags'] = self.parse_item_metadata(
-            kwargs['license_url'],
-            kwargs.get('raw_license_url'),
-            kwargs.get('meta_data'),
-            kwargs.get('raw_tags'),
-        )
-        kwargs.pop('raw_tags', None)
-        kwargs.pop('raw_license_url', None)
-        kwargs.pop('license_url', None)
-        kwargs['provider'] = self._PROVIDER
-        kwargs['filesize'] = None
-
-        return Audio(**kwargs)
+        audio_metadata = self.clean_media_metadata(**kwargs)
+        if audio_metadata is None:
+            return None
+        return Audio(**audio_metadata)
 
 
 class MockAudioStore(AudioStore):
