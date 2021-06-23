@@ -200,7 +200,7 @@ def test_MediaStore_get_valid_license_info_returns_None_when_license_is_None(
 ):
     image_store = image.ImageStore()
 
-    actual_image_data = image_store.get_valid_license_info({
+    actual_image_data = image_store.validate_license_info({
         'license_url': 'https://license/url',
         'license_': None,
         'license_version': '1.5',
@@ -216,7 +216,7 @@ def test_MediaStore_get_valid_license_info_returns_None_when_license_is_invalid(
 ):
     image_store = image.ImageStore()
 
-    actual_license_info = image_store.get_valid_license_info({
+    actual_license_info = image_store.validate_license_info({
         'license_url': 'https://license/url',
         'license_': 'license',
         'license_version': '1.5',
@@ -258,17 +258,6 @@ def test_MediaStore_clean_media_metadata_adds_provider(
         'license_version': '4.0',
         'foreign_landing_url': None,
         'image_url': None,
-        'thumbnail_url': None,
-        'foreign_identifier': None,
-        'width': None,
-        'height': None,
-        'creator': None,
-        'creator_url': None,
-        'title': None,
-        'meta_data': None,
-        'raw_tags': None,
-        'watermarked': None,
-        'source': None,
     }
     cleaned_data = image_store.clean_media_metadata(**image_data)
 
@@ -283,19 +272,6 @@ def test_MediaStore_clean_media_metadata_adds_filesize(
     image_data = {
         'license_': 'by',
         'license_version': '4.0',
-        'foreign_landing_url': None,
-        'image_url': None,
-        'thumbnail_url': None,
-        'foreign_identifier': None,
-        'width': None,
-        'height': None,
-        'creator': None,
-        'creator_url': None,
-        'title': None,
-        'meta_data': None,
-        'raw_tags': None,
-        'watermarked': None,
-        'source': None,
     }
     cleaned_data = image_store.clean_media_metadata(**image_data)
 
@@ -311,7 +287,7 @@ def test_MediaStore_clean_media_metadata_removes_license_urls(
     image_data = {
         'license_': 'by-nc-nd',
         'license_version': '4.0',
-        'license_url': 'https://creativecommons.org/licenses/by-nc-nd/4.0',
+        'license_url': 'license',
         'foreign_landing_url': None,
         'image_url': None,
         'thumbnail_url': None,
@@ -323,16 +299,37 @@ def test_MediaStore_clean_media_metadata_removes_license_urls(
     assert 'raw_license_url' not in cleaned_data
 
 
+def test_MediaStore_clean_media_metadata_replaces_license_url_with_license_info(
+        monkeypatch,
+        setup_env,
+):
+    license_url = 'https://creativecommons.org/licenses/by-nc-nd/4.0/'
+    image_store = image.ImageStore()
+    image_data = {
+        'license_url': license_url,
+        'license_': None,
+        'license_version': None,
+    }
+    cleaned_data = image_store.clean_media_metadata(**image_data)
+
+    expected_license = 'by-nc-nd'
+    expected_version = '4.0'
+    assert cleaned_data['license_'] == expected_license
+    assert cleaned_data['license_version'] == expected_version
+    assert 'license_url' not in cleaned_data
+
+
 def test_MediaStore_clean_media_metadata_adds_license_urls_to_meta_data(
         monkeypatch,
         setup_env,
 ):
-    license_url = 'https://creativecommons.org/licenses/by-nc-nd/4.0'
+    raw_license_url = 'raw_license'
+    license_url = 'https://creativecommons.org/licenses/by-nc-nd/4.0/'
     image_store = image.ImageStore()
     image_data = {
         'license_': 'by-nc-nd',
         'license_version': '4.0',
-        'license_url': license_url,
+        'license_url': raw_license_url,
         'foreign_landing_url': None,
         'image_url': None,
         'thumbnail_url': None,
@@ -341,8 +338,8 @@ def test_MediaStore_clean_media_metadata_adds_license_urls_to_meta_data(
     }
     cleaned_data = image_store.clean_media_metadata(**image_data)
 
-    assert cleaned_data['meta_data']['license_url'] == license_url + '/'
-    assert cleaned_data['meta_data']['raw_license_url'] == license_url
+    assert cleaned_data['meta_data']['license_url'] == license_url
+    assert cleaned_data['meta_data']['raw_license_url'] == raw_license_url
 
 
 def test_MediaStore_get_image_gets_source(
