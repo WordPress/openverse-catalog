@@ -61,7 +61,10 @@ IMAGE_TSV_COLUMNS = [
     ),
     columns.StringColumn(
         name='source', required=False, size=80, truncate=False
-    )
+    ),
+    columns.StringColumn(
+        name="ingestion_type", required=False, size=80, truncate=False
+    ),
 ]
 
 Image = namedtuple("Image", [c.NAME for c in IMAGE_TSV_COLUMNS])
@@ -113,6 +116,7 @@ class ImageStore(MediaStore):
         raw_tags=None,
         watermarked: Optional[str] = "f",
         source: Optional[str] = None,
+        ingestion_type: Optional[str] = 'commoncrawl',
     ):
         """
         Add information for a single image to the ImageStore.
@@ -164,6 +168,9 @@ class ImageStore(MediaStore):
                              and the `provider` argument in the
                              ImageStore init function is the specific
                              provider of the image.
+        ingestion_type:      String showing how the image was ingested:
+                             through an api - 'provider_api' or using the
+                             commoncrawl database - 'commoncrawl'
         """
         image_data = {
             'foreign_landing_url': foreign_landing_url,
@@ -182,6 +189,7 @@ class ImageStore(MediaStore):
             'raw_tags': raw_tags,
             'watermarked': watermarked,
             'source': source,
+            'ingestion_type': ingestion_type
         }
         image = self._get_image(**image_data)
         if image is not None:
