@@ -12,7 +12,6 @@ import tldextract
 
 from common.licenses import licenses
 from common.storage import image
-from common.storage import util
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s:  %(message)s',
@@ -398,7 +397,7 @@ def test_MediaStore_sets_source_to_provider_if_source_is_none(
         ingestion_type=None,
     )
     assert actual_image.source == 'test_provider'
-    
+
 
 def test_MediaStore_add_image_replaces_non_dict_meta_data_with_no_license_url(
         setup_env,
