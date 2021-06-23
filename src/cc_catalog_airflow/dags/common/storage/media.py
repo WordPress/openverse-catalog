@@ -140,7 +140,8 @@ class MediaStore(metaclass=abc.ABCMeta):
         valid_license_info = self.get_valid_license_info(media_data)
         if valid_license_info is None:
             logger.debug(
-                f"Invalid image license. URL: <{media_data.get('license_url')}>,"
+                f"Invalid image license."
+                f" URL: <{media_data.get('license_url')}>,"
                 f" license: {media_data.get('license_')},"
                 f" version: {media_data.get('license_version')}")
             return None
