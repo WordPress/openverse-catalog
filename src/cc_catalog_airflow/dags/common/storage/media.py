@@ -150,7 +150,10 @@ class MediaStore(metaclass=abc.ABCMeta):
         raw_license_url = valid_license_info.pop('raw_license_url', None)
 
         media_data.update(valid_license_info)
-        media_data['source'] = self.get_source(media_data.get('source'))
+        media_data['source'] = util.get_source(
+            media_data.get('source'),
+            self._PROVIDER
+        )
         media_data['meta_data'], media_data['tags'] = self.parse_item_metadata(
             license_url,
             raw_license_url,
@@ -162,9 +165,6 @@ class MediaStore(metaclass=abc.ABCMeta):
         media_data['provider'] = self._PROVIDER
         media_data['filesize'] = None
         return media_data
-
-    def get_source(self, source):
-        return util.get_source(source, self._PROVIDER)
 
     def parse_item_metadata(
             self,

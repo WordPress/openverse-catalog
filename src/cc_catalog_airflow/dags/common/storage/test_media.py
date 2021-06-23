@@ -352,10 +352,32 @@ def test_MediaStore_get_image_gets_source(
 ):
     image_store = image.ImageStore()
 
-    def mock_get_source(source, provider):
-        return 'diff_source'
+    actual_image = image_store._get_image(
+        license_='by',
+        license_version='4.0',
+        foreign_landing_url=None,
+        image_url=None,
+        thumbnail_url=None,
+        foreign_identifier=None,
+        width=None,
+        height=None,
+        creator=None,
+        creator_url=None,
+        title=None,
+        meta_data=None,
+        raw_tags=None,
+        watermarked=None,
+        source='diff_source',
+        ingestion_type=None,
+    )
+    assert actual_image.source == 'diff_source'
 
-    monkeypatch.setattr(util, 'get_source', mock_get_source)
+
+def test_MediaStore_sets_source_to_provider_if_source_is_none(
+        monkeypatch,
+        setup_env,
+):
+    image_store = image.ImageStore(provider='test_provider')
 
     actual_image = image_store._get_image(
         license_='by',
@@ -375,8 +397,8 @@ def test_MediaStore_get_image_gets_source(
         source=None,
         ingestion_type=None,
     )
-    assert actual_image.source == 'diff_source'
-
+    assert actual_image.source == 'test_provider'
+    
 
 def test_MediaStore_add_image_replaces_non_dict_meta_data_with_no_license_url(
         setup_env,
