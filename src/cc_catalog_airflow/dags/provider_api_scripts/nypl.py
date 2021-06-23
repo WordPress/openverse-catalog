@@ -203,7 +203,6 @@ def _get_images(
         thumbnail_dimensions = THUMBNAIL_DIMENSIONS
     if image_url_dimensions is None:
         image_url_dimensions = IMAGE_URL_DIMENSIONS
-    image_url, thumbnail_url = None, None
     image_type = {
         parse_qs(urlparse(img.get("$")).query)['t'][0]: img.get("$")
         for img in images

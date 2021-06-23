@@ -54,7 +54,7 @@ def main():
 
             if type(results) == list:
                 if len(results) > 0:
-                    image_count = _handle_batch_objects(results)
+                    _handle_batch_objects(results)
                     page += 1
                 else:
                     condition = False
@@ -81,6 +81,7 @@ def _get_batch_objects(
 ):
     if headers is None:
         headers = HEADERS.copy()
+    data = None
     for retry in range(retries):
         response = delay_request.get(
             endpoint,
@@ -92,8 +93,6 @@ def _get_batch_objects(
             if type(response_json) == list:
                 data = response_json
                 break
-            else:
-                data = None
         except Exception:
             data = None
     return data
