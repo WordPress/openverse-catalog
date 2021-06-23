@@ -61,7 +61,10 @@ IMAGE_TSV_COLUMNS = [
     ),
     columns.StringColumn(
         name='source', required=False, size=80, truncate=False
-    )
+    ),
+    columns.StringColumn(
+        name="ingestion_type", required=False, size=80, truncate=False
+    ),
 ]
 
 Image = namedtuple("Image", [c.NAME for c in IMAGE_TSV_COLUMNS])
@@ -113,6 +116,7 @@ class ImageStore(MediaStore):
         raw_tags=None,
         watermarked: Optional[str] = "f",
         source: Optional[str] = None,
+        ingestion_type: Optional[str] = 'commoncrawl',
     ):
         """
         Add information for a single image to the ImageStore.
@@ -164,25 +168,17 @@ class ImageStore(MediaStore):
                              and the `provider` argument in the
                              ImageStore init function is the specific
                              provider of the image.
+        ingestion_type:      String showing how the image was ingested:
+                             through an api - 'provider_api' or using the
+                             commoncrawl database - 'commoncrawl'
         """
-        valid_license, raw_license_url = self.get_valid_license_info(
-            license_url,
-            license_,
-            license_version
-        )
-        if valid_license.license is None:
-            logger.debug(
-                f"Invalid image license : {license_url},"
-                "{license_}, {license_version}")
-            return None
         image_data = {
             'foreign_landing_url': foreign_landing_url,
             'image_url': image_url,
             'thumbnail_url': thumbnail_url,
-            'license_url': valid_license.url,
-            'license_': valid_license.license,
-            'license_version': valid_license.version,
-            'raw_license_url': raw_license_url,
+            'license_': license_,
+            'license_url': license_url,
+            'license_version': license_version,
             'foreign_identifier': foreign_identifier,
             'width': width,
             'height': height,
@@ -193,29 +189,20 @@ class ImageStore(MediaStore):
             'raw_tags': raw_tags,
             'watermarked': watermarked,
             'source': source,
+            'ingestion_type': ingestion_type
         }
         image = self._get_image(**image_data)
         if image is not None:
             self.save_item(image)
         return self.total_items
 
-    def _get_image(self, **kwargs) -> Image:
+    def _get_image(self, **kwargs) -> Optional[Image]:
         """Validates image information and returns Image namedtuple"""
+        image_metadata = self.clean_media_metadata(**kwargs)
+        if image_metadata is None:
+            return None
 
-        kwargs['source'] = self.get_source(kwargs['source'])
-        kwargs['meta_data'], kwargs['tags'] = self.parse_item_metadata(
-            kwargs['license_url'],
-            kwargs.get('raw_license_url'),
-            kwargs.get('meta_data'),
-            kwargs.get('raw_tags'),
-        )
-        kwargs.pop('raw_tags', None)
-        kwargs.pop('raw_license_url', None)
-        kwargs.pop('license_url', None)
-        kwargs['provider'] = self._PROVIDER
-        kwargs['filesize'] = None
-
-        return Image(**kwargs)
+        return Image(**image_metadata)
 
 
 class MockImageStore(ImageStore):
