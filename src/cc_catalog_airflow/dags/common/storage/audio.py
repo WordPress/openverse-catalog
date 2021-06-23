@@ -50,23 +50,21 @@ AUDIO_TSV_COLUMNS = [
     columns.IntegerColumn(
         name='duration', required=False
     ),
-    columns.StringColumn(
-        name='bit_rate', required=False, size=80, truncate=False,
-    ),
-    columns.StringColumn(
-        name='sample_rate', required=False, size=80, truncate=False,
-    ),
-    columns.StringColumn(
-        name='type', required=False, size=80, truncate=False,
-    ),
-    columns.StringColumn(
-        name='genre', required=False, size=80, truncate=False,
-    ),
-    columns.StringColumn(
-        name='audio_set', required=False, size=80, truncate=False,
+    columns.IntegerColumn(
+        name='bit_rate', required=False,
     ),
     columns.IntegerColumn(
-        name='set_position', required=False
+        name='sample_rate', required=False,
+    ),
+    columns.StringColumn(
+        name='category', required=False, size=80, truncate=False,
+    ),
+    columns.JSONColumn(
+        name='genre', required=False,
+    ),
+    columns.JSONColumn(
+        # set name, set thumbnail, position of audio in set, set url
+        name='audio_set', required=False,
     ),
     columns.JSONColumn(
         # Alternative files: url, filesize, bit_rate, sample_rate
@@ -77,7 +75,10 @@ AUDIO_TSV_COLUMNS = [
     ),
     columns.StringColumn(
         name='source', required=False, size=80, truncate=False
-    )
+    ),
+    columns.StringColumn(
+        name="ingestion_type", required=False, size=80, truncate=False
+    ),
 ]
 
 Audio = namedtuple("Audio", [c.NAME for c in AUDIO_TSV_COLUMNS])
@@ -124,16 +125,19 @@ class AudioStore(MediaStore):
         creator_url: Optional[str] = None,
         title: Optional[str] = None,
         meta_data: Optional[Union[Dict, str]] = None,
-        raw_tags=None,
+        raw_tags: Optional[Union[list, str]] = None,
         duration: Optional[int] = None,
-        bit_rate: Optional[str] = None,
-        sample_rate: Optional[str] = None,
-        kind: Optional[str] = None,
+        bit_rate: Optional[int] = None,
+        sample_rate: Optional[int] = None,
+        category: Optional[str] = None,
         genre: Optional[str] = None,
         audio_set: Optional[str] = None,
         set_position: Optional[int] = None,
+        set_thumbnail: Optional[str] = None,
+        set_url: Optional[str] = None,
         alt_audio_files: Optional[Dict] = None,
         source: Optional[str] = None,
+        ingestion_type: Optional[str] = 'commoncrawl',
     ):
         """
         Add information for a single audio to the AudioStore.
@@ -183,24 +187,21 @@ class AudioStore(MediaStore):
                              AudioStore init function is the specific
                              provider of the audio.
         """
-        valid_license, raw_license_url = self.get_valid_license_info(
-            license_url,
-            license_,
-            license_version
-        )
-        if valid_license.license is None:
-            logger.debug(
-                f"Invalid audio license : {license_url},"
-                "{license_}, {license_version}")
-            return None
+
+        audio_set_data = {
+            'audio_set': audio_set,
+            'set_url': set_url,
+            'set_position': set_position,
+            'set_thumbnail': set_thumbnail
+        }
+
         audio_data = {
             'foreign_landing_url': foreign_landing_url,
             'audio_url': audio_url,
             'thumbnail_url': thumbnail_url,
-            'license_url': valid_license.url,
-            'license_': valid_license.license,
-            'license_version': valid_license.version,
-            'raw_license_url': raw_license_url,
+            'license_url': license_url,
+            'license_': license_,
+            'license_version': license_version,
             'foreign_identifier': foreign_identifier,
             'creator': creator,
             'creator_url': creator_url,
@@ -210,12 +211,12 @@ class AudioStore(MediaStore):
             'duration': duration,
             'bit_rate': bit_rate,
             'sample_rate': sample_rate,
-            'kind': kind,
+            'category': category,
             'genre': genre,
-            'audio_set': audio_set,
-            'set_position': set_position,
+            'audio_set': audio_set_data,
             'alt_audio_files': alt_audio_files,
             'source': source,
+            'ingestion_type': ingestion_type,
         }
 
         audio = self._get_audio(**audio_data)
@@ -223,23 +224,12 @@ class AudioStore(MediaStore):
             self.save_item(audio)
         return self.total_items
 
-    def _get_audio(self, **kwargs) -> Audio:
+    def _get_audio(self, **kwargs) -> Optional[Audio]:
         """Validates audio information and returns Audio namedtuple"""
-
-        kwargs['source'] = self.get_source(kwargs['source'])
-        kwargs['meta_data'], kwargs['tags'] = self.parse_item_metadata(
-            kwargs['license_url'],
-            kwargs.get('raw_license_url'),
-            kwargs.get('meta_data'),
-            kwargs.get('raw_tags'),
-        )
-        kwargs.pop('raw_tags', None)
-        kwargs.pop('raw_license_url', None)
-        kwargs.pop('license_url', None)
-        kwargs['provider'] = self._PROVIDER
-        kwargs['filesize'] = None
-
-        return Audio(**kwargs)
+        audio_metadata = self.clean_media_metadata(**kwargs)
+        if audio_metadata is None:
+            return None
+        return Audio(**audio_metadata)
 
 
 class MockAudioStore(AudioStore):
