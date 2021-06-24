@@ -1,45 +1,84 @@
 from collections import namedtuple
 import logging
+from typing import Optional, Dict, Union
 
 from common.storage import columns
-from common.storage.media import (
-    MediaStore,
-)
-
+from common.storage.media import MediaStore
 
 logger = logging.getLogger(__name__)
 
 AUDIO_TSV_COLUMNS = [
     # The order of this list maps to the order of the columns in the TSV.
     columns.StringColumn(
-        name="foreign_identifier", required=False, size=3000, truncate=False
+        name='foreign_identifier', required=False, size=3000, truncate=False
     ),
-    columns.URLColumn(name="foreign_landing_url", required=True, size=1000),
+    columns.URLColumn(
+        name='foreign_landing_url', required=True, size=1000
+    ),
     columns.URLColumn(
         # `url` in DB
-        name="audio_url",
-        required=True,
-        size=3000,
+        name='audio_url', required=True, size=3000
     ),
     columns.URLColumn(
         # `thumbnail` in DB
-        name="thumbnail_url",
-        required=False,
-        size=3000,
+        name='thumbnail_url', required=False, size=3000
     ),
-    columns.IntegerColumn(name="duration", required=False),
-    columns.IntegerColumn(name="filesize", required=False),
-    columns.StringColumn(name="license_", required=True, size=50, truncate=False),
+    columns.IntegerColumn(
+        name='filesize', required=False
+    ),
     columns.StringColumn(
-        name="license_version", required=True, size=25, truncate=False
+        name='license_', required=True, size=50, truncate=False
     ),
-    columns.StringColumn(name="creator", required=False, size=2000, truncate=True),
-    columns.URLColumn(name="creator_url", required=False, size=2000),
-    columns.StringColumn(name="title", required=False, size=5000, truncate=True),
-    columns.JSONColumn(name="meta_data", required=False),
-    columns.JSONColumn(name="tags", required=False),
-    columns.StringColumn(name="provider", required=False, size=80, truncate=False),
-    columns.StringColumn(name="source", required=False, size=80, truncate=False),
+    columns.StringColumn(
+        name='license_version', required=True, size=25, truncate=False
+    ),
+    columns.StringColumn(
+        name='creator', required=False, size=2000, truncate=True
+    ),
+    columns.URLColumn(
+        name='creator_url', required=False, size=2000
+    ),
+    columns.StringColumn(
+        name='title', required=False, size=5000, truncate=True
+    ),
+    columns.JSONColumn(
+        name='meta_data', required=False
+    ),
+    columns.JSONColumn(
+        name='tags', required=False
+    ),
+    columns.IntegerColumn(
+        name='duration', required=False
+    ),
+    columns.IntegerColumn(
+        name='bit_rate', required=False,
+    ),
+    columns.IntegerColumn(
+        name='sample_rate', required=False,
+    ),
+    columns.StringColumn(
+        name='category', required=False, size=80, truncate=False,
+    ),
+    columns.JSONColumn(
+        name='genre', required=False,
+    ),
+    columns.JSONColumn(
+        # set name, set thumbnail, position of audio in set, set url
+        name='audio_set', required=False,
+    ),
+    columns.JSONColumn(
+        # Alternative files: url, filesize, bit_rate, sample_rate
+        name='alt_audio_files', required=False
+    ),
+    columns.StringColumn(
+        name='provider', required=False, size=80, truncate=False
+    ),
+    columns.StringColumn(
+        name='source', required=False, size=80, truncate=False
+    ),
+    columns.StringColumn(
+        name="ingestion_type", required=False, size=80, truncate=False
+    ),
 ]
 
 Audio = namedtuple("Audio", [c.NAME for c in AUDIO_TSV_COLUMNS])
@@ -67,38 +106,48 @@ class AudioStore(MediaStore):
         media_type="audio",
         tsv_columns=None,
     ):
-        super().__init__(provider, output_file, output_dir, buffer_length, media_type)
-        self.columns = tsv_columns if tsv_columns is not None else AUDIO_TSV_COLUMNS
+        super().__init__(
+            provider, output_file, output_dir, buffer_length, media_type
+        )
+        self.columns = AUDIO_TSV_COLUMNS \
+            if tsv_columns is None else tsv_columns
 
     def add_item(
-            self,
-            foreign_landing_url=None,
-            audio_url=None,
-            thumbnail_url=None,
-            license_url=None,
-            license_=None,
-            license_version=None,
-            foreign_identifier=None,
-            duration=None,
-            creator=None,
-            creator_url=None,
-            title=None,
-            meta_data=None,
-            raw_tags=None,
-            source=None
+        self,
+        foreign_landing_url: str,
+        audio_url: str,
+        thumbnail_url: Optional[str] = None,
+        license_url: Optional[str] = None,
+        license_: Optional[str] = None,
+        license_version: Optional[str] = None,
+        foreign_identifier: Optional[str] = None,
+        creator: Optional[str] = None,
+        creator_url: Optional[str] = None,
+        title: Optional[str] = None,
+        meta_data: Optional[Union[Dict, str]] = None,
+        raw_tags: Optional[Union[list, str]] = None,
+        duration: Optional[int] = None,
+        bit_rate: Optional[int] = None,
+        sample_rate: Optional[int] = None,
+        category: Optional[str] = None,
+        genre: Optional[str] = None,
+        audio_set: Optional[str] = None,
+        set_position: Optional[int] = None,
+        set_thumbnail: Optional[str] = None,
+        set_url: Optional[str] = None,
+        alt_audio_files: Optional[Dict] = None,
+        source: Optional[str] = None,
+        ingestion_type: Optional[str] = 'commoncrawl',
     ):
-
         """
         Add information for a single audio to the AudioStore.
 
         Required Arguments:
-
         foreign_landing_url:  URL of page where the audio lives on the
                               source website.
         audio_url:            Direct link to the audio file
 
         Semi-Required Arguments
-
         license_url:      URL of the license for the audio on the
                           Creative Commons website.
         license_:         String representation of a Creative Commons
@@ -115,10 +164,11 @@ class AudioStore(MediaStore):
         audio data will be discarded.
 
         Optional Arguments:
-        thumbnail_url:       Direct link to a thumbnail image for the audio
+        thumbnail_url:       Direct link to a thumbnail-sized version of
+                             the audio
         foreign_identifier:  Unique identifier for the audio on the
                              source site.
-        duration:            in seconds
+        duration:            in milliseconds
         creator:             The creator of the audio.
         creator_url:         The user page, or home page of the creator.
         title:               Title of the audio.
@@ -128,7 +178,7 @@ class AudioStore(MediaStore):
                              in this dictionary, and `license_url` is
                              given as an argument, the argument will
                              replace the one given in the dictionary.
-        raw_tags:            List of tags associated with the audio.
+        raw_tags:            List of tags associated with the audio
         source:              If different from the provider.  This might
                              be the case when we get information from
                              some aggregation of audios.  In this case,
@@ -137,71 +187,49 @@ class AudioStore(MediaStore):
                              AudioStore init function is the specific
                              provider of the audio.
         """
-        audio = self._get_audio(
-            foreign_landing_url=foreign_landing_url,
-            audio_url=audio_url,
-            thumbnail_url=thumbnail_url,
-            license_url=license_url,
-            license_=license_,
-            license_version=license_version,
-            foreign_identifier=foreign_identifier,
-            duration=duration,
-            creator=creator,
-            creator_url=creator_url,
-            title=title,
-            meta_data=meta_data,
-            raw_tags=raw_tags,
-            source=source,
-        )
+
+        audio_set_data = {
+            'audio_set': audio_set,
+            'set_url': set_url,
+            'set_position': set_position,
+            'set_thumbnail': set_thumbnail
+        }
+
+        audio_data = {
+            'foreign_landing_url': foreign_landing_url,
+            'audio_url': audio_url,
+            'thumbnail_url': thumbnail_url,
+            'license_url': license_url,
+            'license_': license_,
+            'license_version': license_version,
+            'foreign_identifier': foreign_identifier,
+            'creator': creator,
+            'creator_url': creator_url,
+            'title': title,
+            'meta_data': meta_data,
+            'raw_tags': raw_tags,
+            'duration': duration,
+            'bit_rate': bit_rate,
+            'sample_rate': sample_rate,
+            'category': category,
+            'genre': genre,
+            'audio_set': audio_set_data,
+            'alt_audio_files': alt_audio_files,
+            'source': source,
+            'ingestion_type': ingestion_type,
+        }
+
+        audio = self._get_audio(**audio_data)
         if audio is not None:
             self.save_item(audio)
-        return self._total_items
+        return self.total_items
 
-    def _get_audio(
-            self,
-            foreign_identifier,
-            foreign_landing_url,
-            audio_url,
-            thumbnail_url,
-            duration,
-            license_url,
-            license_,
-            license_version,
-            creator,
-            creator_url,
-            title,
-            meta_data,
-            raw_tags,
-            source,
-    ):
-        valid_license_info, raw_license_url = \
-            self.get_valid_license_info(license_url, license_, license_version)
-        if valid_license_info.license is None:
+    def _get_audio(self, **kwargs) -> Optional[Audio]:
+        """Validates audio information and returns Audio namedtuple"""
+        audio_metadata = self.clean_media_metadata(**kwargs)
+        if audio_metadata is None:
             return None
-        source, meta_data, tags = self.parse_item_metadata(
-            valid_license_info.url,
-            raw_license_url,
-            source,
-            meta_data,
-            raw_tags
-        )
-        return Audio(
-            foreign_identifier=foreign_identifier,
-            foreign_landing_url=foreign_landing_url,
-            audio_url=audio_url,
-            thumbnail_url=thumbnail_url,
-            license_=valid_license_info.license,
-            license_version=valid_license_info.version,
-            filesize=None,
-            creator=creator,
-            creator_url=creator_url,
-            title=title,
-            meta_data=meta_data,
-            tags=tags,
-            provider=self._PROVIDER,
-            source=source,
-            duration=duration,
-        )
+        return Audio(**audio_metadata)
 
 
 class MockAudioStore(AudioStore):
@@ -225,5 +253,6 @@ class MockAudioStore(AudioStore):
         buffer_length=100,
         license_info=None,
     ):
+        logger.info(f"Initialized with provider {provider}")
         super().__init__(provider=provider)
         self.license_info = license_info

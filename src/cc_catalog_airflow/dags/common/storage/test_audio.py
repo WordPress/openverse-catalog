@@ -5,7 +5,6 @@ import tldextract
 
 from common.licenses import licenses
 from common.storage import audio
-from common.storage import util
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s:  %(message)s',
@@ -35,7 +34,15 @@ mock_audio_args = {
     'title': 'agreatpicture',
     'meta_data': None,
     'raw_tags': None,
-    'source': 'testing_source'
+    'bit_rate': None,
+    'sample_rate': None,
+    'category': None,
+    'genre': None,
+    'audio_set': None,
+    'alt_audio_files': None,
+    'source': 'testing_source',
+    'ingestion_type': 'provider_api',
+
 }
 
 
@@ -64,24 +71,6 @@ def get_good(monkeypatch):
     monkeypatch.setattr(licenses.urls.requests, 'get', mock_get)
 
 
-def test_AudioStore_uses_OUTPUT_DIR_variable(
-        monkeypatch,
-):
-    testing_output_dir = '/my_output_dir'
-    monkeypatch.setenv('OUTPUT_DIR', testing_output_dir)
-    audio_store = audio.AudioStore()
-    assert testing_output_dir in audio_store._OUTPUT_PATH
-
-
-def test_AudioStore_falls_back_to_tmp_output_dir_variable(
-        monkeypatch,
-        setup_env,
-):
-    monkeypatch.delenv('OUTPUT_DIR')
-    audio_store = audio.AudioStore()
-    assert '/tmp' in audio_store._OUTPUT_PATH
-
-
 def test_AudioStore_includes_provider_in_output_file_string(
         setup_env,
 ):
@@ -99,6 +88,7 @@ def test_AudioStore_add_item_adds_realistic_audio_to_buffer(
         foreign_landing_url='https://audios.org/audio01',
         audio_url='https://audios.org/audio01.jpg',
         license_url=license_url,
+        ingestion_type='provider_api',
     )
     assert len(audio_store._media_buffer) == 1
 
@@ -196,262 +186,6 @@ def test_AudioStore_produces_correct_total_audios(mock_rewriter, setup_env):
     assert audio_store.total_items == 3
 
 
-def test_AudioStore_get_audio_places_given_args(
-        monkeypatch,
-        setup_env
-):
-    audio_store = audio.AudioStore(provider='testing_provider')
-
-    def mock_license_chooser(license_url, license_, license_version):
-        return licenses.LicenseInfo(
-            license_, license_version, license_url
-        ), license_url
-
-    monkeypatch.setattr(
-        audio_store,
-        'get_valid_license_info',
-        mock_license_chooser
-    )
-
-    def mock_get_source(source, provider):
-        return source
-
-    monkeypatch.setattr(
-        util,
-        'get_source',
-        mock_get_source
-    )
-
-    def mock_enrich_tags(tags):
-        return tags
-
-    monkeypatch.setattr(
-        audio_store,
-        '_enrich_tags',
-        mock_enrich_tags
-    )
-
-    def mock_enrich_metadata(metadata, license_url=None, raw_license_url=None):
-        return metadata
-
-    monkeypatch.setattr(
-        audio_store,
-        '_enrich_meta_data',
-        mock_enrich_metadata
-    )
-    args_dict = mock_audio_args.copy()
-    actual_audio = audio_store._get_audio(**args_dict)
-    args_dict['tags'] = args_dict.pop('raw_tags')
-    args_dict.pop('license_url')
-    args_dict['provider'] = 'testing_provider'
-    args_dict['filesize'] = None
-    assert actual_audio == audio.Audio(**args_dict)
-
-
-def test_AudioStore_get_audio_calls_license_chooser(
-        monkeypatch,
-        setup_env,
-):
-    audio_store = audio.AudioStore()
-
-    def mock_license_chooser(license_url, license_, license_version):
-        return licenses.LicenseInfo(
-            'diff_license', None, license_url
-        ), license_url
-
-    monkeypatch.setattr(
-        audio_store,
-        'get_valid_license_info',
-        mock_license_chooser
-    )
-    audio_args = mock_audio_args.copy()
-    # license_url = 'https://license/url',
-    # license_ = 'license',
-    # license_version = '1.5',
-
-    actual_audio = audio_store._get_audio(
-        **audio_args,
-    )
-    assert actual_audio.license_ == 'diff_license'
-
-
-def test_AudioStore_returns_None_when_license_is_invalid(
-        monkeypatch,
-        setup_env,
-):
-    audio_store = audio.AudioStore()
-    audio_args = mock_audio_args.copy()
-    audio_args['license_url'] = 'https://license/url'
-    audio_args['license_'] = 'license'
-    audio_args['license_version'] = '1.5'
-
-    actual_audio = audio_store._get_audio(
-        **audio_args
-    )
-    assert actual_audio is None
-
-
-def test_AudioStore_get_audio_gets_source(
-        monkeypatch,
-        setup_env,
-):
-    audio_store = audio.AudioStore()
-
-    def mock_get_source(source, provider):
-        return 'diff_source'
-
-    monkeypatch.setattr(util, 'get_source', mock_get_source)
-
-    actual_audio = audio_store._get_audio(
-        **mock_audio_args
-    )
-    assert actual_audio.source == 'diff_source'
-
-
-def test_AudioStore_get_audio_replaces_non_dict_meta_data_with_no_license_url(
-        setup_env,
-):
-    audio_store = audio.AudioStore()
-
-    audio_args = mock_audio_args.copy()
-    audio_args['meta_data'] = 'notadict'
-    audio_args['license_'] = 'by-nc-nd'
-    audio_args['license_version'] = '4.0'
-    audio_args['license_url'] = None
-    actual_audio = audio_store._get_audio(
-        **audio_args,
-    )
-    assert actual_audio.meta_data == {
-        'license_url': 'https://creativecommons.org/licenses/by-nc-nd/4.0/', 'raw_license_url': None
-    }
-
-
-def test_AudioStore_get_audio_creates_meta_data_with_valid_license_url(
-        monkeypatch, setup_env
-):
-    audio_store = audio.AudioStore()
-
-    def mock_license_chooser(license_url, license_, license_version):
-        return licenses.LicenseInfo(
-            license_, license_version, license_url
-        ), license_url
-
-    monkeypatch.setattr(
-        audio_store,
-        'get_valid_license_info',
-        mock_license_chooser
-    )
-    license_url = 'https://my.license.url'
-
-    audio_args = mock_audio_args.copy()
-    audio_args['meta_data'] = None
-    audio_args['license_url'] = license_url
-    actual_audio = audio_store._get_audio(
-        **audio_args,
-    )
-    assert actual_audio.meta_data == {
-        'license_url': license_url, 'raw_license_url': license_url
-    }
-
-
-def test_AudioStore_get_audio_adds_valid_license_url_to_dict_meta_data(
-        monkeypatch, setup_env
-):
-    audio_store = audio.AudioStore()
-
-    def mock_license_chooser(license_url, license_, license_version):
-        return licenses.LicenseInfo(
-            license_, license_version, license_url
-        ), license_url
-
-    monkeypatch.setattr(
-        audio_store,
-        'get_valid_license_info',
-        mock_license_chooser
-    )
-    audio_args = mock_audio_args.copy()
-    audio_args['meta_data'] = {'key1': 'val1'}
-    audio_args['license_url'] = 'https://license/url'
-    actual_audio = audio_store._get_audio(
-        **audio_args
-    )
-    assert actual_audio.meta_data == {
-        'key1': 'val1',
-        'license_url': 'https://license/url',
-        'raw_license_url': 'https://license/url'
-    }
-
-
-def test_AudioStore_get_audio_fixes_invalid_license_url(
-        monkeypatch, setup_env
-):
-    audio_store = audio.AudioStore()
-
-    original_url = 'https://license/url',
-    updated_url = 'https://updatedurl.com'
-
-    def mock_license_chooser(license_url, license_, license_version):
-        return licenses.LicenseInfo(
-            license_, license_version, updated_url
-        ), license_url
-
-    monkeypatch.setattr(
-        audio_store,
-        'get_valid_license_info',
-        mock_license_chooser
-    )
-
-    audio_args = mock_audio_args.copy()
-    audio_args['license_url'] = original_url
-    audio_args['meta_data'] = None
-    actual_audio = audio_store._get_audio(
-        **audio_args,
-    )
-    assert actual_audio.meta_data == {
-        'license_url': updated_url, 'raw_license_url': original_url
-    }
-
-
-def test_AudioStore_get_audio_enriches_singleton_tags(
-        setup_env,
-):
-    audio_store = audio.AudioStore('test_provider')
-
-    audio_args = mock_audio_args.copy()
-    audio_args['raw_tags'] = ['lone']
-    actual_audio = audio_store._get_audio(
-        **audio_args,
-    )
-
-    assert actual_audio.tags == [{'name': 'lone', 'provider': 'test_provider'}]
-
-
-def test_AudioStore_get_audio_tag_blacklist(
-        setup_env,
-):
-    raw_tags = [
-        'cc0',
-        'valid',
-        'garbage:=metacrap',
-        'uploaded:by=flickrmobile',
-        {
-            'name': 'uploaded:by=instagram',
-            'provider': 'test_provider'
-        }
-    ]
-
-    audio_store = audio.AudioStore('test_provider')
-    audio_args = mock_audio_args.copy()
-    audio_args['raw_tags'] = raw_tags
-    actual_audio = audio_store._get_audio(
-        **audio_args,
-    )
-
-    assert actual_audio.tags == [
-        {'name': 'valid', 'provider': 'test_provider'}
-    ]
-
-
 def test_AudioStore_get_audio_enriches_multiple_tags(
         setup_env,
 ):
@@ -469,59 +203,125 @@ def test_AudioStore_get_audio_enriches_multiple_tags(
     ]
 
 
-def test_AudioStore_get_audio_leaves_preenriched_tags(
-        setup_env
-):
-    audio_store = audio.AudioStore('test_provider')
-    tags = [
-        {'name': 'tagone', 'provider': 'test_provider'},
-        {'name': 'tag2', 'provider': 'test_provider'},
-        {'name': 'tag3', 'provider': 'test_provider'},
-    ]
-    audio_args = mock_audio_args.copy()
-    audio_args['raw_tags'] = tags
-    actual_audio = audio_store._get_audio(
-        **audio_args,
-    )
-
-    assert actual_audio.tags == tags
-
-
-def test_AudioStore_get_audio_nones_nonlist_tags(
-        setup_env,
-):
-    audio_store = audio.AudioStore('test_provider')
-    tags = 'notalist'
-    audio_args = mock_audio_args.copy()
-    audio_args['raw_tags'] = tags
-    actual_audio = audio_store._get_audio(
-        **audio_args,
-    )
-
-    assert actual_audio.tags is None
-
-
 @pytest.fixture
 def default_audio_args(
         setup_env,
 ):
     return dict(
-        foreign_identifier=None,
-        foreign_landing_url='https://audio.org',
-        audio_url='https://audio.org',
-        thumbnail_url=None,
-        duration=0,
+        foreign_identifier='foreign_id',
+        foreign_landing_url='https://landing_page.org',
+        audio_url='https://audiourl.org',
+        thumbnail_url='http://thumbnail.com',
         filesize=None,
-        license_='cc0',
+        audio_set=None,
+        license_='testlicense',
         license_version='1.0',
-        creator=None,
-        creator_url=None,
-        title=None,
-        meta_data=None,
-        tags=None,
-        provider=None,
-        source=None,
+        creator='tyler',
+        creator_url='https://creatorurl.com',
+        title='agreatsong',
+        meta_data={"description": "cat song"},
+        tags={"name": "tag1", "provider": "testing"},
+        duration=100,
+        bit_rate=None,
+        sample_rate=None,
+        category='music',
+        genre=['rock', 'pop'],
+        alt_audio_files=None,
+        provider='testing_provider',
+        source='testing_source',
+        ingestion_type='provider_api',
     )
+
+
+def test_create_tsv_row_creates_alt_audio_files(
+        default_audio_args,
+        get_good,
+        setup_env,
+):
+    audio_store = audio.AudioStore()
+    audio_args = default_audio_args.copy()
+    alt_audio_files = [{
+        'url': 'http://alternative.com/audio.mp3',
+        'filesize': 123,
+        'bit_rate': 41000,
+        'sample_rate': '16000'
+    }]
+    audio_args['alt_audio_files'] = alt_audio_files
+    test_audio = audio.Audio(**audio_args)
+    actual_row = audio_store._create_tsv_row(test_audio)
+    expected_row = '\t'.join([
+        'foreign_id',
+        'https://landing_page.org',
+        'https://audiourl.org',
+        'https://thumbnail.com',
+        '\\N',
+        'testlicense',
+        '1.0',
+        'tyler',
+        'https://creatorurl.com',
+        'agreatsong',
+        '{"description": "cat song"}',
+        '{"name": "tag1", "provider": "testing"}',
+        '100',
+        '\\N',
+        '\\N',
+        'music',
+        '["rock", "pop"]',
+        '\\N',
+        '[{"url": '
+        '"http://alternative.com/audio.mp3", "filesize": "123", "bit_rate": "41000", '
+        '"sample_rate": "16000"}]',
+        'testing_provider',
+        'testing_source',
+        'provider_api',
+
+    ]) + '\n'
+    assert actual_row == expected_row
+
+
+def test_create_tsv_row_creates_audio_set(
+        default_audio_args,
+        get_good,
+        setup_env,
+):
+    audio_store = audio.AudioStore()
+    audio_args = default_audio_args.copy()
+    audio_set_data = {
+        'audio_set': 'test_audio_set',
+        'set_url': 'test.com',
+        'set_position': 1,
+        'set_thumbnail': 'thumbnail.jpg'
+    }
+    audio_args['audio_set'] = audio_set_data
+    test_audio = audio.Audio(**audio_args)
+    actual_row = audio_store._create_tsv_row(test_audio)
+    expected_row = '\t'.join([
+        'foreign_id',
+        'https://landing_page.org',
+        'https://audiourl.org',
+        'https://thumbnail.com',
+        '\\N',
+        'testlicense',
+        '1.0',
+        'tyler',
+        'https://creatorurl.com',
+        'agreatsong',
+        '{"description": "cat song"}',
+        '{"name": "tag1", "provider": "testing"}',
+        '100',
+        '\\N',
+        '\\N',
+        'music',
+        '["rock", "pop"]',
+        '{"audio_set": "test_audio_set", "set_url": "test.com", '
+        '"set_position": "1", "set_thumbnail": "thumbnail.jpg"}',
+        '\\N',
+        'testing_provider',
+        'testing_source',
+        'provider_api',
+
+    ]) + '\n'
+    assert actual_row == expected_row
 
 
 def test_create_tsv_row_non_none_if_req_fields(
@@ -601,27 +401,17 @@ def test_create_tsv_row_handles_empty_dict_and_tags(
 
     actual_row = audio_store._create_tsv_row(test_audio).split('\t')
     actual_meta_data, actual_tags = actual_row[12], actual_row[13]
+    for i, a in enumerate(actual_row):
+        print(f"{i}: {a}, {audio.Audio._fields[i]}, {test_audio[i]}")
+        if audio.Audio._fields[i] == 'meta_data':
+            actual_meta_data = actual_row[i]
+            print(f"Meta_data: {meta_data}")
+        elif audio.Audio._fields[i] == 'tags':
+            actual_tags = actual_row[i]
+            print(f"Tags: {actual_tags}")
     expect_meta_data, expect_tags = '\\N', '\\N'
     assert expect_meta_data == actual_meta_data
     assert expect_tags == actual_tags
-
-
-def test_create_tsv_row_turns_empty_into_nullchar(
-        default_audio_args,
-        setup_env,
-):
-    audio_store = audio.AudioStore()
-    audio_args = default_audio_args
-    test_audio = audio.Audio(**audio_args)
-
-    actual_row = audio_store._create_tsv_row(test_audio).split('\t')
-    assert all(
-        [
-            actual_row[i] == '\\N'
-            for i in [0, 3, 5, 8, 9, 10, 11, 12, 13]
-        ]
-    ) is True
-    assert actual_row[-1] == '\\N\n'
 
 
 def test_create_tsv_row_properly_places_entries(
@@ -647,11 +437,23 @@ def test_create_tsv_row_properly_places_entries(
         'filesize': None,
         'creator': 'tyler',
         'creator_url': 'https://creatorurl.com',
-        'title': 'agreatpicture',
-        'meta_data': {'description': 'cat picture'},
+        'title': 'agreatsong',
+        'meta_data': {'description': 'a song about cat'},
         'tags': [{'name': 'tag1', 'provider': 'testing'}],
+        'bit_rate': 16000,
+        'sample_rate': 44100,
+        'category': 'music',
+        'genre': ['pop', 'rock'],
+        'audio_set': {
+            'audio_set': 'album',
+            'set_position': 1,
+            'set_url': 'https://album.com/',
+            'set_thumbnail': 'https://album.com/thumbnail.jpg'
+        },
+        'alt_audio_files': None,
         'provider': 'testing_provider',
-        'source': 'testing_source'
+        'source': 'testing_source',
+        'ingestion_type': 'provider_api',
     }
     args_dict.update(req_args_dict)
 
@@ -664,16 +466,24 @@ def test_create_tsv_row_properly_places_entries(
         'https://landing_page.com',
         'http://audiourl.com',
         'http://thumbnail.com',
-        '200',
         '\\N',
         'testlicense',
         '1.0',
         'tyler',
         'https://creatorurl.com',
-        'agreatpicture',
-        '{"description": "cat picture"}',
+        'agreatsong',
+        '{"description": "a song about cat"}',
         '[{"name": "tag1", "provider": "testing"}]',
+        '200',
+        '16000',
+        '44100',
+        'music',
+        '["pop", "rock"]',
+        '{"audio_set": "album", "set_position": "1", "set_url": "https://album.com/", '
+        '"set_thumbnail": "https://album.com/thumbnail.jpg"}',
+        '\\N',
         'testing_provider',
-        'testing_source'
+        'testing_source',
+        'provider_api'
     ]) + '\n'
     assert expect_row == actual_row
