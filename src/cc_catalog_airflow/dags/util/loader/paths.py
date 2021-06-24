@@ -3,6 +3,8 @@ import logging
 import os
 from typing import Optional
 
+from airflow.models import TaskInstance
+
 FAILURE_SUBDIRECTORY = 'db_loader_failures'
 STAGING_SUBDIRECTORY = 'db_loader_staging'
 SUPPORTED_MEDIA_TYPES = {'audio', 'image'}
@@ -14,7 +16,7 @@ def stage_oldest_tsv_file(
         output_dir: str,
         identifier: str,
         minimum_file_age_minutes: int,
-        ti
+        ti: TaskInstance,
 ) -> bool:
     """
     Selects the oldest tsv file from the output directory.
