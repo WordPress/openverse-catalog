@@ -32,14 +32,14 @@ mock_audio_args = {
     'creator': 'tyler',
     'creator_url': 'https://creatorurl.com',
     'title': 'agreatpicture',
-    'meta_data': None,
-    'raw_tags': None,
+    'meta_data': {},
+    'raw_tags': {},
     'bit_rate': None,
     'sample_rate': None,
     'category': None,
-    'genre': None,
-    'audio_set': None,
-    'alt_audio_files': None,
+    'genre': [],
+    'audio_set': {},
+    'alt_audio_files': [],
     'source': 'testing_source',
     'ingestion_type': 'provider_api',
 
@@ -400,15 +400,13 @@ def test_create_tsv_row_handles_empty_dict_and_tags(
     test_audio = audio.Audio(**audio_args)
 
     actual_row = audio_store._create_tsv_row(test_audio).split('\t')
-    actual_meta_data, actual_tags = actual_row[12], actual_row[13]
-    for i, a in enumerate(actual_row):
-        print(f"{i}: {a}, {audio.Audio._fields[i]}, {test_audio[i]}")
-        if audio.Audio._fields[i] == 'meta_data':
+    actual_meta_data, actual_tags = None, None
+    for i, field in enumerate(audio.Audio._fields):
+        if field == 'meta_data':
             actual_meta_data = actual_row[i]
-            print(f"Meta_data: {meta_data}")
-        elif audio.Audio._fields[i] == 'tags':
+        elif field == 'tags':
             actual_tags = actual_row[i]
-            print(f"Tags: {actual_tags}")
+    assert actual_meta_data is not None and actual_tags is not None
     expect_meta_data, expect_tags = '\\N', '\\N'
     assert expect_meta_data == actual_meta_data
     assert expect_tags == actual_tags

@@ -40,7 +40,9 @@ def load_s3_data(
     )
     if media_type is None:
         media_type = 'image'
-    tsv_key = s3.get_staged_s3_object(identifier, bucket, aws_conn_id)
+    tsv_key = s3.get_staged_s3_object(
+        identifier, bucket, aws_conn_id
+    )
     sql.load_s3_data_to_intermediate_table(
         postgres_conn_id,
         bucket,

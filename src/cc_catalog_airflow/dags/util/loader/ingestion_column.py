@@ -6,7 +6,7 @@ PostgreSQL.
 import logging
 import os
 
-from common.storage.audio import AUDIO_TSV_COLUMNS
+from common.storage.audio import AUDIO_TSV_COLUMNS Current Change
 from common.storage.image import IMAGE_TSV_COLUMNS
 
 logger = logging.getLogger(__name__)
