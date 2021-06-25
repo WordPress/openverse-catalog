@@ -16,7 +16,6 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s",
     level=logging.INFO,
 )
-
 logger = logging.getLogger(__name__)
 
 delayed_requester = DelayedRequester(DELAY)
@@ -95,9 +94,11 @@ def _get_title_owner(image):
 
 
 def _get_meta_data(image):
+    description = image.get("pinterest_description")
     meta_data = {}
-    meta_data["description"] = image.get("pinterest_description")
-    return {k: v for k, v in meta_data.items() if v is not None}
+    if description:
+        meta_data["description"] = description
+    return meta_data
 
 
 def _get_tags(image):
@@ -133,7 +134,9 @@ def _process_image_data(image):
     tags = _get_tags(image)
 
     # TODO:How to get license_url, creator_url, source, watermarked?
-    license_info = get_license_info(license_=license_, license_version=version)
+    license_info = get_license_info(
+        license_=license_, license_version=version,
+    )
     return image_store.add_item(
         foreign_landing_url=foreign_url,
         image_url=img_url,

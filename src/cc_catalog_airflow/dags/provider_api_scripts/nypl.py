@@ -27,7 +27,7 @@ TOKEN = f"Token token={NYPL_API}"
 delay_request = DelayedRequester(delay=DELAY)
 image_store = ImageStore(provider=PROVIDER)
 
-DEFAULT_QUERY_PARAM = {
+DEFAULT_QUERY_PARAMS = {
     "q": "CC_0",
     "field": "use_rtxt_s",
     "page": 1,
@@ -60,19 +60,21 @@ def main():
         results = request_response.get("result")
         if type(results) == list and len(results) > 0:
             _handle_results(results)
-            logger.info(f"{image_store.total_images} images till now")
+            logger.info(f"{image_store.total_items} images till now")
             page = page + 1
         else:
             condition = False
     image_store.commit()
-    logger.info(f"total images {image_store.total_images}")
+    logger.info(f"total images {image_store.total_items}")
 
 
 def _get_query_param(
-        default_query_param=DEFAULT_QUERY_PARAM,
+        default_query_params=None,
         page=1,
         ):
-    query_param = default_query_param
+    if default_query_params is None:
+        default_query_params = DEFAULT_QUERY_PARAMS
+    query_param = default_query_params.copy()
     query_param["page"] = page
     return query_param
 
@@ -80,9 +82,11 @@ def _get_query_param(
 def _request_handler(
         endpoint=BASE_ENDPOINT,
         params=None,
-        headers=HEADERS,
+        headers=None,
         retries=RETRIES
         ):
+    if headers is None:
+        headers = HEADERS.copy()
     results = None
     for retry in range(retries):
         response = delay_request.get(
@@ -137,11 +141,13 @@ def _handle_results(results):
 
 
 def _get_capture_details(
-        captures=[],
+        captures=None,
         metadata=None,
         creator=None,
         title=None
         ):
+    if captures is None:
+        captures = []
     for img in captures:
         image_id = img.get("imageID", {}).get("$")
         if image_id is None:
@@ -194,10 +200,13 @@ def _get_creators(creatorinfo):
 
 def _get_images(
         images,
-        image_url_dimensions=IMAGE_URL_DIMENSIONS,
-        thumbnail_dimensions=THUMBNAIL_DIMENSIONS
+        image_url_dimensions=None,
+        thumbnail_dimensions=None
         ):
-    image_url, thumbnail_url = None, None
+    if thumbnail_dimensions is None:
+        thumbnail_dimensions = THUMBNAIL_DIMENSIONS
+    if image_url_dimensions is None:
+        image_url_dimensions = IMAGE_URL_DIMENSIONS
     image_type = {
         parse_qs(urlparse(img.get("$")).query)['t'][0]: img.get("$")
         for img in images

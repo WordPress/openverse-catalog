@@ -25,7 +25,6 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s:  %(message)s',
     level=logging.INFO
 )
-
 logger = logging.getLogger(__name__)
 
 DELAY = 30.0
@@ -67,8 +66,6 @@ def main(date):
 
 def _get_pagewise(start_timestamp, end_timestamp):
     cursor = '*'
-    total_number_of_images = 0
-    images_stored = 0
 
     while cursor is not None:
         image_list, next_cursor, total_number_of_images = _get_image_list(
@@ -98,6 +95,10 @@ def _get_image_list(
         endpoint=ENDPOINT,
         max_tries=6  # one original try, plus 5 retries
 ):
+    try_number = 0
+    image_list, next_cursor, total_number_of_images = (
+        None, None, None
+    )
     for try_number in range(max_tries):
 
         query_param_dict = _build_query_param_dict(
@@ -127,9 +128,7 @@ def _get_image_list(
             and (image_list is None or next_cursor is None)
     ):
         logger.warning('No more tries remaining. Returning None types.')
-        return None, None, None
-    else:
-        return image_list, next_cursor, total_number_of_images
+    return image_list, next_cursor, total_number_of_images
 
 
 def _extract_response_json(response):
@@ -161,6 +160,7 @@ def _extract_image_list_from_json(response_json):
 
 def _process_image_list(image_list):
     prev_total = 0
+    total_images = 0
     for image_data in image_list:
         total_images = _process_image_data(image_data)
         if total_images is None:
@@ -261,8 +261,10 @@ def _build_query_param_dict(
         end_timestamp,
         cursor,
         api_key=API_KEY,
-        default_query_param=DEFAULT_QUERY_PARAMS,
+        default_query_param=None,
 ):
+    if default_query_param is None:
+        default_query_param = DEFAULT_QUERY_PARAMS
     query_param_dict = default_query_param.copy()
     query_param_dict.update(
         wskey=api_key,
