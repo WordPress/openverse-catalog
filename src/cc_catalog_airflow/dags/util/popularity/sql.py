@@ -21,8 +21,8 @@ AUDIO_POPULARITY_PERCENTILE_FUNCTION = "audio_popularity_percentile"
 STANDARDIZED_IMAGE_POPULARITY_FUNCTION_NAME = "standardized_image_popularity"
 STANDARDIZED_AUDIO_POPULARITY_FUNCTION_NAME = "standardized_audio_popularity"
 
-IMAGE_POPULARITY_CONSTANTS_IDX = "image_popularity_constants_provider_metric_idx"
-AUDIO_POPULARITY_CONSTANTS_IDX = "audio_popularity_constants_provider_metric_idx"
+IMAGE_POP_CONSTANTS_IDX = "image_popularity_constants_provider_metric_idx"
+AUDIO_POP_CONSTANTS_IDX = "audio_popularity_constants_provider_metric_idx"
 IMAGE_VIEW_ID_IDX = "image_view_identifier_idx"
 AUDIO_VIEW_ID_IDX = "audio_view_identifier_idx"
 IMAGE_VIEW_PROVIDER_FID_IDX = "image_view_provider_fid_idx"
@@ -214,14 +214,14 @@ def create_media_popularity_constants_view(
         postgres_conn_id,
         media_type=IMAGE_TYPE,
         popularity_constants=IMAGE_POPULARITY_CONSTANTS_VIEW,
-        popularity_constants_idx=IMAGE_POPULARITY_CONSTANTS_IDX,
+        popularity_constants_idx=IMAGE_POP_CONSTANTS_IDX,
         popularity_metrics=IMAGE_POPULARITY_METRICS_TABLE_NAME,
         popularity_percentile=IMAGE_POPULARITY_PERCENTILE_FUNCTION,
 ):
     postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
     if media_type == AUDIO_TYPE:
         popularity_constants = AUDIO_POPULARITY_CONSTANTS_VIEW
-        popularity_constants_idx = AUDIO_POPULARITY_CONSTANTS_IDX
+        popularity_constants_idx = AUDIO_POP_CONSTANTS_IDX
         popularity_metrics = AUDIO_POPULARITY_METRICS_TABLE_NAME
         popularity_percentile = AUDIO_POPULARITY_PERCENTILE_FUNCTION
     create_view_query = dedent(
@@ -262,7 +262,8 @@ def create_media_popularity_constants_view(
 
 
 def update_media_popularity_constants(
-        postgres_conn_id, media_type=IMAGE_TYPE, popularity_constants_view=IMAGE_POPULARITY_CONSTANTS_VIEW,
+        postgres_conn_id, media_type=IMAGE_TYPE,
+        popularity_constants_view=IMAGE_POPULARITY_CONSTANTS_VIEW,
 ):
     if media_type == AUDIO_TYPE:
         popularity_constants_view = AUDIO_POPULARITY_CONSTANTS_VIEW
