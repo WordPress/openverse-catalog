@@ -38,7 +38,9 @@ def create_loading_table(
     """
     Create intermediary table and indices if they do not exist
     """
-    media_type = ti.xcom_pull(task_ids='stage_oldest_tsv_file', key='media_type')
+    media_type = ti.xcom_pull(
+        task_ids='stage_oldest_tsv_file', key='media_type'
+    )
     if media_type is None:
         media_type = 'image'
     load_table = _get_load_table_name(identifier, media_type=media_type)
