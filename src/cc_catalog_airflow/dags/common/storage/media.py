@@ -145,10 +145,6 @@ class MediaStore(metaclass=abc.ABCMeta):
 
         Returns None if license is invalid
         """
-        media_data = self.validate_license_info(media_data)
-        if media_data is None:
-            return None
-
         media_data['source'] = util.get_source(
             media_data.get('source'),
             self._PROVIDER
@@ -158,10 +154,13 @@ class MediaStore(metaclass=abc.ABCMeta):
         )
         media_data['meta_data'] = self._enrich_meta_data(
             media_data.pop('meta_data', None),
-            media_data.pop('license_url', None),
-            media_data.pop('raw_license_url', None),
+            media_data['license_info'].url,
+            media_data['license_info'].raw_url,
         )
+        media_data['license_'] = media_data['license_info'].license
+        media_data['license_version'] = media_data['license_info'].version
 
+        media_data.pop('license_info', None)
         media_data['provider'] = self._PROVIDER
         media_data['filesize'] = None
         return media_data

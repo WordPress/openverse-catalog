@@ -4,6 +4,7 @@ from typing import Optional, Dict, Union
 
 from common.storage import columns, util
 from common.storage.media import MediaStore
+from common import LicenseInfo
 
 logger = logging.getLogger(__name__)
 

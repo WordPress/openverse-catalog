@@ -1,13 +1,10 @@
 import logging
-from unittest.mock import patch
-
-import requests
-
 import pytest
 import tldextract
 
 from common.storage import image
-from common import get_license_info, LicenseInfo
+from common import get_license_info, LicenseInfo, licenses
+from storage import util
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s:  %(message)s',
@@ -16,9 +13,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # This avoids needing the internet for testing.
-licenses.urls.tldextract.extract = tldextract.TLDExtract(
-    suffix_list_urls=None
-)
 image.columns.urls.tldextract.extract = tldextract.TLDExtract(
     suffix_list_urls=None
 )
@@ -253,32 +247,9 @@ def test_ImageStore_get_media_gets_source(
         raw_tags=None,
         watermarked=None,
         source=None,
+        ingestion_type=None,
     )
     assert actual_image.source == 'diff_source'
-
-
-def test_ImageStore_get_image_returns_none_if_license_url_is_none(
-        setup_env,
-):
-    image_store = image.ImageStore()
-
-    actual_image = image_store._get_image(
-        license_info=LicenseInfo('license', '1.5', None, None),
-        foreign_landing_url=None,
-        image_url=None,
-        thumbnail_url=None,
-        foreign_identifier=None,
-        width=None,
-        height=None,
-        creator=None,
-        creator_url=None,
-        title=None,
-        meta_data='notadict',
-        raw_tags=None,
-        watermarked=None,
-        source=None,
-    )
-    assert actual_image is None
 
 
 def test_ImageStore_get_image_creates_meta_data_with_valid_license_url(
@@ -303,48 +274,10 @@ def test_ImageStore_get_image_creates_meta_data_with_valid_license_url(
         raw_tags=None,
         watermarked=None,
         source=None,
+        ingestion_type=None,
     )
     assert actual_image.meta_data == {
         'license_url': license_url, 'raw_license_url': license_url
-    }
-
-
-def test_ImageStore_get_image_adds_valid_license_url_to_dict_meta_data(
-        monkeypatch, setup_env
-):
-    def mock_license_chooser(license_url, license_, license_version):
-        return image.licenses.LicenseInfo(
-            license_, license_version, license_url
-        )
-    monkeypatch.setattr(
-        image.licenses,
-        'get_license_info',
-        mock_license_chooser
-    )
-    image_store = image.ImageStore()
-    license_info = LicenseInfo(
-        'license', '1.5', 'https://license/url', 'https://license/url'
-    )
-    actual_image = image_store._get_image(
-        license_info=license_info,
-        foreign_landing_url=None,
-        image_url=None,
-        thumbnail_url=None,
-        foreign_identifier=None,
-        width=None,
-        height=None,
-        creator=None,
-        creator_url=None,
-        title=None,
-        meta_data={'key1': 'val1'},
-        raw_tags=None,
-        watermarked=None,
-        source=None,
-    )
-    assert actual_image.meta_data == {
-        'key1': 'val1',
-        'license_url': 'https://license/url',
-        'raw_license_url': 'https://license/url'
     }
 
 
