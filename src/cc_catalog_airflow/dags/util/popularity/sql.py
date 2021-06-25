@@ -18,8 +18,8 @@ IMAGE_POPULARITY_CONSTANTS_VIEW = "image_popularity_constants"
 AUDIO_POPULARITY_CONSTANTS_VIEW = "audio_popularity_constants"
 IMAGE_POPULARITY_PERCENTILE_FUNCTION = "image_popularity_percentile"
 AUDIO_POPULARITY_PERCENTILE_FUNCTION = "audio_popularity_percentile"
-STANDARDIZED_IMAGE_POPULARITY_FUNCTION_NAME = "standardized_image_popularity"
-STANDARDIZED_AUDIO_POPULARITY_FUNCTION_NAME = "standardized_audio_popularity"
+STANDARDIZED_IMAGE_POPULARITY_FUNCTION = "standardized_image_popularity"
+STANDARDIZED_AUDIO_POPULARITY_FUNCTION = "standardized_audio_popularity"
 
 IMAGE_POP_CONSTANTS_IDX = "image_popularity_constants_provider_metric_idx"
 AUDIO_POP_CONSTANTS_IDX = "audio_popularity_constants_provider_metric_idx"
@@ -88,12 +88,12 @@ def drop_media_popularity_relations(
 def drop_media_popularity_functions(
         postgres_conn_id,
         media_type=IMAGE_TYPE,
-        standardized_popularity=STANDARDIZED_IMAGE_POPULARITY_FUNCTION_NAME,
+        standardized_popularity=STANDARDIZED_IMAGE_POPULARITY_FUNCTION,
         popularity_percentile=IMAGE_POPULARITY_PERCENTILE_FUNCTION,
 ):
     if media_type == AUDIO_TYPE:
         popularity_percentile = AUDIO_POPULARITY_PERCENTILE_FUNCTION
-        standardized_popularity = STANDARDIZED_AUDIO_POPULARITY_FUNCTION_NAME
+        standardized_popularity = STANDARDIZED_AUDIO_POPULARITY_FUNCTION
     postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
     drop_standardized_popularity = (
         f"DROP FUNCTION IF EXISTS public.{standardized_popularity} CASCADE;"
@@ -276,12 +276,12 @@ def update_media_popularity_constants(
 def create_standardized_media_popularity_function(
         postgres_conn_id,
         media_type=IMAGE_TYPE,
-        function_name=STANDARDIZED_IMAGE_POPULARITY_FUNCTION_NAME,
+        function_name=STANDARDIZED_IMAGE_POPULARITY_FUNCTION,
         popularity_constants=IMAGE_POPULARITY_CONSTANTS_VIEW,
 ):
     if media_type == AUDIO_TYPE:
         popularity_constants = AUDIO_POPULARITY_CONSTANTS_VIEW
-        function_name = STANDARDIZED_AUDIO_POPULARITY_FUNCTION_NAME
+        function_name = STANDARDIZED_AUDIO_POPULARITY_FUNCTION
     postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
     query = dedent(
         f"""
@@ -302,7 +302,7 @@ def create_standardized_media_popularity_function(
 def create_media_view(
         postgres_conn_id,
         media_type=IMAGE_TYPE,
-        standardized_popularity_func=STANDARDIZED_IMAGE_POPULARITY_FUNCTION_NAME,
+        standardized_popularity_func=STANDARDIZED_IMAGE_POPULARITY_FUNCTION,
         table_name=IMAGE_TABLE_NAME,
         db_view_name=IMAGE_VIEW_NAME,
         db_view_id_idx=IMAGE_VIEW_ID_IDX,
@@ -313,7 +313,7 @@ def create_media_view(
         db_view_name = AUDIO_VIEW_NAME
         db_view_id_idx = AUDIO_VIEW_ID_IDX
         db_view_provider_fid_idx = AUDIO_VIEW_PROVIDER_FID_IDX
-        standardized_popularity_func = STANDARDIZED_AUDIO_POPULARITY_FUNCTION_NAME
+        standardized_popularity_func = STANDARDIZED_AUDIO_POPULARITY_FUNCTION
     postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
     STANDARDIZED_POPULARITY = f"standardized_{media_type}_popularity"
     create_view_query = dedent(
