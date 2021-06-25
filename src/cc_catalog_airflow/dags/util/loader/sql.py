@@ -39,7 +39,9 @@ def create_loading_table(
     """
     Create intermediary table and indices if they do not exist
     """
-    media_type = ti.xcom_pull(task_ids='stage_oldest_tsv_file', key='media_type')
+    media_type = ti.xcom_pull(
+        task_ids='stage_oldest_tsv_file', key='media_type'
+    )
     if media_type is None:
         media_type = 'image'
     load_table = _get_load_table_name(identifier, media_type=media_type)
@@ -260,7 +262,8 @@ def upsert_records_to_db_table(
             old.{column}
           )'''
     if db_table is None:
-        db_table = AUDIO_TABLE_NAME if media_type == 'audio' else IMAGE_TABLE_NAME
+        db_table = AUDIO_TABLE_NAME \
+            if media_type == 'audio' else IMAGE_TABLE_NAME
 
     load_table = _get_load_table_name(identifier, media_type=media_type)
     logger.info(f'Upserting new records into {db_table}.')

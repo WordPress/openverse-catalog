@@ -35,7 +35,9 @@ def load_s3_data(
         ti,
         overwrite=False,
 ):
-    media_type = ti.xcom_pull(task_ids='stage_oldest_tsv_file', key='media_type')
+    media_type = ti.xcom_pull(
+        task_ids='stage_oldest_tsv_file', key='media_type'
+    )
     if media_type is None:
         media_type = 'image'
     tsv_key = s3.get_staged_s3_object(identifier, bucket, aws_conn_id)
