@@ -6,6 +6,7 @@ PostgreSQL.
 import logging
 import os
 
+from common.storage.audio import AUDIO_TSV_COLUMNS
 from common.storage.image import IMAGE_TSV_COLUMNS
 
 logger = logging.getLogger(__name__)
@@ -25,12 +26,11 @@ def check_and_fix_tsv_file(tsv_file_name):
         # If no media file is set in the filename, it is
         # probably image
         media_type = 'image'
-    old_cols_number = len(IMAGE_TSV_COLUMNS) - 1
     if media_type == 'audio':
-        # TODO: when audio is added:
-        # old_cols_number = len(AUDIO_TSV_COLUMNS) - 1
-        old_cols_number = 0
-    new_cols_number = old_cols_number + 1
+        new_cols_number = len(AUDIO_TSV_COLUMNS)
+    else:
+        new_cols_number = len(IMAGE_TSV_COLUMNS)
+    old_cols_number = new_cols_number - 1
     with open(tsv_file_name) as f:
         test_line = f.readline()
     line_list = [word.strip() for word in test_line.split('\t')]
