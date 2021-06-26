@@ -3,7 +3,7 @@ import pytest
 import tldextract
 
 from common.storage import image
-from common import get_license_info, LicenseInfo, licenses
+from common import get_license_info, LicenseInfo
 from storage import util
 
 logging.basicConfig(

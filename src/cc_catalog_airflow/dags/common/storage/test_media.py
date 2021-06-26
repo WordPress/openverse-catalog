@@ -12,7 +12,7 @@ import tldextract
 
 from common.licenses import licenses
 from common.storage import image
-from common import get_license_info, urls
+from common import get_license_info
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s:  %(message)s',

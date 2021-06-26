@@ -50,8 +50,6 @@ mock_audio_args = {
 }
 
 
-print('tldextract: ', audio.columns.urls.tldextract)
-
 @pytest.fixture
 def setup_env(monkeypatch):
     monkeypatch.setenv('OUTPUT_DIR', '/tmp')
