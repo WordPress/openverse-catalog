@@ -27,6 +27,7 @@ def validate_url_string(url_string):
 
     url_string:  URL (string) which will be validated and/or repaired.
     """
+    print(f"\nCalling {validate_url_string.__qualname__}/ {validate_url_string.__repr__()}")
     logger.debug(f'Validating_url {url_string}')
     if not type(url_string) == str or not url_string:
         return

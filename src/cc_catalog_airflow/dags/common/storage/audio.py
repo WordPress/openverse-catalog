@@ -4,6 +4,7 @@ from typing import Optional, Dict, Union
 
 from common.storage import columns
 from common.storage.media import MediaStore
+from licenses.licenses import LicenseInfo
 
 logger = logging.getLogger(__name__)
 
@@ -117,9 +118,7 @@ class AudioStore(MediaStore):
         foreign_landing_url: str,
         audio_url: str,
         thumbnail_url: Optional[str] = None,
-        license_url: Optional[str] = None,
-        license_: Optional[str] = None,
-        license_version: Optional[str] = None,
+        license_info: Optional[LicenseInfo] = None,
         foreign_identifier: Optional[str] = None,
         creator: Optional[str] = None,
         creator_url: Optional[str] = None,
@@ -199,9 +198,7 @@ class AudioStore(MediaStore):
             'foreign_landing_url': foreign_landing_url,
             'audio_url': audio_url,
             'thumbnail_url': thumbnail_url,
-            'license_url': license_url,
-            'license_': license_,
-            'license_version': license_version,
+            'license_info': license_info,
             'foreign_identifier': foreign_identifier,
             'creator': creator,
             'creator_url': creator_url,
