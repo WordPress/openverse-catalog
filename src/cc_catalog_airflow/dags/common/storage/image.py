@@ -2,7 +2,7 @@ from collections import namedtuple
 import logging
 from typing import Optional, Dict, Union
 
-from common.storage import columns, util
+from common.storage import columns
 from common.storage.media import MediaStore
 from common import LicenseInfo
 

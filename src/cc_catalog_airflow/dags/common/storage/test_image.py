@@ -2,9 +2,8 @@ import logging
 import pytest
 import tldextract
 
-from common.storage import image
-from common import get_license_info, LicenseInfo, licenses
-from storage import util
+from common.storage import image, util
+from common import get_license_info, LicenseInfo
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s:  %(message)s',
@@ -228,7 +227,7 @@ def test_ImageStore_get_media_gets_source(
 
     def mock_get_source(source, provider):
         return 'diff_source'
-    monkeypatch.setattr(image.util, 'get_source', mock_get_source)
+    monkeypatch.setattr(util, 'get_source', mock_get_source)
 
     actual_image = image_store._get_image(
         license_info=LicenseInfo(
