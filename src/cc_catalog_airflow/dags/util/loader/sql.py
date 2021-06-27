@@ -62,7 +62,6 @@ def create_loading_table(
               {col.TITLE} character varying(5000),
               {col.META_DATA} jsonb,
               {col.TAGS} jsonb,
-              {col.WATERMARKED} boolean,
               {col.PROVIDER} character varying(80),
               {col.SOURCE} character varying(80),
               {col.INGESTION_TYPE} character varying(80),
@@ -234,7 +233,7 @@ def _clean_intermediate_table_data(
 def upsert_records_to_db_table(
         postgres_conn_id,
         identifier,
-        db_table=IMAGE_TABLE_NAME,
+        db_table=None,
         media_type='image',
 ):
     def _newest_non_null(column: str) -> str:
@@ -355,9 +354,12 @@ def upsert_records_to_db_table(
 def overwrite_records_in_db_table(
         postgres_conn_id,
         identifier,
-        db_table=IMAGE_TABLE_NAME,
+        db_table=None,
         media_type='image'
 ):
+    if db_table is None:
+        db_table = AUDIO_TABLE_NAME \
+            if media_type == 'audio' else IMAGE_TABLE_NAME
     load_table = _get_load_table_name(identifier, media_type=media_type)
     logger.info(f'Updating records in {db_table}.')
     postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
