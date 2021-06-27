@@ -208,7 +208,6 @@ def _get_audio_set_info(media_data):
             .replace('.', '')\
             .replace(':', '')
         url = _cleanse_url(f'{base_url}{set_id}/{set_slug}')
-        print(set_id, set_slug, url)
     return audio_set, position, url, thumbnail
 
 
