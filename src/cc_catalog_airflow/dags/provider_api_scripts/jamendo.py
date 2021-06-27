@@ -15,7 +15,7 @@ from urllib.parse import urlparse
 
 from common import DelayedRequester, AudioStore
 from common.licenses.licenses import get_license_info
-from urls import rewrite_redirected_url
+from common.urls import rewrite_redirected_url
 from util.loader import provider_details as prov
 
 # On Jamendo Music, you can enjoy a wide catalog of more than 500,000 tracks
