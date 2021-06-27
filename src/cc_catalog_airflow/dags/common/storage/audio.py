@@ -47,6 +47,15 @@ AUDIO_TSV_COLUMNS = [
     columns.JSONColumn(
         name='tags', required=False
     ),
+    columns.StringColumn(
+        name='provider', required=False, size=80, truncate=False
+    ),
+    columns.StringColumn(
+        name='source', required=False, size=80, truncate=False
+    ),
+    columns.StringColumn(
+        name="ingestion_type", required=False, size=80, truncate=False
+    ),
     columns.IntegerColumn(
         name='duration', required=False
     ),
@@ -69,15 +78,6 @@ AUDIO_TSV_COLUMNS = [
     columns.JSONColumn(
         # Alternative files: url, filesize, bit_rate, sample_rate
         name='alt_audio_files', required=False
-    ),
-    columns.StringColumn(
-        name='provider', required=False, size=80, truncate=False
-    ),
-    columns.StringColumn(
-        name='source', required=False, size=80, truncate=False
-    ),
-    columns.StringColumn(
-        name="ingestion_type", required=False, size=80, truncate=False
     ),
 ]
 
