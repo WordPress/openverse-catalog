@@ -239,6 +239,7 @@ def _process_image_data(image_data):
 
     image_url = image_info.get('url')
     creator, creator_url = _extract_creator_info(image_info)
+    title = _extract_title(image_info)
 
     image_store.add_item(
         foreign_landing_url=image_info.get('descriptionshorturl'),
@@ -249,7 +250,7 @@ def _process_image_data(image_data):
         height=image_info.get('height'),
         creator=creator,
         creator_url=creator_url,
-        title=image_data.get('title'),
+        title=title,
         meta_data=_create_meta_data_dict(image_data)
     )
 
@@ -275,6 +276,20 @@ def _check_mediatype(image_info, image_mediatypes=None):
     else:
         valid_mediatype = True
     return valid_mediatype
+
+
+def _extract_title(image_info):
+    # Titles often have 'File:filename.jpg' form
+    # We remove the 'File:' and extension from title
+    name = image_info.get('extmetadata', {}).get('ObjectName', {})
+    title = name.get('value', '')
+    if title is None:
+        title = image_info.get('title')
+    if title.startswith('File:'):
+        title = title[len('File:'):]
+    if title[-4:].lower() in ['.png', '.jpg']:
+        title = title[:-4]
+    return title
 
 
 def _extract_date_info(image_info):
