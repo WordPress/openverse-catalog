@@ -326,13 +326,28 @@ def _extract_category_info(image_info):
 
 
 def _get_license_url(image_info):
-    return (
+    license_url = (
         image_info
         .get('extmetadata', {})
         .get('LicenseUrl', {})
         .get('value', '')
         .strip()
     )
+    if license_url == '':
+        license_name = (
+            image_info
+            .get('extmetadata', {})
+            .get('LicenseShortName', {})
+            .get('value', '')
+            .lower()
+        )
+        if license_name == 'public_domain':
+            license_url = 'https://creativecommons.org/publicdomain/mark/1.0/'
+        elif license_name == 'pdm-owner':
+            license_url = 'https://creativecommons.org/publicdomain/zero/1.0/'
+        else:
+            license_url = None
+    return license_url
 
 
 def _create_meta_data_dict(image_data):
