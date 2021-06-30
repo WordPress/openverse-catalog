@@ -344,7 +344,6 @@ def _get_license_url(image_info):
             .lower()
         )
         if license_name == 'public_domain':
-            print('PD\n', json.dumps(image_info, indent=2))
             license_url = 'https://creativecommons.org/publicdomain/mark/1.0/'
         elif license_name == 'pdm-owner':
             license_url = 'https://creativecommons.org/publicdomain/zero/1.0/'
