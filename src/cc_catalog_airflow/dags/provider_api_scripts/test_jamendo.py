@@ -235,3 +235,26 @@ def test_extract_audio_data_handles_example_dict():
         'title': 'Thoughtful'
     }
     assert actual_image_info == expected_image_info
+
+
+def test_get_tags():
+    item_data = {
+        "musicinfo": {
+            "vocalinstrumental": "vocal",
+            "gender": "male",
+            "speed": "medium",
+            "tags": {
+                "genres": [
+                    "pop",
+                    "rock"
+                ],
+                "instruments": [],
+                "vartags": [
+                    "engage"
+                ]
+            }
+        }
+    }
+    expected_tags = ['vocal', 'male', 'speed_medium', 'engage']
+    actual_tags = jamendo._get_tags(item_data)
+    assert expected_tags == actual_tags

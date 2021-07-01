@@ -281,7 +281,7 @@ def _get_tags(item):
         if music_speed:
             tags.append(f"speed_{music_speed}")
         for tag_name in ['instruments', 'vartags']:
-            tag_value = musicinfo['tags'].get(tag_name)
+            tag_value = musicinfo.get('tags', {}).get(tag_name)
             if tag_value:
                 tag_value = [_ for _ in tag_value if _ != 'undefined']
                 tags.extend(tag_value)
