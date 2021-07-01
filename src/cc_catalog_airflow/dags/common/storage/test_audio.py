@@ -262,18 +262,17 @@ def test_create_tsv_row_creates_alt_audio_files(
         'agreatsong',
         '{"description": "cat song"}',
         '{"name": "tag1", "provider": "testing"}',
+        'testing_provider',
+        'testing_source',
+        'provider_api',
         '100',
         '\\N',
         '\\N',
         'music',
         '["rock", "pop"]',
         '\\N',
-        '[{"url": '
-        '"http://alternative.com/audio.mp3", "filesize": "123", "bit_rate": "41000", '
+        '[{"url": "http://alternative.com/audio.mp3", "filesize": "123", "bit_rate": "41000", '
         '"sample_rate": "16000"}]',
-        'testing_provider',
-        'testing_source',
-        'provider_api',
 
     ]) + '\n'
     assert actual_row == expected_row
@@ -308,6 +307,9 @@ def test_create_tsv_row_creates_audio_set(
         'agreatsong',
         '{"description": "cat song"}',
         '{"name": "tag1", "provider": "testing"}',
+        'testing_provider',
+        'testing_source',
+        'provider_api',
         '100',
         '\\N',
         '\\N',
@@ -316,10 +318,6 @@ def test_create_tsv_row_creates_audio_set(
         '{"audio_set": "test_audio_set", "set_url": "test.com", '
         '"set_position": "1", "set_thumbnail": "thumbnail.jpg"}',
         '\\N',
-        'testing_provider',
-        'testing_source',
-        'provider_api',
-
     ]) + '\n'
     assert actual_row == expected_row
 
@@ -472,6 +470,9 @@ def test_create_tsv_row_properly_places_entries(
         'agreatsong',
         '{"description": "a song about cat"}',
         '[{"name": "tag1", "provider": "testing"}]',
+        'testing_provider',
+        'testing_source',
+        'provider_api',
         '200',
         '16000',
         '44100',
@@ -480,8 +481,5 @@ def test_create_tsv_row_properly_places_entries(
         '{"audio_set": "album", "set_position": "1", "set_url": "https://album.com/", '
         '"set_thumbnail": "https://album.com/thumbnail.jpg"}',
         '\\N',
-        'testing_provider',
-        'testing_source',
-        'provider_api'
     ]) + '\n'
     assert expect_row == actual_row

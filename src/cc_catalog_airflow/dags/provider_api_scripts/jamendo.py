@@ -9,6 +9,7 @@ Output:                 TSV file containing the image, the respective
 Notes:                  https://api.jamendo.com/v3.0/tracks/
                         No rate limit specified.
 """
+import json
 import os
 import logging
 from urllib.parse import urlparse
@@ -72,15 +73,15 @@ def main():
     logger.info('Terminated!')
 
 
-def _get_query_param(
+def _get_query_params(
         offset,
-        default_query_param=None,
+        default_query_params=None,
 ):
-    if default_query_param is None:
-        default_query_param = DEFAULT_QUERY_PARAMS
-    query_param = default_query_param.copy()
-    query_param['offset'] = offset
-    return query_param
+    if default_query_params is None:
+        default_query_params = DEFAULT_QUERY_PARAMS
+    query_params = default_query_params.copy()
+    query_params['offset'] = offset
+    return query_params
 
 
 def _get_items():
@@ -88,10 +89,9 @@ def _get_items():
     should_continue = True
     offset = 0
     while should_continue:
-        query_param = _get_query_param(offset=offset)
-
+        query_params = _get_query_params(offset=offset)
         batch_data = _get_batch_json(
-            query_param=query_param
+            query_params=query_params
         )
         if isinstance(batch_data, list) and len(batch_data) > 0:
             item_count = _process_item_batch(batch_data)
@@ -105,14 +105,14 @@ def _get_batch_json(
         endpoint=ENDPOINT,
         headers=None,
         retries=RETRIES,
-        query_param=None
+        query_params=None
 ):
     if headers is None:
         headers = HEADERS
     response_json = delayed_requester.get_response_json(
         endpoint,
         retries,
-        query_param,
+        query_params,
         headers=headers
     )
     if response_json is None:
@@ -124,14 +124,14 @@ def _get_batch_json(
 
 def _process_item_batch(items_batch):
     for item in items_batch:
-        item_meta_data = _extract_image_data(item)
+        item_meta_data = _extract_audio_data(item)
         if item_meta_data is None:
             continue
         audio_store.add_item(**item_meta_data)
     return audio_store.total_items
 
 
-def _extract_image_data(media_data):
+def _extract_audio_data(media_data):
     try:
         foreign_landing_url = media_data["shareurl"]
     except (TypeError, KeyError, AttributeError):
@@ -182,16 +182,26 @@ def _get_foreign_identifier(media_data):
 
 
 def _get_audio_info(media_data):
+    """Parses audio URL, audio download URL, audio duration
+    If the audio does not allow download, we save the 'streaming'
+    URL as the `audio_url`
+    :param media_data: dictionary with audio data
+    :return: Tuple with main audio file information:
+    - audio_url
+    - download_url
+    - duration (in milliseconds)
+    """
     audio_url = media_data.get('audio')
+    download_url = None
     if (
             media_data.get('audiodownload_allowed')
             and media_data.get('audiodownload')
     ):
         audio_url = media_data.get('audiodownload')
+        download_url = media_data.get('audiodownload')
     duration = media_data.get('duration')
     if duration:
         duration = int(duration) * 1000
-    download_url = media_data.get('audiodownload')
     return audio_url, duration, download_url
 
 
@@ -288,14 +298,6 @@ def _get_genres(item):
 def _get_license(item):
     item_license_url = item.get('license_ccurl')
     item_license = get_license_info(license_url=item_license_url)
-
-    if item_license is None:
-        item_license_name = item.get('license_name')
-        item_license_version = item.get('license_version')
-        item_license = get_license_info(
-            license_=item_license_name,
-            license_version=item_license_version
-        )
     if item_license.license is None:
         return None
     return item_license
