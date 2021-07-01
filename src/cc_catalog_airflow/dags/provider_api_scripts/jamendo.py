@@ -9,7 +9,6 @@ Output:                 TSV file containing the image, the respective
 Notes:                  https://api.jamendo.com/v3.0/tracks/
                         No rate limit specified.
 """
-import json
 import os
 import logging
 from urllib.parse import urlparse
