@@ -53,7 +53,10 @@ def fill_template(provider, media_type, templates_path):
 
     test_script_path = api_path / f"test_{filename}.py"
     with open(test_script_path, 'w+', encoding='utf8') as test_script:
-        test_script.write('# TODO: Write your tests!')
+        test_string = _get_filled_template(
+            script_template_path, provider, media_type
+        )
+        test_script.write(test_string)
         print(f"API script test: {test_script_path.relative_to(project_path)}")
 
     workflow_template_path = templates_path / 'workflow.py_template'
