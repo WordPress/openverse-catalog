@@ -286,9 +286,12 @@ def _extract_title(image_info):
     if title is None:
         title = image_info.get('title')
     if title.startswith('File:'):
-        title = title[len('File:'):]
-    if title[-4:].lower() in ['.png', '.jpg']:
-        title = title[:-4]
+        title = title.replace('File:', '', 1)
+    last_dot_position = title.rfind('.')
+    if last_dot_position > 0:
+        possible_extension = title[last_dot_position:]
+        if possible_extension.lower() in ['.png', '.jpg', '.jpeg']:
+            title = title[:last_dot_position]
     return title
 
 

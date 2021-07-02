@@ -239,6 +239,18 @@ def test_merge_image_pages_both_have_gu():
     assert actual_merged_page == expect_merged_page
 
 
+def test_extract_title_gets_cleaned_title():
+    image_info = {'extmetadata': {'ObjectName': {'value': 'File:filename.jpg'}}}
+    actual_title = wmc._extract_title(image_info)
+    expected_title = 'filename'
+    assert actual_title == expected_title
+
+    image_info['title'] = 'filename.jpeg'
+    actual_title = wmc._extract_title(image_info)
+    expected_title = 'filename'
+    assert actual_title == expected_title
+
+
 def test_process_image_data_handles_example_dict():
     with open(os.path.join(RESOURCES, 'image_data_example.json')) as f:
         image_data = json.load(f)
