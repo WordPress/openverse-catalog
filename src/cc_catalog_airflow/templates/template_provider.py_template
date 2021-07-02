@@ -78,7 +78,7 @@ saved_json_counter = {
     'full_response': 0,
     'empty_response': 0,
     'full_item': 0,
-    'no_image_url': 0,
+    'no_{media_type}_url': 0,
     'no_foreign_landing_url': 0,
     'no_license': 0,
 }
@@ -108,8 +108,8 @@ def main():
     """
 
     logger.info("Begin: {provider_title_case} script")
-    image_count = _get_items()
-    logger.info(f"Total images pulled: {image_count}")
+    {media_type}_count = _get_items()
+    logger.info(f"Total {media_type}s pulled: {{media_type}_count}")
     logger.info('Terminated!')
 
 
@@ -245,7 +245,7 @@ def _extract_item_data(media_data):
         'creator_url': creator_url,
         'foreign_identifier': foreign_identifier,
         'foreign_landing_url': foreign_landing_url,
-        'image_url': image_url,
+        '{media_type}_url': {media_type}_url,
         'height': height,
         'width': width,
         'thumbnail_url': thumbnail,

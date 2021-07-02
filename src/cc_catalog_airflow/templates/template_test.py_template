@@ -93,7 +93,7 @@ def test_process_item_batch_handles_example_batch():
 
 
 def test_extract_{media_type}_data_returns_none_when_media_data_none():
-    actual_{media_type}_info = {provider}._extract_{media_type}_data(None)
+    actual_{media_type}_info = {provider}._extract_item_data(None)
     expected_{media_type}_info = None
     assert actual_{media_type}_info is expected_{media_type}_info
 
@@ -102,7 +102,7 @@ def test_extract_{media_type}_data_returns_none_when_no_foreign_id():
     with open(os.path.join(RESOURCES, '{media_type}_data_example.json')) as f:
         {media_type}_data = json.load(f)
         {media_type}_data.pop('foreign_id', None)
-    actual_{media_type}_info = {provider}._extract_{media_type}_data({media_type}_data)
+    actual_{media_type}_info = {provider}._extract_item_data({media_type}_data)
     expected_{media_type}_info = None
     assert actual_{media_type}_info is expected_{media_type}_info
 
@@ -111,7 +111,7 @@ def test_extract_{media_type}_data_returns_none_when_no_{media_type}_url():
     with open(os.path.join(RESOURCES, '{media_type}_data_example.json')) as f:
         {media_type}_data = json.load(f)
         {media_type}_data.pop('{media_type}_url', None)
-    actual_{media_type}_info = {provider}._extract_{media_type}_data({media_type}_data)
+    actual_{media_type}_info = {provider}._extract_item_data({media_type}_data)
     assert actual_{media_type}_info is None
 
 
@@ -119,7 +119,7 @@ def test_extract_{media_type}_data_returns_none_when_no_license():
     with open(os.path.join(RESOURCES, '{media_type}_data_example.json')) as f:
         {media_type}_data = json.load(f)
         {media_type}_data.pop('license_url', None)
-    actual_{media_type}_info = {provider}._extract_{media_type}_data({media_type}_data)
+    actual_{media_type}_info = {provider}._extract_item_data({media_type}_data)
     assert actual_{media_type}_info is None
 
 
@@ -160,7 +160,7 @@ def test_extract_{media_type}_data_handles_example_dict():
     with open(os.path.join(RESOURCES, '{media_type}_data_example.json')) as f:
         {media_type}_data = json.load(f)
 
-    actual_{media_type}_info = {provider}._extract_{media_type}_data({media_type}_data)
+    actual_{media_type}_info = {provider}._extract_item_data({media_type}_data)
     expected_{media_type}_info = {
     }
     assert actual_{media_type}_info == expected_{media_type}_info

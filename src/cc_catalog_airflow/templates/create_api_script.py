@@ -24,11 +24,11 @@ def _get_filled_template(template_path, provider, media_type='image'):
                 media_store_init = AUDIO_STORE_INIT
                 media_store = 'audio_store'
             script_string = script_string.replace(
-                'media_store_init',
-                media_store_init
+                'media_store_init', media_store_init
             ).replace(
-                '{media_store}',
-                media_store
+                '{media_store}', media_store
+            ).replace(
+                '{media_type}', media_type
             )
         return script_string
 
