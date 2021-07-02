@@ -249,9 +249,10 @@ def _extract_item_data(media_data):
         'height': height,
         'width': width,
         'thumbnail_url': thumbnail,
-        'item_license': item_license,
-        'metadata': metadata,
-        'tags': tags
+        'license_': item_license.license,
+        'license_version': item_license.version,
+        'meta_data': metadata,
+        'raw_tags': tags
     }
 
 
