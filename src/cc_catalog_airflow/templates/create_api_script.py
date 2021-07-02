@@ -51,6 +51,8 @@ def fill_template(provider, media_type, templates_path):
         api_script.write(api_script_string)
         print(f"API script: {api_script_path.relative_to(project_path)}")
 
+    template_name = 'template_test.py_template'
+    script_template_path = templates_path / template_name
     test_script_path = api_path / f"test_{filename}.py"
     with open(test_script_path, 'w+', encoding='utf8') as test_script:
         test_string = _get_filled_template(
