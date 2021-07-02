@@ -113,15 +113,15 @@ def main():
     logger.info('Terminated!')
 
 
-def _get_query_param(
+def _get_query_params(
         page_number=0,
-        default_query_param=None,
+        default_query_params=None,
 ):
-    if default_query_param is None:
-        default_query_param = DEFAULT_QUERY_PARAMS
-    query_param = default_query_param.copy()
-    query_param["page"] = str(page_number)
-    return query_param
+    if default_query_params is None:
+        default_query_params = DEFAULT_QUERY_PARAMS
+    query_params = default_query_params.copy()
+    query_params["page"] = str(page_number)
+    return query_params
 
 
 def _get_items():
@@ -129,10 +129,10 @@ def _get_items():
     page_number = 0
     should_continue = True
     while should_continue:
-        query_param = _get_query_param(page_number=page_number)
+        query_params = _get_query_params(page_number=page_number)
 
         batch_data = _get_batch_json(
-            query_param=query_param
+            query_params=query_params
         )
         if isinstance(batch_data, list) and len(batch_data) > 0:
             item_count = _process_item_batch(batch_data)
@@ -146,14 +146,14 @@ def _get_batch_json(
         endpoint=ENDPOINT,
         headers=None,
         retries=RETRIES,
-        query_param=None
+        query_params=None
 ):
     if headers is None:
         headers = HEADERS
     response_json = delayed_requester.get_response_json(
         endpoint,
         retries,
-        query_param,
+        query_params,
         headers=headers
     )
     if response_json is None:
@@ -186,7 +186,7 @@ def _process_item_batch(items_batch):
 
 def _extract_item_data(media_data):
     """
-    Extract data for individual image
+    Extract data for individual item
 
     Required properties:
     - foreign_landing_url
@@ -300,7 +300,7 @@ def _get_metadata(item):
     Metadata may include: description, date created and modified at source,
     categories, popularity statistics.
     """
-    # TODO: Add function to extract metadata from the image_data dictionary
+    # TODO: Add function to extract metadata from the item dictionary
     #  Do not includes keys without value
     metadata = {}
     some_other_key_value = item.get('some_other_key')
@@ -310,7 +310,7 @@ def _get_metadata(item):
 
 
 def _get_tags(item):
-    """What tags do we save???"""
+    # TODO: Add correct implementation of _get_tags
     return item.get('tags')
 
 

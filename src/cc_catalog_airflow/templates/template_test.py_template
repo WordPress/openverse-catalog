@@ -168,7 +168,7 @@ def test_extract_{media_type}_data_handles_example_dict():
 
 def test_get_tags():
     item_data = {
-        "tags":['tag1', 'tag2']
+        "tags": ['tag1', 'tag2']
     }
     expected_tags = ['tag1', 'tag2']
     actual_tags = {provider}._get_tags(item_data)
