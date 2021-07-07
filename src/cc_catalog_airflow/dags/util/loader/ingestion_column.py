@@ -8,6 +8,7 @@ import os
 
 from common.storage.audio import AUDIO_TSV_COLUMNS
 from common.storage.image import IMAGE_TSV_COLUMNS
+from common.storage import media
 
 logger = logging.getLogger(__name__)
 
@@ -51,8 +52,8 @@ def check_and_fix_tsv_file(tsv_file_name):
 
 
 def _add_ingestion_type(tsv_file_name, source):
-    COMMON_CRAWL = 'commoncrawl'
-    PROVIDER_API = 'provider_api'
+    COMMON_CRAWL = media.COMMON_CRAWL
+    PROVIDER_API = media.PROVIDER_API
     ingestion_type = source if source == COMMON_CRAWL else PROVIDER_API
     logger.debug(f'Found source:  {source}')
     logger.info(

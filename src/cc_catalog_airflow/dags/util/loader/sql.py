@@ -287,6 +287,7 @@ def upsert_records_to_db_table(
             col.REMOVED: FALSE,
             col.META_DATA: col.META_DATA,
             col.TAGS: col.TAGS,
+            col.WATERMARKED: col.WATERMARKED,
     }
     if media_type == 'audio':
         column_inserts.update({
@@ -302,7 +303,6 @@ def upsert_records_to_db_table(
         column_inserts.update({
             col.WIDTH: col.WIDTH,
             col.HEIGHT: col.HEIGHT,
-            col.WATERMARKED: col.WATERMARKED
         })
     if media_type == 'audio':
         media_specific_upsert_query = (
@@ -318,9 +318,7 @@ def upsert_records_to_db_table(
     else:
         media_specific_upsert_query = (
             f'''{_newest_non_null(col.WIDTH)},
-            {_newest_non_null(col.HEIGHT)},
-            {_newest_non_null(col.WATERMARKED)}
-            '''
+            {_newest_non_null(col.HEIGHT)}'''
         )
     upsert_query = dedent(
         f'''
@@ -345,6 +343,7 @@ def upsert_records_to_db_table(
           {_newest_non_null(col.TITLE)},
           {_merge_jsonb_objects(col.META_DATA)},
           {_merge_jsonb_arrays(col.TAGS)},
+          {_newest_non_null(col.WATERMARKED)},
           {media_specific_upsert_query}
         '''
     )
@@ -376,6 +375,7 @@ def overwrite_records_in_db_table(
             col.TITLE,
             col.META_DATA,
             col.TAGS,
+            col.WATERMARKED,
             col.DURATION,
             col.BIT_RATE,
             col.SAMPLE_RATE,
