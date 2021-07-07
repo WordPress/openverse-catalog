@@ -8,7 +8,8 @@ Output:                 TSV file containing the audio meta-data.
 Notes:                  https://api.jamendo.com/v3.0/tracks/
                         35,000 requests per month for non-commercial apps
                         Jamendo Music has more than 500,000 tracks shared by
-                        40,000 artists from over 150 countries all over the world.
+                        40,000 artists from over 150 countries all over
+                        the world.
                         Audio quality: uploaded as WAV/ FLAC/ AIFF
                         bit depth: 16/24
                         sample rate: 44.1 or 48 kHz
