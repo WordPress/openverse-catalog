@@ -103,8 +103,8 @@ class ImageStore(MediaStore):
         self,
         foreign_landing_url: str,
         image_url: str,
+        license_info: LicenseInfo,
         thumbnail_url: Optional[str] = None,
-        license_info: Optional[LicenseInfo] = None,
         foreign_identifier: Optional[str] = None,
         width: Optional[int] = None,
         height: Optional[int] = None,
@@ -125,25 +125,24 @@ class ImageStore(MediaStore):
                               source website.
         image_url:            Direct link to the image file
 
-        Semi-Required Arguments
-        license_info:         An object of type LicenseInfo, created using
-                              either:
-                              1.
-                               - the string representation of an Open License
-                               (For valid options, see
-                               `common.license.constants.get_license_path_map()`)
-                               AND
-                               - string with license version. In the case of
-                               the `publicdomain` license, which has no
-                               version, one should pass
-                               `common.license.constants.NO_VERSION` here
+        license_info:         LicenseInfo object that has
+                              - the URL of the license for the image,
+                              - string representation of the license,
+                              - version of the license,
+                              - raw license URL that was by provider,
+                                if different from canonical URL
+        For valid options of license names, see
+        `common.license.constants.get_license_path_map()`.
 
-                               AND / OR
+        To get the LicenseInfo object, use `get_license_info` with either
+        (license_ and license_version) or (license_url) named parameters.
+        In the case of the `publicdomain` license, which has no version,
+        one should pass `common.license.constants.NO_VERSION` here.
 
-                               2.
-                                - license url.
+        Image data without the required parameters will be discarded.
 
         Optional Arguments:
+
         thumbnail_url:       Direct link to a thumbnail-sized version of
                              the image
         foreign_identifier:  Unique identifier for the image on the
@@ -169,13 +168,9 @@ class ImageStore(MediaStore):
                              and the `provider` argument in the
                              ImageStore init function is the specific
                              provider of the image.
-        ingestion_type:      String showing how the image was ingested:
-                             through an api - 'provider_api' or using the
-                             commoncrawl database - 'commoncrawl'
+        ingestion_type:      Set programmatically
         """
-        if license_info.license is None:
-            logger.warning("Invalid license provided")
-            return None
+
         image_data = {
             'foreign_landing_url': foreign_landing_url,
             'image_url': image_url,

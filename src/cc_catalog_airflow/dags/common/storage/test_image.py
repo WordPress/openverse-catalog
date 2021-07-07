@@ -1,6 +1,5 @@
 import logging
 
-import common
 import pytest
 import tldextract
 

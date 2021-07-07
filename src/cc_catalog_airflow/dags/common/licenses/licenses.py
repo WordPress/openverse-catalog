@@ -70,8 +70,7 @@ def get_license_info(
             f' and license_version {license_version}'
         )
         license_info = _get_license_info_from_license_pair(
-            license_,
-            license_version
+            license_, license_version
         )
         license_info = (*license_info, license_url)
     else:

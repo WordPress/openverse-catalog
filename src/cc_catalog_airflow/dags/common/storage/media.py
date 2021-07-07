@@ -95,14 +95,14 @@ class MediaStore(metaclass=abc.ABCMeta):
 
     def clean_media_metadata(self, **media_data) -> Optional[dict]:
         """
-        Cleans the base media metadata common for all media types.
+        Cleans and enriches the base media metadata common for all media types.
         Even though we clean license info in the provider API scripts,
         we validate it here, too, to make sure we don't have
         invalid license information in the database.
-        Enriches `meta_data` and `tags`.
+
         Returns a dictionary: media_type-specific fields are untouched,
         and for common metadata we:
-        - validate `license_info`,
+        - validate `license_info`
         - enrich `metadata`,
         - replace `raw_tags` with enriched `tags`,
         - validate `source`,
@@ -111,8 +111,11 @@ class MediaStore(metaclass=abc.ABCMeta):
 
         Returns None if license is invalid
         """
-
-        if not is_valid_license_info(media_data.get('license_info')):
+        if (
+                media_data['license_info'].license is None
+                or not is_valid_license_info(media_data['license_info'])
+        ):
+            logger.debug("Discarding media due to invalid license")
             return None
         media_data['source'] = util.get_source(
             media_data.get('source'),
