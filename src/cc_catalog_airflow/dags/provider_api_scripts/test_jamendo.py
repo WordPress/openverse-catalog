@@ -60,7 +60,7 @@ def test_get_items():
             '_get_batch_json',
             side_effect=[first_response, []]
     ):
-        expected_image_count = 3
+        expected_image_count = 4
         actual_image_count = jamendo._get_items()
         assert expected_image_count == actual_image_count
 
