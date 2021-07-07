@@ -16,20 +16,20 @@ def _get_filled_template(template_path, provider, media_type='image'):
         ).replace(
             '{provider}', provider.lower()
         )
-        if media_type:
-            if media_type == 'image':
-                media_store_init = IMAGE_STORE_INIT
-                media_store = 'image_store'
-            else:
-                media_store_init = AUDIO_STORE_INIT
-                media_store = 'audio_store'
-            script_string = script_string.replace(
-                'media_store_init', media_store_init
-            ).replace(
-                '{media_store}', media_store
-            ).replace(
-                '{media_type}', media_type
-            )
+        if media_type == 'audio':
+            media_store_init = AUDIO_STORE_INIT
+            media_store = 'audio_store'
+        else:
+            media_store_init = IMAGE_STORE_INIT
+            media_store = 'image_store'
+        script_string = script_string.replace(
+            'media_store_init', media_store_init
+        ).replace(
+            '{media_store}', media_store
+        ).replace(
+            '{media_type}', media_type
+        )
+
         return script_string
 
 
