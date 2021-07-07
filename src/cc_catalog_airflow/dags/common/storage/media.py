@@ -30,6 +30,9 @@ TAG_CONTAINS_BLACKLIST = {
     "pdm",
 }
 
+COMMON_CRAWL = 'commoncrawl'
+PROVIDER_API = 'provider_api'
+
 
 class MediaStore(metaclass=abc.ABCMeta):
     """
@@ -90,44 +93,6 @@ class MediaStore(metaclass=abc.ABCMeta):
         """
         pass
 
-    @staticmethod
-    def validate_license_info(media_data) -> Optional[dict]:
-        """
-        Replaces license properties in media data with validated
-        values. Generates license information based on `license_url`, or
-        pair of `license_` and `license_version` properties of
-        media_data dictionary.
-        Adds `raw_license_url` if the `license_url` has been rewritten
-        either because it was invalid, or to add 'https:',
-        or trailing '/' at the end.
-        Returns `None` if license data is invalid.
-        """
-        license_url = media_data.pop('license_url', None)
-        license_ = media_data.pop('license_', None)
-        license_version = media_data.pop('license_version', None)
-
-        valid_license_info = licenses.get_license_info(
-            license_url=license_url,
-            license_=license_,
-            license_version=license_version
-        )
-
-        if valid_license_info.license is None:
-            logger.debug(
-                f"Invalid image license."
-                f" URL: <{license_url}>,"
-                f" license: {license_},"
-                f" version: {license_version}")
-            return None
-        media_data.update({
-            'license_url': valid_license_info.url,
-            'license_': valid_license_info.license,
-            'license_version': valid_license_info.version,
-        })
-        if valid_license_info.url != license_url:
-            media_data['raw_license_url'] = license_url
-
-        return media_data
 
     def clean_media_metadata(self, **media_data) -> Optional[dict]:
         """
@@ -137,18 +102,27 @@ class MediaStore(metaclass=abc.ABCMeta):
         and for common metadata we:
         - remove `license_url` and `raw_license_url`,
         - validate `license_` and `license_version`,
-        - enrich `metadata` and `tags`,
-        - remove `raw_tags` are removed,
+        - enrich `metadata`,
+        - replace `raw_tags` with enriched `tags`,
         - validate `source`,
         - add `provider`,
         - add `filesize` (with value of None)
 
         Returns None if license is invalid
         """
+
         media_data['source'] = util.get_source(
             media_data.get('source'),
             self._PROVIDER
         )
+        # Add ingestion_type column value based on `source`.
+        # The implementation is based on `ingestion_column`
+        if media_data.get('ingestion_type') is None:
+            if media_data['source'] == 'commoncrawl':
+                media_data['ingestion_type'] = 'commoncrawl'
+            else:
+                media_data['ingestion_type'] = 'provider_api'
+
         media_data['tags'] = self._enrich_tags(
             media_data.pop('raw_tags', None)
         )

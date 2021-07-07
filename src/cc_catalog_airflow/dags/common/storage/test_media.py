@@ -217,38 +217,6 @@ def test_MediaStore_produces_correct_total_images(mock_rewriter, setup_env):
     assert image_store.total_items == 3
 
 
-def test_MediaStore_get_valid_license_info_returns_None_when_license_is_None(
-        monkeypatch,
-        setup_env,
-):
-    image_store = image.ImageStore()
-
-    actual_image_data = image_store.validate_license_info({
-        'license_url': 'https://license/url',
-        'license_': None,
-        'license_version': '1.5',
-        'foreign_landing_url': '',
-        'image_url': '',
-    })
-    assert actual_image_data is None
-
-
-def test_MediaStore_get_valid_license_info_returns_None_when_license_is_invalid(
-        monkeypatch,
-        setup_env,
-):
-    image_store = image.ImageStore()
-
-    actual_license_info = image_store.validate_license_info({
-        'license_url': 'https://license/url',
-        'license_': 'license',
-        'license_version': '1.5',
-        'foreign_landing_url': '',
-        'image_url': '',
-    })
-    assert actual_license_info is None
-
-
 def test_MediaStore_clean_media_metadata_does_not_change_required_media_arguments(
         monkeypatch,
         setup_env,
