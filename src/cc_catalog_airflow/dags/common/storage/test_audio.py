@@ -37,6 +37,7 @@ mock_audio_args = {
     'creator_url': 'https://creatorurl.com',
     'title': 'agreatsong',
     'meta_data': {},
+    'watermarked': None,
     'raw_tags': {},
     'watermarked': None,
     'bit_rate': None,

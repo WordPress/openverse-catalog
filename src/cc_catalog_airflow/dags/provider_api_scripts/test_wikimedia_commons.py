@@ -239,6 +239,18 @@ def test_merge_image_pages_both_have_gu():
     assert actual_merged_page == expect_merged_page
 
 
+def test_extract_title_gets_cleaned_title():
+    image_info = {'extmetadata': {'ObjectName': {'value': 'File:filename.jpg'}}}
+    actual_title = wmc._extract_title(image_info)
+    expected_title = 'filename'
+    assert actual_title == expected_title
+
+    image_info['title'] = 'filename.jpeg'
+    actual_title = wmc._extract_title(image_info)
+    expected_title = 'filename'
+    assert actual_title == expected_title
+
+
 def test_process_image_data_handles_example_dict():
     with open(os.path.join(RESOURCES, 'image_data_example.json')) as f:
         image_data = json.load(f)
@@ -262,7 +274,7 @@ def test_process_image_data_handles_example_dict():
         height=3102,
         creator='PtrQs',
         creator_url='https://commons.wikimedia.org/wiki/User:PtrQs',
-        title='File:20120925 PlozevetBretagne LoneTree DSC07971 PtrQs.jpg',
+        title='20120925 PlozevetBretagne LoneTree DSC07971 PtrQs',
         meta_data={'description': 'SONY DSC', 'global_usage_count': 0,
                     'last_modified_at_source': '2019-09-01 00:38:47',
                     'date_originally_created': '2012-09-25 16:23:02',
@@ -400,7 +412,17 @@ def test_get_license_url_handles_missing_license_url():
             os.path.join(RESOURCES, 'image_info_artist_partial_link.json')
     ) as f:
         image_info = json.load(f)
-    expect_license_url = ''
+    expect_license_url = None
+    actual_license_url = wmc._get_license_url(image_info)
+    assert actual_license_url == expect_license_url
+
+
+def test_get_license_url_handles_cc0_license():
+    with open(
+            os.path.join(RESOURCES, 'image_info_cc0.json')
+    ) as f:
+        image_info = json.load(f)
+    expect_license_url = 'https://creativecommons.org/publicdomain/zero/1.0/'
     actual_license_url = wmc._get_license_url(image_info)
     assert actual_license_url == expect_license_url
 
