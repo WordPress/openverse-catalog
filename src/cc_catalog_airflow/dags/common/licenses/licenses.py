@@ -238,3 +238,15 @@ def _build_license_url(license_path) -> str:
             f'Failed to rewrite {derived_url}.'
         )
     return rewritten_license_url
+
+
+def is_valid_license_info(license_info: LicenseInfo) -> bool:
+    base_path = 'https://creativecommons.org/'
+    try:
+        license_path = license_info.url.replace(base_path, '')
+        if license_path[-1] == '/':
+            license_path = license_path[:-1]
+        license_pair = LICENSE_PATH_MAP.get(license_path)
+        return license_pair is not None
+    except AttributeError:
+        return False
