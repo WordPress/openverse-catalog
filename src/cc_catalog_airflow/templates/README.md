@@ -8,7 +8,15 @@ To add a script for collecting audio data from provider named "MyProvider", open
 ```bash
 python3 src/cc_catalog_airflow/templates/create_api_script.py MyProvider -m audio
 ```
-This will create:
+You should see output similar to this:
+```bash
+Creating files in path/to/openverse-catalog
+API script: src/cc_catalog_airflow/dags/provider_api_scripts/myprovider.py
+API script test: src/cc_catalog_airflow/dags/provider_api_scripts/test_myprovider.py
+Airflow workflow file: src/cc_catalog_airflow/dags/myprovider_workflow.py
+
+```
+The following files have been created:
 1. Airflow workflow file. You will probably NOT need to edit it.
 2. `myprovider.py` script. This is a template that  simplifies creating an API provider script by providing the basic structure. The scripts use small and easily-testable functions. Follow the instructions within the script comments, and complete all the TODOs. Make sure to look at sample `.json` files that will be saved for testing.
 3. `test_myprovider.py`. This is a skeleton for your tests. Write tests for the functions in your Provider API script, using the `json` files with sample API responses.
