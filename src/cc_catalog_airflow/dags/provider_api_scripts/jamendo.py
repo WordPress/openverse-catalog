@@ -1,13 +1,18 @@
 """
 Content Provider:       Jamendo
 
-ETL Process:            Use the API to identify all CC-licensed images.
+ETL Process:            Use the API to identify all CC-licensed audio.
 
-Output:                 TSV file containing the image, the respective
-                        meta-data.
+Output:                 TSV file containing the audio meta-data.
 
 Notes:                  https://api.jamendo.com/v3.0/tracks/
-                        No rate limit specified.
+                        35,000 requests per month for non-commercial apps
+                        Jamendo Music has more than 500,000 tracks shared by
+                        40,000 artists from over 150 countries all over the world.
+                        Audio quality: uploaded as WAV/ FLAC/ AIFF
+                        bit depth: 16/24
+                        sample rate: 44.1 or 48 kHz
+                        channels: 1/2
 """
 import os
 import logging
@@ -18,13 +23,6 @@ from common.licenses.licenses import get_license_info
 from common.urls import rewrite_redirected_url
 from util.loader import provider_details as prov
 
-# On Jamendo Music, you can enjoy a wide catalog of more than 500,000 tracks
-# shared by 40,000 artists from over 150 countries all over the world.
-
-# Audio quality: uploaded as WAV/ FLAC/ AIFF
-# bit depth: 16/24
-# sample rate: 44.1 or 48 kHz
-# channels: 1/2
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s:  %(message)s',
@@ -39,7 +37,7 @@ RETRIES = 3
 HOST = 'jamendo.com'
 ENDPOINT = f'https://api.{HOST}/v3.0/tracks'
 PROVIDER = prov.JAMENDO_DEFAULT_PROVIDER
-APP_KEY = os.getenv('JAMENDO_APP_KEY', 'dd3c1077')
+APP_KEY = os.getenv('JAMENDO_APP_KEY', 'not_set')
 
 HEADERS = {
     "Accept": "application/json",
@@ -51,7 +49,7 @@ DEFAULT_QUERY_PARAMS = {
     'client_id': APP_KEY,
     'include': 'musicinfo licenses stats lyrics',
     'imagesize': 200,
-    'limit': 200,
+    'limit': LIMIT,
     'audioformat': 'mp32',
 }
 
@@ -67,8 +65,9 @@ def main():
     """
 
     logger.info("Begin: Jamendo script")
-    image_count = _get_items()
-    logger.info(f"Total images pulled: {image_count}")
+    audio_count = _get_items()
+    audio_store.commit()
+    logger.info(f"Total audio pulled: {audio_count}")
     logger.info('Terminated!')
 
 
