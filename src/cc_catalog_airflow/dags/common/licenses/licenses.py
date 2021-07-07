@@ -190,7 +190,7 @@ def _get_valid_cc_url(license_url) -> Optional[str]:
     return validated_license_url
 
 
-def _get_license_info_from_license_pair(
+def get_license_info_from_license_pair(
     license_, license_version, pair_map=REVERSE_LICENSE_PATH_MAP
 ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
     """
