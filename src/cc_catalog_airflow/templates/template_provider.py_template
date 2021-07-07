@@ -1,10 +1,9 @@
 """
 Content Provider:       {provider_title_case}
 
-ETL Process:            Use the API to identify all CC-licensed images.
+ETL Process:            Use the API to identify all openly licensed media.
 
-Output:                 TSV file containing the image, the respective
-                        meta-data.
+Output:                 TSV file containing the media metadata.
 
 Notes:                  {{API URL}}
                         No rate limit specified.
@@ -12,6 +11,7 @@ Notes:                  {{API URL}}
 import json
 import os
 import logging
+from pathlib import Path
 from urllib.parse import urlparse
 
 from common import DelayedRequester, ImageStore, AudioStore
@@ -85,6 +85,10 @@ saved_json_counter = {
 
 
 def check_and_save_json_for_test(name, data):
+    parent = Path(__file__).parent
+    test_resources_path = parent / 'tests' / 'resources' / {provider}
+    if not Path.is_dir(test_resources_path):
+        Path.mkdir(test_resources_path)
     if saved_json_counter[name] == 0:
         with open(f"{name}.json", "w+", encoding="utf-8") as outf:
             json.dump(data, outf, indent=2)
@@ -187,7 +191,9 @@ def _process_item_batch(items_batch):
 def _extract_item_data(media_data):
     """
     Extract data for individual item
-
+    You can view the documentation about media parameters in
+    `AudioStore.add_item` or `ImageStore.add_item` method
+    docstrings.
     Required properties:
     - foreign_landing_url
     - image_url / audio_url
@@ -201,6 +207,7 @@ def _extract_item_data(media_data):
     - thumbnail_url
     - metadata
     - tags
+    - watermarked (false by default)
 
     Optional properties for images:
     - width
@@ -208,6 +215,13 @@ def _extract_item_data(media_data):
 
     Optional properties for audio:
     - duration
+    - bit_rate
+    - sample_rate
+    - category
+    - genre (list of genres)
+    - audio_set (JSON field)
+    - alternative audio fields
+
     """
     # TODO: remove the code for saving json files from the final script
 
@@ -218,12 +232,14 @@ def _extract_item_data(media_data):
         print(f"{json.dumps(media_data, indent=2)}")
         check_and_save_json_for_test('no_foreign_landing_url', media_data)
         return None
+    # TODO: Choose correct line for media type and delete the other:
+    # TODO: Delete the unnecessary _get_media_info function
     # audio_url, duration = _get_audio_info(media_data)
-    image_url, height, width = _get_image_info(media_data)
-    if image_url is None:
+    # image_url, height, width = _get_image_info(media_data)
+    if {media_type}_url is None:
         print(f"Found no media url:")
         print(f"{json.dumps(media_data, indent=2)}")
-        check_and_save_json_for_test('no_image_url', media_data)
+        check_and_save_json_for_test('no_{media_type}_url', media_data)
         return None
     item_license = _get_license(media_data)
     if item_license is None:
