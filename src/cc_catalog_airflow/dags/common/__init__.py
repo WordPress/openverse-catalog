@@ -9,4 +9,8 @@ from .storage.image import (
     ImageStore,
     MockImageStore,
 )
+from .storage.audio import (
+    Audio, AudioStore, MockAudioStore
+)
+from .storage import columns
 from .requester import DelayedRequester

@@ -7,7 +7,7 @@ from common.storage.media import MediaStore
 
 logger = logging.getLogger(__name__)
 
-IMAGE_TSV_COLUMNS = [
+AUDIO_TSV_COLUMNS = [
     # The order of this list maps to the order of the columns in the TSV.
     columns.StringColumn(
         name='foreign_identifier', required=False, size=3000, truncate=False
@@ -17,17 +17,11 @@ IMAGE_TSV_COLUMNS = [
     ),
     columns.URLColumn(
         # `url` in DB
-        name='image_url', required=True, size=3000
+        name='audio_url', required=True, size=3000
     ),
     columns.URLColumn(
         # `thumbnail` in DB
         name='thumbnail_url', required=False, size=3000
-    ),
-    columns.IntegerColumn(
-        name='width', required=False
-    ),
-    columns.IntegerColumn(
-        name='height', required=False
     ),
     columns.IntegerColumn(
         name='filesize', required=False
@@ -54,7 +48,7 @@ IMAGE_TSV_COLUMNS = [
         name='tags', required=False
     ),
     columns.BooleanColumn(
-        name='watermarked', required=False
+        name='watermarked', required=False,
     ),
     columns.StringColumn(
         name='provider', required=False, size=80, truncate=False
@@ -65,21 +59,44 @@ IMAGE_TSV_COLUMNS = [
     columns.StringColumn(
         name="ingestion_type", required=False, size=80, truncate=False
     ),
+    columns.IntegerColumn(
+        name='duration', required=False
+    ),
+    columns.IntegerColumn(
+        name='bit_rate', required=False,
+    ),
+    columns.IntegerColumn(
+        name='sample_rate', required=False,
+    ),
+    columns.StringColumn(
+        name='category', required=False, size=80, truncate=False,
+    ),
+    columns.JSONColumn(
+        name='genre', required=False,
+    ),
+    columns.JSONColumn(
+        # set name, set thumbnail, position of audio in set, set url
+        name='audio_set', required=False,
+    ),
+    columns.JSONColumn(
+        # Alternative files: url, filesize, bit_rate, sample_rate
+        name='alt_audio_files', required=False
+    ),
 ]
 
-Image = namedtuple("Image", [c.NAME for c in IMAGE_TSV_COLUMNS])
+Audio = namedtuple("Audio", [c.NAME for c in AUDIO_TSV_COLUMNS])
 
 
-class ImageStore(MediaStore):
+class AudioStore(MediaStore):
     """
-    A class that stores image information from a given provider.
+    A class that stores audio information from a given provider.
 
     Optional init arguments:
-    provider:       String marking the provider in the `image` table of the DB.
+    provider:       String marking the provider in the `audio` table of the DB.
     output_file:    String giving a temporary .tsv filename (*not* the
-                    full path) where the image info should be stored.
+                    full path) where the audio info should be stored.
     output_dir:     String giving a path where `output_file` should be placed.
-    buffer_length:  Integer giving the maximum number of image information rows
+    buffer_length:  Integer giving the maximum number of audio information rows
                     to store in memory before writing them to disk.
     """
 
@@ -89,45 +106,53 @@ class ImageStore(MediaStore):
         output_file=None,
         output_dir=None,
         buffer_length=100,
-        media_type="image",
+        media_type="audio",
         tsv_columns=None,
     ):
         super().__init__(
             provider, output_file, output_dir, buffer_length, media_type
         )
-        self.columns = IMAGE_TSV_COLUMNS \
+        self.columns = AUDIO_TSV_COLUMNS \
             if tsv_columns is None else tsv_columns
 
     def add_item(
         self,
         foreign_landing_url: str,
-        image_url: str,
+        audio_url: str,
         thumbnail_url: Optional[str] = None,
         license_url: Optional[str] = None,
         license_: Optional[str] = None,
         license_version: Optional[str] = None,
         foreign_identifier: Optional[str] = None,
-        width: Optional[int] = None,
-        height: Optional[int] = None,
         creator: Optional[str] = None,
         creator_url: Optional[str] = None,
         title: Optional[str] = None,
         meta_data: Optional[Union[Dict, str]] = None,
-        raw_tags=None,
-        watermarked: Optional[str] = "f",
+        raw_tags: Optional[Union[list, str]] = None,
+        watermarked: Optional[bool] = False,
+        duration: Optional[int] = None,
+        bit_rate: Optional[int] = None,
+        sample_rate: Optional[int] = None,
+        category: Optional[str] = None,
+        genre: Optional[str] = None,
+        audio_set: Optional[str] = None,
+        set_position: Optional[int] = None,
+        set_thumbnail: Optional[str] = None,
+        set_url: Optional[str] = None,
+        alt_audio_files: Optional[Dict] = None,
         source: Optional[str] = None,
         ingestion_type: Optional[str] = None,
     ):
         """
-        Add information for a single image to the ImageStore.
+        Add information for a single audio to the AudioStore.
 
         Required Arguments:
-        foreign_landing_url:  URL of page where the image lives on the
+        foreign_landing_url:  URL of page where the audio lives on the
                               source website.
-        image_url:            Direct link to the image file
+        audio_url:            Direct link to the audio file
 
         Semi-Required Arguments
-        license_url:      URL of the license for the image on the
+        license_url:      URL of the license for the audio on the
                           Creative Commons website.
         license_:         String representation of a Creative Commons
                           license.  For valid options, see
@@ -140,82 +165,89 @@ class ImageStore(MediaStore):
         Note on license arguments: These are 'semi-required' in that
         either a valid `license_url` must be given, or a valid
         `license_`, `license_version` pair must be given. Otherwise, the
-        image data will be discarded.
+        audio data will be discarded.
 
         Optional Arguments:
         thumbnail_url:       Direct link to a thumbnail-sized version of
-                             the image
-        foreign_identifier:  Unique identifier for the image on the
+                             the audio
+        foreign_identifier:  Unique identifier for the audio on the
                              source site.
-        width:               in pixels
-        height:              in pixels
-        creator:             The creator of the image.
+        duration:            in milliseconds
+        creator:             The creator of the audio.
         creator_url:         The user page, or home page of the creator.
-        title:               Title of the image.
-        meta_data:           Dictionary of meta_data about the image.
+        title:               Title of the audio.
+        meta_data:           Dictionary of meta_data about the audio.
                              Currently, a key that we prefer to have is
                              `description`. If 'license_url' is included
                              in this dictionary, and `license_url` is
                              given as an argument, the argument will
                              replace the one given in the dictionary.
-        raw_tags:            List of tags associated with the image
-        watermarked:         A boolean, or 't' or 'f' string; whether or
-                             not the image has a noticeable watermark.
+        raw_tags:            List of tags associated with the audio
         source:              If different from the provider.  This might
                              be the case when we get information from
-                             some aggregation of images.  In this case,
+                             some aggregation of audios.  In this case,
                              the `source` argument gives the aggregator,
                              and the `provider` argument in the
-                             ImageStore init function is the specific
-                             provider of the image.
-        ingestion_type:      String showing how the image was ingested:
-                             through an api - 'provider_api' or using the
-                             commoncrawl database - 'commoncrawl'
+                             AudioStore init function is the specific
+                             provider of the audio.
         """
-        image_data = {
+
+        audio_set_data = {
+            'audio_set': audio_set,
+            'set_url': set_url,
+            'set_position': set_position,
+            'set_thumbnail': set_thumbnail
+        }
+
+        audio_data = {
             'foreign_landing_url': foreign_landing_url,
-            'image_url': image_url,
+            'audio_url': audio_url,
             'thumbnail_url': thumbnail_url,
-            'license_': license_,
             'license_url': license_url,
+            'license_': license_,
             'license_version': license_version,
             'foreign_identifier': foreign_identifier,
-            'width': width,
-            'height': height,
             'creator': creator,
             'creator_url': creator_url,
             'title': title,
             'meta_data': meta_data,
             'raw_tags': raw_tags,
             'watermarked': watermarked,
+            'duration': duration,
+            'bit_rate': bit_rate,
+            'sample_rate': sample_rate,
+            'category': category,
+            'genre': genre,
+            'audio_set': audio_set_data,
+            'alt_audio_files': alt_audio_files,
             'source': source,
-            'ingestion_type': ingestion_type
+            'ingestion_type': ingestion_type,
         }
-        image = self._get_image(**image_data)
-        if image is not None:
-            self.save_item(image)
+
+        audio = self._get_audio(**audio_data)
+        if audio is not None:
+            self.save_item(audio)
         return self.total_items
 
-    def _get_image(self, **kwargs) -> Optional[Image]:
-        """Validates image information and returns Image namedtuple"""
-        image_metadata = self.clean_media_metadata(**kwargs)
-        if image_metadata is None:
+    def _get_audio(self, **kwargs) -> Optional[Audio]:
+        """Validates audio information and returns Audio namedtuple"""
+        audio_metadata = self.clean_media_metadata(**kwargs)
+        if audio_metadata is None:
             return None
+        return Audio(**audio_metadata)
 
-        return Image(**image_metadata)
 
-
-class MockImageStore(ImageStore):
+class MockAudioStore(AudioStore):
     """
-    A class that mocks the role of the ImageStore class. This class replaces
-    all functionality of ImageStore that calls the internet.
+    A class that mocks the role of the AudioStore class. This class replaces
+    all functionality of AudioStore that calls the internet.
 
     For information about all arguments other than license_info refer to
-    ImageStore class.
+    AudioStore class.
 
     Required init arguments:
     license_info:       A named tuple consisting of valid license info from
-                        the test script in which MockImageStore is being used.
+                        the test script in which MockAudioStore is being used.
     """
 
     def __init__(
