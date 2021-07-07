@@ -1,4 +1,6 @@
 import logging
+
+import common
 import pytest
 import tldextract
 
@@ -173,11 +175,8 @@ def test_ImageStore_get_image_places_given_args(
     args_dict = {
         'foreign_landing_url': 'https://landing_page.com',
         'image_url': 'https://imageurl.com',
-        'license_info': LicenseInfo(
-            'testlicense',
-            '1.0',
-            'https://testlicense.org',
-            'https://testlicense.org'
+        'license_info': get_license_info(
+            license_='by', license_version='4.0'
         ),
         'foreign_identifier': 'foreign_id',
         'thumbnail_url': 'https://thumbnail.com',
@@ -230,8 +229,8 @@ def test_ImageStore_get_media_gets_source(
     monkeypatch.setattr(util, 'get_source', mock_get_source)
 
     actual_image = image_store._get_image(
-        license_info=LicenseInfo(
-            'diff_license', None, 'https://license/url', None
+        license_info=get_license_info(
+            license_='by', license_version='4.0'
         ),
         foreign_landing_url=None,
         image_url=None,
@@ -257,7 +256,9 @@ def test_ImageStore_get_image_creates_meta_data_with_valid_license_url(
 
     license_url = 'https://my.license.url'
     image_store = image.ImageStore()
-    licence_info = LicenseInfo('license', '1.5', license_url, license_url)
+    licence_info = get_license_info(
+        license_url=license_url, license_='by', license_version='4.0'
+    )
     actual_image = image_store._get_image(
         license_info=licence_info,
         foreign_landing_url=None,
@@ -276,7 +277,8 @@ def test_ImageStore_get_image_creates_meta_data_with_valid_license_url(
         ingestion_type=None,
     )
     assert actual_image.meta_data == {
-        'license_url': license_url, 'raw_license_url': license_url
+        'license_url': 'https://creativecommons.org/licenses/by/4.0/',
+        'raw_license_url': license_url
     }
 
 
@@ -286,8 +288,10 @@ def test_ImageStore_get_image_enriches_singleton_tags(
     image_store = image.ImageStore('test_provider')
 
     actual_image = image_store._get_image(
-        license_info=LicenseInfo(
-            'license', '1.5', 'https://license/url', None
+        license_info=get_license_info(
+            license_='by-nc-nd',
+            license_version='4.0',
+            license_url='https://license/url',
         ),
         foreign_landing_url=None,
         image_url=None,
@@ -325,8 +329,8 @@ def test_ImageStore_get_image_tag_blacklist(
     image_store = image.ImageStore('test_provider')
 
     actual_image = image_store._get_image(
-        license_info=LicenseInfo(
-            'license', '1.5', 'https://license/url', None
+        license_info=get_license_info(
+            license_='by', license_version='4.0',
         ),
         foreign_landing_url=None,
         image_url=None,
@@ -354,8 +358,8 @@ def test_ImageStore_get_image_enriches_multiple_tags(
 ):
     image_store = image.ImageStore('test_provider')
     actual_image = image_store._get_image(
-        license_info=LicenseInfo(
-            'license', '1.5', 'https://license/url', None
+        license_info=get_license_info(
+            license_='by', license_version='4.0',
         ),
         foreign_landing_url=None,
         image_url=None,
@@ -391,8 +395,8 @@ def test_ImageStore_get_image_leaves_preenriched_tags(
     ]
 
     actual_image = image_store._get_image(
-        license_info=LicenseInfo(
-            'license', '1.5', 'https://license/url', None
+        license_info=get_license_info(
+            license_='by-nc', license_version='3.0',
         ),
         foreign_landing_url=None,
         image_url=None,
@@ -420,8 +424,8 @@ def test_ImageStore_get_image_nones_nonlist_tags(
     tags = 'notalist'
 
     actual_image = image_store._get_image(
-        license_info=LicenseInfo(
-            'license', '1.5', 'https://license/url', None
+        license_info=get_license_info(
+            license_='by-nc', license_version='2.0'
         ),
         foreign_landing_url=None,
         image_url=None,

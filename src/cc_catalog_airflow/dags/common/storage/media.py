@@ -4,8 +4,8 @@ import logging
 import os
 from typing import Optional, Union
 
+from common.licenses.licenses import is_valid_license_info
 from common.storage import util
-from common.licenses import licenses
 
 logger = logging.getLogger(__name__)
 
@@ -93,15 +93,16 @@ class MediaStore(metaclass=abc.ABCMeta):
         """
         pass
 
-
     def clean_media_metadata(self, **media_data) -> Optional[dict]:
         """
         Cleans the base media metadata common for all media types.
+        Even though we clean license info in the provider API scripts,
+        we validate it here, too, to make sure we don't have
+        invalid license information in the database.
         Enriches `meta_data` and `tags`.
         Returns a dictionary: media_type-specific fields are untouched,
         and for common metadata we:
-        - remove `license_url` and `raw_license_url`,
-        - validate `license_` and `license_version`,
+        - validate `license_info`,
         - enrich `metadata`,
         - replace `raw_tags` with enriched `tags`,
         - validate `source`,
@@ -111,6 +112,8 @@ class MediaStore(metaclass=abc.ABCMeta):
         Returns None if license is invalid
         """
 
+        if not is_valid_license_info(media_data.get('license_info')):
+            return None
         media_data['source'] = util.get_source(
             media_data.get('source'),
             self._PROVIDER
