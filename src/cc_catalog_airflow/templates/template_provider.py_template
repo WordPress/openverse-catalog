@@ -113,6 +113,7 @@ def main():
 
     logger.info("Begin: {provider_title_case} script")
     {media_type}_count = _get_items()
+    {media_type}_store.commit()
     logger.info(f"Total {media_type}s pulled: {{media_type}_count}")
     logger.info('Terminated!')
 
