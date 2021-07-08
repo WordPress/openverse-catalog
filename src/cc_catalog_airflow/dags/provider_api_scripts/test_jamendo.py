@@ -4,6 +4,7 @@ import os
 from unittest.mock import patch
 
 import jamendo
+from common.licenses.licenses import LicenseInfo
 
 RESOURCES = os.path.join(
     os.path.abspath(os.path.dirname(__file__)), 'tests/resources/jamendo'
@@ -86,8 +87,12 @@ def test_process_item_batch_handles_example_batch():
             'foreign_identifier': '732',
             'foreign_landing_url': 'https://www.jamendo.com/track/732',
             'genre': None,
-            'license_': 'by-nc',
-            'license_version': '2.0',
+            'license_info': LicenseInfo(
+                license='by-nc',
+                version='2.0',
+                url='https://creativecommons.org/licenses/by-nc/2.0/',
+                raw_url='http://creativecommons.org/licenses/by-nc/2.0/'
+            ),
             'meta_data': {'downloads': 0,
                           'listens': 5616,
                           'playlists': 0,
@@ -174,7 +179,6 @@ def test_get_audio_set_info():
 
 
 def test_get_creator_data():
-
     with open(os.path.join(RESOURCES, 'audio_data_example.json')) as f:
         audio_data = json.load(f)
     actual_creator, actual_creator_url = jamendo._get_creator_data(audio_data)
@@ -221,8 +225,12 @@ def test_extract_audio_data_handles_example_dict():
         'foreign_identifier': '732',
         'foreign_landing_url': 'https://www.jamendo.com/track/732',
         'genre': None,
-        'license_': 'by-nc',
-        'license_version': '2.0',
+        'license_info': LicenseInfo(
+            license='by-nc',
+            version='2.0',
+            url='https://creativecommons.org/licenses/by-nc/2.0/',
+            raw_url='http://creativecommons.org/licenses/by-nc/2.0/'
+        ),
         'meta_data': {'downloads': 0,
                       'listens': 5616,
                       'playlists': 0,
