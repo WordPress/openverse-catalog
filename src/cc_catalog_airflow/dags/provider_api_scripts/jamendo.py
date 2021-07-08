@@ -183,7 +183,6 @@ def _get_audio_info(media_data):
     """Parses audio URL, audio download URL, audio duration
     If the audio does not allow download, we save the 'streaming'
     URL as the `audio_url`
-    :param media_data: dictionary with audio data
     :return: Tuple with main audio file information:
     - audio_url
     - download_url
@@ -243,10 +242,6 @@ def _get_title(item):
 
 
 def _get_metadata(item):
-    """
-    Metadata may include: description, date created and modified at source,
-    categories, popularity statistics.
-    """
     metadata = {}
     lyrics = item.get('lyrics')
     if lyrics:
