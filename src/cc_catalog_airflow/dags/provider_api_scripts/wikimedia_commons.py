@@ -18,9 +18,12 @@ import os
 from urllib.parse import urlparse
 import lxml.html as html
 
-from common import DelayedRequester, ImageStore
+from common import (
+    get_license_info,
+    DelayedRequester,
+    ImageStore,
+)
 
-from src.cc_catalog_airflow.dags.common.licenses.licenses import get_license_info
 from util.loader import provider_details as prov
 
 logger = logging.getLogger(__name__)

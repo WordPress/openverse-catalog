@@ -4,7 +4,7 @@ import os
 from unittest.mock import patch, call
 
 import wikimedia_commons as wmc
-from src.cc_catalog_airflow.dags.common.licenses.licenses import get_license_info
+from common.licenses.licenses import get_license_info
 
 RESOURCES = os.path.join(
     os.path.abspath(os.path.dirname(__file__)), 'tests/resources/wikimedia'
