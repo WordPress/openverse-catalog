@@ -7,7 +7,7 @@ from util import tsv_cleaner
 from util.loader.ingestion_column import check_and_fix_tsv_file
 
 RESOURCES = os.path.join(
-    os.path.abspath(os.path.dirname(__file__)), "util/test_resources"
+    os.path.abspath(os.path.dirname(__file__)), "test_resources"
 )
 
 

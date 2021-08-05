@@ -10,7 +10,7 @@ from util.loader import test_sql
 from util import pg_cleaner
 
 RESOURCES = os.path.join(
-    os.path.abspath(os.path.dirname(__file__)), "util/test_resources"
+    os.path.abspath(os.path.dirname(__file__)), "test_resources"
 )
 
 TEST_IMAGE_TABLE = test_sql.TEST_IMAGE_TABLE

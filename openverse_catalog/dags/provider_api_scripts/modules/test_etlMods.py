@@ -1,4 +1,4 @@
-import etlMods
+from provider_api_scripts.modules import etlMods
 
 
 def test_create_tsv_list_row_returns_none_if_missing_foreign_landing_url():
