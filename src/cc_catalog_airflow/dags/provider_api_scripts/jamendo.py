@@ -17,6 +17,7 @@ Notes:                  https://api.jamendo.com/v3.0/tracks/
 """
 import os
 import logging
+import re
 from urllib.parse import urlparse
 
 from common import DelayedRequester, AudioStore
@@ -297,16 +298,15 @@ def _get_license(item):
 def _cleanse_url(url_string):
     """
     Check to make sure that a url is valid, and prepend a protocol if needed
+    Used to create correct album url by getting a redirect for urls
+    with special characters, eg `/album/139/nés-funky`
     """
 
     parse_result = urlparse(url_string)
-
-    if parse_result.netloc == HOST:
-        parse_result = urlparse(url_string, scheme='https')
-    elif not parse_result.scheme:
-        parse_result = urlparse(url_string, scheme='http')
-
-    if parse_result.netloc or parse_result.path:
+    path_pattern = re.compile(r'[a-z0-9/.\-]+')
+    if path_pattern.fullmatch(parse_result.path):
+        return url_string
+    else:
         return rewrite_redirected_url(parse_result.geturl())
 
 
