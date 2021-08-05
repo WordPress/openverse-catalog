@@ -54,8 +54,8 @@ def test_clean_prefix_loop_raises_with_long_prefix(monkeypatch):
     with patch.object(pg_cleaner.time, "sleep") as mock_sleep:
         with patch.object(
                 pg_cleaner,
-            "clean_rows",
-            side_effect=Exception("Super fail!"),
+                "clean_rows",
+                side_effect=Exception("Super fail!"),
         ) as mock_cleaner:
             with pytest.raises(pg_cleaner.CleaningException):
                 pg_cleaner.clean_prefix_loop(
@@ -97,8 +97,8 @@ def test_clean_prefix_loop_raises_after_looping(monkeypatch):
     monkeypatch.setattr(pg_cleaner.time, "sleep", lambda x: None)
     with patch.object(
             pg_cleaner,
-        "clean_rows",
-        side_effect=Exception("Super fail!"),
+            "clean_rows",
+            side_effect=Exception("Super fail!"),
     ) as mock_cleaner:
         with pytest.raises(pg_cleaner.CleaningException):
             pg_cleaner.clean_prefix_loop(
@@ -139,7 +139,7 @@ def test_clean_prefix_loop_loops(monkeypatch):
     ]
     with patch.object(
             pg_cleaner,
-        "clean_rows",
+            "clean_rows",
     ) as mock_cleaner:
         pg_cleaner.clean_prefix_loop("abc", "3f", desired_prefix_length=3)
 
@@ -153,8 +153,8 @@ def test_clean_rows_continues_when_single_row_fails(monkeypatch):
 
     with patch.object(
             pg_cleaner,
-        "_clean_single_row",
-        side_effect=Exception("cleaning fail!"),
+            "_clean_single_row",
+            side_effect=Exception("cleaning fail!"),
     ) as mock_cleaner:
         pg_cleaner.clean_rows("abc", "def")
 
@@ -276,7 +276,7 @@ def test_select_records_gets_one_record(tmpdir, postgres_with_image_table):
 
 
 def test_select_records_gets_multiple_records(
-    tmpdir, postgres_with_image_table
+        tmpdir, postgres_with_image_table
 ):
     tsv_name = os.path.join(RESOURCES, "image_table_sample.tsv")
     _load_tsv(postgres_with_image_table, tmpdir, tsv_name)
@@ -1220,7 +1220,7 @@ def test_clean_single_row_doesnt_reuse_wrong_image_store_and_adds_row():
 
 
 def test_log_and_check_totals_raises_when_number_of_images_cleaned_is_wrong(
-    monkeypatch,
+        monkeypatch,
 ):
     monkeypatch.setattr(pg_cleaner.image.ImageStore, "total_items", 1)
     expected_calls = [

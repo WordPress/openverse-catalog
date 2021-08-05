@@ -1,3 +1,4 @@
+# flake8: noqa
 #Common Crawl data extraction
 """Identify all links to Creative Commons in the web crawl data"""
 

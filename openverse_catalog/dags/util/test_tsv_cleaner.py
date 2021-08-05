@@ -70,9 +70,9 @@ def test_clean_tsv_cleans_tsv_rows(tmpdir):
     ]
 
     with patch.object(
-            common.storage.image,
-        "ImageStore",
-        autospec=True,
+            tsv_cleaner.image,
+            "ImageStore",
+            autospec=True,
     ) as mock_image_store:
         # tsv file does not have ingestion_type column
         check_and_fix_tsv_file(tsv_file_path)

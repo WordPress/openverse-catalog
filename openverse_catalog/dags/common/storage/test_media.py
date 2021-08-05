@@ -184,7 +184,6 @@ def test_MediaStore_clean_media_metadata_does_not_change_required_media_argument
 
 def test_MediaStore_clean_media_metadata_adds_provider(
         monkeypatch,
-        
 ):
     provider = 'test_provider'
     image_store = image.ImageStore(provider=provider)
@@ -413,7 +412,7 @@ def test_MediaStore_add_item_adds_valid_license_url_to_dict_meta_data(
             'save_item',
             side_effect=item_saver) as mock_save:
         image_store.add_item(
-            license_info=LicenseInfo('by', '4.0',valid_license_url, license_url),
+            license_info=LicenseInfo('by', '4.0', valid_license_url, license_url),
             foreign_landing_url='',
             image_url='',
             thumbnail_url=None,
@@ -469,9 +468,7 @@ def test_ImageStore_add_item_fixes_invalid_license_url():
     }
 
 
-def test_MediaStore_get_image_enriches_singleton_tags(
-        
-):
+def test_MediaStore_get_image_enriches_singleton_tags():
     image_store = image.ImageStore('test_provider')
 
     actual_image = image_store._get_image(
@@ -499,9 +496,7 @@ def test_MediaStore_get_image_enriches_singleton_tags(
     assert actual_image.tags == [{'name': 'lone', 'provider': 'test_provider'}]
 
 
-def test_MediaStore_get_image_tag_blacklist(
-        
-):
+def test_MediaStore_get_image_tag_blacklist():
     raw_tags = [
         'cc0',
         'valid',
@@ -540,9 +535,7 @@ def test_MediaStore_get_image_tag_blacklist(
     ]
 
 
-def test_MediaStore_get_image_enriches_multiple_tags(
-        
-):
+def test_MediaStore_get_image_enriches_multiple_tags():
     image_store = image.ImageStore('test_provider')
     actual_image = image_store._get_image(
         license_info=get_license_info(
@@ -608,9 +601,7 @@ def test_ImageStore_get_image_leaves_preenriched_tags(
     assert actual_image.tags == tags
 
 
-def test_ImageStore_get_image_nones_nonlist_tags(
-        
-):
+def test_ImageStore_get_image_nones_nonlist_tags():
     image_store = image.ImageStore('test_provider')
     tags = 'notalist'
 
@@ -640,9 +631,7 @@ def test_ImageStore_get_image_nones_nonlist_tags(
 
 
 @pytest.fixture
-def default_image_args(
-        
-):
+def default_image_args():
     return dict(
         foreign_identifier=None,
         foreign_landing_url='https://image.org',
@@ -676,7 +665,6 @@ def test_create_tsv_row_non_none_if_req_fields(
 
 def test_create_tsv_row_none_if_no_foreign_landing_url(
         default_image_args,
-        
 ):
     image_store = image.ImageStore()
     image_args = default_image_args
@@ -689,7 +677,6 @@ def test_create_tsv_row_none_if_no_foreign_landing_url(
 
 def test_create_tsv_row_none_if_no_license(
         default_image_args,
-        
 ):
     image_store = image.ImageStore()
     image_args = default_image_args
@@ -702,7 +689,6 @@ def test_create_tsv_row_none_if_no_license(
 
 def test_create_tsv_row_none_if_no_license_version(
         default_image_args,
-        
 ):
     image_store = image.ImageStore()
     image_args = default_image_args
@@ -715,7 +701,6 @@ def test_create_tsv_row_none_if_no_license_version(
 
 def test_create_tsv_row_returns_none_if_missing_image_url(
         default_image_args,
-        
 ):
     image_store = image.ImageStore()
     image_args = default_image_args
@@ -728,7 +713,6 @@ def test_create_tsv_row_returns_none_if_missing_image_url(
 
 def test_create_tsv_row_handles_empty_dict_and_tags(
         default_image_args,
-        
 ):
     image_store = image.ImageStore()
     meta_data = {}
@@ -751,7 +735,6 @@ def test_create_tsv_row_handles_empty_dict_and_tags(
 
 def test_create_tsv_row_turns_empty_into_nullchar(
         default_image_args,
-        
 ):
     """
     Null values are converted into `N/A` in tsv files
