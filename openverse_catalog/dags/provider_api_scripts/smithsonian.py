@@ -13,11 +13,9 @@ import json
 import logging
 import os
 
-from common import (
-    LicenseInfo,
-    DelayedRequester,
-    ImageStore
-)
+from common.licenses.licenses import LicenseInfo
+from common.requester import DelayedRequester
+from common.storage.image import ImageStore
 from util.loader import provider_details as prov
 
 logger = logging.getLogger(__name__)

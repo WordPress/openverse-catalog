@@ -6,7 +6,7 @@ from unittest.mock import patch, call
 import pytest
 
 import smithsonian as si
-from common import LicenseInfo
+from common.licenses.licenses import LicenseInfo
 
 logger = logging.getLogger(__name__)
 

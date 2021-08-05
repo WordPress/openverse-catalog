@@ -4,7 +4,7 @@ import os
 from unittest.mock import patch
 
 import phylopic as pp
-from common import LicenseInfo
+from common.licenses.licenses import LicenseInfo
 
 RESOURCES = os.path.join(
     os.path.abspath(os.path.dirname(__file__)), 'tests/resources/phylopic'

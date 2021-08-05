@@ -1,10 +1,9 @@
 import logging
-import requests
+from unittest.mock import patch
 import pytest
-from tldextract import tldextract
 
+from common.licenses.licenses import LicenseInfo
 from common.storage import audio
-from common import get_license_info
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s:  %(message)s',
@@ -12,19 +11,15 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-# This avoids needing the internet for testing.
-licenses.urls.tldextract.extract = tldextract.TLDExtract(
-    suffix_list_urls=None
-)
-columns.urls.tldextract.extract = tldextract.TLDExtract(
-    suffix_list_urls=None
-)
-PD_1_LICENSE_INFO = get_license_info(
-    license_url='https://creativecommons.org/publicdomain/zero/1.0/'
-)
-BY_LICENSE_INFO = get_license_info(
-    license_='by', license_version='4.0',
-)
+PD_LICENSE_INFO = LicenseInfo(
+    'zero', '1.0',
+    'https://creativecommons.org/publicdomain/zero/1.0/',
+    None)
+BY_LICENSE_INFO = LicenseInfo(
+    'by', '4.0',
+    'https://creativecommons.org/licenses/by/4.0/',
+    None)
+
 mock_audio_args = {
     'foreign_landing_url': 'https://landing_page.com',
     'audio_url': 'https://audiourl.com',
@@ -54,39 +49,14 @@ def setup_env(monkeypatch):
     monkeypatch.setenv('OUTPUT_DIR', '/tmp')
 
 
-@pytest.fixture
-def mock_rewriter(monkeypatch):
-    def mock_rewrite_redirected_url(url_string):
-        return url_string
-
-    monkeypatch.setattr(
-        licenses.urls,
-        'rewrite_redirected_url',
-        mock_rewrite_redirected_url,
-    )
-
-
-@pytest.fixture
-def get_good(monkeypatch):
-    def mock_get(url, timeout=60):
-        return requests.Response()
-
-    monkeypatch.setattr(licenses.urls.requests, 'get', mock_get)
-
-
-def test_AudioStore_includes_provider_in_output_file_string(
-        setup_env,
-):
+def test_AudioStore_includes_provider_in_output_file_string():
     audio_store = audio.AudioStore('test_provider')
     assert type(audio_store._OUTPUT_PATH) == str
     assert 'test_provider' in audio_store._OUTPUT_PATH
 
 
-def test_AudioStore_add_item_adds_realistic_audio_to_buffer(
-        setup_env, mock_rewriter
-):
-    license_url = 'https://creativecommons.org/publicdomain/zero/1.0/'
-    license_info = get_license_info(license_url=license_url)
+def test_AudioStore_add_item_adds_realistic_audio_to_buffer():
+    license_info = PD_LICENSE_INFO
     audio_store = audio.AudioStore(provider='testing_provider')
     audio_store.add_item(
         foreign_landing_url='https://audios.org/audio01',
@@ -97,36 +67,32 @@ def test_AudioStore_add_item_adds_realistic_audio_to_buffer(
     assert len(audio_store._media_buffer) == 1
 
 
-def test_AudioStore_add_item_adds_multiple_audios_to_buffer(
-        mock_rewriter, setup_env,
-):
+def test_AudioStore_add_item_adds_multiple_audios_to_buffer():
     audio_store = audio.AudioStore(provider='testing_provider')
     audio_store.add_item(
         foreign_landing_url='https://audios.org/audio01',
         audio_url='https://audios.org/audio01.jpg',
-        license_info=PD_1_LICENSE_INFO,
+        license_info=PD_LICENSE_INFO,
     )
     audio_store.add_item(
         foreign_landing_url='https://audios.org/audio02',
         audio_url='https://audios.org/audio02.jpg',
-        license_info=PD_1_LICENSE_INFO,
+        license_info=PD_LICENSE_INFO,
     )
     audio_store.add_item(
         foreign_landing_url='https://audios.org/audio03',
         audio_url='https://audios.org/audio03.jpg',
-        license_info=PD_1_LICENSE_INFO,
+        license_info=PD_LICENSE_INFO,
     )
     audio_store.add_item(
         foreign_landing_url='https://audios.org/audio04',
         audio_url='https://audios.org/audio04.jpg',
-        license_info=PD_1_LICENSE_INFO,
+        license_info=PD_LICENSE_INFO,
     )
     assert len(audio_store._media_buffer) == 4
 
 
-def test_AudioStore_add_item_flushes_buffer(
-        mock_rewriter, setup_env, tmpdir,
-):
+def test_AudioStore_add_item_flushes_buffer(tmpdir):
     output_file = 'testing.tsv'
     tmp_directory = tmpdir
     output_dir = str(tmp_directory)
@@ -141,22 +107,22 @@ def test_AudioStore_add_item_flushes_buffer(
     audio_store.add_item(
         foreign_landing_url='https://audios.org/audio01',
         audio_url='https://audios.org/audio01.jpg',
-        license_info=PD_1_LICENSE_INFO,
+        license_info=PD_LICENSE_INFO,
     )
     audio_store.add_item(
         foreign_landing_url='https://audios.org/audio02',
         audio_url='https://audios.org/audio02.jpg',
-        license_info=PD_1_LICENSE_INFO,
+        license_info=PD_LICENSE_INFO,
     )
     audio_store.add_item(
         foreign_landing_url='https://audios.org/audio03',
         audio_url='https://audios.org/audio03.jpg',
-        license_info=PD_1_LICENSE_INFO,
+        license_info=PD_LICENSE_INFO,
     )
     audio_store.add_item(
         foreign_landing_url='https://audios.org/audio04',
         audio_url='https://audios.org/audio04.jpg',
-        license_info=PD_1_LICENSE_INFO,
+        license_info=PD_LICENSE_INFO,
     )
     assert len(audio_store._media_buffer) == 1
     with open(tmp_path_full) as f:
@@ -169,29 +135,27 @@ def test_AudioStore_commit_writes_nothing_if_no_lines_in_buffer():
     audio_store.commit()
 
 
-def test_AudioStore_produces_correct_total_audios(mock_rewriter, setup_env):
+def test_AudioStore_produces_correct_total_audios():
     audio_store = audio.AudioStore(provider='testing_provider')
     audio_store.add_item(
         foreign_landing_url='https://audios.org/audio01',
         audio_url='https://audios.org/audio01.jpg',
-        license_info=PD_1_LICENSE_INFO,
+        license_info=PD_LICENSE_INFO,
     )
     audio_store.add_item(
         foreign_landing_url='https://audios.org/audio02',
         audio_url='https://audios.org/audio02.jpg',
-        license_info=PD_1_LICENSE_INFO,
+        license_info=PD_LICENSE_INFO,
     )
     audio_store.add_item(
         foreign_landing_url='https://audios.org/audio03',
         audio_url='https://audios.org/audio03.jpg',
-        license_info=PD_1_LICENSE_INFO,
+        license_info=PD_LICENSE_INFO,
     )
     assert audio_store.total_items == 3
 
 
-def test_AudioStore_get_audio_enriches_multiple_tags(
-        setup_env,
-):
+def test_AudioStore_get_audio_enriches_multiple_tags():
     audio_store = audio.AudioStore('test_provider')
     audio_args = mock_audio_args.copy()
     audio_args['raw_tags'] = ['tagone', 'tag2', 'tag3']
@@ -207,9 +171,7 @@ def test_AudioStore_get_audio_enriches_multiple_tags(
 
 
 @pytest.fixture
-def default_audio_args(
-        setup_env, get_good,
-):
+def default_audio_args():
     return dict(
         foreign_identifier='foreign_id',
         foreign_landing_url='https://landing_page.org',
@@ -239,55 +201,62 @@ def default_audio_args(
 
 def test_create_tsv_row_creates_alt_files(
         default_audio_args,
-        get_good,
-        setup_env,
 ):
     audio_store = audio.AudioStore()
     audio_args = default_audio_args.copy()
     alt_files = [{
-        'url': 'http://alternative.com/audio.mp3',
+        'url': 'https://alternative.com/audio.mp3',
         'filesize': 123,
         'bit_rate': 41000,
         'sample_rate': '16000'
     }]
     audio_args['alt_files'] = alt_files
     test_audio = audio.Audio(**audio_args)
-    actual_row = audio_store._create_tsv_row(test_audio)
-    expected_row = '\t'.join([
-        'foreign_id',
-        'https://landing_page.org',
-        'https://audiourl.org',
-        'https://thumbnail.com',
-        '\\N',
-        'by',
-        '4.0',
-        'tyler',
-        'https://creatorurl.com',
-        'agreatsong',
-        '{"description": "cat song"}',
-        '{"name": "tag1", "provider": "testing"}',
-        '\\N',
-        'testing_provider',
-        'testing_source',
-        'provider_api',
-        '100',
-        '\\N',
-        '\\N',
-        'music',
-        '{"rock", "pop"}',
-        '\\N',
-        '[{"url": '
-        '"http://alternative.com/audio.mp3", "filesize": "123", "bit_rate": "41000", '
-        '"sample_rate": "16000"}]',
 
-    ]) + '\n'
-    assert actual_row == expected_row
+    def mock_url_validator(value):
+        # This avoids needing the internet for testing.
+        return value
+
+    with patch.object(
+            audio.columns.urls,
+            'validate_url_string',
+            side_effect=mock_url_validator
+    ):
+        actual_row = audio_store._create_tsv_row(test_audio)
+        print(f"\nActual row: {actual_row}")
+        expected_row = '\t'.join([
+            'foreign_id',
+            'https://landing_page.org',
+            'https://audiourl.org',
+            'https://thumbnail.com',
+            '\\N',
+            'by',
+            '4.0',
+            'tyler',
+            'https://creatorurl.com',
+            'agreatsong',
+            '{"description": "cat song"}',
+            '{"name": "tag1", "provider": "testing"}',
+            '\\N',
+            'testing_provider',
+            'testing_source',
+            'provider_api',
+            '100',
+            '\\N',
+            '\\N',
+            'music',
+            '{"rock", "pop"}',
+            '\\N',
+            '[{"url": '
+            '"https://alternative.com/audio.mp3", "filesize": "123", "bit_rate": "41000", '
+            '"sample_rate": "16000"}]',
+
+        ]) + '\n'
+        assert actual_row == expected_row
 
 
 def test_create_tsv_row_creates_audio_set(
         default_audio_args,
-        get_good,
-        setup_env,
 ):
     audio_store = audio.AudioStore()
     audio_args = default_audio_args.copy()
@@ -299,40 +268,48 @@ def test_create_tsv_row_creates_audio_set(
     }
     audio_args['audio_set'] = audio_set_data
     test_audio = audio.Audio(**audio_args)
-    actual_row = audio_store._create_tsv_row(test_audio)
-    expected_row = '\t'.join([
-        'foreign_id',
-        'https://landing_page.org',
-        'https://audiourl.org',
-        'https://thumbnail.com',
-        '\\N',
-        'by',
-        '4.0',
-        'tyler',
-        'https://creatorurl.com',
-        'agreatsong',
-        '{"description": "cat song"}',
-        '{"name": "tag1", "provider": "testing"}',
-        '\\N',
-        'testing_provider',
-        'testing_source',
-        'provider_api',
-        '100',
-        '\\N',
-        '\\N',
-        'music',
-        '{"rock", "pop"}',
-        '{"audio_set": "test_audio_set", "set_url": "test.com", '
-        '"set_position": "1", "set_thumbnail": "thumbnail.jpg"}',
-        '\\N',
-    ]) + '\n'
-    assert actual_row == expected_row
+
+    def mock_url_validator(value):
+        # This avoids needing the internet for testing.
+        return value
+
+    with patch.object(
+            audio.columns.urls,
+            'validate_url_string',
+            side_effect=mock_url_validator
+    ):
+        actual_row = audio_store._create_tsv_row(test_audio)
+        expected_row = '\t'.join([
+            'foreign_id',
+            'https://landing_page.org',
+            'https://audiourl.org',
+            'https://thumbnail.com',
+            '\\N',
+            'by',
+            '4.0',
+            'tyler',
+            'https://creatorurl.com',
+            'agreatsong',
+            '{"description": "cat song"}',
+            '{"name": "tag1", "provider": "testing"}',
+            '\\N',
+            'testing_provider',
+            'testing_source',
+            'provider_api',
+            '100',
+            '\\N',
+            '\\N',
+            'music',
+            '{"rock", "pop"}',
+            '{"audio_set": "test_audio_set", "set_url": "test.com", '
+            '"set_position": "1", "set_thumbnail": "thumbnail.jpg"}',
+            '\\N',
+        ]) + '\n'
+        assert actual_row == expected_row
 
 
 def test_create_tsv_row_non_none_if_req_fields(
         default_audio_args,
-        get_good,
-        setup_env,
 ):
     audio_store = audio.AudioStore()
     test_audio = audio.Audio(**default_audio_args)
@@ -342,7 +319,6 @@ def test_create_tsv_row_non_none_if_req_fields(
 
 def test_create_tsv_row_none_if_no_foreign_landing_url(
         default_audio_args,
-        setup_env,
 ):
     audio_store = audio.AudioStore()
     audio_args = default_audio_args
@@ -355,7 +331,6 @@ def test_create_tsv_row_none_if_no_foreign_landing_url(
 
 def test_create_tsv_row_none_if_no_license(
         default_audio_args,
-        setup_env,
 ):
     audio_store = audio.AudioStore()
     audio_args = default_audio_args
@@ -368,7 +343,6 @@ def test_create_tsv_row_none_if_no_license(
 
 def test_create_tsv_row_none_if_no_license_version(
         default_audio_args,
-        setup_env,
 ):
     audio_store = audio.AudioStore()
     audio_args = default_audio_args
@@ -381,7 +355,6 @@ def test_create_tsv_row_none_if_no_license_version(
 
 def test_create_tsv_row_returns_none_if_missing_audio_url(
         default_audio_args,
-        setup_env,
 ):
     audio_store = audio.AudioStore()
     audio_args = default_audio_args
@@ -394,7 +367,6 @@ def test_create_tsv_row_returns_none_if_missing_audio_url(
 
 def test_create_tsv_row_handles_empty_dict_and_tags(
         default_audio_args,
-        setup_env,
 ):
     audio_store = audio.AudioStore()
     meta_data = {}
@@ -417,14 +389,12 @@ def test_create_tsv_row_handles_empty_dict_and_tags(
     assert expect_tags == actual_tags
 
 
-def test_create_tsv_row_properly_places_entries(
-        setup_env, get_good, monkeypatch
-):
+def test_create_tsv_row_properly_places_entries(monkeypatch):
     def mock_validate_url(url_string):
         return url_string
 
     monkeypatch.setattr(
-        columns.urls, 'validate_url_string', mock_validate_url
+        audio.columns.urls, 'validate_url_string', mock_validate_url
     )
     audio_store = audio.AudioStore()
     req_args_dict = {

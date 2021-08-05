@@ -2,9 +2,9 @@ from collections import namedtuple
 import logging
 from typing import Optional, Dict, Union
 
+from common.licenses.licenses import LicenseInfo
 from common.storage import columns
 from common.storage.media import MediaStore
-from common import LicenseInfo
 
 logger = logging.getLogger(__name__)
 

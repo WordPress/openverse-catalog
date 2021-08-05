@@ -4,12 +4,9 @@ import requests
 import os
 from unittest.mock import patch, MagicMock
 
-from common import (
-    LicenseInfo,
-    MockImageStore
-)
 import cleveland_museum_of_art as clm
-
+from common.licenses.licenses import LicenseInfo
+from common.storage.image import MockImageStore
 
 _license_info = (
     'cc0',

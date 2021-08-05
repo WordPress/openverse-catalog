@@ -5,7 +5,7 @@ import requests
 from unittest.mock import patch, MagicMock
 
 import flickr
-from common import LicenseInfo
+from common.licenses.licenses import LicenseInfo
 
 RESOURCES = os.path.join(
     os.path.abspath(os.path.dirname(__file__)), 'tests/resources/flickr'

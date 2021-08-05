@@ -4,10 +4,8 @@ import logging
 import requests
 from unittest.mock import MagicMock, patch
 
-from common import (
-    LicenseInfo,
-    MockImageStore,
-)
+from common.licenses.licenses import LicenseInfo
+from common.storage.image import MockImageStore
 import science_museum as sm
 
 _license_info = (

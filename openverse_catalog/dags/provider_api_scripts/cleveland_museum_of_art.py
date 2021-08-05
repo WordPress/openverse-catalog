@@ -1,10 +1,8 @@
 import logging
 
-from common import (
-    get_license_info,
-    DelayedRequester,
-    ImageStore
-)
+from common.licenses.licenses import get_license_info
+from common.requester import DelayedRequester
+from common.storage.image import ImageStore
 from util.loader import provider_details as prov
 
 LIMIT = 1000

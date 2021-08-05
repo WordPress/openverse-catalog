@@ -3,7 +3,8 @@ import logging
 import os
 from unittest.mock import patch
 
-from common import LicenseInfo, MockImageStore
+from common.licenses.licenses import LicenseInfo
+from common.storage.image import MockImageStore
 
 import raw_pixel as rwp
 

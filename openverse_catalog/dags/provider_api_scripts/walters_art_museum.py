@@ -13,7 +13,8 @@ Notes:                  http://api.thewalters.org/
 import os
 import logging
 
-from common import DelayedRequester, ImageStore
+from common.requester import DelayedRequester
+from common.storage.image import ImageStore
 from util.loader import provider_details as prov
 
 logging.basicConfig(

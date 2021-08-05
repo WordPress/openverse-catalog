@@ -4,7 +4,7 @@ import logging
 from unittest.mock import patch
 
 import finnish_museums as fm
-from common import LicenseInfo
+from common.licenses.licenses import LicenseInfo
 
 RESOURCES = os.path.join(
     os.path.abspath(os.path.dirname(__file__)),
