@@ -164,7 +164,7 @@ def _extract_audio_data(media_data):
         'meta_data': metadata,
         'raw_tags': tags,
         'category': category,
-        'genre': genres,
+        'genres': genres,
         'audio_set': audio_set,
         'set_position': position,
         'set_url': url,
@@ -237,8 +237,7 @@ def _get_creator_data(item):
 
 
 def _get_title(item):
-    title = item.get('name')
-    return title
+    return item.get('name')
 
 
 def _get_metadata(item):
@@ -283,9 +282,8 @@ def _get_tags(item):
 
 
 def _get_genres(item):
-    genres = item.get('musicinfo', {}).get('tags', {}).get('genres')
-    if genres:
-        return genres
+    genres = item.get('musicinfo', {}).get('tags', {}).get('genres', None)
+    return genres
 
 
 def _get_license(item):
