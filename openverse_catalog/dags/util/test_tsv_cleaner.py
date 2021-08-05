@@ -1,7 +1,6 @@
 import os
 from unittest.mock import patch, call
 
-import common
 from common.licenses.licenses import get_license_info
 from util import tsv_cleaner
 from util.loader.ingestion_column import check_and_fix_tsv_file

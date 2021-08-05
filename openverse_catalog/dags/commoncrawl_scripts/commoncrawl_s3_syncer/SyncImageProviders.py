@@ -1,3 +1,4 @@
+# flake8: noqa
 import boto3
 import re
 import os
