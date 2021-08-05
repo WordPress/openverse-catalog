@@ -24,7 +24,7 @@ EXTRACT_SCRIPT_S3 = f"s3://{BUCKET_V2}/{EXTRACT_SCRIPT_S3_KEY}"
 LOCAL_FILES_DIR = os.path.join(FILE_DIR, "util", "etl")
 CONFIG_SH_LOCAL = os.path.join(LOCAL_FILES_DIR, "bootstrap", "config-py27.sh")
 EXTRACT_SCRIPT_LOCAL = os.path.join(
-    LOCAL_FILES_DIR, "scripts", "ExtractCCLinks.py"
+    LOCAL_FILES_DIR, "dags/commoncrawl_scripts/scripts", "ExtractCCLinks.py"
 )
 LOG_URI = f"s3://{BUCKET_V2}/logs/airflow_pipeline"
 RAW_PROCESS_JOB_FLOW_NAME = "common_crawl_etl_job_flow"

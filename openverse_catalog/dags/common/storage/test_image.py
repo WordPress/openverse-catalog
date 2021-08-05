@@ -13,7 +13,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # This avoids needing the internet for testing.
-image.columns.urls.tldextract.extract = tldextract.TLDExtract(
+columns.urls.tldextract.extract = tldextract.TLDExtract(
     suffix_list_urls=None
 )
 
@@ -579,7 +579,7 @@ def test_create_tsv_row_properly_places_entries(
         return url_string
 
     monkeypatch.setattr(
-        image.columns.urls, 'validate_url_string', mock_validate_url
+        columns.urls, 'validate_url_string', mock_validate_url
     )
     image_store = image.ImageStore()
     req_args_dict = {

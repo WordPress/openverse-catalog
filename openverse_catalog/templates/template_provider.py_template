@@ -53,9 +53,9 @@ RETRIES = 3
 HOST = '{{host URL}}'
 ENDPOINT = f'https://{HOST}/{{API PATH}}'
 # TODO: Add Provider constant to the
-#  `src/cc_catalog_airflow/dags/util/loader/provider_details.py` file
+#  `openverse_catalog/dags/util/loader/provider_details.py` file
 PROVIDER = prov.{provider_upper_case}_DEFAULT_PROVIDER
-# TODO: Add the API key to `src/cc_catalog_airflow/env.template`
+# TODO: Add the API key to `openverse_catalog/env.template`
 #  Do not hardcode your API key value!
 API_KEY = os.getenv("{provider_upper_case}", "nokeyprovided")
 

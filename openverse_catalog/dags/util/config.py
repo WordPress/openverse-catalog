@@ -28,7 +28,7 @@ DAG_DEFAULT_ARGS = {
 # airflow interface.
 
 AIRFLOW_HOME = os.getenv('AIRFLOW_HOME')
-API_SCRIPT_PATH = os.path.join(AIRFLOW_HOME, 'dags/provider_api_scripts')
+API_SCRIPT_PATH = os.path.join(AIRFLOW_HOME, 'provider_api_scripts')
 
 
 DAG_VARIABLES = {

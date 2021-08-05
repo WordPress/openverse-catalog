@@ -6,14 +6,14 @@ To add a Provider API script using this template, you will need to have Python 3
 
 To add a script for collecting audio data from provider named "MyProvider", open your terminal and run
 ```bash
-python3 src/cc_catalog_airflow/templates/create_api_script.py MyProvider -m audio
+python3 openverse_catalog/templates/create_api_script.py MyProvider -m audio
 ```
 You should see output similar to this:
 ```bash
 Creating files in path/to/openverse-catalog
-API script: src/cc_catalog_airflow/dags/provider_api_scripts/myprovider.py
-API script test: src/cc_catalog_airflow/dags/provider_api_scripts/test_myprovider.py
-Airflow workflow file: src/cc_catalog_airflow/dags/myprovider_workflow.py
+API script: openverse_catalog/dags/provider_api_scripts/myprovider.py
+API script test: openverse_catalog/dags/provider_api_scripts/test_myprovider.py
+Airflow workflow file: openverse_catalog/dags/myprovider_workflow.py
 
 ```
 The following files have been created:

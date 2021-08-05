@@ -4,14 +4,10 @@
 import unittest
 import pyspark
 from pyspark.sql import SQLContext
-from pyspark.sql import SparkSession
-from pyspark.sql.functions import desc
 from mock import patch, MagicMock
-from src.ExtractCCLinks import CCLinks
+from archive.ExtractCCLinks import CCLinks
 import shutil
 import os.path
-import botocore
-import json
 from io import StringIO
 import types
 

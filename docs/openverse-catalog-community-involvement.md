@@ -123,7 +123,7 @@ current Provider API Scripts in the new way. This will serve as a test of the
 new paradigm, and provide more examples for potential contributors to look at
 when designing and writing their own script.
 
-[etl_mods]: https://github.com/wordpress/openverse-catalog/blob/master/src/cc_catalog_airflow/dags/provider_api_scripts/modules/etlMods.py
+[etl_mods]: https://github.com/wordpress/openverse-catalog/blob/master/openverse_catalog/dags/provider_api_scripts/modules/etlMods.py
 
 ### Technical changes making deployment of new Provider API Scripts safe and easy
 

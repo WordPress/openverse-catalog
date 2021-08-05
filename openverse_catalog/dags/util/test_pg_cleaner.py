@@ -10,7 +10,7 @@ from util.loader import test_sql
 from util import pg_cleaner
 
 RESOURCES = os.path.join(
-    os.path.abspath(os.path.dirname(__file__)), "test_resources"
+    os.path.abspath(os.path.dirname(__file__)), "util/test_resources"
 )
 
 TEST_IMAGE_TABLE = test_sql.TEST_IMAGE_TABLE
@@ -53,7 +53,7 @@ def _load_tsv(postgres, tmpdir, tsv_file_name):
 def test_clean_prefix_loop_raises_with_long_prefix(monkeypatch):
     with patch.object(pg_cleaner.time, "sleep") as mock_sleep:
         with patch.object(
-            pg_cleaner,
+                pg_cleaner,
             "clean_rows",
             side_effect=Exception("Super fail!"),
         ) as mock_cleaner:
@@ -96,7 +96,7 @@ def test_clean_prefix_loop_raises_after_looping(monkeypatch):
     ]
     monkeypatch.setattr(pg_cleaner.time, "sleep", lambda x: None)
     with patch.object(
-        pg_cleaner,
+            pg_cleaner,
         "clean_rows",
         side_effect=Exception("Super fail!"),
     ) as mock_cleaner:
@@ -138,7 +138,7 @@ def test_clean_prefix_loop_loops(monkeypatch):
         call("abc", "3ff"),
     ]
     with patch.object(
-        pg_cleaner,
+            pg_cleaner,
         "clean_rows",
     ) as mock_cleaner:
         pg_cleaner.clean_prefix_loop("abc", "3f", desired_prefix_length=3)
@@ -152,7 +152,7 @@ def test_clean_rows_continues_when_single_row_fails(monkeypatch):
     monkeypatch.setattr(pg_cleaner, "_log_and_check_totals", lambda x, y: None)
 
     with patch.object(
-        pg_cleaner,
+            pg_cleaner,
         "_clean_single_row",
         side_effect=Exception("cleaning fail!"),
     ) as mock_cleaner:

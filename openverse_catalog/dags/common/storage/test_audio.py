@@ -3,7 +3,6 @@ import requests
 import pytest
 from tldextract import tldextract
 
-from common.licenses import licenses
 from common.storage import audio
 from common import get_license_info
 
@@ -17,7 +16,7 @@ logger = logging.getLogger(__name__)
 licenses.urls.tldextract.extract = tldextract.TLDExtract(
     suffix_list_urls=None
 )
-audio.columns.urls.tldextract.extract = tldextract.TLDExtract(
+columns.urls.tldextract.extract = tldextract.TLDExtract(
     suffix_list_urls=None
 )
 PD_1_LICENSE_INFO = get_license_info(
@@ -425,7 +424,7 @@ def test_create_tsv_row_properly_places_entries(
         return url_string
 
     monkeypatch.setattr(
-        audio.columns.urls, 'validate_url_string', mock_validate_url
+        columns.urls, 'validate_url_string', mock_validate_url
     )
     audio_store = audio.AudioStore()
     req_args_dict = {

@@ -6,7 +6,7 @@ from util import tsv_cleaner
 from util.loader.ingestion_column import check_and_fix_tsv_file
 
 RESOURCES = os.path.join(
-    os.path.abspath(os.path.dirname(__file__)), "test_resources"
+    os.path.abspath(os.path.dirname(__file__)), "util/test_resources"
 )
 
 
@@ -69,7 +69,7 @@ def test_clean_tsv_cleans_tsv_rows(tmpdir):
     ]
 
     with patch.object(
-        tsv_cleaner.image,
+            common.storage.image,
         "ImageStore",
         autospec=True,
     ) as mock_image_store:

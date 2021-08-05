@@ -93,10 +93,10 @@ The workflows can be been managed from the [Admin Panel][airflow_dashboard].
 ssh ec2-user@ec2-54-85-128-241.compute-1.amazonaws.com
 ```
 
-2. Change directory to cc_catalog_airflow
+2. Change directory to openverse_catalog
 
 ```
-cd cccatalog/src/cc_catalog_airflow
+cd openverse_catalog
 ```
 
 3. If necessary, copy environment data from Lastpass to `.env` in this directory.
@@ -132,7 +132,7 @@ the host ec2 instance, even potentially the docker daemon). For instructions see
 ## AWS Managed Services
 
 - **[Common Crawl Data Pipelines](https://console.aws.amazon.com/datapipeline/home?region=us-east-1)**
-  The [Common Crawl](http://commoncrawl.org/) corpus containes petabytes of [web crawl data](http://commoncrawl.org/the-data/get-started/). Common Crawl publishes a new dataset at the end of each month. An EMR cluster of 100 c4.8xlarge is configured to automatically parse the data to identify all domains that link to creativecommons.org. Spot pricing is used to keep the cost of this job under $100 and the number of instances keeps the execution time under 1 hour (±10 minutes). If the execution time increases it may be time to scale up (or out). Benchmarking has shown that the **R3/R4** instance family are also suitable for this job, however the spot pricing fluctuates.
+  The [Common Crawl](http://commoncrawl.org/) corpus contains petabytes of [web crawl data](http://commoncrawl.org/the-data/get-started/). Common Crawl publishes a new dataset at the end of each month. An EMR cluster of 100 c4.8xlarge is configured to automatically parse the data to identify all domains that link to creativecommons.org. Spot pricing is used to keep the cost of this job under $100 and the number of instances keeps the execution time under 1 hour (±10 minutes). If the execution time increases it may be time to scale up (or out). Benchmarking has shown that the **R3/R4** instance family are also suitable for this job, however the spot pricing fluctuates.
 
   - Name: Common Crawl ETL - Extract all domains that link to creativecommons.org and save the output in Parquet files.
     Queries can be performed using the data to identify potential providers for inclusion in Openverse Search. A query has been developed to help with this process and it is saved in Athena
