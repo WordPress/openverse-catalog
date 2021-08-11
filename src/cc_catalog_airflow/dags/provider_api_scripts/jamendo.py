@@ -17,8 +17,7 @@ Notes:                  https://api.jamendo.com/v3.0/tracks/
 """
 import os
 import logging
-import re
-from urllib.parse import urlparse
+from functools import lru_cache
 
 from common import DelayedRequester, AudioStore
 from common.licenses.licenses import get_license_info
@@ -212,9 +211,7 @@ def _get_audio_set_info(media_data):
     set_id = media_data.get('album_id')
     if set_id and audio_set:
         set_slug = audio_set.lower()\
-            .replace(' ', '-')\
-            .replace('.', '')\
-            .replace(':', '')
+            .replace(' ', '-')
         url = _cleanse_url(f'{base_url}{set_id}/{set_slug}')
     return audio_set, position, url, thumbnail
 
@@ -295,19 +292,14 @@ def _get_license(item):
     return item_license
 
 
+@lru_cache(maxsize=1024)
 def _cleanse_url(url_string):
     """
     Check to make sure that a url is valid, and prepend a protocol if needed
     Used to create correct album url by getting a redirect for urls
     with special characters, eg `/album/139/nés-funky`
     """
-
-    parse_result = urlparse(url_string)
-    path_pattern = re.compile(r'[a-z0-9/.\-]+')
-    if path_pattern.fullmatch(parse_result.path):
-        return url_string
-    else:
-        return rewrite_redirected_url(parse_result.geturl())
+    return rewrite_redirected_url(url_string)
 
 
 if __name__ == '__main__':
