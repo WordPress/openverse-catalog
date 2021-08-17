@@ -10,23 +10,20 @@ airflow trigger_dag --conf '[curly-braces]"maxLogAgeInDays":30[curly-braces]' ai
     maxLogAgeInDays:<INT> - Optional
 """
 import logging
-import os
 from datetime import timedelta
 
 import airflow
 import jinja2
 from airflow.configuration import conf
 from airflow.models import DAG, Variable
-from airflow.operators.bash_operator import BashOperator
-from airflow.operators.dummy_operator import DummyOperator
+from airflow.operators.bash import BashOperator
+from airflow.operators.dummy import DummyOperator
 
 # airflow-log-cleanup
-DAG_ID = os.path.basename(__file__).replace(".pyc", "").replace(".py", "")
+DAG_ID = 'airflow_log_cleanup'
 START_DATE = airflow.utils.dates.days_ago(1)
-try:
-    BASE_LOG_FOLDER = conf.get("core", "BASE_LOG_FOLDER").rstrip("/")
-except Exception as e:
-    BASE_LOG_FOLDER = conf.get("logging", "BASE_LOG_FOLDER").rstrip("/")
+
+BASE_LOG_FOLDER = conf.get("logging", "BASE_LOG_FOLDER").rstrip("/")
 # How often to Run. @daily - Once a day at Midnight
 SCHEDULE_INTERVAL = "@daily"
 # Who is listed as the owner of this DAG in the Airflow Web Server
@@ -88,12 +85,10 @@ dag = DAG(
     default_args=default_args,
     schedule_interval=SCHEDULE_INTERVAL,
     start_date=START_DATE,
-    template_undefined=jinja2.Undefined
+    template_undefined=jinja2.Undefined,
+    doc_md=__doc__,
+    catchup=False
 )
-if hasattr(dag, 'doc_md'):
-    dag.doc_md = __doc__
-if hasattr(dag, 'catchup'):
-    dag.catchup = False
 
 start = DummyOperator(
     task_id='start',
