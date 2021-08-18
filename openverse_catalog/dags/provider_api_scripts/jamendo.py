@@ -19,8 +19,9 @@ import os
 import logging
 from functools import lru_cache
 
-from common import DelayedRequester, AudioStore
 from common.licenses.licenses import get_license_info
+from common.requester import DelayedRequester
+from common.storage.audio import AudioStore
 from common.urls import rewrite_redirected_url
 from util.loader import provider_details as prov
 
