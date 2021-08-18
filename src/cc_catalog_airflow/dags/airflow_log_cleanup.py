@@ -52,7 +52,7 @@ logging.info(f"ENABLE_DELETE_CHILD_LOG  {ENABLE_DELETE_CHILD_LOG}")
 if not BASE_LOG_FOLDER or BASE_LOG_FOLDER.strip() == "":
     raise ValueError(
         "BASE_LOG_FOLDER variable is empty in airflow.cfg. It can be found "
-        "under the [core] (<2.0.0) section or [logging] (>=2.0.0) in the cfg file. "
+        "under the [logging] (>=2.0.0) in the cfg file. "
         "Kindly provide an appropriate directory path."
     )
 
@@ -104,7 +104,7 @@ sleep ${WORKER_SLEEP_TIME}s
 
 MAX_LOG_AGE_IN_DAYS="{{dag_run.conf.maxLogAgeInDays}}"
 if [ "${MAX_LOG_AGE_IN_DAYS}" == "" ]; then
-    echo "maxLogAgeInDays conf variable isn't included. Using Default '""" +\
+    echo "maxLogAgeInDays conf variable isn't included. Using Default '""" + \
               str(DEFAULT_MAX_LOG_AGE_IN_DAYS) + """'."
     MAX_LOG_AGE_IN_DAYS='""" + str(DEFAULT_MAX_LOG_AGE_IN_DAYS) + """'
 fi
@@ -176,19 +176,19 @@ if [ ! -f """ + str(LOG_CLEANUP_PROCESS_LOCK_FILE) + """ ]; then
 
     FIND_STATEMENT="find ${BASE_LOG_FOLDER}/*/* -type f -mtime \
      +${MAX_LOG_AGE_IN_DAYS}"
-    DELETE_STMT="${FIND_STATEMENT} -exec rm -f {} \;"
+    DELETE_STMT="${FIND_STATEMENT} -exec rm -f {} \\;"
 
     cleanup "${FIND_STATEMENT}" "${DELETE_STMT}"
     CLEANUP_EXIT_CODE=$?
 
     FIND_STATEMENT="find ${BASE_LOG_FOLDER}/*/* -type d -empty"
-    DELETE_STMT="${FIND_STATEMENT} -prune -exec rm -rf {} \;"
+    DELETE_STMT="${FIND_STATEMENT} -prune -exec rm -rf {} \\;"
 
     cleanup "${FIND_STATEMENT}" "${DELETE_STMT}"
     CLEANUP_EXIT_CODE=$?
 
     FIND_STATEMENT="find ${BASE_LOG_FOLDER}/* -type d -empty"
-    DELETE_STMT="${FIND_STATEMENT} -prune -exec rm -rf {} \;"
+    DELETE_STMT="${FIND_STATEMENT} -prune -exec rm -rf {} \\;"
 
     cleanup "${FIND_STATEMENT}" "${DELETE_STMT}"
     CLEANUP_EXIT_CODE=$?
@@ -200,8 +200,8 @@ if [ ! -f """ + str(LOG_CLEANUP_PROCESS_LOCK_FILE) + """ ]; then
     REMOVE_LOCK_FILE_EXIT_CODE=$?
     if [ "${REMOVE_LOCK_FILE_EXIT_CODE}" != "0" ]; then
         echo "Error removing the lock file. Check file permissions. "
-        echo "To re-run the DAG, ensure that the lock file has been deleted (""" + \
-              str(LOG_CLEANUP_PROCESS_LOCK_FILE) + """)."
+        echo "To re-run the DAG, ensure that the lock file (""" + \
+              str(LOG_CLEANUP_PROCESS_LOCK_FILE) + """) has been deleted."
         exit ${REMOVE_LOCK_FILE_EXIT_CODE}
     fi
 
@@ -218,13 +218,12 @@ fi
 for log_cleanup_id in range(1, NUMBER_OF_WORKERS + 1):
 
     for dir_id, directory in enumerate(DIRECTORIES_TO_DELETE):
-
         log_cleanup_op = BashOperator(
             task_id=f'log_cleanup_worker_num_{log_cleanup_id}_dir_{dir_id})',
             bash_command=log_cleanup,
             params={
                 "directory": str(directory),
-                "sleep_time": int(log_cleanup_id)*3},
+                "sleep_time": int(log_cleanup_id) * 3},
             dag=dag)
 
         log_cleanup_op.set_upstream(start)
