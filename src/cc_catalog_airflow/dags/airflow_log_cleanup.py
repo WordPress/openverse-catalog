@@ -5,7 +5,7 @@ clean child process logs from the 'scheduler' directory.
 
 Can remove all log files by setting "maxLogAgeInDays" to -1.
 
-airflow trigger_dag --conf '[curly-braces]"maxLogAgeInDays":30[curly-braces]' airflow-log-cleanup
+airflow trigger_dag --conf '{"maxLogAgeInDays":30}' airflow-log-cleanup
 --conf options:
     maxLogAgeInDays:<INT> - Optional
 """
@@ -41,13 +41,13 @@ ENABLE_DELETE = True
 # The number of worker nodes you have in Airflow. Will attempt to run this
 # process for however many workers there are so that each worker gets its
 # logs cleared.
-NUMBER_OF_WORKERS = 1
+NUMBER_OF_WORKERS = 2
 DIRECTORIES_TO_DELETE = [BASE_LOG_FOLDER]
 ENABLE_DELETE_CHILD_LOG = Variable.get(
     "airflow_log_cleanup__enable_delete_child_log", "True"
 )
 LOG_CLEANUP_PROCESS_LOCK_FILE = "/tmp/airflow_log_cleanup_worker.lock"
-logging.info("ENABLE_DELETE_CHILD_LOG  " + ENABLE_DELETE_CHILD_LOG)
+logging.info(f"ENABLE_DELETE_CHILD_LOG  {ENABLE_DELETE_CHILD_LOG}")
 
 if not BASE_LOG_FOLDER or BASE_LOG_FOLDER.strip() == "":
     raise ValueError(
@@ -104,7 +104,8 @@ sleep ${WORKER_SLEEP_TIME}s
 
 MAX_LOG_AGE_IN_DAYS="{{dag_run.conf.maxLogAgeInDays}}"
 if [ "${MAX_LOG_AGE_IN_DAYS}" == "" ]; then
-    echo "maxLogAgeInDays conf variable isn't included. Using Default '""" + str(DEFAULT_MAX_LOG_AGE_IN_DAYS) + """'."
+    echo "maxLogAgeInDays conf variable isn't included. Using Default '""" +\
+              str(DEFAULT_MAX_LOG_AGE_IN_DAYS) + """'."
     MAX_LOG_AGE_IN_DAYS='""" + str(DEFAULT_MAX_LOG_AGE_IN_DAYS) + """'
 fi
 ENABLE_DELETE=""" + str("true" if ENABLE_DELETE else "false") + """
@@ -198,7 +199,9 @@ if [ ! -f """ + str(LOG_CLEANUP_PROCESS_LOCK_FILE) + """ ]; then
     rm -f """ + str(LOG_CLEANUP_PROCESS_LOCK_FILE) + """
     REMOVE_LOCK_FILE_EXIT_CODE=$?
     if [ "${REMOVE_LOCK_FILE_EXIT_CODE}" != "0" ]; then
-        echo "Error removing the lock file. Check file permissions. To re-run the DAG, ensure that the lock file has been deleted (""" + str(LOG_CLEANUP_PROCESS_LOCK_FILE) + """)."
+        echo "Error removing the lock file. Check file permissions. "
+        echo "To re-run the DAG, ensure that the lock file has been deleted (""" + \
+              str(LOG_CLEANUP_PROCESS_LOCK_FILE) + """)."
         exit ${REMOVE_LOCK_FILE_EXIT_CODE}
     fi
 
@@ -217,8 +220,7 @@ for log_cleanup_id in range(1, NUMBER_OF_WORKERS + 1):
     for dir_id, directory in enumerate(DIRECTORIES_TO_DELETE):
 
         log_cleanup_op = BashOperator(
-            task_id='log_cleanup_worker_num_' +
-            str(log_cleanup_id) + '_dir_' + str(dir_id),
+            task_id=f'log_cleanup_worker_num_{log_cleanup_id}_dir_{dir_id})',
             bash_command=log_cleanup,
             params={
                 "directory": str(directory),
