@@ -1,7 +1,8 @@
 # Openverse Catalog
 
-This repository contains the methods used to identify over 1.4 billion Creative Commons licensed works. The challenge is that these works are dispersed
-throughout the web and identifying them requires a combination of techniques.
+This repository contains the methods used to identify over 1.4 billion Creative Commons
+licensed works. The challenge is that these works are dispersed throughout the web and
+identifying them requires a combination of techniques.
 
 Two approaches are currently in use:
 
@@ -53,13 +54,17 @@ the internet.
 
 Workflows that have a `schedule_string='@daily'` parameter are run daily. The DAG 
 workflows run `provider_api_scripts` to load and extract media data from the APIs. 
-Below are some of the daily DAG workflows that run the corresponding `provider_api_scripts` 
-daily:
+Below are some daily DAG workflows that run the corresponding
+`provider_api_scripts` daily:
 
-- [Met Museum Workflow](openverse_catalog/dags/metropolitan_museum_workflow.py) ( [API script](openverse_catalog/dags/provider_api_scripts/metropolitan_museum_of_art.py) )
-- [PhyloPic Workflow](openverse_catalog/dags/phylopic_workflow.py) ( [API script](openverse_catalog/dags/provider_api_scripts/phylopic.py) )
-- [Flickr Workflow](openverse_catalog/dags/flickr_workflow.py) ( [API script](openverse_catalog/dags/provider_api_scripts/flickr.py) )
-- [Wikimedia Commons Workflow](openverse_catalog/dags/wikimedia_workflow.py) ( [Commons API script](openverse_catalog/dags/provider_api_scripts/wikimedia_commons.py) )
+- [Met Museum Workflow](openverse_catalog/dags/metropolitan_museum_workflow.py)
+  ( [API script](openverse_catalog/dags/provider_api_scripts/metropolitan_museum_of_art.py) )
+- [PhyloPic Workflow](openverse_catalog/dags/phylopic_workflow.py)
+  ( [API script](openverse_catalog/dags/provider_api_scripts/phylopic.py) )
+- [Flickr Workflow](openverse_catalog/dags/flickr_workflow.py)
+  ( [API script](openverse_catalog/dags/provider_api_scripts/flickr.py) )
+- [Wikimedia Commons Workflow](openverse_catalog/dags/wikimedia_workflow.py)
+  ( [Commons API script](openverse_catalog/dags/provider_api_scripts/wikimedia_commons.py) )
 
 ### Monthly Workflow
 
@@ -73,6 +78,10 @@ monthly to keep the catalog updated. The following tasks are performed monthly:
 - [Common Crawl Syncer](openverse_catalog/dags/commoncrawl_scripts/commoncrawl_s3_syncer/SyncImageProviders.py)
 - [Brooklyn Museum](openverse_catalog/dags/provider_api_scripts/brooklyn_museum.py)
 - [NYPL](openverse_catalog/dags/provider_api_scripts/nypl.py)
+
+See each provider API script's notes in their respective [handbook][ov-handbook] entry.
+
+[ov-handbook]: https://make.wordpress.org/openverse/handbook/openverse-handbook/openverse-catalog/
 
 ### DB_Loader
 
@@ -197,14 +206,22 @@ python -m pytest tests/test_ExtractCCLinks.py
 
 ## Contributing
 
-Pull requests are welcome! Feel free to [join us on Slack](https://make.wordpress.org/chat/) and discuss the project with the engineers and community memebers on #openverse.
+Pull requests are welcome! Feel free to [join us on Slack][wp_slack] and discuss the
+project with the engineers and community memebers on #openverse.
 
 ## Acknowledgments
 
-Openverse, previously known as CC Search, was concieved and built at [Creative Commons](https://creativecommons.org). We thank them for their commitment to open source and openly licensed content, with particular thanks to original team members @kgodey, @annatuma, @mathemancer, @aldenstpage, @brenoferreira, and @sclachar, along with their [community of volunteers](https://opensource.creativecommons.org/community/community-team/).
+Openverse, previously known as CC Search, was conceived and built at
+[Creative Commons][cc]. We thank them for their commitment to open source and openly
+licensed content, with particular thanks to original team members @kgodey, @annatuma,
+@mathemancer, @aldenstpage, @brenoferreira, and @sclachar, along with their
+[community of volunteers][cc_community].
 
 ## License
 
 - [`LICENSE`](LICENSE) (Expat/[MIT][mit] License)
 
 [mit]: http://www.opensource.org/licenses/MIT "The MIT License | Open Source Initiative"
+[wp_slack]: https://make.wordpress.org/chat/
+[cc]: https://creativecommons.org
+[cc_community]: https://opensource.creativecommons.org/community/community-team/
