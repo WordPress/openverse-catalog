@@ -11,7 +11,6 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-# TODO: add schedule @daily, like other DAGs
 MAX_LOG_AGE_IN_DAYS = 7
 ENABLE_DELETE = True
 

@@ -4,11 +4,16 @@ out the task logs to avoid those getting too big. By default, this will also
 clean child process logs from the 'scheduler' directory.
 
 Can remove all log files by setting "maxLogAgeInDays" to -1.
+If you want to test the DAG in the Airflow Web UI, you can also set
+enableDelete to `false`, and then you will see a list of log folders
+that can be deleted, but will not actually delete them.
 
-airflow dags trigger --conf '{"maxLogAgeInDays":-1, "enableDelete": "false"}' airflow_log_cleanup
+This should all go on one line:
+```airflow dags trigger --conf
+'{"maxLogAgeInDays":-1, "enableDelete": "false"}' airflow_log_cleanup```
 --conf options:
     maxLogAgeInDays:<INT> - Optional
-{"enableDelete": "false", "maxLogAgeInDays": -1}
+    enableDelete:<BOOLEAN> - Optional
 """
 import logging
 from datetime import timedelta, datetime
@@ -20,7 +25,7 @@ from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
 
 import util.operator_util as ops
-import log_cleanup
+from util import log_cleanup
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s:  %(message)s',
@@ -75,6 +80,7 @@ def create_dag(
         dag_id=dag_id,
         default_args=args,
         concurrency=concurrency,
+        schedule_interval='@weekly',
         max_active_runs=max_active_runs,
         # If this was True, airflow would run this DAG in the beginning
         # for each day from the start day to now
@@ -84,10 +90,7 @@ def create_dag(
     )
 
     with dag:
-        start_task = BashOperator(
-            task_id=f'{dag.dag_id}_Starting',
-            bash_command=f"echo Starting {dag.dag_id} workflow",
-        )
+        start_task = ops.get_log_operator(dag, dag.dag_id, 'Starting')
         run_task = get_log_cleaner_operator(
             dag,
             BASE_LOG_FOLDER,
