@@ -20,7 +20,7 @@ from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
 
 import util.operator_util as ops
-from util import log_cleanup
+import log_cleanup
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s:  %(message)s',

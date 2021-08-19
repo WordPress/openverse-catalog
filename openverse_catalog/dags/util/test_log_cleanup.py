@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from util.log_cleanup import clean_up
+from log_cleanup import clean_up
 
 TEST_LOGS_FOLDER = Path(__file__).parent / "test_resources" / 'logs'
 # Total number of logs in the `logs_folder` created
