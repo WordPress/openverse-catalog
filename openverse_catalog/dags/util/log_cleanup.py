@@ -57,19 +57,8 @@ def get_folders_to_delete(
 
 def delete_folders(folders_to_delete: List[Path]) -> None:
     for dag_log_folder in folders_to_delete:
-        # When testing on the real Airflow Web UI, we set the max_log_age_in_days
-        # to -1. This means that all logs, including the latest log from this
-        # DAG, are deleted, and you cannot view the log output for it.
-        # For testing purposes until we approve this PR, we do not delete
-        # `python_airflow_log_cleanup` logs.
-        # After this PR is approved, the following 2 lines will replace the
-        # 4 lines below with the if:
-        # logger.info(f"Deleting {dag_log_folder}")
-        # shutil.rmtree(dag_log_folder)
-        log_name = 'python_airflow_log_cleanup'  # will be removed
-        if log_name not in str(dag_log_folder):  # will be removed
-            logger.info(f"Deleting {dag_log_folder}")  # will be removed
-            shutil.rmtree(dag_log_folder)  # will be removed
+        logger.info(f"Deleting {dag_log_folder}")
+        shutil.rmtree(dag_log_folder)
 
 
 def get_params(
