@@ -5,15 +5,17 @@ clean child process logs from the 'scheduler' directory.
 
 Can remove all log files by setting "maxLogAgeInDays" to -1.
 
-airflow dags trigger --conf '{"maxLogAgeInDays":-1}' airflow_log_cleanup
+airflow dags trigger --conf '{"maxLogAgeInDays":-1, "enableDelete": "false"}' airflow_log_cleanup
 --conf options:
     maxLogAgeInDays:<INT> - Optional
+{"enableDelete": "false", "maxLogAgeInDays": -1}
 """
 import logging
 from datetime import timedelta, datetime
 
+import jinja2
 from airflow.configuration import conf
-from airflow.models import DAG, Variable
+from airflow.models import DAG
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
 
@@ -29,34 +31,18 @@ logger = logging.getLogger(__name__)
 
 DAG_ID = 'python_airflow_log_cleanup'
 BASE_LOG_FOLDER = conf.get("logging", "BASE_LOG_FOLDER").rstrip("/")
-
-# Length to retain the log files if not already provided in the conf. If this
-# is set to 30, the job will remove those files that are 7 days old or older
-DEFAULT_MAX_LOG_AGE_IN_DAYS = Variable.get(
-    "airflow_log_cleanup__max_log_age_in_days", 7
-)
 # Whether the job should delete the logs or not. Included if you want to
 # temporarily avoid deleting the logs
+DEFAULT_MAX_LOG_AGE_IN_DAYS = 7
 ENABLE_DELETE = True
-
 CONCURRENCY = 1
-DIRECTORIES_TO_DELETE = [BASE_LOG_FOLDER]
-ENABLE_DELETE_CHILD_LOG = True
-LOG_CLEANUP_PROCESS_LOCK_FILE = "/tmp/airflow_log_cleanup_worker.lock"
-logging.info(f"ENABLE_DELETE_CHILD_LOG  {ENABLE_DELETE_CHILD_LOG}")
-
-CHILD_PROCESS_LOG_DIRECTORY = conf.get(
-    "scheduler", "CHILD_PROCESS_LOG_DIRECTORY"
-)
-if CHILD_PROCESS_LOG_DIRECTORY != ' ':
-    DIRECTORIES_TO_DELETE.append(CHILD_PROCESS_LOG_DIRECTORY)
-
 # should we send someone an email when this DAG fails?
 ALERT_EMAIL_ADDRESSES = ''
 DAG_DEFAULT_ARGS = {
     'owner': 'data-eng-admin',
     'depends_on_past': False,
     'start_date': datetime(2020, 6, 15),
+    'template_undefined': jinja2.Undefined,
     'email_on_retry': False,
     'retries': 2,
     'retry_delay': timedelta(minutes=1),
@@ -66,13 +52,15 @@ DAG_DEFAULT_ARGS = {
 def get_log_cleaner_operator(
         dag,
         base_log_folder,
-        max_log_age_in_days,
-        enable_delete,
 ):
     return PythonOperator(
         task_id='log_cleaner_operator',
         python_callable=log_cleanup.clean_up,
-        op_args=[base_log_folder, max_log_age_in_days, enable_delete],
+        op_args=[
+            base_log_folder,
+            "{{ params.get('maxLogAgeInDays') }}",
+            "{{ params.get('enableDelete') }}"
+        ],
         dag=dag
     )
 
@@ -98,13 +86,11 @@ def create_dag(
     with dag:
         start_task = BashOperator(
             task_id=f'{dag.dag_id}_Starting',
-            bash_command=f'echo Starting {dag.dag_id} workflow'
+            bash_command=f"echo Starting {dag.dag_id} workflow",
         )
         run_task = get_log_cleaner_operator(
             dag,
             BASE_LOG_FOLDER,
-            DEFAULT_MAX_LOG_AGE_IN_DAYS,
-            False,
         )
         end_task = ops.get_log_operator(dag, dag.dag_id, 'Finished')
 

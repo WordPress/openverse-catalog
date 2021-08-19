@@ -3,6 +3,7 @@ import logging
 import shutil
 from datetime import timedelta, datetime
 from pathlib import Path
+from typing import List, Union, Dict, Tuple
 
 logging.basicConfig(
     format='%(asctime)s: [%(levelname)s - Log cleanup] %(message)s',
@@ -10,23 +11,38 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_MAX_LOG_AGE_IN_DAYS = 1
+# TODO: add schedule @daily, like other DAGs
+MAX_LOG_AGE_IN_DAYS = 7
+ENABLE_DELETE = True
 
 
-def is_older_than_cutoff(
-        file_or_folder: Path, cutoff: int = DEFAULT_MAX_LOG_AGE_IN_DAYS):
+def is_older_than_cutoff(file_or_folder: Path, cutoff: int):
     last_modified = file_or_folder.stat().st_mtime
     cutoff_time = datetime.now() - timedelta(days=cutoff)
 
     return datetime.fromtimestamp(last_modified) <= cutoff_time
 
 
-def dir_size_in_mb(dir_path):
-    return sum(f.stat().st_size for f in dir_path.glob('**/*')
-               if f.is_file()) / (1024 * 1024)
+def dir_size_in_mb(dir_paths: Union[List[Path], Path]):
+    if not isinstance(dir_paths, List):
+        dir_paths = [dir_paths]
+    size_in_bytes = sum(sum(f.stat().st_size for f in folder.glob('**/*')
+                            if f.is_file()) for folder in dir_paths)
+    return size_in_bytes / (1024 * 1024)
 
 
-def get_folders_to_delete(dag_log_folder, MAX_LOG_AGE_IN_DAYS):
+def get_folders_to_delete(
+        dag_log_folder: Path, max_log_age_in_days: int
+) -> List[Path]:
+    """Returns a list of log folders that are older `than max_log_age_in_days`
+    The folder structure is as follows:
+    `{dag_id}/{task_id}/{timestamp}/{try}.log`
+    This function iterates over all `{timestamp}` folders, detects the
+    ones that are older than the cutoff, and appends them to the result.
+    :param dag_log_folder: Log folder for a DAG
+    :param max_log_age_in_days: Logs that are older than this will be returned
+    :return: List of old log folders that can be deleted
+    """
     task_log_folders = [_ for _ in Path.iterdir(dag_log_folder)
                         if Path.is_dir(_)]
     folders_to_delete = []
@@ -34,18 +50,82 @@ def get_folders_to_delete(dag_log_folder, MAX_LOG_AGE_IN_DAYS):
         run_log_folders_to_delete = [
             folder for folder in Path.iterdir(task_log_folder)
             if (Path.is_dir(folder)
-                and is_older_than_cutoff(folder, MAX_LOG_AGE_IN_DAYS))
+                and is_older_than_cutoff(folder, max_log_age_in_days))
         ]
         folders_to_delete.extend(run_log_folders_to_delete)
     return folders_to_delete
 
 
-def clean_up(BASE_LOG_FOLDER, MAX_LOG_AGE_IN_DAYS, ENABLE_DELETE):
-    log_base = Path(BASE_LOG_FOLDER)
-    logger.info(f"Cleaning up log files, \n"
-                f"BASE_LOG_FOLDER: {BASE_LOG_FOLDER}\n"
-                f"MAX_LOG_AGE_IN_DAYS: {MAX_LOG_AGE_IN_DAYS},"
-                f"\nENABLE_DELETE: {ENABLE_DELETE}")
+def delete_folders(folders_to_delete: List[Path]) -> None:
+    for dag_log_folder in folders_to_delete:
+        # When testing on the real Airflow Web UI, we set the max_log_age_in_days
+        # to -1. This means that all logs, including the latest log from this
+        # DAG, are deleted, and you cannot view the log output for it.
+        # For testing purposes until we approve this PR, we do not delete
+        # `python_airflow_log_cleanup` logs.
+        # After this PR is approved, the following 2 lines will replace the
+        # 4 lines below with the if:
+        # logger.info(f"Deleting {dag_log_folder}")
+        # shutil.rmtree(dag_log_folder)
+        log_name = 'python_airflow_log_cleanup'  # will be removed
+        if log_name not in str(dag_log_folder):  # will be removed
+            logger.info(f"Deleting {dag_log_folder}")  # will be removed
+            shutil.rmtree(dag_log_folder)  # will be removed
+
+
+def get_params(
+        log_age: Union[int, str], enable_delete: Union[bool, str], params: Dict
+) -> Tuple[int, bool]:
+    if not isinstance(log_age, int):
+        log_age_param = params.get('maxLogAgeInDays')
+        try:
+            log_age = int(log_age_param)
+            logger.info(f"Maximum log age overwritten with the dag run "
+                        f"parameter of {log_age_param} days")
+        except TypeError:
+            log_age = MAX_LOG_AGE_IN_DAYS
+    if not isinstance(enable_delete, bool):
+        enable_delete_param = params.get('enableDelete', ENABLE_DELETE)
+        if isinstance(enable_delete_param, bool):
+            enable_delete = enable_delete_param
+        else:
+            enable_delete = {
+                'true': True, 'false': False
+            }.get(enable_delete_param.lower(), ENABLE_DELETE)
+
+    return log_age, enable_delete
+
+
+def clean_up(
+        base_log_folder: Union[str, Path],
+        max_log_age_in_days: Union[int, str],
+        should_delete: Union[bool, str],
+        **kwargs,
+) -> None:
+    """Finds all log folders that were modified more than
+    `max_log_age_in_days` days ago, and
+    deletes them, if `should_delete` is True, or
+    logs them, if `should_delete` is False.
+
+    :param base_log_folder: the folder in which dag log folders
+    are located.
+    :param max_log_age_in_days: Logs older than this number of
+    days will be cleaned up. Can be set manually, or be 'None',
+    in which case the default value is used.
+    :param should_delete: Will delete the old log folders if True, and
+    only log the folders that need to be deleted if set to False.
+    Can be set manually, or be 'None', in which case the default value
+    is used.
+    """
+    log_base = Path(base_log_folder)
+
+    max_log_age_in_days, should_delete = get_params(
+        max_log_age_in_days, should_delete, kwargs.get('params', {})
+    )
+    logger.info(f"Cleaning up log files, using parameters:"
+                f"\nBASE_LOG_FOLDER: {base_log_folder}"
+                f"\nMAX_LOG_AGE_IN_DAYS: {max_log_age_in_days}"
+                f"\nENABLE_DELETE: {should_delete}")
     log_folders = [item for item in Path.iterdir(log_base)
                    if Path.is_dir(item)]
     size_before = dir_size_in_mb(log_base)
@@ -62,30 +142,27 @@ def clean_up(BASE_LOG_FOLDER, MAX_LOG_AGE_IN_DAYS, ENABLE_DELETE):
                 if (Path.is_dir(date_log_dir)
                     and not Path.is_symlink(date_log_dir)
                     and is_older_than_cutoff(
-                            date_log_dir, MAX_LOG_AGE_IN_DAYS
+                            date_log_dir, max_log_age_in_days
                         ))
             ]
             folders_to_delete.extend(scheduler_log_folders_to_delete)
         else:
             task_log_folders_to_delete = get_folders_to_delete(
-                dag_log_folder, MAX_LOG_AGE_IN_DAYS
+                dag_log_folder, max_log_age_in_days
             )
             folders_to_delete.extend(task_log_folders_to_delete)
-
-    if ENABLE_DELETE:
-        for dag_log_folder in folders_to_delete:
-            if 'python_airflow_log_cleanup' not in str(dag_log_folder):
-                logger.info(f"Deleting {dag_log_folder}")
-                shutil.rmtree(dag_log_folder)
+    size_to_delete = dir_size_in_mb(folders_to_delete)
+    if should_delete:
+        delete_folders(folders_to_delete)
         size_after = dir_size_in_mb(log_base)
-        logger.info(f"Deleted {len(folders_to_delete)} folders. "
+        logger.info(f"Deleted {size_to_delete:.2f}MB in "
+                    f"{len(folders_to_delete)} folders\n"
                     f"Log directory size before: {size_before:.2f}MB, "
                     f"after: {size_after:.2f} MB")
     else:
-        size_to_delete = sum(dir_size_in_mb(folder)
-                             for folder in folders_to_delete)
-        logger.info(f"Found {len(folders_to_delete)} log folders to delete. "
-                    f"Run this DAG with ENABLE_DELETE set to True "
+        logger.info(f"Found {len(folders_to_delete)} log folders to delete: "
+                    f"{[str(folder) for folder in folders_to_delete]}"
+                    f"\nRun this DAG with ENABLE_DELETE set to True "
                     f"to free {size_to_delete:.2f} MB.")
 
 
@@ -98,11 +175,20 @@ if __name__ == '__main__':
         '--maxLogAgeInDays',
         help='Logs older than maxLogAgeInDays days will be deleted. '
              'Default is 7.')
+    parser.add_argument(
+        '--enableDelete',
+        help='Will only log the folders that need to be deleted if '
+             'set to False. Default is True'
+    )
     args = parser.parse_args()
     if args.maxLogAgeInDays:
-        max_log_age_in_days = args.maxLogAgeInDays
+        log_age_in_days_arg = args.maxLogAgeInDays
     else:
-        max_log_age_in_days = 7
-    base_log_folder = Path(__file__).parent / 'test_resources' / 'logs'
-    Path.mkdir(base_log_folder, parents=True, exist_ok=True)
-    clean_up(base_log_folder, max_log_age_in_days, True)
+        log_age_in_days_arg = 7
+    if args.enableDelete:
+        enable_delete = args.enableDelete
+    else:
+        enable_delete = True
+    log_folder = Path(__file__).parent / 'test_resources' / 'logs'
+    Path.mkdir(log_folder, parents=True, exist_ok=True)
+    clean_up(log_folder, log_age_in_days_arg, enable_delete)

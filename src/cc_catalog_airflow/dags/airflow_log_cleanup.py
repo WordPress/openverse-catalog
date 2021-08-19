@@ -219,7 +219,7 @@ for log_cleanup_id in range(1, NUMBER_OF_WORKERS + 1):
 
     for dir_id, directory in enumerate(DIRECTORIES_TO_DELETE):
         log_cleanup_op = BashOperator(
-            task_id=f'log_cleanup_worker_num_{log_cleanup_id}_dir_{dir_id})',
+            task_id=f'log_cleanup_worker_num_{log_cleanup_id}_dir_{dir_id}',
             bash_command=log_cleanup,
             params={
                 "directory": str(directory),
