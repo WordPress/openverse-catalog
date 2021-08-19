@@ -21,7 +21,6 @@ from datetime import timedelta, datetime
 import jinja2
 from airflow.configuration import conf
 from airflow.models import DAG
-from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
 
 import util.operator_util as ops
@@ -34,7 +33,7 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-DAG_ID = 'python_airflow_log_cleanup'
+DAG_ID = 'airflow_log_cleanup'
 BASE_LOG_FOLDER = conf.get("logging", "BASE_LOG_FOLDER").rstrip("/")
 # Whether the job should delete the logs or not. Included if you want to
 # temporarily avoid deleting the logs
