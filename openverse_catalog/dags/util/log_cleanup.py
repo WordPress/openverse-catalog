@@ -89,7 +89,7 @@ def clean_up(
         max_log_age_in_days: Union[int, str],
         should_delete: Union[bool, str],
         **kwargs,
-) -> None:
+) -> list[Path]:
     """Finds all log folders that were modified more than
     `max_log_age_in_days` days ago, and
     deletes them, if `should_delete` is True, or
@@ -152,6 +152,7 @@ def clean_up(
                     f"{[str(folder) for folder in folders_to_delete]}"
                     f"\nRun this DAG with ENABLE_DELETE set to True "
                     f"to free {size_to_delete:.2f} MB.")
+    return folders_to_delete
 
 
 if __name__ == '__main__':
