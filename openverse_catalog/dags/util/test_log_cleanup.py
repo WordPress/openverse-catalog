@@ -27,9 +27,6 @@ def is_older_than_cutoff_by_name(file_or_folder: Path, cutoff: int):
     return datetime.fromtimestamp(last_modified) <= cutoff_time
 
 
-log_cleanup.is_older_than_cutoff = is_older_than_cutoff_by_name
-
-
 def calculate_cutoffs():
     NOW = datetime.now()
     one_day_before = OLD_TIMESTAMP - timedelta(days=1)
@@ -39,44 +36,11 @@ def calculate_cutoffs():
     return delta_before, delta_after
 
 
-# @pytest.fixture()
-# def logs_folder():
-#
-#     Path.mkdir(TEST_LOGS_FOLDER, parents=True, exist_ok=True)
-#
-#     recent_date = datetime.now(tz=timezone.utc)
-#     old_date = datetime.now(tz=timezone.utc) - timedelta(days=8)
-#     dates = [recent_date, old_date]
-#
-#     af_logs_folders = ['dag_processor_manager', 'scheduler', 'test_dag']
-#     for folder in af_logs_folders:
-#         Path.mkdir(TEST_LOGS_FOLDER / folder, parents=True, exist_ok=True)
-#
-#     dag_processor_manager_log = TEST_LOGS_FOLDER / 'dag_processor_manager' / 'dag_processor_manager.log'
-#     dag_processor_manager_log.write_text('Dags processor manager log')
-#
-#     task_dir = TEST_LOGS_FOLDER / 'test_dag' / 'test_task'
-#     Path.mkdir(task_dir, parents=True, exist_ok=True)
-#
-#     for log_date in dates:
-#         timestamp = log_date.timestamp()
-#
-#         new_dir = task_dir / log_date.strftime('%Y-%m-%dT%H:%M:%S%z')
-#         Path.mkdir(new_dir)
-#
-#         scheduler_dir = TEST_LOGS_FOLDER / 'scheduler' / log_date.strftime('%Y-%m-%d')
-#         Path.mkdir(scheduler_dir, parents=True, exist_ok=True)
-#
-#         for item_dir in [new_dir, scheduler_dir]:
-#             for num in range(1, 4):
-#                 log_file = item_dir / f"{num}.log"
-#                 log_file.write_text(f'Test log {num}')
-#                 os.utime(log_file, (timestamp, timestamp))
-#             os.utime(item_dir, (timestamp, timestamp))
-#
-#     yield TEST_LOGS_FOLDER
-
-
+# Normally, the age of log file or folder is detected using the
+# system modification date. However, it is difficult to do that
+# in CI, so in tests, the log folder name (which is a timestamp)
+# is used.
+log_cleanup.is_older_than_cutoff = is_older_than_cutoff_by_name
 cutoffs_in_days = calculate_cutoffs()
 
 
