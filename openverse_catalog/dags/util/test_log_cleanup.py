@@ -1,4 +1,4 @@
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -75,7 +75,6 @@ def test_log_cleaner_leaves_new_files(cutoffs_in_days):
     assert log_files_count == INITIAL_LOG_FILE_COUNT
 
     deleted_folders = clean_up(logs_folder, cutoffs_in_days[0], ENABLE_DELETE)
-    assert cutoffs_in_days[0] == 11
     deleted_count = len(deleted_folders)
     expected_count = 0
 
