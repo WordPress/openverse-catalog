@@ -56,6 +56,7 @@ coverage.xml
 *.pot
 
 # Django stuff:
+*.log
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
@@ -134,8 +135,9 @@ env.sh
 # airflow testing detritus
 airflow.cfg
 airflow.db
-#logs/
+logs/
 unittests.cfg
+!*/util/test_resources/logs/*
 
 # large SI sample data
 si_samples_*
