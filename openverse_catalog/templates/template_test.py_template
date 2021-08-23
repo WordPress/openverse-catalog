@@ -16,6 +16,7 @@ from unittest.mock import patch
 import {provider}
 
 RESOURCES = Path(__file__).parent / 'tests/resources/{provider}'
+SAMPLE_MEDIA_DATA = RESOURCES / '{media_type}_data_example.json'
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s:  %(message)s',
@@ -75,7 +76,7 @@ def test_get_items():
 
 
 def test_process_item_batch_handles_example_batch():
-    with open(RESOURCES / '{media_type}_data_example.json') as f:
+    with open(SAMPLE_MEDIA_DATA) as f:
         items_batch = [json.load(f)]
     with patch.object(
             {provider}.{media_type}_store,
@@ -97,7 +98,7 @@ def test_extract_{media_type}_data_returns_none_when_media_data_none():
 
 
 def test_extract_{media_type}_data_returns_none_when_no_foreign_id():
-    with open(RESOURCES / '{media_type}_data_example.json') as f:
+    with open(SAMPLE_MEDIA_DATA) as f:
         {media_type}_data = json.load(f)
         {media_type}_data.pop('foreign_id', None)
     actual_{media_type}_info = {provider}._extract_item_data({media_type}_data)
@@ -106,7 +107,7 @@ def test_extract_{media_type}_data_returns_none_when_no_foreign_id():
 
 
 def test_extract_{media_type}_data_returns_none_when_no_{media_type}_url():
-    with open(RESOURCES / '{media_type}_data_example.json') as f:
+    with open(SAMPLE_MEDIA_DATA) as f:
         {media_type}_data = json.load(f)
         {media_type}_data.pop('{media_type}_url', None)
     actual_{media_type}_info = {provider}._extract_item_data({media_type}_data)
@@ -114,7 +115,7 @@ def test_extract_{media_type}_data_returns_none_when_no_{media_type}_url():
 
 
 def test_extract_{media_type}_data_returns_none_when_no_license():
-    with open(RESOURCES / '{media_type}_data_example.json') as f:
+    with open(SAMPLE_MEDIA_DATA) as f:
         {media_type}_data = json.load(f)
         {media_type}_data.pop('license_url', None)
     actual_{media_type}_info = {provider}._extract_item_data({media_type}_data)
@@ -122,7 +123,7 @@ def test_extract_{media_type}_data_returns_none_when_no_license():
 
 
 def test_get_creator_data():
-    with open(RESOURCES / '{media_type}_data_example.json') as f:
+    with open(SAMPLE_MEDIA_DATA) as f:
         {media_type}_data = json.load(f)
     actual_creator, actual_creator_url = {provider}._get_creator_data({media_type}_data)
     expected_creator = ''
@@ -133,7 +134,7 @@ def test_get_creator_data():
 
 
 def test_get_creator_data_handles_no_url():
-    with open(RESOURCES / '{media_type}_data_example.json') as f:
+    with open(SAMPLE_MEDIA_DATA) as f:
         {media_type}_data = json.load(f)
     {media_type}_data.pop('artist_url', None)
     expected_creator = ''
@@ -144,7 +145,7 @@ def test_get_creator_data_handles_no_url():
 
 
 def test_get_creator_data_returns_none_when_no_artist():
-    with open(RESOURCES / '{media_type}_data_example.json') as f:
+    with open(SAMPLE_MEDIA_DATA) as f:
         {media_type}_data = json.load(f)
     {media_type}_data.pop('artist_name', None)
     actual_creator, actual_creator_url = {provider}._get_creator_data({media_type}_data)
@@ -154,7 +155,7 @@ def test_get_creator_data_returns_none_when_no_artist():
 
 
 def test_extract_{media_type}_data_handles_example_dict():
-    with open(RESOURCES / '{media_type}_data_example.json') as f:
+    with open(SAMPLE_MEDIA_DATA) as f:
         {media_type}_data = json.load(f)
 
     actual_{media_type}_info = {provider}._extract_item_data({media_type}_data)
