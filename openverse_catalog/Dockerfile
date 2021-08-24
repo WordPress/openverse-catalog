@@ -4,6 +4,7 @@ ENV AIRFLOW_HOME=/usr/local/airflow
 ARG OUTPUT_DIR=/tmp/workflow_output/
 ENV PATH=/usr/local/airflow/.local/bin:$PATH
 ARG REQUIREMENTS_FILE=requirements_prod.txt
+# https://airflow.apache.org/docs/apache-airflow/2.1.2/installation.html#constraints-files
 ARG CONSTRAINTS_FILE="https://raw.githubusercontent.com/apache/airflow/constraints-2.1.2/constraints-3.9.txt"
 
 
