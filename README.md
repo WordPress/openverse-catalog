@@ -175,7 +175,12 @@ To follow the logs of the running container:
 just logs
 ```
 
-To see the Airflow web UI, point your browser to `localhost:9090`.
+To see the Airflow web UI, point your browser to `localhost:9090`. To log in, you will need to set up an account.
+
+```shell
+cd openverse_catalog
+docker-compose exec webserver airflow users create -u <username> -p <password> -f <first_name> -l <last_name> -e <email>
+```
 
 If you'd like to bring down the containers, run
 
