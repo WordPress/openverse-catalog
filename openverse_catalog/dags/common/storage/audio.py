@@ -139,6 +139,7 @@ class AudioStore(MediaStore):
         sample_rate: Optional[int] = None,
         category: Optional[str] = None,
         genres: Optional[Union[list, str]] = None,
+        set_foreign_id: Optional[str] = None,
         audio_set: Optional[str] = None,
         set_position: Optional[int] = None,
         set_thumbnail: Optional[str] = None,
@@ -193,6 +194,8 @@ class AudioStore(MediaStore):
         sample_rate:         Audio sample rate as int.
         category:            'music', 'sound' or 'podcast'.
         genres:              List of genres
+        set_foreign_id:      Unique identifier for the audio set on the
+                             source site.
         audio_set:           The name of the set (album, pack) the audio
                              is part of
         set_position:        Position of the audio in the audio_set
