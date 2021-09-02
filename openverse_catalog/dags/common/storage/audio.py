@@ -78,8 +78,11 @@ AUDIO_TSV_COLUMNS = [
         )
     ),
     columns.JSONColumn(
-        # set name, set thumbnail, position of audio in set, set url
+        # set name, thumbnail, url, identifier etc.
         name='audio_set', required=False,
+    ),
+    columns.IntegerColumn(
+        name='set_position', required=False,
     ),
     columns.JSONColumn(
         # Alternative files: url, filesize, bit_rate, sample_rate
@@ -212,7 +215,6 @@ class AudioStore(MediaStore):
         audio_set_data = {
             'audio_set': audio_set,
             'set_url': set_url,
-            'set_position': set_position,
             'set_thumbnail': set_thumbnail
         }
 
@@ -234,6 +236,7 @@ class AudioStore(MediaStore):
             'category': category,
             'genres': genres,
             'audio_set': audio_set_data,
+            'set_position': set_position,
             'alt_files': alt_files,
             'source': source,
             'ingestion_type': ingestion_type,
