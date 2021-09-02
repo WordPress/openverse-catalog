@@ -216,9 +216,12 @@ class AudioStore(MediaStore):
         """
 
         audio_set_data = {
-            'audio_set': audio_set,
-            'set_url': set_url,
-            'set_thumbnail': set_thumbnail
+            'title': audio_set,
+            'foreign_landing_url': set_url,
+            'url': set_thumbnail,
+            'creator': creator,
+            'creator_url': creator_url,
+            'foreign_identifier': set_foreign_id,
         }
 
         audio_data = {
