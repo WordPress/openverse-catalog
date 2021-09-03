@@ -9,13 +9,13 @@ from provider_api_scripts import flickr
 from util.dag_factory import create_provider_api_workflow
 
 logging.basicConfig(
-    format='%(asctime)s: [%(levelname)s - DAG Loader] %(message)s',
+    format='%(asctime)s - %(name)s - %(levelname)s:  %(message)s',
     level=logging.DEBUG)
-
 
 logger = logging.getLogger(__name__)
 
 DAG_ID = 'flickr_workflow'
+
 
 globals()[DAG_ID] = create_provider_api_workflow(
     DAG_ID,
