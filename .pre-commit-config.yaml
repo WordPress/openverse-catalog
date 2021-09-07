@@ -1,7 +1,8 @@
+exclude: archive
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.0.1
-    exclude: archive
     hooks:
       - id: trailing-whitespace
       - id: check-docstring-first
@@ -25,7 +26,6 @@ repos:
 
   - repo: https://gitlab.com/pycqa/flake8
     rev: 3.9.2
-    exclude: archive
     hooks:
         - id: flake8
           args:
