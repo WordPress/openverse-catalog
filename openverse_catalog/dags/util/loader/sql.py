@@ -3,6 +3,7 @@ import logging
 from textwrap import dedent
 
 from airflow.providers.postgres.hooks.postgres import PostgresHook
+from loader.columns import AUDIO_COLUMNS, IMAGE_COLUMNS, create_table_fields
 from psycopg2.errors import InvalidTextRepresentation
 from util.loader import column_names as col
 from util.loader import provider_details as prov
@@ -40,94 +41,36 @@ def create_loading_table(
     """
     Create intermediary table and indices if they do not exist
     """
+
+    def create_index(column, btree_column=None):
+        if btree_column is not None:
+            btree_string = f"({btree_column}, md5(({column})::text))"
+        else:
+            btree_string = f"btree ({column})"
+        query = f"""
+            CREATE INDEX IF NOT EXISTS {load_table}_{column}_key
+            ON public.{load_table} USING {btree_string};
+            """
+        postgres.run(dedent(query))
+
     media_type = ti.xcom_pull(task_ids="stage_oldest_tsv_file", key="media_type")
     if media_type is None:
         media_type = "image"
+
     load_table = _get_load_table_name(identifier, media_type=media_type)
     postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
-    if media_type == "audio":
-        table_creation_query = dedent(
-            f"""
-            CREATE TABLE public.{load_table} (
-              {col.FOREIGN_ID} character varying(3000),
-              {col.LANDING_URL} character varying(1000),
-              {col.DIRECT_URL} character varying(3000),
-              {col.THUMBNAIL} character varying(3000),
-              {col.FILESIZE} integer,
-              {col.LICENSE} character varying(50),
-              {col.LICENSE_VERSION} character varying(25),
-              {col.CREATOR} character varying(2000),
-              {col.CREATOR_URL} character varying(2000),
-              {col.TITLE} character varying(5000),
-              {col.META_DATA} jsonb,
-              {col.TAGS} jsonb,
-              {col.WATERMARKED} boolean,
-              {col.PROVIDER} character varying(80),
-              {col.SOURCE} character varying(80),
-              {col.INGESTION_TYPE} character varying(80),
-              {col.DURATION} integer,
-              {col.BIT_RATE} integer,
-              {col.SAMPLE_RATE} integer,
-              {col.CATEGORY} character varying(100),
-              {col.GENRES} character varying(80)[],
-              {col.AUDIO_SET} jsonb,
-              {col.ALT_FILES} jsonb
-            );
-            """
-        )
-    else:
-        table_creation_query = dedent(
-            f"""
-            CREATE TABLE public.{load_table} (
-              {col.FOREIGN_ID} character varying(3000),
-              {col.LANDING_URL} character varying(1000),
-              {col.DIRECT_URL} character varying(3000),
-              {col.THUMBNAIL} character varying(3000),
-              {col.WIDTH} integer,
-              {col.HEIGHT} integer,
-              {col.FILESIZE} integer,
-              {col.LICENSE} character varying(50),
-              {col.LICENSE_VERSION} character varying(25),
-              {col.CREATOR} character varying(2000),
-              {col.CREATOR_URL} character varying(2000),
-              {col.TITLE} character varying(5000),
-              {col.META_DATA} jsonb,
-              {col.TAGS} jsonb,
-              {col.WATERMARKED} boolean,
-              {col.PROVIDER} character varying(80),
-              {col.SOURCE} character varying(80),
-              {col.INGESTION_TYPE} character varying(80)
-            );
-            """
-        )
+    db_columns = AUDIO_COLUMNS if media_type == "audio" else IMAGE_COLUMNS
+    columns_string = f"{create_table_fields(db_columns)}"
+    table_creation_query = dedent(
+        f"""
+    CREATE TABLE public.{load_table}({columns_string});
+    """
+    )
     postgres.run(table_creation_query)
     postgres.run(f"ALTER TABLE public.{load_table} OWNER TO {DB_USER_NAME};")
-    postgres.run(
-        dedent(
-            f"""
-            CREATE INDEX IF NOT EXISTS {load_table}_{col.PROVIDER}_key
-            ON public.{load_table} USING btree ({col.PROVIDER});
-            """
-        )
-    )
-    postgres.run(
-        dedent(
-            f"""
-            CREATE INDEX IF NOT EXISTS {load_table}_{col.FOREIGN_ID}_key
-            ON public.{load_table}
-            USING btree (provider, md5(({col.FOREIGN_ID})::text));
-            """
-        )
-    )
-    postgres.run(
-        dedent(
-            f"""
-            CREATE INDEX IF NOT EXISTS {load_table}_{col.DIRECT_URL}_key
-            ON public.{load_table}
-            USING btree (provider, md5(({col.DIRECT_URL})::text));
-            """
-        )
-    )
+    create_index(col.PROVIDER, None)
+    create_index(col.FOREIGN_ID, "provider")
+    create_index(col.DIRECT_URL, "provider")
 
 
 def load_local_data_to_intermediate_table(
@@ -193,10 +136,9 @@ def _clean_intermediate_table_data(postgres_hook, load_table):
     Also removes any duplicate rows that have the same `provider`
     and `foreign_id`.
     """
-    postgres_hook.run(f"DELETE FROM {load_table} WHERE {col.DIRECT_URL} IS NULL;")
-    postgres_hook.run(f"DELETE FROM {load_table} WHERE {col.LICENSE} IS NULL;")
-    postgres_hook.run(f"DELETE FROM {load_table} WHERE {col.LANDING_URL} IS NULL;")
-    postgres_hook.run(f"DELETE FROM {load_table} WHERE {col.FOREIGN_ID} IS NULL;")
+    required_columns = [col.DIRECT_URL, col.LICENSE, col.LANDING_URL, col.FOREIGN_ID]
+    for column in required_columns:
+        postgres_hook.run(f"DELETE FROM {load_table} WHERE {column} IS NULL;")
     postgres_hook.run(
         dedent(
             f"""
