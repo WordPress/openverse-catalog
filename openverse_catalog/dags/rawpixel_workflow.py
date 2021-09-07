@@ -2,12 +2,12 @@
 import logging
 from datetime import datetime
 
-from util.dag_factory import create_provider_api_workflow
 from provider_api_scripts import raw_pixel
+from util.dag_factory import create_provider_api_workflow
+
 
 logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s:  %(message)s',
-    level=logging.INFO
+    format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s", level=logging.INFO
 )
 
 logger = logging.getLogger(__name__)
@@ -20,6 +20,6 @@ globals()[DAG_ID] = create_provider_api_workflow(
     raw_pixel.main,
     start_date=datetime(1970, 1, 1),
     concurrency=1,
-    schedule_string='@monthly',
-    dated=False
+    schedule_string="@monthly",
+    dated=False,
 )

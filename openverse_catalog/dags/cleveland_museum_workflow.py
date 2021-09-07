@@ -2,12 +2,13 @@
 import logging
 from datetime import datetime
 
-from util.dag_factory import create_provider_api_workflow
 from provider_api_scripts import cleveland_museum_of_art
+from util.dag_factory import create_provider_api_workflow
+
 
 logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s:  %(message)s',
-    level=logging.DEBUG)
+    format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s", level=logging.DEBUG
+)
 
 logger = logging.getLogger(__name__)
 DAG_ID = "cleveland_museum_workflow"
@@ -18,6 +19,6 @@ globals()[DAG_ID] = create_provider_api_workflow(
     cleveland_museum_of_art.main,
     start_date=datetime(2020, 1, 15),
     concurrency=1,
-    schedule_string='@daily',
-    dated=False
+    schedule_string="@daily",
+    dated=False,
 )

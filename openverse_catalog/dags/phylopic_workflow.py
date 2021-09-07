@@ -2,17 +2,17 @@
 import logging
 from datetime import datetime
 
-from util.dag_factory import create_provider_api_workflow
 from provider_api_scripts import phylopic
+from util.dag_factory import create_provider_api_workflow
+
 
 logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s:  %(message)s',
-    level=logging.INFO
+    format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s", level=logging.INFO
 )
 
 logger = logging.getLogger(__name__)
 
-DAG_ID = 'phylopic_workflow'
+DAG_ID = "phylopic_workflow"
 
 
 globals()[DAG_ID] = create_provider_api_workflow(
@@ -20,6 +20,6 @@ globals()[DAG_ID] = create_provider_api_workflow(
     phylopic.main,
     start_date=datetime(1970, 1, 1),
     concurrency=1,
-    schedule_string='@daily',
-    dated=True
+    schedule_string="@daily",
+    dated=True,
 )
