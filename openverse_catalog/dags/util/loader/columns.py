@@ -255,6 +255,8 @@ common_columns = {
         META_DATA,
         TAGS,
         WATERMARKED,
+        # LAST_SYNCED
+        # REMOVED
     ],
 }
 

@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 
 from airflow import DAG
 from util.loader import operators
-from util.pg_cleaner import OVERWRITE_DIR
 
 
 logging.basicConfig(
@@ -14,7 +13,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 DAG_ID = "tsv_to_postgres_loader"
-OVERWRITE_DAG_ID = "tsv_to_postgres_loader_overwrite"
 DB_CONN_ID = os.getenv("OPENLEDGER_CONN_ID", "postgres_openledger_testing")
 AWS_CONN_ID = os.getenv("AWS_CONN_ID", "no_aws_conn_id")
 CCCATALOG_STORAGE_BUCKET = os.getenv("CCCATALOG_STORAGE_BUCKET")
@@ -46,7 +44,6 @@ def create_dag(
     output_dir=OUTPUT_DIR_PATH,
     storage_bucket=CCCATALOG_STORAGE_BUCKET,
     minimum_file_age_minutes=MINIMUM_FILE_AGE_MINUTES,
-    overwrite=False,
 ):
     dag = DAG(
         dag_id=dag_id,
@@ -56,10 +53,7 @@ def create_dag(
         schedule_interval=schedule_cron,
         catchup=False,
     )
-    if overwrite is True:
-        identifier = "overwrite" + TIMESTAMP_TEMPLATE
-    else:
-        identifier = TIMESTAMP_TEMPLATE
+    identifier = TIMESTAMP_TEMPLATE
 
     with dag:
         stage_oldest_tsv_file = operators.get_file_staging_operator(
@@ -85,7 +79,6 @@ def create_dag(
             storage_bucket,
             aws_conn_id,
             postgres_conn_id,
-            overwrite=overwrite,
             identifier=identifier,
         )
         one_failed_s3 = operators.get_one_failed_switch(dag, "s3")
@@ -93,7 +86,6 @@ def create_dag(
             dag,
             output_dir,
             postgres_conn_id,
-            overwrite=overwrite,
             identifier=identifier,
         )
         one_success_save = operators.get_one_success_switch(dag, "save")
@@ -129,8 +121,3 @@ def create_dag(
 
 
 globals()[DAG_ID] = create_dag()
-globals()[OVERWRITE_DAG_ID] = create_dag(
-    dag_id=OVERWRITE_DAG_ID,
-    output_dir=os.path.join(OUTPUT_DIR_PATH, OVERWRITE_DIR),
-    overwrite=True,
-)

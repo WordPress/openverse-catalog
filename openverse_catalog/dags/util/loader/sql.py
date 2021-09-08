@@ -174,6 +174,7 @@ def upsert_records_to_db_table(
     load_table = _get_load_table_name(identifier, media_type=media_type)
     logger.info(f"Upserting new records into {db_table}.")
     postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
+
     db_columns = get_table_columns(media_type, table_type="main")
     upsert_conflict_string = ",\n".join(
         [DB_COLUMNS[column].upsert_value for column in db_columns]
@@ -189,38 +190,6 @@ def upsert_records_to_db_table(
         """
     )
     postgres.run(upsert_query)
-
-
-def overwrite_records_in_db_table(
-    postgres_conn_id, identifier, db_table=None, media_type=IMAGE
-):
-    postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
-
-    if db_table is None:
-        db_table = TABLE_NAME.get(media_type, TABLE_NAME[IMAGE])
-    load_table = _get_load_table_name(identifier, media_type=media_type)
-    logger.info(f"Updating records in {db_table} with data from {load_table}.")
-
-    columns_to_update = get_table_columns(media_type, table_type="loading")
-    update_set_string = ",\n".join(
-        [f"{column} = {load_table}.{column}" for column in columns_to_update]
-    )
-
-    update_query = dedent(
-        f"""
-        UPDATE {db_table}
-        SET
-        {update_set_string}
-        FROM {load_table}
-        WHERE
-          {db_table}.{columns.PROVIDER} = {load_table}.{columns.PROVIDER}
-          AND
-          md5({db_table}.{columns.FOREIGN_ID})
-            = md5({load_table}.{columns.FOREIGN_ID});
-        """
-    )
-    logger.info(f"Using update query\n{update_query}")
-    postgres.run(update_query)
 
 
 def drop_load_table(postgres_conn_id, identifier, ti):
