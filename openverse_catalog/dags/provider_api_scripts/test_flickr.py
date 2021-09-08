@@ -268,7 +268,7 @@ def test_process_image_data_with_real_example():
     }
 
     mock_add_item.assert_called_once_with(
-        foreign_landing_url=("https://www.flickr.com/photos/71925535@N03/49514824541"),
+        foreign_landing_url="https://www.flickr.com/photos/71925535@N03/49514824541",
         image_url=(
             "https://live.staticflickr.com/65535/49514824541_35d1b4f8db" "_b.jpg"
         ),
@@ -286,7 +286,7 @@ def test_process_image_data_with_real_example():
         height=683,
         creator="Marine Explorer",
         creator_url="https://www.flickr.com/photos/71925535@N03",
-        title=("Surveying Ruperts Reef @reeflifesurvey #lapofaus " "#marineexplorer"),
+        title="Surveying Ruperts Reef @reeflifesurvey #lapofaus " "#marineexplorer",
         meta_data=expect_meta_data,
         raw_tags=[
             "australia",
@@ -510,7 +510,7 @@ def test_process_image_data_with_sub_provider():
     }
 
     mock_add_item.assert_called_once_with(
-        foreign_landing_url=("https://www.flickr.com/photos/35067687@N04/49950595947"),
+        foreign_landing_url="https://www.flickr.com/photos/35067687@N04/49950595947",
         image_url=(
             "https://live.staticflickr.com/65535/49950595947_65a3560ddc" "_b.jpg"
         ),

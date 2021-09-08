@@ -27,8 +27,6 @@ IMAGE_TSV_COLUMNS = [
         required=False,
         size=3000,
     ),
-    columns.IntegerColumn(name="width", required=False),
-    columns.IntegerColumn(name="height", required=False),
     columns.IntegerColumn(name="filesize", required=False),
     columns.StringColumn(name="license_", required=True, size=50, truncate=False),
     columns.StringColumn(
@@ -45,6 +43,8 @@ IMAGE_TSV_COLUMNS = [
     columns.StringColumn(
         name="ingestion_type", required=False, size=80, truncate=False
     ),
+    columns.IntegerColumn(name="width", required=False),
+    columns.IntegerColumn(name="height", required=False),
 ]
 
 Image = namedtuple("Image", [c.NAME for c in IMAGE_TSV_COLUMNS])

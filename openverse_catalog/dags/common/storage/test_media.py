@@ -744,8 +744,6 @@ def test_create_tsv_row_properly_places_entries(monkeypatch):
     args_dict = {
         "foreign_identifier": "foreign_id",
         "thumbnail_url": "https://thumbnail.com",
-        "width": 200,
-        "height": 500,
         "filesize": None,
         "creator": "tyler",
         "creator_url": "https://creatorurl.com",
@@ -756,6 +754,8 @@ def test_create_tsv_row_properly_places_entries(monkeypatch):
         "provider": "testing_provider",
         "source": "testing_source",
         "ingestion_type": "testing_ingestion",
+        "width": 200,
+        "height": 500,
     }
     args_dict.update(req_args_dict)
 
@@ -768,8 +768,6 @@ def test_create_tsv_row_properly_places_entries(monkeypatch):
                 "https://landing_page.com",
                 "https://imageurl.com",
                 "https://thumbnail.com",
-                "200",
-                "500",
                 "\\N",
                 "testlicense",
                 "1.0",
@@ -782,6 +780,8 @@ def test_create_tsv_row_properly_places_entries(monkeypatch):
                 "testing_provider",
                 "testing_source",
                 "testing_ingestion",
+                "200",
+                "500",
             ]
         )
         + "\n"

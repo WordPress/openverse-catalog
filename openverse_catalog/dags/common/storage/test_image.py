@@ -526,7 +526,10 @@ def test_create_tsv_row_turns_empty_into_nullchar(
     actual_row = image_store._create_tsv_row(test_image).split("\t")
     assert (
         all(
-            [actual_row[i] == "\\N" for i in [0, 3, 4, 5, 6, 9, 10, 11, 12, 13, 14, 15]]
+            [
+                actual_row[i] == "\\N"
+                for i in [0, 3, 4, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+            ]
         )
         is True
     )
@@ -572,8 +575,6 @@ def test_create_tsv_row_properly_places_entries(setup_env, monkeypatch):
                 "https://landing_page.com",
                 "http://imageurl.com",
                 "http://thumbnail.com",
-                "200",
-                "500",
                 "\\N",
                 "testlicense",
                 "1.0",
@@ -586,6 +587,8 @@ def test_create_tsv_row_properly_places_entries(setup_env, monkeypatch):
                 "testing_provider",
                 "testing_source",
                 "provider_api",
+                "200",
+                "500",
             ]
         )
         + "\n"
