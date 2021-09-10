@@ -171,6 +171,9 @@ DB_COLUMNS = {
     col.REMOVED: DbColumn(
         "removed_from_source", Datatype.char, "varying(3000)", UpsertStrategy.false
     ),
+    col.FILETYPE: DbColumn(
+        "filetype", Datatype.char, "varying(5)", UpsertStrategy.newest_non_null
+    ),
     col.DURATION: DbColumn("duration", Datatype.int),
     col.BIT_RATE: DbColumn("bit_rate", Datatype.int),
     col.SAMPLE_RATE: DbColumn("sample_rate", Datatype.int),
@@ -239,6 +242,7 @@ common_columns = {
 # These columns are at the end of the db table.
 media_columns = {
     AUDIO: [
+        col.FILETYPE,
         col.DURATION,
         col.BIT_RATE,
         col.SAMPLE_RATE,

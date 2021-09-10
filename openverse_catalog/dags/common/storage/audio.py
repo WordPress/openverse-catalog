@@ -54,6 +54,7 @@ AUDIO_TSV_COLUMNS = [
     columns.StringColumn(
         name="ingestion_type", required=False, size=80, truncate=False
     ),
+    columns.StringColumn(name="filetype", required=False, size=5, truncate=False),
     columns.IntegerColumn(name="duration", required=False),
     columns.IntegerColumn(
         name="bit_rate",
@@ -129,6 +130,7 @@ class AudioStore(MediaStore):
         meta_data: Optional[Union[Dict, str]] = None,
         raw_tags: Optional[Union[list, str]] = None,
         watermarked: Optional[bool] = False,
+        filetype: Optional[str] = None,
         duration: Optional[int] = None,
         bit_rate: Optional[int] = None,
         sample_rate: Optional[int] = None,
@@ -183,6 +185,7 @@ class AudioStore(MediaStore):
                              replace the one given in the dictionary.
         raw_tags:            List of tags associated with the audio.
         watermarked:         True only if audio has a watermark.
+        filetype:            The main file audio extension
         duration:            in milliseconds
         bit_rate:            Audio bit rate as int.
         sample_rate:         Audio sample rate as int.
@@ -226,6 +229,7 @@ class AudioStore(MediaStore):
             "meta_data": meta_data,
             "raw_tags": raw_tags,
             "watermarked": watermarked,
+            "filetype": filetype,
             "duration": duration,
             "bit_rate": bit_rate,
             "sample_rate": sample_rate,

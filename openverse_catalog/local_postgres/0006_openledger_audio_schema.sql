@@ -25,6 +25,7 @@ CREATE TABLE public.audio (
     foreign_landing_url character varying(1000),
     url character varying(3000) NOT NULL,
     thumbnail character varying(3000),
+    filetype character varying(5),
     duration integer,
     bit_rate integer,
     sample_rate integer,
