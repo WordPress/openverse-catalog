@@ -83,8 +83,6 @@ def create_loading_table(
               {col.LANDING_URL} character varying(1000),
               {col.DIRECT_URL} character varying(3000),
               {col.THUMBNAIL} character varying(3000),
-              {col.WIDTH} integer,
-              {col.HEIGHT} integer,
               {col.FILESIZE} integer,
               {col.LICENSE} character varying(50),
               {col.LICENSE_VERSION} character varying(25),
@@ -96,7 +94,9 @@ def create_loading_table(
               {col.WATERMARKED} boolean,
               {col.PROVIDER} character varying(80),
               {col.SOURCE} character varying(80),
-              {col.INGESTION_TYPE} character varying(80)
+              {col.INGESTION_TYPE} character varying(80),
+              {col.WIDTH} integer,
+              {col.HEIGHT} integer
             );
             """
         )

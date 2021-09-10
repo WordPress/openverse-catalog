@@ -1,5 +1,6 @@
 import datetime
 import os
+from pathlib import Path
 from unittest.mock import call, patch
 
 import psycopg2  # noqa:F401
@@ -9,7 +10,7 @@ from util import pg_cleaner
 from util.loader import test_sql
 
 
-RESOURCES = os.path.join(os.path.abspath(os.path.dirname(__file__)), "test_resources")
+RESOURCES = Path(__file__).parent.resolve() / "test_resources"
 
 TEST_IMAGE_TABLE = test_sql.TEST_IMAGE_TABLE
 DROP_IMAGE_TABLE_QUERY = test_sql.DROP_IMAGE_TABLE_QUERY
@@ -38,7 +39,7 @@ def postgres_with_image_table():
 
 
 def _load_tsv(postgres, tmpdir, tsv_file_name):
-    tsv_file_path = os.path.join(RESOURCES, tsv_file_name)
+    tsv_file_path = RESOURCES / tsv_file_name
     with open(tsv_file_path) as f:
         f_data = f.read()
 
@@ -200,7 +201,7 @@ def test_clean_rows_raises_when_log_and_check_fails(monkeypatch):
 
 
 def test_select_records_gets_one_record(tmpdir, postgres_with_image_table):
-    tsv_name = os.path.join(RESOURCES, "image_table_sample.tsv")
+    tsv_name = RESOURCES / "image_table_sample.tsv"
     _load_tsv(postgres_with_image_table, tmpdir, tsv_name)
     expect_records = [
         (
@@ -274,7 +275,7 @@ def test_select_records_gets_one_record(tmpdir, postgres_with_image_table):
 
 
 def test_select_records_gets_multiple_records(tmpdir, postgres_with_image_table):
-    tsv_name = os.path.join(RESOURCES, "image_table_sample.tsv")
+    tsv_name = RESOURCES / "image_table_sample.tsv"
     _load_tsv(postgres_with_image_table, tmpdir, tsv_name)
     expect_records = [
         (

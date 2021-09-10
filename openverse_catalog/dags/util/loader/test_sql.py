@@ -38,8 +38,6 @@ CREATE_LOAD_TABLE_QUERY = (
     f"foreign_landing_url character varying(1000), "
     f"url character varying(3000), "
     f"thumbnail character varying(3000), "
-    f"width integer, "
-    f"height integer, "
     f"filesize integer, "
     f"license character varying(50), "
     f"license_version character varying(25), "
@@ -51,7 +49,9 @@ CREATE_LOAD_TABLE_QUERY = (
     f"watermarked boolean, "
     f"provider character varying(80), "
     f"source character varying(80), "
-    f"ingestion_type character varying(80)"
+    f"ingestion_type character varying(80), "
+    f"width integer, "
+    f"height integer"
     f");"
 )
 
@@ -69,8 +69,6 @@ CREATE_IMAGE_TABLE_QUERY = (
     "foreign_landing_url character varying(1000),"
     "url character varying(3000) NOT NULL,"
     "thumbnail character varying(3000),"
-    "width integer,"
-    "height integer,"
     "filesize integer,"
     "license character varying(50) NOT NULL,"
     "license_version character varying(25),"
@@ -81,7 +79,9 @@ CREATE_IMAGE_TABLE_QUERY = (
     "tags jsonb,"
     "watermarked boolean,"
     "last_synced_with_source timestamp with time zone,"
-    "removed_from_source boolean NOT NULL"
+    "removed_from_source boolean NOT NULL,"
+    "width integer,"
+    "height integer"
     f");"
 )
 
@@ -96,6 +96,28 @@ DROP_IMAGE_INDEX_QUERY = f"DROP INDEX IF EXISTS {TEST_IMAGE_TABLE}_provider_fid_
 op_no_dag = DummyOperator(task_id="op_no_dag")
 naive_datetime = datetime(2016, 1, 1).replace(tzinfo=None)
 ti = TaskInstance(task=op_no_dag, execution_date=naive_datetime)
+
+# ids for main database columns
+updated_idx = 2
+ingestion_idx = 3
+provider_idx = 4
+source_idx = 5
+fid_idx = 6
+land_url_idx = 7
+url_idx = 8
+thm_idx = 9
+filesize_idx = 10
+license_idx = 11
+version_idx = 12
+creator_idx = 13
+creator_url_idx = 14
+title_idx = 15
+metadata_idx = 16
+tags_idx = 17
+synced_idx = 19
+removed_idx = 20
+width_idx = 21
+height_idx = 22
 
 
 @pytest.fixture
@@ -396,11 +418,10 @@ def test_upsert_records_inserts_one_record_to_empty_image_table(
 
     load_data_query = (
         f"INSERT INTO {load_table} VALUES("
-        f"'{FID}','{LAND_URL}','{IMG_URL}','{THM_URL}','{WIDTH}','{HEIGHT}',"
+        f"'{FID}','{LAND_URL}','{IMG_URL}','{THM_URL}',"
         f"'{FILESIZE}','{LICENSE}','{VERSION}','{CREATOR}','{CREATOR_URL}',"
         f"'{TITLE}','{META_DATA}','{TAGS}','{WATERMARKED}','{PROVIDER}',"
-        f"'{SOURCE}', '{INGESTION_TYPE}'"
-        f");"
+        f"'{SOURCE}', '{INGESTION_TYPE}', '{WIDTH}', '{HEIGHT}');"
     )
     postgres_with_load_and_image_table.cursor.execute(load_data_query)
     postgres_with_load_and_image_table.connection.commit()
@@ -409,24 +430,24 @@ def test_upsert_records_inserts_one_record_to_empty_image_table(
     actual_rows = postgres_with_load_and_image_table.cursor.fetchall()
     actual_row = actual_rows[0]
     assert len(actual_rows) == 1
-    assert actual_row[3] == INGESTION_TYPE
-    assert actual_row[4] == PROVIDER
-    assert actual_row[5] == SOURCE
-    assert actual_row[6] == FID
-    assert actual_row[7] == LAND_URL
-    assert actual_row[8] == IMG_URL
-    assert actual_row[9] == THM_URL
-    assert actual_row[10] == WIDTH
-    assert actual_row[11] == HEIGHT
-    assert actual_row[12] == FILESIZE
-    assert actual_row[13] == LICENSE
-    assert actual_row[14] == VERSION
-    assert actual_row[15] == CREATOR
-    assert actual_row[16] == CREATOR_URL
-    assert actual_row[17] == TITLE
-    assert actual_row[18] == json.loads(META_DATA)
-    assert actual_row[19] == json.loads(TAGS)
-    assert actual_row[20] is False
+    assert actual_row[ingestion_idx] == INGESTION_TYPE
+    assert actual_row[provider_idx] == PROVIDER
+    assert actual_row[source_idx] == SOURCE
+    assert actual_row[fid_idx] == FID
+    assert actual_row[land_url_idx] == LAND_URL
+    assert actual_row[url_idx] == IMG_URL
+    assert actual_row[thm_idx] == THM_URL
+    assert actual_row[filesize_idx] == FILESIZE
+    assert actual_row[license_idx] == LICENSE
+    assert actual_row[version_idx] == VERSION
+    assert actual_row[creator_idx] == CREATOR
+    assert actual_row[creator_url_idx] == CREATOR_URL
+    assert actual_row[title_idx] == TITLE
+    assert actual_row[metadata_idx] == json.loads(META_DATA)
+    assert actual_row[tags_idx] == json.loads(TAGS)
+    assert actual_row[18] is False
+    assert actual_row[width_idx] == WIDTH
+    assert actual_row[height_idx] == HEIGHT
 
 
 def test_upsert_records_inserts_two_records_to_image_table(
@@ -467,8 +488,8 @@ def test_upsert_records_inserts_two_records_to_image_table(
     sql.upsert_records_to_db_table(postgres_conn_id, identifier, db_table=image_table)
     postgres_with_load_and_image_table.cursor.execute(f"SELECT * FROM {image_table};")
     actual_rows = postgres_with_load_and_image_table.cursor.fetchall()
-    assert actual_rows[0][6] == FID_A
-    assert actual_rows[1][6] == FID_B
+    assert actual_rows[0][fid_idx] == FID_A
+    assert actual_rows[1][fid_idx] == FID_B
 
 
 def test_upsert_records_replaces_updated_on_and_last_synced_with_source(
@@ -492,7 +513,7 @@ def test_upsert_records_replaces_updated_on_and_last_synced_with_source(
         f" license, license_version, provider, source"
         f") VALUES ("
         f"'{FID}','{LAND_URL}','{IMG_URL}',"
-        f"'{LICENSE}','{VERSION}','{PROVIDER}', '{PROVIDER}'"
+        f"'{LICENSE}','{VERSION}','{PROVIDER}','{PROVIDER}'"
         f");"
     )
     postgres_with_load_and_image_table.cursor.execute(load_data_query)
@@ -501,16 +522,16 @@ def test_upsert_records_replaces_updated_on_and_last_synced_with_source(
     sql.upsert_records_to_db_table(postgres_conn_id, identifier, db_table=image_table)
     postgres_with_load_and_image_table.cursor.execute(f"SELECT * FROM {image_table};")
     original_row = postgres_with_load_and_image_table.cursor.fetchall()[0]
-    original_updated_on = original_row[2]
-    original_last_synced = original_row[-2]
+    original_updated_on = original_row[updated_idx]
+    original_last_synced = original_row[synced_idx]
 
     time.sleep(0.001)
     sql.upsert_records_to_db_table(postgres_conn_id, identifier, db_table=image_table)
     postgres_with_load_and_image_table.cursor.execute(f"SELECT * FROM {image_table};")
     updated_result = postgres_with_load_and_image_table.cursor.fetchall()
     updated_row = updated_result[0]
-    updated_updated_on = updated_row[2]
-    updated_last_synced = updated_row[-2]
+    updated_updated_on = updated_row[updated_idx]
+    updated_last_synced = updated_row[synced_idx]
 
     assert len(updated_result) == 1
     assert updated_updated_on > original_updated_on
@@ -541,6 +562,7 @@ def test_upsert_records_replaces_data(postgres_with_load_and_image_table, tmpdir
     CREATOR_URL_A = "https://alice.com"
     TITLE_A = "My Great Pic"
     META_DATA_A = '{"description": "what a cool picture"}'
+    INGESTION = "provider API"
 
     IMG_URL_B = "https://images.com/b/img.jpg"
     LAND_URL_B = "https://images.com/b"
@@ -557,9 +579,10 @@ def test_upsert_records_replaces_data(postgres_with_load_and_image_table, tmpdir
     load_data_query_a = (
         f"INSERT INTO {load_table} VALUES("
         f"'{FID}','{LAND_URL_A}','{IMG_URL_A}','{THM_URL_A}',"
-        f"'{WIDTH_A}','{HEIGHT_A}','{FILESIZE}','{LICENSE_A}','{VERSION_A}',"
+        f"'{FILESIZE}','{LICENSE_A}','{VERSION_A}',"
         f"'{CREATOR_A}','{CREATOR_URL_A}','{TITLE_A}','{META_DATA_A}',"
-        f"'{TAGS}','{WATERMARKED}','{PROVIDER}','{SOURCE}'"
+        f"'{TAGS}','{WATERMARKED}','{PROVIDER}','{SOURCE}','{INGESTION}',"
+        f"'{WIDTH_A}','{HEIGHT_A}'"
         f");"
     )
     postgres_with_load_and_image_table.cursor.execute(load_data_query_a)
@@ -570,9 +593,10 @@ def test_upsert_records_replaces_data(postgres_with_load_and_image_table, tmpdir
     load_data_query_b = (
         f"INSERT INTO {load_table} VALUES("
         f"'{FID}','{LAND_URL_B}','{IMG_URL_B}','{THM_URL_B}',"
-        f"'{WIDTH_B}','{HEIGHT_B}','{FILESIZE}','{LICENSE_B}','{VERSION_B}',"
+        f"'{FILESIZE}','{LICENSE_B}','{VERSION_B}',"
         f"'{CREATOR_B}','{CREATOR_URL_B}','{TITLE_B}','{META_DATA_B}',"
-        f"'{TAGS}','{WATERMARKED}','{PROVIDER}','{SOURCE}'"
+        f"'{TAGS}','{WATERMARKED}','{PROVIDER}','{SOURCE}','{INGESTION}',"
+        f"'{WIDTH_B}','{HEIGHT_B}'"
         f");"
     )
     postgres_with_load_and_image_table.cursor.execute(f"DELETE FROM {load_table};")
@@ -585,17 +609,17 @@ def test_upsert_records_replaces_data(postgres_with_load_and_image_table, tmpdir
     actual_rows = postgres_with_load_and_image_table.cursor.fetchall()
     actual_row = actual_rows[0]
     assert len(actual_rows) == 1
-    assert actual_row[7] == LAND_URL_B
-    assert actual_row[8] == IMG_URL_B
-    assert actual_row[9] == THM_URL_B
-    assert actual_row[10] == WIDTH_B
-    assert actual_row[11] == HEIGHT_B
-    assert actual_row[13] == LICENSE_B
-    assert actual_row[14] == VERSION_B
-    assert actual_row[15] == CREATOR_B
-    assert actual_row[16] == CREATOR_URL_B
-    assert actual_row[17] == TITLE_B
-    assert actual_row[18] == json.loads(META_DATA_B)
+    assert actual_row[land_url_idx] == LAND_URL_B
+    assert actual_row[url_idx] == IMG_URL_B
+    assert actual_row[thm_idx] == THM_URL_B
+    assert actual_row[license_idx] == LICENSE_B
+    assert actual_row[version_idx] == VERSION_B
+    assert actual_row[creator_idx] == CREATOR_B
+    assert actual_row[creator_url_idx] == CREATOR_URL_B
+    assert actual_row[title_idx] == TITLE_B
+    assert actual_row[metadata_idx] == json.loads(META_DATA_B)
+    assert actual_row[tags_idx] == json.loads(TAGS)
+    assert actual_row[width_idx] == WIDTH_B
 
 
 def test_upsert_records_does_not_replace_with_nulls(
@@ -613,6 +637,7 @@ def test_upsert_records_does_not_replace_with_nulls(
     IMG_URL = "https://images.com/a/img.jpg"
     FILESIZE = 2000
     TAGS = '["fun", "great"]'
+    INGESTION = "provider API"
 
     LAND_URL_A = "https://images.com/a"
     THM_URL_A = "https://images.com/a/img_small.jpg"
@@ -632,9 +657,10 @@ def test_upsert_records_does_not_replace_with_nulls(
     load_data_query_a = (
         f"INSERT INTO {load_table} VALUES("
         f"'{FID}','{LAND_URL_A}','{IMG_URL}','{THM_URL_A}',"
-        f"'{WIDTH_A}','{HEIGHT_A}','{FILESIZE}','{LICENSE_A}','{VERSION_A}',"
+        f"'{FILESIZE}','{LICENSE_A}','{VERSION_A}',"
         f"'{CREATOR_A}','{CREATOR_URL_A}','{TITLE_A}','{META_DATA_A}',"
-        f"'{TAGS}','{WATERMARKED}','{PROVIDER}','{SOURCE}'"
+        f"'{TAGS}','{WATERMARKED}','{PROVIDER}','{SOURCE}','{INGESTION}',"
+        f"'{WIDTH_A}','{HEIGHT_A}'"
         f");"
     )
     postgres_with_load_and_image_table.cursor.execute(load_data_query_a)
@@ -645,9 +671,9 @@ def test_upsert_records_does_not_replace_with_nulls(
     load_data_query_b = (
         f"INSERT INTO {load_table} VALUES("
         f"'{FID}','{LAND_URL_B}','{IMG_URL}',null,"
-        f"null,null,null,'{LICENSE_B}','{VERSION_B}',"
+        f"null,'{LICENSE_B}','{VERSION_B}',"
         f"null,null,null,null,"
-        f"'{TAGS}',null,'{PROVIDER}','{SOURCE}'"
+        f"'{TAGS}',null,'{PROVIDER}','{SOURCE}',null,null,null"
         f");"
     )
     postgres_with_load_and_image_table.cursor.execute(f"DELETE FROM {load_table};")
@@ -660,16 +686,18 @@ def test_upsert_records_does_not_replace_with_nulls(
     actual_rows = postgres_with_load_and_image_table.cursor.fetchall()
     actual_row = actual_rows[0]
     assert len(actual_rows) == 1
-    assert actual_row[7] == LAND_URL_B
-    assert actual_row[9] == THM_URL_A
-    assert actual_row[10] == WIDTH_A
-    assert actual_row[11] == HEIGHT_A
-    assert actual_row[13] == LICENSE_B
-    assert actual_row[14] == VERSION_B
-    assert actual_row[15] == CREATOR_A
-    assert actual_row[16] == CREATOR_URL_A
-    assert actual_row[17] == TITLE_A
-    assert actual_row[18] == json.loads(META_DATA_A)
+    assert actual_row[land_url_idx] == LAND_URL_B
+    assert actual_row[thm_idx] == THM_URL_A
+    assert actual_row[filesize_idx] == FILESIZE
+    assert actual_row[license_idx] == LICENSE_B
+    assert actual_row[version_idx] == VERSION_B
+    assert actual_row[creator_idx] == CREATOR_A
+    assert actual_row[creator_url_idx] == CREATOR_URL_A
+    assert actual_row[title_idx] == TITLE_A
+    assert actual_row[metadata_idx] == json.loads(META_DATA_A)
+    assert actual_row[tags_idx] == json.loads(TAGS)
+    assert actual_row[width_idx] == WIDTH_A
+    assert actual_row[height_idx] == HEIGHT_A
 
 
 def test_upsert_records_merges_meta_data(postgres_with_load_and_image_table, tmpdir):
@@ -688,15 +716,15 @@ def test_upsert_records_merges_meta_data(postgres_with_load_and_image_table, tmp
 
     load_data_query_a = (
         f"INSERT INTO {load_table} VALUES("
-        f"'{FID}',null,'{IMG_URL}',null,null,null,null,'{LICENSE}',null,null,"
-        f"null,null,'{META_DATA_A}',null,null,'{PROVIDER}',null"
+        f"'{FID}',null,'{IMG_URL}',null,null,'{LICENSE}',null,null,"
+        f"null,null,'{META_DATA_A}',null,null,'{PROVIDER}',null,null,null,null"
         f");"
     )
 
     load_data_query_b = (
         f"INSERT INTO {load_table} VALUES("
-        f"'{FID}',null,'{IMG_URL}',null,null,null,null,'{LICENSE}',null,null,"
-        f"null,null,'{META_DATA_B}',null,null,'{PROVIDER}',null"
+        f"'{FID}',null,'{IMG_URL}',null,null,'{LICENSE}',null,null,"
+        f"null,null,'{META_DATA_B}',null,null,'{PROVIDER}',null,null,null,null"
         f");"
     )
     postgres_with_load_and_image_table.cursor.execute(load_data_query_a)
@@ -715,7 +743,7 @@ def test_upsert_records_merges_meta_data(postgres_with_load_and_image_table, tmp
     assert len(actual_rows) == 1
     expected_meta_data = json.loads(META_DATA_A)
     expected_meta_data.update(json.loads(META_DATA_B))
-    assert actual_row[18] == expected_meta_data
+    assert actual_row[metadata_idx] == expected_meta_data
 
 
 def test_upsert_records_does_not_replace_with_null_values_in_meta_data(
@@ -736,15 +764,15 @@ def test_upsert_records_does_not_replace_with_null_values_in_meta_data(
 
     load_data_query_a = (
         f"INSERT INTO {load_table} VALUES("
-        f"'{FID}',null,'{IMG_URL}',null,null,null,null,'{LICENSE}',null,null,"
-        f"null,null,'{META_DATA_A}',null,null,'{PROVIDER}',null"
+        f"'{FID}',null,'{IMG_URL}',null,null,'{LICENSE}',null,null,"
+        f"null,null,'{META_DATA_A}',null,null,'{PROVIDER}',null,null,null,null"
         f");"
     )
 
     load_data_query_b = (
         f"INSERT INTO {load_table} VALUES("
-        f"'{FID}',null,'{IMG_URL}',null,null,null,null,'{LICENSE}',null,null,"
-        f"null,null,'{META_DATA_B}',null,null,'{PROVIDER}',null"
+        f"'{FID}',null,'{IMG_URL}',null,null,'{LICENSE}',null,null,"
+        f"null,null,'{META_DATA_B}',null,null,'{PROVIDER}',null,null,null,null"
         f");"
     )
     postgres_with_load_and_image_table.cursor.execute(load_data_query_a)
@@ -765,7 +793,7 @@ def test_upsert_records_does_not_replace_with_null_values_in_meta_data(
         "description": json.loads(META_DATA_B)["description"],
         "test": json.loads(META_DATA_A)["test"],
     }
-    assert actual_row[18] == expected_meta_data
+    assert actual_row[metadata_idx] == expected_meta_data
 
 
 def test_upsert_records_merges_tags(postgres_with_load_and_image_table, tmpdir):
@@ -791,15 +819,15 @@ def test_upsert_records_merges_tags(postgres_with_load_and_image_table, tmpdir):
 
     load_data_query_a = (
         f"INSERT INTO {load_table} VALUES("
-        f"'{FID}',null,'{IMG_URL}',null,null,null,null,'{LICENSE}',null,null,"
-        f"null,null,null,'{TAGS_A}',null,'{PROVIDER}',null"
+        f"'{FID}',null,'{IMG_URL}',null,null,'{LICENSE}',null,null,"
+        f"null,null,null,'{TAGS_A}',null,'{PROVIDER}',null,null,null"
         f");"
     )
 
     load_data_query_b = (
         f"INSERT INTO {load_table} VALUES("
-        f"'{FID}',null,'{IMG_URL}',null,null,null,null,'{LICENSE}',null,null,"
-        f"null,null,null,'{TAGS_B}',null,'{PROVIDER}',null"
+        f"'{FID}',null,'{IMG_URL}',null,null,'{LICENSE}',null,null,"
+        f"null,null,null,'{TAGS_B}',null,'{PROVIDER}',null,null,null"
         f");"
     )
     postgres_with_load_and_image_table.cursor.execute(load_data_query_a)
@@ -821,9 +849,7 @@ def test_upsert_records_merges_tags(postgres_with_load_and_image_table, tmpdir):
         {"name": "tagtwo", "provider": "test"},
         {"name": "tagthree", "provider": "test"},
     ]
-    actual_tags = actual_row[19]
-    print("EXPECT:  ", expect_tags)
-    print("ACTUAL:  ", actual_tags)
+    actual_tags = actual_row[tags_idx]
     assert len(actual_tags) == 3
     assert all([t in expect_tags for t in actual_tags])
     assert all([t in actual_tags for t in expect_tags])
@@ -849,15 +875,15 @@ def test_upsert_records_does_not_replace_tags_with_null(
 
     load_data_query_a = (
         f"INSERT INTO {load_table} VALUES("
-        f"'{FID}',null,'{IMG_URL}',null,null,null,null,'{LICENSE}',null,null,"
-        f"null,null,null,'{json.dumps(TAGS)}',null,'{PROVIDER}',null"
+        f"'{FID}',null,'{IMG_URL}',null,null,'{LICENSE}',null,null,"
+        f"null,null,null,'{json.dumps(TAGS)}',null,'{PROVIDER}',null,null,null"
         f");"
     )
 
     load_data_query_b = (
         f"INSERT INTO {load_table} VALUES("
-        f"'{FID}',null,'{IMG_URL}',null,null,null,null,'{LICENSE}',null,null,"
-        f"null,null,null,null,null,'{PROVIDER}',null"
+        f"'{FID}',null,'{IMG_URL}',null,null,'{LICENSE}',null,null,"
+        f"null,null,null,null,null,'{PROVIDER}',null,null,null"
         f");"
     )
     postgres_with_load_and_image_table.cursor.execute(load_data_query_a)
@@ -878,7 +904,7 @@ def test_upsert_records_does_not_replace_tags_with_null(
         {"name": "tagone", "provider": "test"},
         {"name": "tagtwo", "provider": "test"},
     ]
-    actual_tags = actual_row[19]
+    actual_tags = actual_row[tags_idx]
     assert len(actual_tags) == 2
     assert all([t in expect_tags for t in actual_tags])
     assert all([t in actual_tags for t in expect_tags])
@@ -900,14 +926,14 @@ def test_upsert_records_replaces_null_tags(postgres_with_load_and_image_table, t
     ]
     load_data_query_a = (
         f"INSERT INTO {load_table} VALUES("
-        f"'{FID}',null,'{IMG_URL}',null,null,null,null,'{LICENSE}',null,null,"
-        f"null,null,null,null,null,'{PROVIDER}',null"
+        f"'{FID}',null,'{IMG_URL}',null,null,'{LICENSE}',null,null,"
+        f"null,null,null,null,null,'{PROVIDER}',null,null,null"
         f");"
     )
     load_data_query_b = (
         f"INSERT INTO {load_table} VALUES("
-        f"'{FID}',null,'{IMG_URL}',null,null,null,null,'{LICENSE}',null,null,"
-        f"null,null,null,'{json.dumps(TAGS)}',null,'{PROVIDER}',null"
+        f"'{FID}',null,'{IMG_URL}',null,null,'{LICENSE}',null,null,"
+        f"null,null,null,'{json.dumps(TAGS)}',null,'{PROVIDER}',null,null,null"
         f");"
     )
 
@@ -929,7 +955,7 @@ def test_upsert_records_replaces_null_tags(postgres_with_load_and_image_table, t
         {"name": "tagone", "provider": "test"},
         {"name": "tagtwo", "provider": "test"},
     ]
-    actual_tags = actual_row[19]
+    actual_tags = actual_row[tags_idx]
     assert len(actual_tags) == 2
     assert all([t in expect_tags for t in actual_tags])
     assert all([t in actual_tags for t in expect_tags])
@@ -963,8 +989,8 @@ def test_overwrite_records_leaves_dates(postgres_with_load_and_image_table, tmpd
     sql.upsert_records_to_db_table(postgres_conn_id, identifier, db_table=image_table)
     postgres_with_load_and_image_table.cursor.execute(f"SELECT * FROM {image_table};")
     original_row = postgres_with_load_and_image_table.cursor.fetchall()[0]
-    original_updated_on = original_row[2]
-    original_last_synced = original_row[-2]
+    original_updated_on = original_row[updated_idx]
+    original_last_synced = original_row[synced_idx]
 
     time.sleep(0.001)
     sql.overwrite_records_in_db_table(
@@ -973,8 +999,8 @@ def test_overwrite_records_leaves_dates(postgres_with_load_and_image_table, tmpd
     postgres_with_load_and_image_table.cursor.execute(f"SELECT * FROM {image_table};")
     updated_result = postgres_with_load_and_image_table.cursor.fetchall()
     updated_row = updated_result[0]
-    updated_updated_on = updated_row[2]
-    updated_last_synced = updated_row[-2]
+    updated_updated_on = updated_row[updated_idx]
+    updated_last_synced = updated_row[synced_idx]
 
     assert len(updated_result) == 1
     assert updated_updated_on == original_updated_on
@@ -1021,9 +1047,9 @@ def test_overwrite_records_replaces_data(postgres_with_load_and_image_table, tmp
     load_data_query_a = (
         f"INSERT INTO {load_table} VALUES("
         f"'{FID}','{LAND_URL_A}','{IMG_URL_A}','{THM_URL_A}',"
-        f"'{WIDTH_A}','{HEIGHT_A}','{FILESIZE}','{LICENSE_A}','{VERSION_A}',"
+        f"'{FILESIZE}','{LICENSE_A}','{VERSION_A}',"
         f"'{CREATOR_A}','{CREATOR_URL_A}','{TITLE_A}','{META_DATA_A}',"
-        f"'{TAGS}','{WATERMARKED}','{PROVIDER}','{SOURCE}'"
+        f"'{TAGS}','{WATERMARKED}','{PROVIDER}','{SOURCE}', null,'{WIDTH_A}','{HEIGHT_A}'"
         f");"
     )
     postgres_with_load_and_image_table.cursor.execute(load_data_query_a)
@@ -1034,9 +1060,9 @@ def test_overwrite_records_replaces_data(postgres_with_load_and_image_table, tmp
     load_data_query_b = (
         f"INSERT INTO {load_table} VALUES("
         f"'{FID}','{LAND_URL_B}','{IMG_URL_B}','{THM_URL_B}',"
-        f"'{WIDTH_B}','{HEIGHT_B}','{FILESIZE}','{LICENSE_B}','{VERSION_B}',"
+        f"'{FILESIZE}','{LICENSE_B}','{VERSION_B}',"
         f"'{CREATOR_B}','{CREATOR_URL_B}','{TITLE_B}','{META_DATA_B}',"
-        f"'{TAGS}','{WATERMARKED}','{PROVIDER}','{SOURCE}'"
+        f"'{TAGS}','{WATERMARKED}','{PROVIDER}','{SOURCE}',null,'{WIDTH_B}','{HEIGHT_B}'"
         f");"
     )
     postgres_with_load_and_image_table.cursor.execute(f"DELETE FROM {load_table};")
@@ -1051,17 +1077,17 @@ def test_overwrite_records_replaces_data(postgres_with_load_and_image_table, tmp
     actual_rows = postgres_with_load_and_image_table.cursor.fetchall()
     actual_row = actual_rows[0]
     assert len(actual_rows) == 1
-    assert actual_row[7] == LAND_URL_B
-    assert actual_row[8] == IMG_URL_B
-    assert actual_row[9] == THM_URL_B
-    assert actual_row[10] == WIDTH_B
-    assert actual_row[11] == HEIGHT_B
-    assert actual_row[13] == LICENSE_B
-    assert actual_row[14] == VERSION_B
-    assert actual_row[15] == CREATOR_B
-    assert actual_row[16] == CREATOR_URL_B
-    assert actual_row[17] == TITLE_B
-    assert actual_row[18] == json.loads(META_DATA_B)
+    assert actual_row[land_url_idx] == LAND_URL_B
+    assert actual_row[url_idx] == IMG_URL_B
+    assert actual_row[thm_idx] == THM_URL_B
+    assert actual_row[license_idx] == LICENSE_B
+    assert actual_row[version_idx] == VERSION_B
+    assert actual_row[creator_idx] == CREATOR_B
+    assert actual_row[creator_url_idx] == CREATOR_URL_B
+    assert actual_row[title_idx] == TITLE_B
+    assert actual_row[metadata_idx] == json.loads(META_DATA_B)
+    assert actual_row[width_idx] == WIDTH_B
+    assert actual_row[height_idx] == HEIGHT_B
 
 
 def test_drop_load_table_drops_table(postgres_with_load_table):
@@ -1098,12 +1124,12 @@ def test_update_flickr_sub_providers(postgres_with_load_and_image_table):
 
     insert_data_query = (
         f"INSERT INTO {load_table} VALUES"
-        f"('{FID_A}',null,'{IMG_URL_A}',null,null,null,null,'{LICENSE}',null,"
+        f"('{FID_A}',null,'{IMG_URL_A}',null,null,'{LICENSE}',null,"
         f"null,'{CREATOR_URL_A}',null,null,'{json.dumps(TAGS)}',null,"
-        f"'{PROVIDER}','{PROVIDER}'),"
-        f"('{FID_B}',null,'{IMG_URL_B}',null,null,null,null,'{LICENSE}',null,"
+        f"'{PROVIDER}','{PROVIDER}',null,null),"
+        f"('{FID_B}',null,'{IMG_URL_B}',null,null,'{LICENSE}',null,"
         f"null,'{CREATOR_URL_B}',null,null,'{json.dumps(TAGS)}',null,"
-        f"'{PROVIDER}','{PROVIDER}');"
+        f"'{PROVIDER}','{PROVIDER}',null,null);"
     )
 
     postgres_with_load_and_image_table.cursor.execute(insert_data_query)
@@ -1120,10 +1146,10 @@ def test_update_flickr_sub_providers(postgres_with_load_and_image_table):
     assert len(actual_rows) == 2
 
     for actual_row in actual_rows:
-        if actual_row[6] == "a":
-            assert actual_row[5] == "nasa"
+        if actual_row[fid_idx] == "a":
+            assert actual_row[source_idx] == "nasa"
         else:
-            assert actual_row[6] == "b" and actual_row[5] == "flickr"
+            assert actual_row[fid_idx] == "b" and actual_row[source_idx] == "flickr"
 
 
 def test_update_europeana_sub_providers(postgres_with_load_and_image_table):
@@ -1153,12 +1179,12 @@ def test_update_europeana_sub_providers(postgres_with_load_and_image_table):
 
     insert_data_query = (
         f"INSERT INTO {load_table} VALUES"
-        f"('{FID_A}',null,'{IMG_URL_A}',null,null,null,null,'{LICENSE}',null,"
+        f"('{FID_A}',null,'{IMG_URL_A}',null,null,'{LICENSE}',null,"
         f"null,null,null,'{json.dumps(META_DATA_A)}',null,null,"
-        f"'{PROVIDER}','{PROVIDER}'),"
-        f"('{FID_B}',null,'{IMG_URL_B}',null,null,null,null,'{LICENSE}',null,"
+        f"'{PROVIDER}','{PROVIDER}',null,null),"
+        f"('{FID_B}',null,'{IMG_URL_B}',null,null,'{LICENSE}',null,"
         f"null,null,null,'{json.dumps(META_DATA_B)}',null,null,"
-        f"'{PROVIDER}','{PROVIDER}');"
+        f"'{PROVIDER}','{PROVIDER}',null,null);"
     )
 
     postgres_with_load_and_image_table.cursor.execute(insert_data_query)
@@ -1175,10 +1201,10 @@ def test_update_europeana_sub_providers(postgres_with_load_and_image_table):
     assert len(actual_rows) == 2
 
     for actual_row in actual_rows:
-        if actual_row[6] == "a":
-            assert actual_row[5] == "wellcome_collection"
+        if actual_row[fid_idx] == "a":
+            assert actual_row[source_idx] == "wellcome_collection"
         else:
-            assert actual_row[6] == "b" and actual_row[5] == "europeana"
+            assert actual_row[fid_idx] == "b" and actual_row[source_idx] == "europeana"
 
 
 def test_update_smithsonian_sub_providers(postgres_with_load_and_image_table):
@@ -1204,12 +1230,12 @@ def test_update_smithsonian_sub_providers(postgres_with_load_and_image_table):
 
     insert_data_query = (
         f"INSERT INTO {load_table} VALUES"
-        f"('{FID_A}',null,'{IMG_URL_A}',null,null,null,null,'{LICENSE}',null,"
+        f"('{FID_A}',null,'{IMG_URL_A}',null,null,'{LICENSE}',null,"
         f"null,null,null,'{json.dumps(META_DATA_A)}',null,null,"
-        f"'{PROVIDER}','{PROVIDER}'),"
-        f"('{FID_B}',null,'{IMG_URL_B}',null,null,null,null,'{LICENSE}',null,"
+        f"'{PROVIDER}','{PROVIDER}',null,null),"
+        f"('{FID_B}',null,'{IMG_URL_B}',null,null,'{LICENSE}',null,"
         f"null,null,null,'{json.dumps(META_DATA_B)}',null,null,"
-        f"'{PROVIDER}','{PROVIDER}');"
+        f"'{PROVIDER}','{PROVIDER}',null,null);"
     )
 
     postgres_with_load_and_image_table.cursor.execute(insert_data_query)
@@ -1226,12 +1252,13 @@ def test_update_smithsonian_sub_providers(postgres_with_load_and_image_table):
     assert len(actual_rows) == 2
 
     for actual_row in actual_rows:
-        if actual_row[6] == "a":
-            assert actual_row[5] == "smithsonian_institution_archives"
+        if actual_row[fid_idx] == "a":
+            assert actual_row[source_idx] == "smithsonian_institution_archives"
         else:
             assert (
-                actual_row[6] == "b"
-                and actual_row[5] == "smithsonian_national_museum_of_natural_history"
+                actual_row[fid_idx] == "b"
+                and actual_row[source_idx]
+                == "smithsonian_national_museum_of_natural_history"
             )
 
 
@@ -1251,12 +1278,12 @@ def test_image_expiration(postgres_with_load_and_image_table):
 
     insert_data_query = (
         f"INSERT INTO {load_table} VALUES"
-        f"('{FID_A}',null,'{IMG_URL_A}',null,null,null,null,'{LICENSE}',null,"
+        f"('{FID_A}',null,'{IMG_URL_A}',null,null,'{LICENSE}',null,"
         f"null,null,null,null,null,null,"
-        f"'{PROVIDER_A}','{PROVIDER_A}'),"
-        f"('{FID_B}',null,'{IMG_URL_B}',null,null,null,null,'{LICENSE}',null,"
+        f"'{PROVIDER_A}','{PROVIDER_A}',null,null),"
+        f"('{FID_B}',null,'{IMG_URL_B}',null,null,'{LICENSE}',null,"
         f"null,null,null,null,null,null,"
-        f"'{PROVIDER_B}','{PROVIDER_B}');"
+        f"'{PROVIDER_B}','{PROVIDER_B}',null,null);"
     )
 
     postgres_with_load_and_image_table.cursor.execute(insert_data_query)
@@ -1284,7 +1311,7 @@ def test_image_expiration(postgres_with_load_and_image_table):
     assert len(actual_rows) == 2
 
     for actual_row in actual_rows:
-        if actual_row[6] == "a":
-            assert not actual_row[22]
+        if actual_row[fid_idx] == "a":
+            assert not actual_row[removed_idx]
         else:
-            assert actual_row[6] == "b" and actual_row[22]
+            assert actual_row[fid_idx] == "b" and actual_row[removed_idx]
