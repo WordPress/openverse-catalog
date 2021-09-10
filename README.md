@@ -175,7 +175,7 @@ To follow the logs of the running container:
 just logs
 ```
 
-To see the Airflow web UI, point your browser to `localhost:9090`.
+To see the Airflow web UI, point your browser to `localhost:9090`. To log in, use the username 'airflow' and password 'airflow'.
 
 If you'd like to bring down the containers, run
 

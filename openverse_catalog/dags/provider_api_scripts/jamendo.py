@@ -142,7 +142,13 @@ def _extract_audio_data(media_data):
     # Jamendo has only music
     category = "music"
     genres = _get_genres(media_data)
-    audio_set, position, url, set_thumbnail = _get_audio_set_info(media_data)
+    (
+        set_foreign_id,
+        audio_set,
+        position,
+        url,
+        set_thumbnail,
+    ) = _get_audio_set_info(media_data)
     return {
         "title": title,
         "creator": creator,
@@ -157,6 +163,7 @@ def _extract_audio_data(media_data):
         "raw_tags": tags,
         "category": category,
         "genres": genres,
+        "set_foreign_id": set_foreign_id,
         "audio_set": audio_set,
         "set_position": position,
         "set_url": url,
@@ -201,7 +208,7 @@ def _get_audio_set_info(media_data):
     if set_id and audio_set:
         set_slug = audio_set.lower().replace(" ", "-")
         url = _cleanse_url(f"{base_url}{set_id}/{set_slug}")
-    return audio_set, position, url, thumbnail
+    return set_id, audio_set, position, url, thumbnail
 
 
 def _get_thumbnail_url(media_data):

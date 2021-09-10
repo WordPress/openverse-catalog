@@ -37,6 +37,7 @@ mock_audio_args = {
     "category": None,
     "genres": [],
     "audio_set": {},
+    "set_position": 1,
     "alt_files": [],
     "source": "testing_source",
     "ingestion_type": "provider_api",
@@ -178,6 +179,7 @@ def default_audio_args():
         thumbnail_url="https://thumbnail.com",
         filesize=None,
         audio_set=None,
+        set_position=1,
         license_="by",
         license_version="4.0",
         creator="tyler",
@@ -248,6 +250,7 @@ def test_create_tsv_row_creates_alt_files(
                     "music",
                     '{"rock", "pop"}',
                     "\\N",
+                    "1",
                     '[{"url": '
                     '"https://alternative.com/audio.mp3", "filesize": "123", "bit_rate": "41000", '
                     '"sample_rate": "16000"}]',
@@ -266,7 +269,6 @@ def test_create_tsv_row_creates_audio_set(
     audio_set_data = {
         "audio_set": "test_audio_set",
         "set_url": "test.com",
-        "set_position": 1,
         "set_thumbnail": "thumbnail.jpg",
     }
     audio_args["audio_set"] = audio_set_data
@@ -305,7 +307,8 @@ def test_create_tsv_row_creates_audio_set(
                     "music",
                     '{"rock", "pop"}',
                     '{"audio_set": "test_audio_set", "set_url": "test.com", '
-                    '"set_position": "1", "set_thumbnail": "thumbnail.jpg"}',
+                    '"set_thumbnail": "thumbnail.jpg"}',
+                    "1",
                     "\\N",
                 ]
             )
@@ -424,10 +427,10 @@ def test_create_tsv_row_properly_places_entries(monkeypatch):
         "genres": ["pop", "rock"],
         "audio_set": {
             "audio_set": "album",
-            "set_position": 1,
             "set_url": "https://album.com/",
             "set_thumbnail": "https://album.com/thumbnail.jpg",
         },
+        "set_position": 1,
         "alt_files": None,
         "provider": "testing_provider",
         "source": "testing_source",
@@ -461,8 +464,9 @@ def test_create_tsv_row_properly_places_entries(monkeypatch):
                 "44100",
                 "music",
                 '{"pop", "rock"}',
-                '{"audio_set": "album", "set_position": "1", "set_url": "https://album.com/", '
+                '{"audio_set": "album", "set_url": "https://album.com/", '
                 '"set_thumbnail": "https://album.com/thumbnail.jpg"}',
+                "1",
                 "\\N",
             ]
         )
