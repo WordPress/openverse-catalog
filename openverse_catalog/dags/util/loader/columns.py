@@ -181,6 +181,9 @@ DB_COLUMNS = {
     col.AUDIO_SET: DbColumn(
         "audio_set", Datatype.jsonb, None, UpsertStrategy.merge_jsonb_objects
     ),
+    col.SET_POSITION: DbColumn(
+        "set_position", Datatype.int, None, UpsertStrategy.newest_non_null
+    ),
     col.ALT_FILES: DbColumn(
         "alt_files", Datatype.jsonb, None, UpsertStrategy.merge_jsonb_objects
     ),
@@ -245,6 +248,7 @@ media_columns = {
         col.CATEGORY,
         col.GENRES,
         col.AUDIO_SET,
+        col.SET_POSITION,
         col.ALT_FILES,
     ],
     IMAGE: [col.WIDTH, col.HEIGHT],

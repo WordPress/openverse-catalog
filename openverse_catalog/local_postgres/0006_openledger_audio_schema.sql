@@ -31,6 +31,7 @@ CREATE TABLE public.audio (
     category character varying(200),
     genres character varying(80)[],
     audio_set jsonb,
+    set_position integer,
     alt_files jsonb,
     filesize integer,
     license character varying(50) NOT NULL,
