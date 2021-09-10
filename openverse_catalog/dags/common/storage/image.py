@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 # Any changes to the IMAGE_TSV_COLUMNS should also be reflected
 # in the db columns. Please, add the column to the:
+# - `.sql` script in the `local_postgres` folder
 # - dict with DbColumn instances - `util.loader.columns.DB_COLUMNS`
 # - list of db columns, in the correct order:
 # -   `util.loader.columns.common_columns` or
