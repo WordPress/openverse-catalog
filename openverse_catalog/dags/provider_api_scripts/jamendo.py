@@ -244,7 +244,7 @@ def _get_metadata(item):
     metadata["downloads"] = downloads_count
     metadata["listens"] = listens_count
     metadata["playlists"] = playlists_count
-    instruments = item.get("musicinfo", {}).get("instruments")
+    instruments = item.get("musicinfo", {}).get("tags", {}).get("instruments")
     if instruments is not None:
         metadata["instruments"] = instruments
     return metadata

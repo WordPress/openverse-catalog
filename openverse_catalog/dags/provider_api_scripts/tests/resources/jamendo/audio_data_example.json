@@ -24,7 +24,9 @@
     "speed": "medium",
     "tags": {
       "genres": [],
-      "instruments": [],
+      "instruments": [
+        "piano"
+      ],
       "vartags": []
     },
     "vocalinstrumental": "instrumental"
