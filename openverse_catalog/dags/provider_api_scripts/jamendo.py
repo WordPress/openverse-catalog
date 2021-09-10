@@ -141,6 +141,8 @@ def _extract_audio_data(media_data):
     tags = _get_tags(media_data)
     # Jamendo has only music
     category = "music"
+    # The API request we send is for mp3 type
+    filetype = "mp3"
     genres = _get_genres(media_data)
     audio_set, position, url, set_thumbnail = _get_audio_set_info(media_data)
     return {
@@ -150,6 +152,7 @@ def _extract_audio_data(media_data):
         "foreign_identifier": foreign_identifier,
         "foreign_landing_url": foreign_landing_url,
         "audio_url": audio_url,
+        "filetype": filetype,
         "duration": duration,
         "thumbnail_url": thumbnail,
         "license_info": item_license,
@@ -227,6 +230,7 @@ def _get_title(item):
 
 
 def _get_metadata(item):
+    # instruments
     metadata = {}
     lyrics = item.get("lyrics")
     if lyrics:
@@ -240,13 +244,16 @@ def _get_metadata(item):
     metadata["downloads"] = downloads_count
     metadata["listens"] = listens_count
     metadata["playlists"] = playlists_count
+    instruments = item.get("musicinfo", {}).get("instruments")
+    if instruments is not None:
+        metadata["instruments"] = instruments
     return metadata
 
 
 def _get_tags(item):
     # vocal/instrumental
     # genre
-    # instruments
+
     tags = []
     musicinfo = item.get("musicinfo")
     if musicinfo:
@@ -256,10 +263,7 @@ def _get_tags(item):
         music_gender = musicinfo.get("gender")
         if music_gender:
             tags.append(music_gender)
-        music_speed = musicinfo.get("speed")
-        if music_speed:
-            tags.append(f"speed_{music_speed}")
-        for tag_name in ["instruments", "vartags"]:
+        for tag_name in ["vartags"]:
             tag_value = musicinfo.get("tags", {}).get(tag_name)
             if tag_value:
                 tag_value = [_ for _ in tag_value if _ != "undefined"]
