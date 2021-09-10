@@ -3,7 +3,6 @@ from unittest.mock import call, patch
 
 from common.licenses.licenses import LicenseInfo
 from util import tsv_cleaner
-from util.loader.ingestion_column import check_and_fix_tsv_file
 
 
 RESOURCES = Path(__file__).parent.resolve() / "test_resources"
@@ -33,6 +32,8 @@ def test_clean_tsv_cleans_tsv_rows(tmpdir):
             thumbnail_url="https://example.com/thumbnail1",
             license_info=by_license,
             foreign_identifier="one",
+            width="1000",
+            height="500",
             creator="alice",
             creator_url="https://example.com/alice",
             title="title_one",
@@ -47,8 +48,7 @@ def test_clean_tsv_cleans_tsv_rows(tmpdir):
             ],
             watermarked="f",
             source="alice_official",
-            width="1000",
-            height="500",
+            ingestion_type="provider_api",
         ),
         call(provider="next_provider"),
         call().add_item(
@@ -57,6 +57,8 @@ def test_clean_tsv_cleans_tsv_rows(tmpdir):
             thumbnail_url="https://example.com/thumbnail2",
             license_info=by_nc_license,
             foreign_identifier="two",
+            width="1000",
+            height="500",
             creator="bob",
             creator_url="https://example.com/bob",
             title="title_two",
@@ -71,8 +73,7 @@ def test_clean_tsv_cleans_tsv_rows(tmpdir):
             ],
             watermarked="f",
             source="next_provider",
-            width="1000",
-            height="500",
+            ingestion_type="provider_api",
         ),
         call().commit(),
         call().commit(),
@@ -83,8 +84,6 @@ def test_clean_tsv_cleans_tsv_rows(tmpdir):
         "ImageStore",
         autospec=True,
     ) as mock_image_store:
-        # tsv file does not have ingestion_type column
-        check_and_fix_tsv_file(str(tsv_file_path))
         tsv_cleaner.clean_tsv(tsv_file_path)
-    for i in range(len(expected_calls)):
-        assert mock_image_store.mock_calls[i] == expected_calls[i]
+    for i, expected_call in enumerate(expected_calls):
+        assert mock_image_store.mock_calls[i] == expected_call
