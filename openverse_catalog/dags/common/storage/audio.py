@@ -9,6 +9,13 @@ from common.storage.media import MediaStore
 
 logger = logging.getLogger(__name__)
 
+# Any changes to the AUDIO_TSV_COLUMNS should also be reflected
+# in the db columns. Please, add the column to the:
+# - dict with DbColumn instances - `util.loader.columns.DB_COLUMNS`
+# - list of db columns, in the correct order:
+# -   `util.loader.columns.common_columns` or
+# -   `util.loader.columns.media_columns[AUDIO]`
+
 AUDIO_TSV_COLUMNS = [
     # The order of this list maps to the order of the columns in the TSV.
     columns.StringColumn(

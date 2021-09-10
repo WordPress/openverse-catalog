@@ -9,6 +9,7 @@ import os
 from common.storage import media
 from common.storage.audio import AUDIO_TSV_COLUMNS
 from common.storage.image import IMAGE_TSV_COLUMNS
+from util.constants import AUDIO, IMAGE
 
 
 logger = logging.getLogger(__name__)
@@ -27,8 +28,8 @@ def check_and_fix_tsv_file(tsv_file_name):
     except IndexError:
         # If no media file is set in the filename, it is
         # probably image
-        media_type = "image"
-    if media_type == "audio":
+        media_type = IMAGE
+    if media_type == AUDIO:
         new_cols_number = len(AUDIO_TSV_COLUMNS)
     else:
         new_cols_number = len(IMAGE_TSV_COLUMNS)
