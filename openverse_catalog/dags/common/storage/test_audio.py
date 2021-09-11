@@ -222,7 +222,6 @@ def test_create_tsv_row_creates_alt_files(
         audio.columns.urls, "validate_url_string", side_effect=mock_url_validator
     ):
         actual_row = audio_store._create_tsv_row(test_audio)
-        print(f"\nActual row: {actual_row}")
         expected_row = (
             "\t".join(
                 [
@@ -236,6 +235,7 @@ def test_create_tsv_row_creates_alt_files(
                     "tyler",
                     "https://creatorurl.com",
                     "agreatsong",
+                    "music",
                     '{"description": "cat song"}',
                     '{"name": "tag1", "provider": "testing"}',
                     "\\N",
@@ -245,7 +245,6 @@ def test_create_tsv_row_creates_alt_files(
                     "100",
                     "\\N",
                     "\\N",
-                    "music",
                     '{"rock", "pop"}',
                     "\\N",
                     '[{"url": '
@@ -293,6 +292,7 @@ def test_create_tsv_row_creates_audio_set(
                     "tyler",
                     "https://creatorurl.com",
                     "agreatsong",
+                    "music",
                     '{"description": "cat song"}',
                     '{"name": "tag1", "provider": "testing"}',
                     "\\N",
@@ -302,7 +302,6 @@ def test_create_tsv_row_creates_audio_set(
                     "100",
                     "\\N",
                     "\\N",
-                    "music",
                     '{"rock", "pop"}',
                     '{"audio_set": "test_audio_set", "set_url": "test.com", '
                     '"set_position": "1", "set_thumbnail": "thumbnail.jpg"}',
@@ -414,13 +413,13 @@ def test_create_tsv_row_properly_places_entries(monkeypatch):
         "filesize": None,
         "creator": "tyler",
         "creator_url": "https://creatorurl.com",
+        "category": "music",
         "title": "agreatsong",
         "meta_data": {"description": "a song about cat"},
         "tags": [{"name": "tag1", "provider": "testing"}],
         "watermarked": None,
         "bit_rate": 16000,
         "sample_rate": 44100,
-        "category": "music",
         "genres": ["pop", "rock"],
         "audio_set": {
             "audio_set": "album",
@@ -450,6 +449,7 @@ def test_create_tsv_row_properly_places_entries(monkeypatch):
                 "tyler",
                 "https://creatorurl.com",
                 "agreatsong",
+                "music",
                 '{"description": "a song about cat"}',
                 '[{"name": "tag1", "provider": "testing"}]',
                 "\\N",
@@ -459,7 +459,6 @@ def test_create_tsv_row_properly_places_entries(monkeypatch):
                 "200",
                 "16000",
                 "44100",
-                "music",
                 '{"pop", "rock"}',
                 '{"audio_set": "album", "set_position": "1", "set_url": "https://album.com/", '
                 '"set_thumbnail": "https://album.com/thumbnail.jpg"}',

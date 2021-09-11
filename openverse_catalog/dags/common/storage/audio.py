@@ -43,6 +43,12 @@ AUDIO_TSV_COLUMNS = [
     columns.StringColumn(name="creator", required=False, size=2000, truncate=True),
     columns.URLColumn(name="creator_url", required=False, size=2000),
     columns.StringColumn(name="title", required=False, size=5000, truncate=True),
+    columns.StringColumn(
+        name="category",
+        required=False,
+        size=80,
+        truncate=False,
+    ),
     columns.JSONColumn(name="meta_data", required=False),
     columns.JSONColumn(name="tags", required=False),
     columns.BooleanColumn(
@@ -62,12 +68,6 @@ AUDIO_TSV_COLUMNS = [
     columns.IntegerColumn(
         name="sample_rate",
         required=False,
-    ),
-    columns.StringColumn(
-        name="category",
-        required=False,
-        size=80,
-        truncate=False,
     ),
     columns.ArrayColumn(
         name="genres",
@@ -126,13 +126,13 @@ class AudioStore(MediaStore):
         creator: Optional[str] = None,
         creator_url: Optional[str] = None,
         title: Optional[str] = None,
+        category: Optional[str] = None,
         meta_data: Optional[Union[Dict, str]] = None,
         raw_tags: Optional[Union[list, str]] = None,
         watermarked: Optional[bool] = False,
         duration: Optional[int] = None,
         bit_rate: Optional[int] = None,
         sample_rate: Optional[int] = None,
-        category: Optional[str] = None,
         genres: Optional[Union[list, str]] = None,
         audio_set: Optional[str] = None,
         set_position: Optional[int] = None,
@@ -175,6 +175,7 @@ class AudioStore(MediaStore):
         creator:             The creator of the audio.
         creator_url:         The user page, or home page of the creator.
         title:               Title of the audio.
+        category:            'music', 'sound' or 'podcast'.
         meta_data:           Dictionary of meta_data about the audio.
                              Currently, a key that we prefer to have is
                              `description`. If 'license_url' is included
@@ -186,7 +187,6 @@ class AudioStore(MediaStore):
         duration:            in milliseconds
         bit_rate:            Audio bit rate as int.
         sample_rate:         Audio sample rate as int.
-        category:            'music', 'sound' or 'podcast'.
         genres:              List of genres
         audio_set:           The name of the set (album, pack) the audio
                              is part of
@@ -223,13 +223,13 @@ class AudioStore(MediaStore):
             "creator": creator,
             "creator_url": creator_url,
             "title": title,
+            "category": category,
             "meta_data": meta_data,
             "raw_tags": raw_tags,
             "watermarked": watermarked,
             "duration": duration,
             "bit_rate": bit_rate,
             "sample_rate": sample_rate,
-            "category": category,
             "genres": genres,
             "audio_set": audio_set_data,
             "alt_files": alt_files,

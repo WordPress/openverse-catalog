@@ -43,6 +43,12 @@ IMAGE_TSV_COLUMNS = [
     columns.StringColumn(name="creator", required=False, size=2000, truncate=True),
     columns.URLColumn(name="creator_url", required=False, size=2000),
     columns.StringColumn(name="title", required=False, size=5000, truncate=True),
+    columns.StringColumn(
+        name="category",
+        required=False,
+        size=80,
+        truncate=False,
+    ),
     columns.JSONColumn(name="meta_data", required=False),
     columns.JSONColumn(name="tags", required=False),
     columns.BooleanColumn(name="watermarked", required=False),
@@ -95,6 +101,7 @@ class ImageStore(MediaStore):
         creator: Optional[str] = None,
         creator_url: Optional[str] = None,
         title: Optional[str] = None,
+        category: Optional[str] = None,
         meta_data: Optional[Union[Dict, str]] = None,
         raw_tags=None,
         watermarked: Optional[str] = "f",
@@ -136,6 +143,7 @@ class ImageStore(MediaStore):
         creator:             The creator of the image.
         creator_url:         The user page, or home page of the creator.
         title:               Title of the image.
+        category:            'digitized_artwork',
         meta_data:           Dictionary of meta_data about the image.
                              Currently, a key that we prefer to have is
                              `description`. If 'license_url' is included
@@ -166,6 +174,7 @@ class ImageStore(MediaStore):
             "creator": creator,
             "creator_url": creator_url,
             "title": title,
+            "category": category,
             "meta_data": meta_data,
             "raw_tags": raw_tags,
             "watermarked": watermarked,
