@@ -2,7 +2,7 @@ import logging
 
 from common.licenses.licenses import get_license_info
 from common.requester import DelayedRequester
-from common.storage.image import ImageStore
+from common.storage.image import ImageCategory, ImageStore
 from util.loader import provider_details as prov
 
 
@@ -17,6 +17,7 @@ RETRIES = 3
 PROVIDER = prov.VICTORIA_DEFAULT_PROVIDER
 ENDPOINT = "https://collections.museumsvictoria.com.au/api/search"
 LANDING_PAGE = "https://collections.museumsvictoria.com.au/"
+CATEGORY = ImageCategory.digitized_artwork
 
 delay_request = DelayedRequester(delay=DELAY)
 image_store = ImageStore(provider=PROVIDER)
@@ -115,6 +116,7 @@ def _handle_batch_objects(objects, landing_page=LANDING_PAGE):
                 license_info=license_info,
                 thumbnail_url=img.get("thumbnail"),
                 title=title,
+                category=CATEGORY,
                 creator=img.get("creators"),
                 meta_data=meta_data,
             )

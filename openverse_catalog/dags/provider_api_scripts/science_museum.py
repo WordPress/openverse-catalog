@@ -2,7 +2,7 @@ import logging
 
 from common.licenses.licenses import get_license_info
 from common.requester import DelayedRequester
-from common.storage.image import ImageStore
+from common.storage.image import ImageCategory, ImageStore
 from util.loader import provider_details as prov
 
 
@@ -16,6 +16,7 @@ DELAY = 5.0
 RETRIES = 3
 PROVIDER = prov.SCIENCE_DEFAULT_PROVIDER
 ENDPOINT = "https://collection.sciencemuseumgroup.org.uk/search/"
+CATEGORY = ImageCategory.photograph
 
 delay_request = DelayedRequester(delay=DELAY)
 image_store = ImageStore(provider=PROVIDER)
@@ -156,6 +157,7 @@ def _handle_object_data(batch_data):
                 thumbnail_url=thumbnail_url,
                 creator=creator,
                 title=title,
+                category=CATEGORY,
                 meta_data=metadata,
             )
     return image_count

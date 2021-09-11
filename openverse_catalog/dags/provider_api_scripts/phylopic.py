@@ -15,7 +15,7 @@ import logging
 
 from common.licenses.licenses import get_license_info
 from common.requester import DelayedRequester
-from common.storage.image import ImageStore
+from common.storage.image import ImageCategory, ImageStore
 
 
 logging.basicConfig(
@@ -28,6 +28,7 @@ HOST = "phylopic.org"
 ENDPOINT = f"http://{HOST}/api/a"
 PROVIDER = "phylopic"
 LIMIT = 5
+CATEGORY = ImageCategory.illustration
 
 delayed_requester = DelayedRequester(DELAY)
 image_store = ImageStore(provider=PROVIDER)
@@ -95,6 +96,7 @@ def _create_args(details, id_):
         "title": details[8],
         "meta_data": details[9],
         "foreign_identifier": id_,
+        "category": CATEGORY,
     }
     return args
 

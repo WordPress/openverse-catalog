@@ -2,7 +2,7 @@ import logging
 
 from common.licenses.licenses import get_license_info
 from common.requester import DelayedRequester
-from common.storage.image import ImageStore
+from common.storage.image import ImageCategory, ImageStore
 from util.loader import provider_details as prov
 
 
@@ -11,6 +11,7 @@ DELAY = 5.0
 RETRIES = 3
 PROVIDER = prov.CLEVELAND_DEFAULT_PROVIDER
 ENDPOINT = "http://openaccess-api.clevelandart.org/api/artworks/"
+CATEGORY = ImageCategory.digitized_artwork
 
 delay_request = DelayedRequester(delay=DELAY)
 image_store = ImageStore(provider=PROVIDER)
@@ -118,6 +119,7 @@ def _handle_response(batch):
             width=width,
             height=height,
             title=title,
+            category=CATEGORY,
             creator=creator_name,
             meta_data=metadata,
         )

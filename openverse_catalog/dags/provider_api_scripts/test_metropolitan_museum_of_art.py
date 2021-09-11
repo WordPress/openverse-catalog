@@ -7,6 +7,7 @@ import metropolitan_museum_of_art as mma
 import pytest
 import requests
 from common.licenses.licenses import LicenseInfo
+from common.storage.image import ImageCategory
 
 
 RESOURCES = os.path.join(
@@ -50,7 +51,7 @@ def test_create_meta_data():
     exact_response = {
         "accessionNumber": "36.100.45",
         "classification": "Paintings",
-        "creditLine": ("The Howard Mansfield Collection, Purchase, Rogers Fund, 1936"),
+        "creditLine": "The Howard Mansfield Collection, Purchase, Rogers Fund, 1936",
         "culture": "Japan",
         "objectDate": "late 17th century",
         "medium": "Hanging scroll; ink and color on silk",
@@ -58,7 +59,7 @@ def test_create_meta_data():
     exact_meta_data = {
         "accession_number": "36.100.45",
         "classification": "Paintings",
-        "credit_line": ("The Howard Mansfield Collection, Purchase, Rogers Fund, 1936"),
+        "credit_line": "The Howard Mansfield Collection, Purchase, Rogers Fund, 1936",
         "culture": "Japan",
         "date": "late 17th century",
         "medium": "Hanging scroll; ink and color on silk",
@@ -112,7 +113,7 @@ def test_get_data_for_image_returns_response_json_when_all_ok(monkeypatch):
     mock_add.assert_called_with(
         creator="",
         foreign_identifier="45733-79_2_414b_S1_sf",
-        foreign_landing_url=("https://www.metmuseum.org/art/collection/search/47533"),
+        foreign_landing_url="https://www.metmuseum.org/art/collection/search/47533",
         image_url=(
             "https://images.metmuseum.org/CRDImages/as/original/79_2_414b_S1" "_sf.jpg"
         ),
@@ -133,6 +134,7 @@ def test_get_data_for_image_returns_response_json_when_all_ok(monkeypatch):
             "https://images.metmuseum.org/CRDImages/as/web-large/79_2_414b_S1" "_sf.jpg"
         ),
         title="Cover",
+        category=ImageCategory.digitized_artwork,
     )
 
     assert mock_add.call_count == 1
@@ -161,11 +163,9 @@ def test_get_data_for_image_returns_response_json_with_additional_images(monkeyp
         foreign_landing_url=(
             "https://wwwstg.metmuseum.org/art/collection/search/45734"
         ),
-        image_url=("https://images.metmuseum.org/CRDImages/as/original/DP251120.jpg"),
-        license_info=(
-            LicenseInfo(
-                "cc0", "1.0", "https://creativecommons.org/publicdomain/zero/1.0/", None
-            )
+        image_url="https://images.metmuseum.org/CRDImages/as/original/DP251120.jpg",
+        license_info=LicenseInfo(
+            "cc0", "1.0", "https://creativecommons.org/publicdomain/zero/1.0/", None
         ),
         meta_data={
             "accession_number": "36.100.45",
@@ -179,6 +179,7 @@ def test_get_data_for_image_returns_response_json_with_additional_images(monkeyp
         },
         thumbnail_url=None,
         title="Quail and Millet",
+        category=ImageCategory.digitized_artwork,
     )
 
     assert mock_add.call_count == 3

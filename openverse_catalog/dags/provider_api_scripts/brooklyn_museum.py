@@ -4,7 +4,7 @@ import os
 import lxml.html as html
 from common.licenses.licenses import get_license_info
 from common.requester import DelayedRequester
-from common.storage.image import ImageStore
+from common.storage.image import ImageCategory, ImageStore
 from util.loader import provider_details as prov
 
 
@@ -19,7 +19,7 @@ RETRIES = 3
 PROVIDER = prov.BROOKLYN_DEFAULT_PROVIDER
 ENDPOINT = "https://www.brooklynmuseum.org/api/v2/object/"
 API_KEY = os.getenv("BROOKLYN_MUSEUM_API_KEY", "nokeyprovided")
-
+CATEGORY = ImageCategory.digitized_artwork
 delay_request = DelayedRequester(delay=DELAY)
 image_store = ImageStore(provider=PROVIDER)
 
@@ -114,6 +114,7 @@ def _handle_object_data(data, license_url):
                 width=width,
                 height=height,
                 title=title,
+                category=CATEGORY,
                 thumbnail_url=thumbnail_url,
                 meta_data=metadata,
                 creator=creators,

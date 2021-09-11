@@ -15,13 +15,14 @@ import logging
 
 from common.licenses.licenses import get_license_info
 from common.requester import DelayedRequester
-from common.storage.image import ImageStore
+from common.storage.image import ImageCategory, ImageStore
 
 
 DELAY = 1.0  # time delay (in seconds)
 PROVIDER = "met"
 ENDPOINT = "https://collectionapi.metmuseum.org/public/collection/v1/objects"
 DEFAULT_LICENSE_INFO = get_license_info(license_="cc0", license_version="1.0")
+CATEGORY = ImageCategory.digitized_artwork
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s", level=logging.INFO
@@ -111,6 +112,7 @@ def _get_data_for_image(object_id):
             foreign_identifier=foreign_id,
             creator=object_json.get("artistDisplayName"),
             title=object_json.get("title"),
+            category=CATEGORY,
             meta_data=meta_data,
         )
 

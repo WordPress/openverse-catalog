@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 import phylopic as pp
 from common.licenses.licenses import LicenseInfo
+from common.storage.image import ImageCategory
 
 
 RESOURCES = os.path.join(
@@ -220,18 +221,17 @@ def test_create_args():
             "http://phylopic.org/assets/images/submissions/"
             "e6014244-4dd5-4785-bf2e-c67dc4d05ca8.256.png"
         ),
-        "license_info": (
-            LicenseInfo(
-                license="cc0",
-                version="1.0",
-                url="https://creativecommons.org/publicdomain/zero/1.0/",
-                raw_url="http://creativecommons.org/publicdomain/zero/1.0/",
-            )
+        "license_info": LicenseInfo(
+            license="cc0",
+            version="1.0",
+            url="https://creativecommons.org/publicdomain/zero/1.0/",
+            raw_url="http://creativecommons.org/publicdomain/zero/1.0/",
         ),
         "width": "1024",
         "height": "1024",
         "creator": "Jonathan Wells",
         "title": "Apicomplexa",
+        "category": ImageCategory.illustration,
         "meta_data": {
             "taxa": (
                 [
@@ -242,7 +242,7 @@ def test_create_args():
                     "Plasmodium falciparum",
                     "Plasmodium (Laverania)",
                     "Haemospororida Danilewsky",
-                    ("Aconoidasida Mehlhorn, " "Peters & Haberkorn 1980"),
+                    "Aconoidasida Mehlhorn, Peters & Haberkorn 1980",
                 ]
             ),
             "credit_line": "Jonathan Wells",
@@ -251,4 +251,4 @@ def test_create_args():
         "foreign_identifier": "e6014244-4dd5-4785-bf2e-c67dc4d05ca8",
     }
     assert actual_args == expect_args
-    assert len(actual_args) == 10
+    assert len(actual_args) == 11
