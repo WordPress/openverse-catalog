@@ -67,6 +67,7 @@ CREATE MATERIALIZED VIEW image_view AS
     creator,
     creator_url,
     title,
+    category,
     meta_data,
     tags,
     watermarked,

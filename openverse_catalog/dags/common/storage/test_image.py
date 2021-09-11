@@ -3,6 +3,7 @@ import logging
 import pytest
 from common.licenses.licenses import LicenseInfo
 from common.storage import image, util
+from common.storage.image import ImageCategory
 
 
 logging.basicConfig(
@@ -566,7 +567,7 @@ def test_create_tsv_row_properly_places_entries(setup_env, monkeypatch):
         "creator": "tyler",
         "creator_url": "https://creatorurl.com",
         "title": "agreatpicture",
-        "category": "photograph",
+        "category": ImageCategory.photograph,
         "meta_data": {"description": "cat picture"},
         "tags": [{"name": "tag1", "provider": "testing"}],
         "watermarked": "f",

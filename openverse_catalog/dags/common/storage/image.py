@@ -1,5 +1,6 @@
 import logging
 from collections import namedtuple
+from enum import Enum
 from typing import Dict, Optional, Union
 
 from common.licenses.licenses import LicenseInfo
@@ -9,6 +10,7 @@ from common.storage.media import MediaStore
 
 logger = logging.getLogger(__name__)
 
+ImageCategory = Enum("ImageCategory", "digitized_artwork illustration photograph")
 
 # Any changes to the IMAGE_TSV_COLUMNS should also be reflected
 # in the db columns. Please, add the column to the:
@@ -43,12 +45,7 @@ IMAGE_TSV_COLUMNS = [
     columns.StringColumn(name="creator", required=False, size=2000, truncate=True),
     columns.URLColumn(name="creator_url", required=False, size=2000),
     columns.StringColumn(name="title", required=False, size=5000, truncate=True),
-    columns.StringColumn(
-        name="category",
-        required=False,
-        size=80,
-        truncate=False,
-    ),
+    columns.EnumColumn(name="category", required=False, values=ImageCategory),
     columns.JSONColumn(name="meta_data", required=False),
     columns.JSONColumn(name="tags", required=False),
     columns.BooleanColumn(name="watermarked", required=False),
@@ -143,7 +140,7 @@ class ImageStore(MediaStore):
         creator:             The creator of the image.
         creator_url:         The user page, or home page of the creator.
         title:               Title of the image.
-        category:            'digitized_artwork',
+        category:            'digitized_artwork', 'photograph', 'illustration'
         meta_data:           Dictionary of meta_data about the image.
                              Currently, a key that we prefer to have is
                              `description`. If 'license_url' is included

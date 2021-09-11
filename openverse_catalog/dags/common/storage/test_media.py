@@ -8,6 +8,7 @@ from unittest.mock import patch
 import pytest
 from common.licenses.licenses import LicenseInfo, get_license_info
 from common.storage import image
+from common.storage.image import ImageCategory
 
 
 logging.basicConfig(
@@ -756,7 +757,7 @@ def test_create_tsv_row_properly_places_entries(monkeypatch):
         "creator": "tyler",
         "creator_url": "https://creatorurl.com",
         "title": "agreatpicture",
-        "category": "photograph",
+        "category": ImageCategory.photograph,
         "meta_data": {"description": "cat picture"},
         "tags": [{"name": "tag1", "provider": "testing"}],
         "watermarked": "f",

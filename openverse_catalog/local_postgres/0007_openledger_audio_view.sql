@@ -71,6 +71,7 @@ CREATE MATERIALIZED VIEW audio_view AS
     creator,
     creator_url,
     title,
+    category,
     meta_data,
     tags,
     watermarked,

@@ -4,6 +4,7 @@ from unittest.mock import patch
 import pytest
 from common.licenses.licenses import LicenseInfo
 from common.storage import audio
+from common.storage.audio import AudioCategory
 
 
 logging.basicConfig(
@@ -189,7 +190,7 @@ def default_audio_args():
         duration=100,
         bit_rate=None,
         sample_rate=None,
-        category="music",
+        category=AudioCategory.music,
         genres=["rock", "pop"],
         alt_files=None,
         provider="testing_provider",
@@ -413,9 +414,9 @@ def test_create_tsv_row_properly_places_entries(monkeypatch):
         "filesize": None,
         "creator": "tyler",
         "creator_url": "https://creatorurl.com",
-        "category": "music",
-        "title": "agreatsong",
-        "meta_data": {"description": "a song about cat"},
+        "category": AudioCategory.sound_effect,
+        "title": "meow",
+        "meta_data": {"description": "cat meowing"},
         "tags": [{"name": "tag1", "provider": "testing"}],
         "watermarked": None,
         "bit_rate": 16000,
@@ -448,9 +449,9 @@ def test_create_tsv_row_properly_places_entries(monkeypatch):
                 "1.0",
                 "tyler",
                 "https://creatorurl.com",
-                "agreatsong",
-                "music",
-                '{"description": "a song about cat"}',
+                "meow",
+                "sound_effect",
+                '{"description": "cat meowing"}',
                 '[{"name": "tag1", "provider": "testing"}]',
                 "\\N",
                 "testing_provider",

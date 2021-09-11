@@ -1,5 +1,6 @@
 import logging
 from collections import namedtuple
+from enum import Enum
 from typing import Dict, Optional, Union
 
 from common.licenses.licenses import LicenseInfo
@@ -8,6 +9,8 @@ from common.storage.media import MediaStore
 
 
 logger = logging.getLogger(__name__)
+
+AudioCategory = Enum("AudioCategory", "music sound_effect podcast audiobook")
 
 # Any changes to the AUDIO_TSV_COLUMNS should also be reflected
 # in the db columns. Please, add the column to the:
@@ -43,12 +46,7 @@ AUDIO_TSV_COLUMNS = [
     columns.StringColumn(name="creator", required=False, size=2000, truncate=True),
     columns.URLColumn(name="creator_url", required=False, size=2000),
     columns.StringColumn(name="title", required=False, size=5000, truncate=True),
-    columns.StringColumn(
-        name="category",
-        required=False,
-        size=80,
-        truncate=False,
-    ),
+    columns.EnumColumn(name="category", required=False, values=AudioCategory),
     columns.JSONColumn(name="meta_data", required=False),
     columns.JSONColumn(name="tags", required=False),
     columns.BooleanColumn(

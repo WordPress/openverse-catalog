@@ -1,6 +1,7 @@
 import json
 import logging
 from abc import ABC, abstractmethod
+from enum import Enum
 
 from common import urls
 
@@ -273,3 +274,31 @@ class ArrayColumn(Column):
                 values.append(self.BASE_COLUMN.prepare_string(val))
         arr_str = json.dumps(values, ensure_ascii=False)
         return "{" + arr_str[1:-1] + "}" if arr_str else None
+
+
+class EnumColumn(Column):
+    """
+    Represents a PostgreSQL varying column that can only take
+    the values in the Enum.
+
+    name:      name of the corresponding column in the DB
+    required:  whether the column should be considered required by the
+               instantiating script.  (Not necessarily mapping to
+               `not null` columns in the PostgreSQL table)
+    """
+
+    def __init__(self, name: str, required: bool, values):
+        super().__init__(name, required)
+        self.values = values
+
+    def prepare_string(self, value):
+        """
+        Returns a string representation of the enum.
+
+        If the value is not an enum, or is None, returns None.
+        """
+        if not isinstance(value, Enum):
+            logger.debug(f"{value} is not a valid Enum value for {self.values}")
+            return None
+        else:
+            return value.name
