@@ -176,7 +176,8 @@ def upsert_records_to_db_table(
     logger.info(f"Upserting new records into {db_table}.")
     postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
 
-    db_columns = get_table_columns(media_type, table_type="main")
+    # Remove identifier column
+    db_columns = get_table_columns(media_type, table_type="main")[1:]
     upsert_conflict_string = ",\n          ".join(
         [DB_COLUMNS[column].upsert_value for column in db_columns]
     )
