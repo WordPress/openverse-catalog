@@ -20,6 +20,7 @@ class Datatype(Enum):
     int = "integer"
     jsonb = "jsonb"
     timestamp = "timestamp with time zone"
+    uuid = "uuid"
 
 
 class UpsertStrategy(Enum):
@@ -75,17 +76,26 @@ def _merge_array(column: str) -> str:
 
 
 def _now(column):
-    return f"{column} = NOW()"
+    return f"{column} = {NOW}"
 
 
 def _false(column):
-    return f"{column} = 'f'"
+    return f"{column} = {FALSE}"
 
 
 class DbColumn:
     """Class for columns in the database,
     including conflict resolution for new data
     """
+
+    strategies = {
+        UpsertStrategy.newest_non_null: _newest_non_null,
+        UpsertStrategy.now: _now,
+        UpsertStrategy.false: _false,
+        UpsertStrategy.merge_jsonb_objects: _merge_jsonb_objects,
+        UpsertStrategy.merge_jsonb_arrays: _merge_jsonb_arrays,
+        UpsertStrategy.merge_array: _merge_array,
+    }
 
     def __init__(
         self,
@@ -121,14 +131,7 @@ class DbColumn:
 
     @property
     def upsert_value(self):
-        strategy = {
-            UpsertStrategy.newest_non_null: _newest_non_null,
-            UpsertStrategy.now: _now,
-            UpsertStrategy.false: _false,
-            UpsertStrategy.merge_jsonb_objects: _merge_jsonb_objects,
-            UpsertStrategy.merge_jsonb_arrays: _merge_jsonb_arrays,
-            UpsertStrategy.merge_array: _merge_array,
-        }.get(self.upsert_strategy)
+        strategy = DbColumn.strategies.get(self.upsert_strategy)
         if strategy is None:
             logging.warning(f"Unrecognized column {self.name}; ignoring during upsert")
             return ""
@@ -138,7 +141,9 @@ class DbColumn:
 
 # The dictionary of all columns in the Postgres databases, both `image` and `audio`
 DB_COLUMNS = {
-    col.IDENTIFIER: DbColumn("identifier", Datatype.char, "varying(3000)"),
+    col.IDENTIFIER: DbColumn(
+        "identifier", Datatype.uuid, "PRIMARY KEY DEFAULT public.uuid_generate_v4()"
+    ),
     col.FOREIGN_ID: DbColumn("foreign_identifier", Datatype.char, "varying(3000)"),
     col.LANDING_URL: DbColumn("foreign_landing_url", Datatype.char, "varying(1000)"),
     col.DIRECT_URL: DbColumn("url", Datatype.char, "varying(3000)"),
@@ -169,7 +174,7 @@ DB_COLUMNS = {
         "last_synced_with_source", Datatype.timestamp, None, UpsertStrategy.now
     ),
     col.REMOVED: DbColumn(
-        "removed_from_source", Datatype.char, "varying(3000)", UpsertStrategy.false
+        "removed_from_source", Datatype.bool, None, UpsertStrategy.false
     ),
     col.FILETYPE: DbColumn(
         "filetype", Datatype.char, "varying(5)", UpsertStrategy.newest_non_null
@@ -212,7 +217,7 @@ common_columns = {
         col.INGESTION_TYPE,
     ],
     "main": [
-        # IDENTIFIER,
+        col.IDENTIFIER,
         col.CREATED_ON,
         col.UPDATED_ON,
         col.INGESTION_TYPE,
@@ -228,13 +233,11 @@ common_columns = {
         col.CREATOR,
         col.CREATOR_URL,
         col.TITLE,
-        col.LAST_SYNCED,
-        col.REMOVED,
         col.META_DATA,
         col.TAGS,
         col.WATERMARKED,
-        # LAST_SYNCED
-        # REMOVED
+        col.LAST_SYNCED,
+        col.REMOVED,
     ],
 }
 
@@ -265,7 +268,7 @@ def get_table_columns(media_type: str, table_type: str = "main") -> List[str]:
     `image` or `audio` table.
     :return: list of strings - names of the columns for selected db table
     """
-    if table_type not in ["main", "loading"]:
+    if table_type not in {"main", "loading"}:
         raise TypeError(f"Cannot create table of type {table_type}")
     common_db_columns = common_columns[table_type]
     media_specific_columns = media_columns.get(media_type)
@@ -281,7 +284,7 @@ def create_column_definitions(column_list: List[str]) -> str:
     used to create the db table, with the correct datatype and
     constraint.
     >>> create_column_definitions(['identifier', 'width'])
-    identifier character varying(3000), width integer
+    'identifier character varying(3000),\n  width integer'
 
     Silently skips if column is not in the ALL_DB_COLUMNS
     :param column_list: list of column names, from ALL_DB_COLUMNS
