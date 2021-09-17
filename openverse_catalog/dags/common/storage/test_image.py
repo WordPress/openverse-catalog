@@ -167,6 +167,7 @@ def test_ImageStore_get_image_places_given_args(
     args_dict = {
         "foreign_landing_url": "https://landing_page.com",
         "image_url": "https://imageurl.com",
+        "filetype": "png",
         "license_info": BY_LICENSE_INFO,
         "foreign_identifier": "foreign_id",
         "thumbnail_url": "https://thumbnail.com",
@@ -221,6 +222,7 @@ def test_ImageStore_get_media_gets_source(
         foreign_identifier=None,
         width=None,
         height=None,
+        filetype=None,
         creator=None,
         creator_url=None,
         title=None,
@@ -246,6 +248,7 @@ def test_ImageStore_get_image_creates_meta_data_with_valid_license_url():
         image_url=None,
         thumbnail_url=None,
         foreign_identifier=None,
+        filetype=None,
         width=None,
         height=None,
         creator=None,
@@ -279,6 +282,7 @@ def test_ImageStore_get_image_enriches_singleton_tags():
         foreign_identifier=None,
         width=None,
         height=None,
+        filetype=None,
         creator=None,
         creator_url=None,
         title=None,
@@ -311,6 +315,7 @@ def test_ImageStore_get_image_tag_blacklist():
         foreign_identifier=None,
         width=None,
         height=None,
+        filetype=None,
         creator=None,
         creator_url=None,
         title=None,
@@ -336,6 +341,7 @@ def test_ImageStore_get_image_enriches_multiple_tags(
         foreign_identifier=None,
         width=None,
         height=None,
+        filetype=None,
         creator=None,
         creator_url=None,
         title=None,
@@ -369,6 +375,7 @@ def test_ImageStore_get_image_leaves_preenriched_tags(setup_env):
         foreign_identifier=None,
         width=None,
         height=None,
+        filetype=None,
         creator=None,
         creator_url=None,
         title=None,
@@ -394,6 +401,7 @@ def test_ImageStore_get_image_nones_nonlist_tags():
         foreign_identifier=None,
         width=None,
         height=None,
+        filetype=None,
         creator=None,
         creator_url=None,
         title=None,
@@ -419,6 +427,7 @@ def default_image_args(
         width=None,
         height=None,
         filesize=None,
+        filetype=None,
         license_="cc0",
         license_version="1.0",
         creator=None,
@@ -528,7 +537,7 @@ def test_create_tsv_row_turns_empty_into_nullchar(
         all(
             [
                 actual_row[i] == "\\N"
-                for i in [0, 3, 4, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+                for i in [0, 3, 4, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
             ]
         )
         is True
@@ -554,6 +563,7 @@ def test_create_tsv_row_properly_places_entries(setup_env, monkeypatch):
         "width": 200,
         "height": 500,
         "filesize": None,
+        "filetype": "svg",
         "creator": "tyler",
         "creator_url": "https://creatorurl.com",
         "title": "agreatpicture",
@@ -576,6 +586,7 @@ def test_create_tsv_row_properly_places_entries(setup_env, monkeypatch):
                 "http://imageurl.com",
                 "http://thumbnail.com",
                 "\\N",
+                "svg",
                 "testlicense",
                 "1.0",
                 "tyler",

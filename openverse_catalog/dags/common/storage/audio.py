@@ -36,6 +36,7 @@ AUDIO_TSV_COLUMNS = [
         size=3000,
     ),
     columns.IntegerColumn(name="filesize", required=False),
+    columns.StringColumn(name="filetype", required=False, size=5, truncate=False),
     columns.StringColumn(name="license_", required=True, size=50, truncate=False),
     columns.StringColumn(
         name="license_version", required=True, size=25, truncate=False
@@ -54,7 +55,6 @@ AUDIO_TSV_COLUMNS = [
     columns.StringColumn(
         name="ingestion_type", required=False, size=80, truncate=False
     ),
-    columns.StringColumn(name="filetype", required=False, size=5, truncate=False),
     columns.IntegerColumn(name="duration", required=False),
     columns.IntegerColumn(
         name="bit_rate",

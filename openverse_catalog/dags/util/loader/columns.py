@@ -204,6 +204,7 @@ common_columns = {
         col.DIRECT_URL,
         col.THUMBNAIL,
         col.FILESIZE,
+        col.FILETYPE,
         col.LICENSE,
         col.LICENSE_VERSION,
         col.CREATOR,
@@ -228,6 +229,7 @@ common_columns = {
         col.DIRECT_URL,
         col.THUMBNAIL,
         col.FILESIZE,
+        col.FILETYPE,
         col.LICENSE,
         col.LICENSE_VERSION,
         col.CREATOR,
@@ -245,7 +247,6 @@ common_columns = {
 # These columns are at the end of the db table.
 media_columns = {
     AUDIO: [
-        col.FILETYPE,
         col.DURATION,
         col.BIT_RATE,
         col.SAMPLE_RATE,
@@ -283,8 +284,10 @@ def create_column_definitions(column_list: List[str]) -> str:
     Turns a list of db column names into a string
     used to create the db table, with the correct datatype and
     constraint.
-    >>> create_column_definitions(['identifier', 'width'])
-    'identifier character varying(3000),\n  width integer'
+    >>> create_column_definitions(['identifier'])
+    'identifier uuid PRIMARY KEY DEFAULT public.uuid_generate_v4()'
+    >>> create_column_definitions(['width', 'filetype'])
+    'width integer,\\n  filetype character varying(5)'
 
     Silently skips if column is not in the ALL_DB_COLUMNS
     :param column_list: list of column names, from ALL_DB_COLUMNS

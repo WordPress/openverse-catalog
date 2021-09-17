@@ -25,6 +25,7 @@ CREATE TABLE public.image (
     url character varying(3000) NOT NULL,
     thumbnail character varying(3000),
     filesize integer,
+    filetype character varying(5),
     license character varying(50) NOT NULL,
     license_version character varying(25),
     creator character varying(2000),

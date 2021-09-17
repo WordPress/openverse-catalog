@@ -59,6 +59,8 @@ CREATE MATERIALIZED VIEW image_view AS
     foreign_landing_url,
     url,
     thumbnail,
+    filesize,
+    filetype,
     width,
     height,
     filesize,

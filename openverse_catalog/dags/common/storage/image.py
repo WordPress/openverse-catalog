@@ -36,6 +36,7 @@ IMAGE_TSV_COLUMNS = [
         size=3000,
     ),
     columns.IntegerColumn(name="filesize", required=False),
+    columns.StringColumn(name="filetype", required=False, size=5, truncate=False),
     columns.StringColumn(name="license_", required=True, size=50, truncate=False),
     columns.StringColumn(
         name="license_version", required=True, size=25, truncate=False
@@ -92,6 +93,7 @@ class ImageStore(MediaStore):
         foreign_identifier: Optional[str] = None,
         width: Optional[int] = None,
         height: Optional[int] = None,
+        filetype: Optional[str] = None,
         creator: Optional[str] = None,
         creator_url: Optional[str] = None,
         title: Optional[str] = None,
@@ -133,6 +135,7 @@ class ImageStore(MediaStore):
                              source site.
         width:               in pixels
         height:              in pixels
+        filetype:            image file type, eg. 'png'
         creator:             The creator of the image.
         creator_url:         The user page, or home page of the creator.
         title:               Title of the image.
@@ -163,6 +166,7 @@ class ImageStore(MediaStore):
             "foreign_identifier": foreign_identifier,
             "width": width,
             "height": height,
+            "filetype": filetype,
             "creator": creator,
             "creator_url": creator_url,
             "title": title,
