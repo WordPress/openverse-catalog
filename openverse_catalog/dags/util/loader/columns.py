@@ -75,11 +75,11 @@ def _merge_array(column: str) -> str:
 
 
 def _now(column):
-    return f"{column} = NOW()"
+    return f"{column} = {NOW}"
 
 
 def _false(column):
-    return f"{column} = 'f'"
+    return f"{column} = {FALSE}"
 
 
 class DbColumn:
@@ -261,7 +261,7 @@ def get_table_columns(media_type: str, table_type: str = "main") -> List[str]:
     `image` or `audio` table.
     :return: list of strings - names of the columns for selected db table
     """
-    if table_type not in ["main", "loading"]:
+    if table_type not in {"main", "loading"}:
         raise TypeError(f"Cannot create table of type {table_type}")
     common_db_columns = common_columns[table_type]
     media_specific_columns = media_columns.get(media_type)

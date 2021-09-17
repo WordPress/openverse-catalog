@@ -1,6 +1,6 @@
 """\
 #### Database Loader DAG
-**DB Loader Apache Airflow DAG** (direct acyclic graph) takes the media data saved
+**DB Loader Apache Airflow DAG** (directed acyclic graph) takes the media data saved
 locally in TSV files, cleans it using an intermediate database table, and saves
 the cleaned-up data into the main database (also called upstream or Openledger).
 
