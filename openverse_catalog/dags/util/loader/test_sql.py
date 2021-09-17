@@ -416,13 +416,11 @@ def test_upsert_records_inserts_one_record_to_empty_image_table(
     SOURCE = "images_source"
     INGESTION_TYPE = "test_ingestion"
 
-    load_data_query = (
-        f"INSERT INTO {load_table} VALUES("
-        f"'{FID}','{LAND_URL}','{IMG_URL}','{THM_URL}',"
-        f"'{FILESIZE}','{LICENSE}','{VERSION}','{CREATOR}','{CREATOR_URL}',"
-        f"'{TITLE}','{META_DATA}','{TAGS}','{WATERMARKED}','{PROVIDER}',"
-        f"'{SOURCE}', '{INGESTION_TYPE}', '{WIDTH}', '{HEIGHT}');"
-    )
+    load_data_query = f"""INSERT INTO {load_table} VALUES(
+        '{FID}','{LAND_URL}','{IMG_URL}','{THM_URL}',
+        '{FILESIZE}','{LICENSE}','{VERSION}','{CREATOR}','{CREATOR_URL}',
+        '{TITLE}','{META_DATA}','{TAGS}','{WATERMARKED}','{PROVIDER}',
+        '{SOURCE}', '{INGESTION_TYPE}', '{WIDTH}', '{HEIGHT}');"""
     postgres_with_load_and_image_table.cursor.execute(load_data_query)
     postgres_with_load_and_image_table.connection.commit()
     sql.upsert_records_to_db_table(postgres_conn_id, identifier, db_table=image_table)
@@ -474,15 +472,13 @@ def test_upsert_records_inserts_two_records_to_image_table(
     ]
 
     for r in test_rows:
-        load_data_query = (
-            f"INSERT INTO {load_table} ("
-            f"foreign_identifier, foreign_landing_url, url,"
-            f" license, license_version, provider, source"
-            f") VALUES ("
-            f"'{r[0]}', '{r[1]}', '{r[2]}',"
-            f"'{r[3]}', '{r[4]}', '{r[5]}', '{r[5]}'"
-            f");"
-        )
+        load_data_query = f"""INSERT INTO {load_table} (
+            foreign_identifier, foreign_landing_url, url,
+             license, license_version, provider, source
+            ) VALUES (
+            '{r[0]}', '{r[1]}', '{r[2]}',
+            '{r[3]}', '{r[4]}', '{r[5]}', '{r[5]}'
+            );"""
         postgres_with_load_and_image_table.cursor.execute(load_data_query)
         postgres_with_load_and_image_table.connection.commit()
     sql.upsert_records_to_db_table(postgres_conn_id, identifier, db_table=image_table)
@@ -507,15 +503,13 @@ def test_upsert_records_replaces_updated_on_and_last_synced_with_source(
     VERSION = "1.0"
     PROVIDER = "images"
 
-    load_data_query = (
-        f"INSERT INTO {load_table} ("
-        f"foreign_identifier, foreign_landing_url, url,"
-        f" license, license_version, provider, source"
-        f") VALUES ("
-        f"'{FID}','{LAND_URL}','{IMG_URL}',"
-        f"'{LICENSE}','{VERSION}','{PROVIDER}','{PROVIDER}'"
-        f");"
-    )
+    load_data_query = f"""INSERT INTO {load_table} (
+        foreign_identifier, foreign_landing_url, url,
+         license, license_version, provider, source
+        ) VALUES (
+        '{FID}','{LAND_URL}','{IMG_URL}','{LICENSE}','{VERSION}',
+        '{PROVIDER}','{PROVIDER}'
+        );"""
     postgres_with_load_and_image_table.cursor.execute(load_data_query)
     postgres_with_load_and_image_table.connection.commit()
 
@@ -576,29 +570,25 @@ def test_upsert_records_replaces_data(postgres_with_load_and_image_table, tmpdir
     TITLE_B = "Bobs Great Pic"
     META_DATA_B = '{"description": "Bobs cool picture"}'
 
-    load_data_query_a = (
-        f"INSERT INTO {load_table} VALUES("
-        f"'{FID}','{LAND_URL_A}','{IMG_URL_A}','{THM_URL_A}',"
-        f"'{FILESIZE}','{LICENSE_A}','{VERSION_A}',"
-        f"'{CREATOR_A}','{CREATOR_URL_A}','{TITLE_A}','{META_DATA_A}',"
-        f"'{TAGS}','{WATERMARKED}','{PROVIDER}','{SOURCE}','{INGESTION}',"
-        f"'{WIDTH_A}','{HEIGHT_A}'"
-        f");"
-    )
+    load_data_query_a = f"""INSERT INTO {load_table} VALUES(
+        '{FID}','{LAND_URL_A}','{IMG_URL_A}','{THM_URL_A}',
+        '{FILESIZE}','{LICENSE_A}','{VERSION_A}',
+        '{CREATOR_A}','{CREATOR_URL_A}','{TITLE_A}','{META_DATA_A}',
+        '{TAGS}','{WATERMARKED}','{PROVIDER}','{SOURCE}','{INGESTION}',
+        '{WIDTH_A}','{HEIGHT_A}'
+        );"""
     postgres_with_load_and_image_table.cursor.execute(load_data_query_a)
     postgres_with_load_and_image_table.connection.commit()
     sql.upsert_records_to_db_table(postgres_conn_id, identifier, db_table=image_table)
     postgres_with_load_and_image_table.connection.commit()
 
-    load_data_query_b = (
-        f"INSERT INTO {load_table} VALUES("
-        f"'{FID}','{LAND_URL_B}','{IMG_URL_B}','{THM_URL_B}',"
-        f"'{FILESIZE}','{LICENSE_B}','{VERSION_B}',"
-        f"'{CREATOR_B}','{CREATOR_URL_B}','{TITLE_B}','{META_DATA_B}',"
-        f"'{TAGS}','{WATERMARKED}','{PROVIDER}','{SOURCE}','{INGESTION}',"
-        f"'{WIDTH_B}','{HEIGHT_B}'"
-        f");"
-    )
+    load_data_query_b = f"""INSERT INTO {load_table} VALUES(
+        '{FID}','{LAND_URL_B}','{IMG_URL_B}','{THM_URL_B}',
+        '{FILESIZE}','{LICENSE_B}','{VERSION_B}',
+        '{CREATOR_B}','{CREATOR_URL_B}','{TITLE_B}','{META_DATA_B}',
+        '{TAGS}','{WATERMARKED}','{PROVIDER}','{SOURCE}','{INGESTION}',
+        '{WIDTH_B}','{HEIGHT_B}'
+        );"""
     postgres_with_load_and_image_table.cursor.execute(f"DELETE FROM {load_table};")
     postgres_with_load_and_image_table.connection.commit()
     postgres_with_load_and_image_table.cursor.execute(load_data_query_b)
@@ -654,28 +644,20 @@ def test_upsert_records_does_not_replace_with_nulls(
     LICENSE_B = "cc0"
     VERSION_B = "1.0"
 
-    load_data_query_a = (
-        f"INSERT INTO {load_table} VALUES("
-        f"'{FID}','{LAND_URL_A}','{IMG_URL}','{THM_URL_A}',"
-        f"'{FILESIZE}','{LICENSE_A}','{VERSION_A}',"
-        f"'{CREATOR_A}','{CREATOR_URL_A}','{TITLE_A}','{META_DATA_A}',"
-        f"'{TAGS}','{WATERMARKED}','{PROVIDER}','{SOURCE}','{INGESTION}',"
-        f"'{WIDTH_A}','{HEIGHT_A}'"
-        f");"
-    )
+    load_data_query_a = f"""INSERT INTO {load_table} VALUES(
+        '{FID}','{LAND_URL_A}','{IMG_URL}','{THM_URL_A}','{FILESIZE}','{LICENSE_A}',
+        '{VERSION_A}','{CREATOR_A}','{CREATOR_URL_A}','{TITLE_A}','{META_DATA_A}',
+        '{TAGS}','{WATERMARKED}','{PROVIDER}','{SOURCE}','{INGESTION}','{WIDTH_A}','{HEIGHT_A}'
+        );"""
     postgres_with_load_and_image_table.cursor.execute(load_data_query_a)
     postgres_with_load_and_image_table.connection.commit()
     sql.upsert_records_to_db_table(postgres_conn_id, identifier, db_table=image_table)
     postgres_with_load_and_image_table.connection.commit()
 
-    load_data_query_b = (
-        f"INSERT INTO {load_table} VALUES("
-        f"'{FID}','{LAND_URL_B}','{IMG_URL}',null,"
-        f"null,'{LICENSE_B}','{VERSION_B}',"
-        f"null,null,null,null,"
-        f"'{TAGS}',null,'{PROVIDER}','{SOURCE}',null,null,null"
-        f");"
-    )
+    load_data_query_b = f"""INSERT INTO {load_table} VALUES(
+        '{FID}','{LAND_URL_B}','{IMG_URL}',null,null,'{LICENSE_B}','{VERSION_B}',
+        null,null,null,null,'{TAGS}',null,'{PROVIDER}','{SOURCE}',null,null,null
+        );"""
     postgres_with_load_and_image_table.cursor.execute(f"DELETE FROM {load_table};")
     postgres_with_load_and_image_table.connection.commit()
     postgres_with_load_and_image_table.cursor.execute(load_data_query_b)
@@ -714,19 +696,15 @@ def test_upsert_records_merges_meta_data(postgres_with_load_and_image_table, tmp
     META_DATA_A = '{"description": "a cool picture", "test": "should stay"}'
     META_DATA_B = '{"description": "I updated my description"}'
 
-    load_data_query_a = (
-        f"INSERT INTO {load_table} VALUES("
-        f"'{FID}',null,'{IMG_URL}',null,null,'{LICENSE}',null,null,"
-        f"null,null,'{META_DATA_A}',null,null,'{PROVIDER}',null,null,null,null"
-        f");"
-    )
+    load_data_query_a = f"""INSERT INTO {load_table} VALUES(
+        '{FID}',null,'{IMG_URL}',null,null,'{LICENSE}',null,null,
+        null,null,'{META_DATA_A}',null,null,'{PROVIDER}',null,null,null,null
+        );"""
 
-    load_data_query_b = (
-        f"INSERT INTO {load_table} VALUES("
-        f"'{FID}',null,'{IMG_URL}',null,null,'{LICENSE}',null,null,"
-        f"null,null,'{META_DATA_B}',null,null,'{PROVIDER}',null,null,null,null"
-        f");"
-    )
+    load_data_query_b = f"""INSERT INTO {load_table} VALUES(
+        '{FID}',null,'{IMG_URL}',null,null,'{LICENSE}',null,null,
+        null,null,'{META_DATA_B}',null,null,'{PROVIDER}',null,null,null,null
+        );"""
     postgres_with_load_and_image_table.cursor.execute(load_data_query_a)
     postgres_with_load_and_image_table.connection.commit()
     sql.upsert_records_to_db_table(postgres_conn_id, identifier, db_table=image_table)
@@ -762,19 +740,15 @@ def test_upsert_records_does_not_replace_with_null_values_in_meta_data(
     META_DATA_A = '{"description": "a cool picture", "test": "should stay"}'
     META_DATA_B = '{"description": "I updated my description", "test": null}'
 
-    load_data_query_a = (
-        f"INSERT INTO {load_table} VALUES("
-        f"'{FID}',null,'{IMG_URL}',null,null,'{LICENSE}',null,null,"
-        f"null,null,'{META_DATA_A}',null,null,'{PROVIDER}',null,null,null,null"
-        f");"
-    )
+    load_data_query_a = f"""INSERT INTO {load_table} VALUES(
+        '{FID}',null,'{IMG_URL}',null,null,'{LICENSE}',null,null,
+        null,null,'{META_DATA_A}',null,null,'{PROVIDER}',null,null,null,null
+        );"""
 
-    load_data_query_b = (
-        f"INSERT INTO {load_table} VALUES("
-        f"'{FID}',null,'{IMG_URL}',null,null,'{LICENSE}',null,null,"
-        f"null,null,'{META_DATA_B}',null,null,'{PROVIDER}',null,null,null,null"
-        f");"
-    )
+    load_data_query_b = f"""INSERT INTO {load_table} VALUES(
+        '{FID}',null,'{IMG_URL}',null,null,'{LICENSE}',null,null,
+        null,null,'{META_DATA_B}',null,null,'{PROVIDER}',null,null,null,null
+        );"""
     postgres_with_load_and_image_table.cursor.execute(load_data_query_a)
     postgres_with_load_and_image_table.connection.commit()
     sql.upsert_records_to_db_table(postgres_conn_id, identifier, db_table=image_table)
@@ -817,19 +791,15 @@ def test_upsert_records_merges_tags(postgres_with_load_and_image_table, tmpdir):
         ]
     )
 
-    load_data_query_a = (
-        f"INSERT INTO {load_table} VALUES("
-        f"'{FID}',null,'{IMG_URL}',null,null,'{LICENSE}',null,null,"
-        f"null,null,null,'{TAGS_A}',null,'{PROVIDER}',null,null,null"
-        f");"
-    )
+    load_data_query_a = f"""INSERT INTO {load_table} VALUES(
+        '{FID}',null,'{IMG_URL}',null,null,'{LICENSE}',null,null,
+        null,null,null,'{TAGS_A}',null,'{PROVIDER}',null,null,null
+        );"""
 
-    load_data_query_b = (
-        f"INSERT INTO {load_table} VALUES("
-        f"'{FID}',null,'{IMG_URL}',null,null,'{LICENSE}',null,null,"
-        f"null,null,null,'{TAGS_B}',null,'{PROVIDER}',null,null,null"
-        f");"
-    )
+    load_data_query_b = f"""INSERT INTO {load_table} VALUES(
+        '{FID}',null,'{IMG_URL}',null,null,'{LICENSE}',null,null,
+        null,null,null,'{TAGS_B}',null,'{PROVIDER}',null,null,null
+        );"""
     postgres_with_load_and_image_table.cursor.execute(load_data_query_a)
     postgres_with_load_and_image_table.connection.commit()
     sql.upsert_records_to_db_table(postgres_conn_id, identifier, db_table=image_table)
@@ -873,19 +843,15 @@ def test_upsert_records_does_not_replace_tags_with_null(
         {"name": "tagtwo", "provider": "test"},
     ]
 
-    load_data_query_a = (
-        f"INSERT INTO {load_table} VALUES("
-        f"'{FID}',null,'{IMG_URL}',null,null,'{LICENSE}',null,null,"
-        f"null,null,null,'{json.dumps(TAGS)}',null,'{PROVIDER}',null,null,null"
-        f");"
-    )
+    load_data_query_a = f"""INSERT INTO {load_table} VALUES(
+        '{FID}',null,'{IMG_URL}',null,null,'{LICENSE}',null,null,
+        null,null,null,'{json.dumps(TAGS)}',null,'{PROVIDER}',null,null,null
+        );"""
 
-    load_data_query_b = (
-        f"INSERT INTO {load_table} VALUES("
-        f"'{FID}',null,'{IMG_URL}',null,null,'{LICENSE}',null,null,"
-        f"null,null,null,null,null,'{PROVIDER}',null,null,null"
-        f");"
-    )
+    load_data_query_b = f"""INSERT INTO {load_table} VALUES(
+        '{FID}',null,'{IMG_URL}',null,null,'{LICENSE}',null,null,
+        null,null,null,null,null,'{PROVIDER}',null,null,null
+        );"""
     postgres_with_load_and_image_table.cursor.execute(load_data_query_a)
     postgres_with_load_and_image_table.connection.commit()
     sql.upsert_records_to_db_table(postgres_conn_id, identifier, db_table=image_table)
@@ -924,18 +890,14 @@ def test_upsert_records_replaces_null_tags(postgres_with_load_and_image_table, t
         {"name": "tagone", "provider": "test"},
         {"name": "tagtwo", "provider": "test"},
     ]
-    load_data_query_a = (
-        f"INSERT INTO {load_table} VALUES("
-        f"'{FID}',null,'{IMG_URL}',null,null,'{LICENSE}',null,null,"
-        f"null,null,null,null,null,'{PROVIDER}',null,null,null"
-        f");"
-    )
-    load_data_query_b = (
-        f"INSERT INTO {load_table} VALUES("
-        f"'{FID}',null,'{IMG_URL}',null,null,'{LICENSE}',null,null,"
-        f"null,null,null,'{json.dumps(TAGS)}',null,'{PROVIDER}',null,null,null"
-        f");"
-    )
+    load_data_query_a = f"""INSERT INTO {load_table} VALUES(
+        '{FID}',null,'{IMG_URL}',null,null,'{LICENSE}',null,null,
+        null,null,null,null,null,'{PROVIDER}',null,null,null
+        );"""
+    load_data_query_b = f"""INSERT INTO {load_table} VALUES(
+        '{FID}',null,'{IMG_URL}',null,null,'{LICENSE}',null,null,
+        null,null,null,'{json.dumps(TAGS)}',null,'{PROVIDER}',null,null,null
+        );"""
 
     postgres_with_load_and_image_table.cursor.execute(load_data_query_a)
     postgres_with_load_and_image_table.connection.commit()
@@ -974,15 +936,13 @@ def test_overwrite_records_leaves_dates(postgres_with_load_and_image_table, tmpd
     VERSION = "1.0"
     PROVIDER = "images"
 
-    load_data_query = (
-        f"INSERT INTO {load_table} ("
-        f"foreign_identifier, foreign_landing_url, url,"
-        f" license, license_version, provider, source"
-        f") VALUES ("
-        f"'{FID}','{LAND_URL}','{IMG_URL}',"
-        f"'{LICENSE}','{VERSION}','{PROVIDER}', '{PROVIDER}'"
-        f");"
-    )
+    load_data_query = f"""INSERT INTO {load_table} (
+        foreign_identifier, foreign_landing_url, url,
+         license, license_version, provider, source
+        ) VALUES (
+        '{FID}','{LAND_URL}','{IMG_URL}',
+        '{LICENSE}','{VERSION}','{PROVIDER}', '{PROVIDER}'
+        );"""
     postgres_with_load_and_image_table.cursor.execute(load_data_query)
     postgres_with_load_and_image_table.connection.commit()
 
@@ -1044,27 +1004,22 @@ def test_overwrite_records_replaces_data(postgres_with_load_and_image_table, tmp
     TITLE_B = "Bobs Great Pic"
     META_DATA_B = '{"mydesc": "Bobs cool picture"}'
 
-    load_data_query_a = (
-        f"INSERT INTO {load_table} VALUES("
-        f"'{FID}','{LAND_URL_A}','{IMG_URL_A}','{THM_URL_A}',"
-        f"'{FILESIZE}','{LICENSE_A}','{VERSION_A}',"
-        f"'{CREATOR_A}','{CREATOR_URL_A}','{TITLE_A}','{META_DATA_A}',"
-        f"'{TAGS}','{WATERMARKED}','{PROVIDER}','{SOURCE}', null,'{WIDTH_A}','{HEIGHT_A}'"
-        f");"
-    )
+    load_data_query_a = f"""INSERT INTO {load_table} VALUES(
+        '{FID}','{LAND_URL_A}','{IMG_URL_A}','{THM_URL_A}','{FILESIZE}',
+        '{LICENSE_A}','{VERSION_A}','{CREATOR_A}','{CREATOR_URL_A}','{TITLE_A}',
+        '{META_DATA_A}','{TAGS}','{WATERMARKED}','{PROVIDER}','{SOURCE}',
+        null,'{WIDTH_A}','{HEIGHT_A}'
+        );"""
     postgres_with_load_and_image_table.cursor.execute(load_data_query_a)
     postgres_with_load_and_image_table.connection.commit()
     sql.upsert_records_to_db_table(postgres_conn_id, identifier, db_table=image_table)
     postgres_with_load_and_image_table.connection.commit()
 
-    load_data_query_b = (
-        f"INSERT INTO {load_table} VALUES("
-        f"'{FID}','{LAND_URL_B}','{IMG_URL_B}','{THM_URL_B}',"
-        f"'{FILESIZE}','{LICENSE_B}','{VERSION_B}',"
-        f"'{CREATOR_B}','{CREATOR_URL_B}','{TITLE_B}','{META_DATA_B}',"
-        f"'{TAGS}','{WATERMARKED}','{PROVIDER}','{SOURCE}',null,'{WIDTH_B}','{HEIGHT_B}'"
-        f");"
-    )
+    load_data_query_b = f"""INSERT INTO {load_table} VALUES(
+        '{FID}','{LAND_URL_B}','{IMG_URL_B}','{THM_URL_B}','{FILESIZE}','{LICENSE_B}',
+        '{VERSION_B}','{CREATOR_B}','{CREATOR_URL_B}','{TITLE_B}','{META_DATA_B}',
+        '{TAGS}','{WATERMARKED}','{PROVIDER}','{SOURCE}',null,'{WIDTH_B}','{HEIGHT_B}'
+        );"""
     postgres_with_load_and_image_table.cursor.execute(f"DELETE FROM {load_table};")
     postgres_with_load_and_image_table.connection.commit()
     postgres_with_load_and_image_table.cursor.execute(load_data_query_b)
@@ -1122,15 +1077,13 @@ def test_update_flickr_sub_providers(postgres_with_load_and_image_table):
         {"name": "tagtwo", "provider": "test"},
     ]
 
-    insert_data_query = (
-        f"INSERT INTO {load_table} VALUES"
-        f"('{FID_A}',null,'{IMG_URL_A}',null,null,'{LICENSE}',null,"
-        f"null,'{CREATOR_URL_A}',null,null,'{json.dumps(TAGS)}',null,"
-        f"'{PROVIDER}','{PROVIDER}',null,null),"
-        f"('{FID_B}',null,'{IMG_URL_B}',null,null,'{LICENSE}',null,"
-        f"null,'{CREATOR_URL_B}',null,null,'{json.dumps(TAGS)}',null,"
-        f"'{PROVIDER}','{PROVIDER}',null,null);"
-    )
+    insert_data_query = f"""INSERT INTO {load_table} VALUES
+        ('{FID_A}',null,'{IMG_URL_A}',null,null,'{LICENSE}',null,null,
+        '{CREATOR_URL_A}',null,null,'{json.dumps(TAGS)}',null,
+        '{PROVIDER}','{PROVIDER}',null,null),
+        ('{FID_B}',null,'{IMG_URL_B}',null,null,'{LICENSE}',null,null,
+        '{CREATOR_URL_B}',null,null,'{json.dumps(TAGS)}',null,
+        '{PROVIDER}','{PROVIDER}',null,null);"""
 
     postgres_with_load_and_image_table.cursor.execute(insert_data_query)
     postgres_with_load_and_image_table.connection.commit()
@@ -1177,15 +1130,11 @@ def test_update_europeana_sub_providers(postgres_with_load_and_image_table):
         "license_url": "http://creativecommons.org/licenses/by-nc-nd/4.0/",
     }
 
-    insert_data_query = (
-        f"INSERT INTO {load_table} VALUES"
-        f"('{FID_A}',null,'{IMG_URL_A}',null,null,'{LICENSE}',null,"
-        f"null,null,null,'{json.dumps(META_DATA_A)}',null,null,"
-        f"'{PROVIDER}','{PROVIDER}',null,null),"
-        f"('{FID_B}',null,'{IMG_URL_B}',null,null,'{LICENSE}',null,"
-        f"null,null,null,'{json.dumps(META_DATA_B)}',null,null,"
-        f"'{PROVIDER}','{PROVIDER}',null,null);"
-    )
+    insert_data_query = f"""INSERT INTO {load_table} VALUES
+        ('{FID_A}',null,'{IMG_URL_A}',null,null,'{LICENSE}',null,null,null,null,
+        '{json.dumps(META_DATA_A)}',null,null,'{PROVIDER}','{PROVIDER}',null,null),
+        ('{FID_B}',null,'{IMG_URL_B}',null,null,'{LICENSE}',null,null,null,null,
+        '{json.dumps(META_DATA_B)}',null,null,'{PROVIDER}','{PROVIDER}',null,null);"""
 
     postgres_with_load_and_image_table.cursor.execute(insert_data_query)
     postgres_with_load_and_image_table.connection.commit()
@@ -1228,15 +1177,11 @@ def test_update_smithsonian_sub_providers(postgres_with_load_and_image_table):
         "data_source": "NMNH - Vertebrate Zoology - Birds Division",
     }
 
-    insert_data_query = (
-        f"INSERT INTO {load_table} VALUES"
-        f"('{FID_A}',null,'{IMG_URL_A}',null,null,'{LICENSE}',null,"
-        f"null,null,null,'{json.dumps(META_DATA_A)}',null,null,"
-        f"'{PROVIDER}','{PROVIDER}',null,null),"
-        f"('{FID_B}',null,'{IMG_URL_B}',null,null,'{LICENSE}',null,"
-        f"null,null,null,'{json.dumps(META_DATA_B)}',null,null,"
-        f"'{PROVIDER}','{PROVIDER}',null,null);"
-    )
+    insert_data_query = f"""INSERT INTO {load_table} VALUES
+        ('{FID_A}',null,'{IMG_URL_A}',null,null,'{LICENSE}',null,null,null,null,
+        '{json.dumps(META_DATA_A)}',null,null,'{PROVIDER}','{PROVIDER}',null,null),
+        ('{FID_B}',null,'{IMG_URL_B}',null,null,'{LICENSE}',null,null,null,null,
+        '{json.dumps(META_DATA_B)}',null,null,'{PROVIDER}','{PROVIDER}',null,null);"""
 
     postgres_with_load_and_image_table.cursor.execute(insert_data_query)
     postgres_with_load_and_image_table.connection.commit()
@@ -1276,15 +1221,13 @@ def test_image_expiration(postgres_with_load_and_image_table):
     PROVIDER_B = "flickr"
     LICENSE = "by-nc-nd"
 
-    insert_data_query = (
-        f"INSERT INTO {load_table} VALUES"
-        f"('{FID_A}',null,'{IMG_URL_A}',null,null,'{LICENSE}',null,"
-        f"null,null,null,null,null,null,"
-        f"'{PROVIDER_A}','{PROVIDER_A}',null,null),"
-        f"('{FID_B}',null,'{IMG_URL_B}',null,null,'{LICENSE}',null,"
-        f"null,null,null,null,null,null,"
-        f"'{PROVIDER_B}','{PROVIDER_B}',null,null);"
-    )
+    insert_data_query = f"""INSERT INTO {load_table} VALUES
+        ('{FID_A}',null,'{IMG_URL_A}',null,null,'{LICENSE}',null,
+        null,null,null,null,null,null,
+        '{PROVIDER_A}','{PROVIDER_A}',null,null),
+        ('{FID_B}',null,'{IMG_URL_B}',null,null,'{LICENSE}',null,
+        null,null,null,null,null,null,
+        '{PROVIDER_B}','{PROVIDER_B}',null,null);"""
 
     postgres_with_load_and_image_table.cursor.execute(insert_data_query)
     postgres_with_load_and_image_table.connection.commit()

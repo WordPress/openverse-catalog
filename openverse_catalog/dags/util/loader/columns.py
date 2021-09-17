@@ -75,17 +75,26 @@ def _merge_array(column: str) -> str:
 
 
 def _now(column):
-    return f"{column} = NOW()"
+    return f"{column} = {NOW}"
 
 
 def _false(column):
-    return f"{column} = 'f'"
+    return f"{column} = {FALSE}"
 
 
 class DbColumn:
     """Class for columns in the database,
     including conflict resolution for new data
     """
+
+    strategies = {
+        UpsertStrategy.newest_non_null: _newest_non_null,
+        UpsertStrategy.now: _now,
+        UpsertStrategy.false: _false,
+        UpsertStrategy.merge_jsonb_objects: _merge_jsonb_objects,
+        UpsertStrategy.merge_jsonb_arrays: _merge_jsonb_arrays,
+        UpsertStrategy.merge_array: _merge_array,
+    }
 
     def __init__(
         self,
@@ -121,14 +130,7 @@ class DbColumn:
 
     @property
     def upsert_value(self):
-        strategy = {
-            UpsertStrategy.newest_non_null: _newest_non_null,
-            UpsertStrategy.now: _now,
-            UpsertStrategy.false: _false,
-            UpsertStrategy.merge_jsonb_objects: _merge_jsonb_objects,
-            UpsertStrategy.merge_jsonb_arrays: _merge_jsonb_arrays,
-            UpsertStrategy.merge_array: _merge_array,
-        }.get(self.upsert_strategy)
+        strategy = DbColumn.strategies.get(self.upsert_strategy)
         if strategy is None:
             logging.warning(f"Unrecognized column {self.name}; ignoring during upsert")
             return ""
@@ -262,7 +264,7 @@ def get_table_columns(media_type: str, table_type: str = "main") -> List[str]:
     `image` or `audio` table.
     :return: list of strings - names of the columns for selected db table
     """
-    if table_type not in ["main", "loading"]:
+    if table_type not in {"main", "loading"}:
         raise TypeError(f"Cannot create table of type {table_type}")
     common_db_columns = common_columns[table_type]
     media_specific_columns = media_columns.get(media_type)
