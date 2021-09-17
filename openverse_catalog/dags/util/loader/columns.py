@@ -20,6 +20,7 @@ class Datatype(Enum):
     int = "integer"
     jsonb = "jsonb"
     timestamp = "timestamp with time zone"
+    uuid = "uuid"
 
 
 class UpsertStrategy(Enum):
@@ -140,7 +141,9 @@ class DbColumn:
 
 # The dictionary of all columns in the Postgres databases, both `image` and `audio`
 DB_COLUMNS = {
-    col.IDENTIFIER: DbColumn("identifier", Datatype.char, "varying(3000)"),
+    col.IDENTIFIER: DbColumn(
+        "identifier", Datatype.uuid, "PRIMARY KEY DEFAULT public.uuid_generate_v4()"
+    ),
     col.FOREIGN_ID: DbColumn("foreign_identifier", Datatype.char, "varying(3000)"),
     col.LANDING_URL: DbColumn("foreign_landing_url", Datatype.char, "varying(1000)"),
     col.DIRECT_URL: DbColumn("url", Datatype.char, "varying(3000)"),
@@ -171,7 +174,7 @@ DB_COLUMNS = {
         "last_synced_with_source", Datatype.timestamp, None, UpsertStrategy.now
     ),
     col.REMOVED: DbColumn(
-        "removed_from_source", Datatype.char, "varying(3000)", UpsertStrategy.false
+        "removed_from_source", Datatype.bool, None, UpsertStrategy.false
     ),
     col.DURATION: DbColumn("duration", Datatype.int),
     col.BIT_RATE: DbColumn("bit_rate", Datatype.int),
@@ -212,7 +215,7 @@ common_columns = {
         col.INGESTION_TYPE,
     ],
     "main": [
-        # IDENTIFIER,
+        col.IDENTIFIER,
         col.CREATED_ON,
         col.UPDATED_ON,
         col.INGESTION_TYPE,
@@ -229,13 +232,11 @@ common_columns = {
         col.CREATOR_URL,
         col.TITLE,
         col.CATEGORY,
-        col.LAST_SYNCED,
-        col.REMOVED,
         col.META_DATA,
         col.TAGS,
         col.WATERMARKED,
-        # LAST_SYNCED
-        # REMOVED
+        col.LAST_SYNCED,
+        col.REMOVED,
     ],
 }
 
@@ -280,7 +281,7 @@ def create_column_definitions(column_list: List[str]) -> str:
     used to create the db table, with the correct datatype and
     constraint.
     >>> create_column_definitions(['identifier', 'width'])
-    identifier character varying(3000), width integer
+    'identifier character varying(3000),\n  width integer'
 
     Silently skips if column is not in the ALL_DB_COLUMNS
     :param column_list: list of column names, from ALL_DB_COLUMNS

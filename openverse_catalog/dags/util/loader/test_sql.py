@@ -14,6 +14,7 @@ from airflow.models import TaskInstance
 from airflow.operators.dummy import DummyOperator
 from psycopg2.errors import InvalidTextRepresentation
 from util.loader import sql
+from util.loader.columns import create_column_definitions, get_table_columns
 
 
 TEST_ID = "testing"
@@ -32,58 +33,23 @@ RESOURCES = os.path.join(os.path.abspath(os.path.dirname(__file__)), "test_resou
 DROP_LOAD_TABLE_QUERY = f"DROP TABLE IF EXISTS {TEST_LOAD_TABLE} CASCADE;"
 DROP_IMAGE_TABLE_QUERY = f"DROP TABLE IF EXISTS {TEST_IMAGE_TABLE} CASCADE;"
 
-CREATE_LOAD_TABLE_QUERY = (
-    f"CREATE TABLE public.{TEST_LOAD_TABLE} ("
-    f"foreign_identifier character varying(3000), "
-    f"foreign_landing_url character varying(1000), "
-    f"url character varying(3000), "
-    f"thumbnail character varying(3000), "
-    f"filesize integer, "
-    f"license character varying(50), "
-    f"license_version character varying(25), "
-    f"creator character varying(2000), "
-    f"creator_url character varying(2000), "
-    f"title character varying(5000), "
-    f"meta_data jsonb, "
-    f"tags jsonb, "
-    f"watermarked boolean, "
-    f"provider character varying(80), "
-    f"source character varying(80), "
-    f"ingestion_type character varying(80), "
-    f"width integer, "
-    f"height integer"
-    f");"
+LOADING_TABLE_COLUMN_DEFINITIONS = create_column_definitions(
+    column_list=get_table_columns("image", table_type="loading")
 )
+
+CREATE_LOAD_TABLE_QUERY = f"""CREATE TABLE public.{TEST_LOAD_TABLE} (
+  {LOADING_TABLE_COLUMN_DEFINITIONS}
+);"""
 
 UUID_FUNCTION_QUERY = 'CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;'
 
-CREATE_IMAGE_TABLE_QUERY = (
-    f"CREATE TABLE public.{TEST_IMAGE_TABLE} ("
-    "identifier uuid PRIMARY KEY DEFAULT public.uuid_generate_v4(),"
-    "created_on timestamp with time zone NOT NULL,"
-    "updated_on timestamp with time zone NOT NULL,"
-    "ingestion_type character varying(80),"
-    "provider character varying(80),"
-    "source character varying(80),"
-    "foreign_identifier character varying(3000),"
-    "foreign_landing_url character varying(1000),"
-    "url character varying(3000) NOT NULL,"
-    "thumbnail character varying(3000),"
-    "filesize integer,"
-    "license character varying(50) NOT NULL,"
-    "license_version character varying(25),"
-    "creator character varying(2000),"
-    "creator_url character varying(2000),"
-    "title character varying(5000),"
-    "meta_data jsonb,"
-    "tags jsonb,"
-    "watermarked boolean,"
-    "last_synced_with_source timestamp with time zone,"
-    "removed_from_source boolean NOT NULL,"
-    "width integer,"
-    "height integer"
-    f");"
+IMAGE_TABLE_COLUMN_DEFINITIONS = create_column_definitions(
+    column_list=get_table_columns("image", table_type="main")
 )
+
+CREATE_IMAGE_TABLE_QUERY = f"""CREATE TABLE public.{TEST_IMAGE_TABLE} (
+  {IMAGE_TABLE_COLUMN_DEFINITIONS}
+);"""
 
 UNIQUE_CONDITION_QUERY = (
     f"CREATE UNIQUE INDEX {TEST_IMAGE_TABLE}_provider_fid_idx"
@@ -170,6 +136,7 @@ def postgres_with_load_and_image_table():
     cur.execute(DROP_IMAGE_INDEX_QUERY)
     cur.execute(CREATE_LOAD_TABLE_QUERY)
     cur.execute(UUID_FUNCTION_QUERY)
+    logging.info(f"***{CREATE_IMAGE_TABLE_QUERY}")
     cur.execute(CREATE_IMAGE_TABLE_QUERY)
     cur.execute(UNIQUE_CONDITION_QUERY)
 
