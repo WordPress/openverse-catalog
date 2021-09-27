@@ -1,13 +1,18 @@
 import json
 import logging
 from textwrap import dedent
+from typing import List
 
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from psycopg2.errors import InvalidTextRepresentation
+from storage import column_names as col
+from storage.audio import AUDIO_TSV_COLUMNS
+from storage.columns import NULL, Column, UpsertStrategy
+from storage.db_table import AUDIO_TABLE_COLUMNS, IMAGE_TABLE_COLUMNS, NOT_IN_TSV
+from storage.image import IMAGE_TSV_COLUMNS, required_columns
+from storage.tsv_columns import COLUMNS
 from util.constants import AUDIO, IMAGE
-from util.loader import column_names as col
 from util.loader import provider_details as prov
-from util.loader.columns import DB_COLUMNS, create_column_definitions, get_table_columns
 from util.loader.paths import _extract_media_type
 
 
@@ -31,6 +36,28 @@ OLDEST_PER_PROVIDER = {
     prov.SCIENCE_DEFAULT_PROVIDER: "1 month 3 days",
     prov.STATENS_DEFAULT_PROVIDER: "1 month 3 days",
 }
+
+DB_COLUMNS = {
+    IMAGE: IMAGE_TABLE_COLUMNS,
+    AUDIO: AUDIO_TABLE_COLUMNS,
+}
+TSV_COLUMNS = {
+    AUDIO: AUDIO_TSV_COLUMNS,
+    IMAGE: IMAGE_TSV_COLUMNS,
+}
+CURRENT_TSV_VERSION = "001"
+
+
+def create_column_definitions(table_columns: List[Column], is_loading=True):
+    """Loading table should not have 'NOT NULL' constraints: all TSV values
+    are copied, and then the items without required columns are dropped"""
+    definitions = []
+    for column in table_columns:
+        definition = (
+            column.column_definition if is_loading else column.main_column_definition
+        )
+        definitions.append(definition)
+    return ",\n  ".join(definitions)
 
 
 def create_loading_table(
@@ -62,12 +89,12 @@ def create_loading_table(
 
     load_table = _get_load_table_name(identifier, media_type=media_type)
     postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
-    loading_table_columns = get_table_columns(media_type, table_type="loading")
-    columns_string = f"{create_column_definitions(loading_table_columns)}"
+    loading_table_columns = TSV_COLUMNS[media_type]
+    columns_definition = f"{create_column_definitions(loading_table_columns)}"
     table_creation_query = dedent(
         f"""
     CREATE TABLE public.{load_table}(
-    {columns_string});
+    {columns_definition});
     """
     )
     postgres.run(table_creation_query)
@@ -108,7 +135,11 @@ def load_local_data_to_intermediate_table(
 
 
 def load_s3_data_to_intermediate_table(
-    postgres_conn_id, bucket, s3_key, identifier, media_type=IMAGE
+    postgres_conn_id,
+    bucket,
+    s3_key,
+    identifier,
+    media_type=IMAGE,
 ):
     load_table = _get_load_table_name(identifier, media_type=media_type)
     logger.info(f"Loading {s3_key} from S3 Bucket {bucket} into {load_table}")
@@ -140,14 +171,8 @@ def _clean_intermediate_table_data(postgres_hook, load_table):
     Also removes any duplicate rows that have the same `provider`
     and `foreign_id`.
     """
-    required_columns = [
-        col.DIRECT_URL,
-        col.LICENSE,
-        col.LANDING_URL,
-        col.FOREIGN_ID,
-    ]
     for column in required_columns:
-        postgres_hook.run(f"DELETE FROM {load_table} WHERE {column} IS NULL;")
+        postgres_hook.run(f"DELETE FROM {load_table} WHERE {column.db_name} IS NULL;")
     postgres_hook.run(
         dedent(
             f"""
@@ -162,13 +187,20 @@ def _clean_intermediate_table_data(postgres_hook, load_table):
     )
 
 
+def _is_tsv_column_from_different_version(column, media_type, tsv_version):
+    return (
+        column not in COLUMNS[media_type][tsv_version]
+        and column.upsert_strategy == UpsertStrategy.newest_non_null
+    )
+
+
 def upsert_records_to_db_table(
     postgres_conn_id,
     identifier,
     db_table=None,
     media_type=IMAGE,
+    tsv_version=CURRENT_TSV_VERSION,
 ):
-
     if db_table is None:
         db_table = TABLE_NAME.get(media_type, TABLE_NAME[IMAGE])
 
@@ -177,34 +209,59 @@ def upsert_records_to_db_table(
     postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
 
     # Remove identifier column
-    db_columns = get_table_columns(media_type, table_type="main")[1:]
+    db_columns: List[Column] = DB_COLUMNS[media_type][1:]
+    tsv_version_columns = COLUMNS[media_type][tsv_version]
+    logger.info(f"tsv columns: {tsv_version_columns}")
+    db_columns_to_update_from_tsv = [
+        column
+        for column in db_columns
+        if column not in NOT_IN_TSV and column in tsv_version_columns
+    ]
+    logger.info(f"db columns to update: {db_columns_to_update_from_tsv}")
+
     upsert_conflict_string = ",\n          ".join(
-        [DB_COLUMNS[column].upsert_value for column in db_columns]
+        [column.upsert_value for column in db_columns_to_update_from_tsv]
     )
+    column_inserts = {}
+    for column in db_columns:
+        if _is_tsv_column_from_different_version(column, media_type, tsv_version):
+            column_inserts[column.db_name] = NULL
+        else:
+            column_inserts[column.db_name] = column.upsert_name
+    logger.info(f"Upsert: {upsert_conflict_string}")
+    logger.info(f"column_inserts: {json.dumps(column_inserts, indent=2)}")
     upsert_query = dedent(
         f"""
-        INSERT INTO {db_table} AS old ({', '.join(db_columns)})
-        SELECT {', '.join([DB_COLUMNS[column].upsert_name for column in db_columns])}
+        INSERT INTO {db_table} AS old ({', '.join(column_inserts.keys())})
+        SELECT {', '.join(column_inserts.values())}
         FROM {load_table}
         ON CONFLICT ({col.PROVIDER}, md5({col.FOREIGN_ID}))
         DO UPDATE SET
           {upsert_conflict_string}
         """
     )
+    logger.info(f"Upsert query: \n{upsert_query}")
     postgres.run(upsert_query)
 
 
 def overwrite_records_in_db_table(
-    postgres_conn_id, identifier, db_table=None, media_type=IMAGE
+    postgres_conn_id,
+    identifier,
+    db_table=None,
+    media_type=IMAGE,
+    tsv_version=CURRENT_TSV_VERSION,
 ):
     if db_table is None:
         db_table = TABLE_NAME[media_type]
     load_table = _get_load_table_name(identifier, media_type=media_type)
-    logger.info(f"Updating records in {db_table}.")
+    logger.info(f"Updating records in {db_table}. {tsv_version}")
     postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
-    columns_to_update = get_table_columns(media_type, "loading")
+    columns_to_update = TSV_COLUMNS[media_type]
     update_set_string = ",\n  ".join(
-        [f"{column} = {load_table}.{column}" for column in columns_to_update]
+        [
+            f"{column.db_name} = {load_table}.{column.db_name}"
+            for column in columns_to_update
+        ]
     )
 
     update_query = dedent(

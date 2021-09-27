@@ -13,9 +13,34 @@ import pytest
 from airflow.models import TaskInstance
 from airflow.operators.dummy import DummyOperator
 from psycopg2.errors import InvalidTextRepresentation
-from util.loader import column_names as col
+from storage import column_names as col
+from storage.columns import (
+    CREATOR_COLUMN,
+    CREATOR_URL_COLUMN,
+    DIRECT_URL_COLUMN,
+    FILESIZE_COLUMN,
+    FOREIGN_ID_COLUMN,
+    HEIGHT_COLUMN,
+    INGESTION_TYPE_COLUMN,
+    LANDING_URL_COLUMN,
+    LAST_SYNCED_COLUMN,
+    LICENSE_COLUMN,
+    LICENSE_VERSION_COLUMN,
+    META_DATA_COLUMN,
+    PROVIDER_COLUMN,
+    REMOVED_COLUMN,
+    SOURCE_COLUMN,
+    TAGS_COLUMN,
+    THUMBNAIL_COLUMN,
+    TITLE_COLUMN,
+    UPDATED_ON_COLUMN,
+    WATERMARKED_COLUMN,
+    WIDTH_COLUMN,
+)
+from storage.db_table import IMAGE_TABLE_COLUMNS
+from util.constants import IMAGE
 from util.loader import sql
-from util.loader.columns import create_column_definitions, get_table_columns
+from util.loader.sql import TSV_COLUMNS, create_column_definitions
 
 
 TEST_ID = "testing"
@@ -35,7 +60,7 @@ DROP_LOAD_TABLE_QUERY = f"DROP TABLE IF EXISTS {TEST_LOAD_TABLE} CASCADE;"
 DROP_IMAGE_TABLE_QUERY = f"DROP TABLE IF EXISTS {TEST_IMAGE_TABLE} CASCADE;"
 
 LOADING_TABLE_COLUMN_DEFINITIONS = create_column_definitions(
-    column_list=get_table_columns("image", table_type="loading")
+    TSV_COLUMNS[IMAGE], is_loading=True
 )
 
 CREATE_LOAD_TABLE_QUERY = f"""CREATE TABLE public.{TEST_LOAD_TABLE} (
@@ -44,9 +69,7 @@ CREATE_LOAD_TABLE_QUERY = f"""CREATE TABLE public.{TEST_LOAD_TABLE} (
 
 UUID_FUNCTION_QUERY = 'CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;'
 
-IMAGE_COLUMNS = get_table_columns("image", table_type="main")
-
-IMAGE_TABLE_COLUMN_DEFINITIONS = create_column_definitions(IMAGE_COLUMNS)
+IMAGE_TABLE_COLUMN_DEFINITIONS = create_column_definitions(IMAGE_TABLE_COLUMNS)
 
 CREATE_IMAGE_TABLE_QUERY = f"""CREATE TABLE public.{TEST_IMAGE_TABLE} (
   {IMAGE_TABLE_COLUMN_DEFINITIONS}
@@ -65,27 +88,27 @@ naive_datetime = datetime(2016, 1, 1).replace(tzinfo=None)
 ti = TaskInstance(task=op_no_dag, execution_date=naive_datetime)
 
 # ids for main database columns
-updated_idx = IMAGE_COLUMNS.index(col.UPDATED_ON)
-ingestion_idx = IMAGE_COLUMNS.index(col.INGESTION_TYPE)
-provider_idx = IMAGE_COLUMNS.index(col.PROVIDER)
-source_idx = IMAGE_COLUMNS.index(col.SOURCE)
-fid_idx = IMAGE_COLUMNS.index(col.FOREIGN_ID)
-land_url_idx = IMAGE_COLUMNS.index(col.LANDING_URL)
-url_idx = IMAGE_COLUMNS.index(col.DIRECT_URL)
-thm_idx = IMAGE_COLUMNS.index(col.THUMBNAIL)
-filesize_idx = IMAGE_COLUMNS.index(col.FILESIZE)
-license_idx = IMAGE_COLUMNS.index(col.LICENSE)
-version_idx = IMAGE_COLUMNS.index(col.LICENSE_VERSION)
-creator_idx = IMAGE_COLUMNS.index(col.CREATOR)
-creator_url_idx = IMAGE_COLUMNS.index(col.CREATOR_URL)
-title_idx = IMAGE_COLUMNS.index(col.TITLE)
-metadata_idx = IMAGE_COLUMNS.index(col.META_DATA)
-tags_idx = IMAGE_COLUMNS.index(col.TAGS)
-synced_idx = IMAGE_COLUMNS.index(col.LAST_SYNCED)
-removed_idx = IMAGE_COLUMNS.index(col.REMOVED)
-watermarked_idx = IMAGE_COLUMNS.index(col.WATERMARKED)
-width_idx = IMAGE_COLUMNS.index(col.WIDTH)
-height_idx = IMAGE_COLUMNS.index(col.HEIGHT)
+updated_idx = IMAGE_TABLE_COLUMNS.index(UPDATED_ON_COLUMN)
+ingestion_idx = IMAGE_TABLE_COLUMNS.index(INGESTION_TYPE_COLUMN)
+provider_idx = IMAGE_TABLE_COLUMNS.index(PROVIDER_COLUMN)
+source_idx = IMAGE_TABLE_COLUMNS.index(SOURCE_COLUMN)
+fid_idx = IMAGE_TABLE_COLUMNS.index(FOREIGN_ID_COLUMN)
+land_url_idx = IMAGE_TABLE_COLUMNS.index(LANDING_URL_COLUMN)
+url_idx = IMAGE_TABLE_COLUMNS.index(DIRECT_URL_COLUMN)
+thm_idx = IMAGE_TABLE_COLUMNS.index(THUMBNAIL_COLUMN)
+filesize_idx = IMAGE_TABLE_COLUMNS.index(FILESIZE_COLUMN)
+license_idx = IMAGE_TABLE_COLUMNS.index(LICENSE_COLUMN)
+version_idx = IMAGE_TABLE_COLUMNS.index(LICENSE_VERSION_COLUMN)
+creator_idx = IMAGE_TABLE_COLUMNS.index(CREATOR_COLUMN)
+creator_url_idx = IMAGE_TABLE_COLUMNS.index(CREATOR_URL_COLUMN)
+title_idx = IMAGE_TABLE_COLUMNS.index(TITLE_COLUMN)
+metadata_idx = IMAGE_TABLE_COLUMNS.index(META_DATA_COLUMN)
+tags_idx = IMAGE_TABLE_COLUMNS.index(TAGS_COLUMN)
+synced_idx = IMAGE_TABLE_COLUMNS.index(LAST_SYNCED_COLUMN)
+removed_idx = IMAGE_TABLE_COLUMNS.index(REMOVED_COLUMN)
+watermarked_idx = IMAGE_TABLE_COLUMNS.index(WATERMARKED_COLUMN)
+width_idx = IMAGE_TABLE_COLUMNS.index(WIDTH_COLUMN)
+height_idx = IMAGE_TABLE_COLUMNS.index(HEIGHT_COLUMN)
 
 
 def create_query_values(
@@ -93,11 +116,10 @@ def create_query_values(
     columns=None,
 ):
     if columns is None:
-        columns = get_table_columns("image", table_type="loading")
+        columns = TSV_COLUMNS[IMAGE]
     result = []
     for column in columns:
-        logging.info(f"Column: {column}, {column_values.get(column)}")
-        val = column_values.get(column)
+        val = column_values.get(column.db_name)
         if val is None:
             val = "null"
         else:
@@ -156,7 +178,6 @@ def postgres_with_load_and_image_table():
     cur.execute(DROP_IMAGE_INDEX_QUERY)
     cur.execute(CREATE_LOAD_TABLE_QUERY)
     cur.execute(UUID_FUNCTION_QUERY)
-    logging.info(f"***{CREATE_IMAGE_TABLE_QUERY}")
     cur.execute(CREATE_IMAGE_TABLE_QUERY)
     cur.execute(UNIQUE_CONDITION_QUERY)
 
@@ -526,7 +547,7 @@ def test_upsert_records_replaces_updated_on_and_last_synced_with_source(
     original_updated_on = original_row[updated_idx]
     original_last_synced = original_row[synced_idx]
 
-    time.sleep(0.001)
+    time.sleep(0.01)
     sql.upsert_records_to_db_table(postgres_conn_id, identifier, db_table=image_table)
     postgres_with_load_and_image_table.cursor.execute(f"SELECT * FROM {image_table};")
     updated_result = postgres_with_load_and_image_table.cursor.fetchall()
@@ -1035,6 +1056,7 @@ def test_upsert_records_replaces_null_tags(postgres_with_load_and_image_table, t
             col.PROVIDER: PROVIDER,
         }
     )
+    logging.info(f"Query values a: {query_values_a}")
     load_data_query_a = f"""INSERT INTO {load_table} VALUES(
         {query_values_a}
         );"""
@@ -1064,6 +1086,7 @@ def test_upsert_records_replaces_null_tags(postgres_with_load_and_image_table, t
     postgres_with_load_and_image_table.cursor.execute(f"SELECT * FROM {image_table};")
     actual_rows = postgres_with_load_and_image_table.cursor.fetchall()
     actual_row = actual_rows[0]
+    logging.info(f"Actual row: {actual_row}")
     assert len(actual_rows) == 1
     expect_tags = [
         {"name": "tagone", "provider": "test"},

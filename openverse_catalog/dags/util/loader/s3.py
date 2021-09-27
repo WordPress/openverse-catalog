@@ -8,6 +8,7 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_MEDIA_PREFIX = "image"
 STAGING_PREFIX = "db_loader_staging"
+legacy_tsv_versions = {"0"}
 
 
 def copy_file_to_s3_staging(
@@ -41,7 +42,8 @@ def get_staged_s3_object(
     )
     key_list = s3.list_keys(s3_bucket, prefix=staging_object_prefix)
     assert len(key_list) == 1
-    return key_list[0]
+    tsv_key = key_list[0]
+    return tsv_key
 
 
 def _get_staging_object_prefix(

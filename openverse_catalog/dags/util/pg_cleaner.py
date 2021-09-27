@@ -11,16 +11,16 @@ from pathlib import Path
 from textwrap import dedent
 
 from airflow.providers.postgres.hooks.postgres import PostgresHook
-from common.storage import image
+from storage import column_names as col
+from storage import columns, image
 from util import tsv_cleaner
 from util.constants import IMAGE
-from util.loader import column_names as col
 from util.loader.sql import TABLE_NAME
 
 
 logger = logging.getLogger(__name__)
 logging.getLogger(image.__name__).setLevel(logging.WARNING)
-logging.getLogger(image.columns.urls.__name__).setLevel(logging.WARNING)
+logging.getLogger(columns.urls.__name__).setLevel(logging.WARNING)
 
 MAX_DIR_SIZE = 8 * 1024 ** 3
 OUTPUT_DIR = os.path.realpath(os.getenv("OUTPUT_DIR", "/tmp/"))
@@ -151,8 +151,8 @@ def _wait_for_space(
             break
         else:
             logger.info(
-                f"{output_path} holds {du / 1024**2} MB,"
-                f" but max is {max_dir_size / 1024**2} MB."
+                f"{output_path} holds {du / 1024 ** 2} MB,"
+                f" but max is {max_dir_size / 1024 ** 2} MB."
                 f" Waiting for {delay} seconds"
             )
             time.sleep(delay)

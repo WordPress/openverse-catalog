@@ -28,6 +28,7 @@ def validate_url_string(url_string):
 
     url_string:  URL (string) which will be validated and/or repaired.
     """
+
     logger.debug(f"Validating_url {url_string}")
     if not type(url_string) == str or not url_string:
         return

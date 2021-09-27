@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -9,6 +10,7 @@ from airflow.models import TaskInstance
 FAILURE_SUBDIRECTORY = "db_loader_failures"
 STAGING_SUBDIRECTORY = "db_loader_staging"
 SUPPORTED_MEDIA_TYPES = {"audio", "image"}
+LEGACY_TSV_VERSION = "000"
 
 logger = logging.getLogger(__name__)
 
@@ -39,9 +41,15 @@ def stage_oldest_tsv_file(
     tsv_file_name = _get_oldest_tsv_file(output_dir, minimum_file_age_minutes)
     tsv_found = tsv_file_name is not None
     if tsv_found:
-        _move_file(tsv_file_name, staging_directory)
+        tsv_version = _get_tsv_version(tsv_file_name)
+        should_fix_ingestion_type = False
+        if tsv_version == LEGACY_TSV_VERSION:
+            should_fix_ingestion_type = True
+            logger.info(f"Will move and fix ingestion type: {tsv_version}")
+        _move_file(tsv_file_name, staging_directory, should_fix_ingestion_type)
         media_type = _extract_media_type(tsv_file_name)
         ti.xcom_push(key="media_type", value=media_type)
+        ti.xcom_push(key="tsv_version", value=tsv_version)
     return tsv_found
 
 
@@ -117,11 +125,13 @@ def _get_oldest_tsv_file(
     return oldest_file_name
 
 
-def _move_file(file_path, new_directory):
+def _move_file(file_path, new_directory, should_fix_ingestion_type=False):
     os.makedirs(new_directory, exist_ok=True)
     new_file_path = os.path.join(new_directory, os.path.basename(file_path))
     logger.info(f"Moving {file_path} to {new_file_path}")
     os.rename(file_path, new_file_path)
+    if should_fix_ingestion_type:
+        _fix_ingestion_column(new_file_path)
 
 
 def _get_full_tsv_paths(directory):
@@ -148,3 +158,59 @@ def _extract_media_type(tsv_file_name: Optional[str]) -> str:
     except (AttributeError, IndexError):
         media_type = "image"
     return media_type
+
+
+def _get_tsv_version(tsv_file_name: str) -> str:
+    """TSV file version can be deducted from the filename
+    v0: without _vN_ in the filename
+    v1+: has a _vN in the filename
+
+    >>>_get_tsv_version('/behance_image_20210906130355.tsv')
+    '000'
+    >>> _get_tsv_version('/jamendo_audio_v005_20210906130355.tsv')
+    '005'
+    """
+
+    version_pattern = re.compile(r"_v(\d+)_")
+    matches = re.search(version_pattern, tsv_file_name)
+    if matches:
+        return matches.group(1)
+    else:
+        return "000"
+
+
+def _fix_ingestion_column(filepath: str) -> None:
+    """The oldest TSV files have no `ingestion_type` column"""
+
+    logger.info(f"File to fix: {filepath}")
+    with open(filepath) as f:
+        test_line = f.readline()
+    columns = test_line.split("\t")
+    column_count = len(columns)
+    logger.info(f"Got first line: {test_line}\n{column_count}")
+    old_cols_number = 17
+    new_cols_number = old_cols_number + 1
+    if column_count == new_cols_number:
+        return
+    elif column_count != old_cols_number:
+        logger.warning(
+            f"Wrong number of columns ({column_count}) "
+            f"for a legacy TSV file. Cannot fix the file..."
+        )
+        raise TypeError(f"Wrong number of columns ({column_count}) for TSV")
+    source = test_line[-1]
+    ingestion_type = source if source == "commoncrawl" else "provider_api"
+    logger.info(f"Adding ingestion type {ingestion_type} to {filepath}")
+    temp_tsv = filepath + ".new"
+    with open(filepath, "r") as old_tsv, open(temp_tsv, "w") as new_tsv:
+        old_line = old_tsv.readline().strip()
+        while old_line:
+            if ingestion_type == "commoncrawl":
+                line_list = [word.strip() for word in old_line.split("\t")]
+                new_tsv.write("\t".join(line_list[:-1] + line_list[-2:]) + "\n")
+            else:
+                new_tsv.write(old_line + "\t" + ingestion_type + "\n")
+            old_line = old_tsv.readline().strip()
+
+    os.rename(filepath, filepath + ".old")
+    os.rename(temp_tsv, filepath)

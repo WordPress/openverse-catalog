@@ -1,61 +1,20 @@
 import logging
 from collections import namedtuple
-from typing import Dict, Optional, Union
+from typing import Dict, List, Optional, Union
 
 from common.licenses.licenses import LicenseInfo
-from common.storage import columns
-from common.storage.media import MediaStore
+from storage.columns import Column
+from storage.media import MediaStore
+from storage.tsv_columns import COLUMNS
+from util.constants import IMAGE
 
 
 logger = logging.getLogger(__name__)
 
-
-# Any changes to the IMAGE_TSV_COLUMNS should also be reflected
-# in the db columns. Please, add the column to the:
-# - `.sql` script in the `local_postgres` folder
-# - dict with DbColumn instances - `util.loader.columns.DB_COLUMNS`
-# - list of db columns, in the correct order:
-# -   `util.loader.columns.common_columns` or
-# -   `util.loader.columns.media_columns[IMAGE]`
-IMAGE_TSV_COLUMNS = [
-    # The order of this list maps to the order of the columns in the TSV.
-    columns.StringColumn(
-        name="foreign_identifier", required=False, size=3000, truncate=False
-    ),
-    columns.URLColumn(name="foreign_landing_url", required=True, size=1000),
-    columns.URLColumn(
-        # `url` in DB
-        name="image_url",
-        required=True,
-        size=3000,
-    ),
-    columns.URLColumn(
-        # `thumbnail` in DB
-        name="thumbnail_url",
-        required=False,
-        size=3000,
-    ),
-    columns.IntegerColumn(name="filesize", required=False),
-    columns.StringColumn(name="license_", required=True, size=50, truncate=False),
-    columns.StringColumn(
-        name="license_version", required=True, size=25, truncate=False
-    ),
-    columns.StringColumn(name="creator", required=False, size=2000, truncate=True),
-    columns.URLColumn(name="creator_url", required=False, size=2000),
-    columns.StringColumn(name="title", required=False, size=5000, truncate=True),
-    columns.JSONColumn(name="meta_data", required=False),
-    columns.JSONColumn(name="tags", required=False),
-    columns.BooleanColumn(name="watermarked", required=False),
-    columns.StringColumn(name="provider", required=False, size=80, truncate=False),
-    columns.StringColumn(name="source", required=False, size=80, truncate=False),
-    columns.StringColumn(
-        name="ingestion_type", required=False, size=80, truncate=False
-    ),
-    columns.IntegerColumn(name="width", required=False),
-    columns.IntegerColumn(name="height", required=False),
-]
-
+IMAGE_TSV_COLUMNS: List[Column] = COLUMNS[IMAGE]["000"]
 Image = namedtuple("Image", [c.NAME for c in IMAGE_TSV_COLUMNS])
+# This list is the same for all media types
+required_columns = [col for col in IMAGE_TSV_COLUMNS if col.REQUIRED]
 
 
 class ImageStore(MediaStore):
@@ -182,7 +141,8 @@ class ImageStore(MediaStore):
         image_metadata = self.clean_media_metadata(**kwargs)
         if image_metadata is None:
             return None
-
+        image_metadata["url"] = image_metadata["image_url"]
+        image_metadata.pop("image_url", None)
         return Image(**image_metadata)
 
 

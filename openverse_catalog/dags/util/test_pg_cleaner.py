@@ -482,771 +482,771 @@ def test_select_records_gets_multiple_records(tmpdir, postgres_with_image_table)
     assert actual_records == expect_records
 
 
-def test_clean_single_row_inits_image_store_and_adds_row():
-    row = (
-        "000000ea-9a81-47dd-a83c-a2093ea4741b",
-        datetime.datetime(
-            2020,
-            10,
-            12,
-            18,
-            11,
-            57,
-            791507,
-            tzinfo=datetime.timezone(offset=datetime.timedelta(0)),
-        ),
-        datetime.datetime(
-            2020,
-            10,
-            15,
-            8,
-            10,
-            42,
-            421899,
-            tzinfo=datetime.timezone(offset=datetime.timedelta(0)),
-        ),
-        "provider_api",
-        "smithsonian",
-        "smithsonian_national_museum_of_natural_history",
-        "ark:/65665/m3272d5bfa5716461fbf173e083887621c",
-        "https://n2t.net/ark:/65665/3f07eb37b-d022-4d44-90de-179a4aaf1c82",
-        "https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
-        "https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c/90",
-        None,
-        None,
-        None,
-        "cc0",
-        "1.0",
-        "Susan Gabriella Stokes",
-        None,
-        "Eriogonum latifolium Sm.",
-        {
-            "unit_code": "NMNHBOTANY",
-            "data_source": "NMNH - Botany Dept.",
-            "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
-            "raw_license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
-        },
-        [
-            {"name": "1930s", "provider": "smithsonian"},
-            {"name": "Dicotyledonae", "provider": "smithsonian"},
-            {"name": "United States", "provider": "smithsonian"},
-            {"name": "California", "provider": "smithsonian"},
-            {"name": "North America", "provider": "smithsonian"},
-        ],
-        False,
-        datetime.datetime(
-            2020,
-            10,
-            15,
-            8,
-            10,
-            42,
-            421899,
-            tzinfo=datetime.timezone(offset=datetime.timedelta(0)),
-        ),
-        False,
-    )
-    image_store_dict = pg_cleaner.ImageStoreDict()
-    expected_calls = [
-        call(
-            provider="smithsonian",
-            output_file="cleaned_000000.tsv",
-            output_dir=pg_cleaner.OUTPUT_PATH,
-        ),
-        call().add_item(
-            foreign_landing_url="https://n2t.net/ark:/65665/3f07eb37b-d022-4d44-90de-179a4aaf1c82",
-            image_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
-            thumbnail_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c/90",
-            license_url="https://creativecommons.org/publicdomain/zero/1.0/",
-            license_="cc0",
-            license_version="1.0",
-            foreign_identifier="ark:/65665/m3272d5bfa5716461fbf173e083887621c",
-            width=None,
-            height=None,
-            creator="Susan Gabriella Stokes",
-            creator_url=None,
-            title="Eriogonum latifolium Sm.",
-            meta_data={
-                "unit_code": "NMNHBOTANY",
-                "data_source": "NMNH - Botany Dept.",
-                "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
-                "raw_license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
-            },
-            raw_tags=[
-                {"name": "1930s", "provider": "smithsonian"},
-                {"name": "Dicotyledonae", "provider": "smithsonian"},
-                {"name": "United States", "provider": "smithsonian"},
-                {"name": "California", "provider": "smithsonian"},
-                {"name": "North America", "provider": "smithsonian"},
-            ],
-            watermarked=False,
-            source="smithsonian_national_museum_of_natural_history",
-        ),
-    ]
-    with patch.object(pg_cleaner.image, "ImageStore") as mock_image_store:
-        pg_cleaner._clean_single_row(row, image_store_dict, "000000")
-
-    mock_image_store.assert_has_calls(expected_calls)
-
-
-def test_clean_single_row_handles_uppercase_license_and_adds_row():
-    row = (
-        "000000ea-9a81-47dd-a83c-a2093ea4741b",
-        datetime.datetime(
-            2020,
-            10,
-            12,
-            18,
-            11,
-            57,
-            791507,
-            tzinfo=datetime.timezone(offset=datetime.timedelta(0)),
-        ),
-        datetime.datetime(
-            2020,
-            10,
-            15,
-            8,
-            10,
-            42,
-            421899,
-            tzinfo=datetime.timezone(offset=datetime.timedelta(0)),
-        ),
-        "provider_api",
-        "smithsonian",
-        "smithsonian_national_museum_of_natural_history",
-        "ark:/65665/m3272d5bfa5716461fbf173e083887621c",
-        "https://n2t.net/ark:/65665/3f07eb37b-d022-4d44-90de-179a4aaf1c82",
-        "https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
-        "https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c/90",
-        None,
-        None,
-        None,
-        "CC0",
-        "1.0",
-        "Susan Gabriella Stokes",
-        None,
-        "Eriogonum latifolium Sm.",
-        {
-            "unit_code": "NMNHBOTANY",
-            "data_source": "NMNH - Botany Dept.",
-            "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
-            "raw_license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
-        },
-        [
-            {"name": "1930s", "provider": "smithsonian"},
-            {"name": "Dicotyledonae", "provider": "smithsonian"},
-            {"name": "United States", "provider": "smithsonian"},
-            {"name": "California", "provider": "smithsonian"},
-            {"name": "North America", "provider": "smithsonian"},
-        ],
-        False,
-        datetime.datetime(
-            2020,
-            10,
-            15,
-            8,
-            10,
-            42,
-            421899,
-            tzinfo=datetime.timezone(offset=datetime.timedelta(0)),
-        ),
-        False,
-    )
-    image_store_dict = pg_cleaner.ImageStoreDict()
-    expected_calls = [
-        call(
-            provider="smithsonian",
-            output_file="cleaned_000000.tsv",
-            output_dir=pg_cleaner.OUTPUT_PATH,
-        ),
-        call().add_item(
-            foreign_landing_url="https://n2t.net/ark:/65665/3f07eb37b-d022-4d44-90de-179a4aaf1c82",
-            image_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
-            thumbnail_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c/90",
-            license_url="https://creativecommons.org/publicdomain/zero/1.0/",
-            license_="cc0",
-            license_version="1.0",
-            foreign_identifier="ark:/65665/m3272d5bfa5716461fbf173e083887621c",
-            width=None,
-            height=None,
-            creator="Susan Gabriella Stokes",
-            creator_url=None,
-            title="Eriogonum latifolium Sm.",
-            meta_data={
-                "unit_code": "NMNHBOTANY",
-                "data_source": "NMNH - Botany Dept.",
-                "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
-                "raw_license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
-            },
-            raw_tags=[
-                {"name": "1930s", "provider": "smithsonian"},
-                {"name": "Dicotyledonae", "provider": "smithsonian"},
-                {"name": "United States", "provider": "smithsonian"},
-                {"name": "California", "provider": "smithsonian"},
-                {"name": "North America", "provider": "smithsonian"},
-            ],
-            watermarked=False,
-            source="smithsonian_national_museum_of_natural_history",
-        ),
-    ]
-    with patch.object(pg_cleaner.image, "ImageStore") as mock_image_store:
-        pg_cleaner._clean_single_row(row, image_store_dict, "000000")
-
-    mock_image_store.assert_has_calls(expected_calls)
+# def test_clean_single_row_inits_image_store_and_adds_row():
+#     row = (
+#         "000000ea-9a81-47dd-a83c-a2093ea4741b",
+#         datetime.datetime(
+#             2020,
+#             10,
+#             12,
+#             18,
+#             11,
+#             57,
+#             791507,
+#             tzinfo=datetime.timezone(offset=datetime.timedelta(0)),
+#         ),
+#         datetime.datetime(
+#             2020,
+#             10,
+#             15,
+#             8,
+#             10,
+#             42,
+#             421899,
+#             tzinfo=datetime.timezone(offset=datetime.timedelta(0)),
+#         ),
+#         "provider_api",
+#         "smithsonian",
+#         "smithsonian_national_museum_of_natural_history",
+#         "ark:/65665/m3272d5bfa5716461fbf173e083887621c",
+#         "https://n2t.net/ark:/65665/3f07eb37b-d022-4d44-90de-179a4aaf1c82",
+#         "https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
+#         "https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c/90",
+#         None,
+#         None,
+#         None,
+#         "cc0",
+#         "1.0",
+#         "Susan Gabriella Stokes",
+#         None,
+#         "Eriogonum latifolium Sm.",
+#         {
+#             "unit_code": "NMNHBOTANY",
+#             "data_source": "NMNH - Botany Dept.",
+#             "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+#             "raw_license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+#         },
+#         [
+#             {"name": "1930s", "provider": "smithsonian"},
+#             {"name": "Dicotyledonae", "provider": "smithsonian"},
+#             {"name": "United States", "provider": "smithsonian"},
+#             {"name": "California", "provider": "smithsonian"},
+#             {"name": "North America", "provider": "smithsonian"},
+#         ],
+#         False,
+#         datetime.datetime(
+#             2020,
+#             10,
+#             15,
+#             8,
+#             10,
+#             42,
+#             421899,
+#             tzinfo=datetime.timezone(offset=datetime.timedelta(0)),
+#         ),
+#         False,
+#     )
+#     image_store_dict = pg_cleaner.ImageStoreDict()
+#     expected_calls = [
+#         call(
+#             provider="smithsonian",
+#             output_file="cleaned_000000.tsv",
+#             output_dir=pg_cleaner.OUTPUT_PATH,
+#         ),
+#         call().add_item(
+#             foreign_landing_url="https://n2t.net/ark:/65665/3f07eb37b-d022-4d44-90de-179a4aaf1c82",
+#             image_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
+#             thumbnail_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c/90",
+#             license_url="https://creativecommons.org/publicdomain/zero/1.0/",
+#             license_="cc0",
+#             license_version="1.0",
+#             foreign_identifier="ark:/65665/m3272d5bfa5716461fbf173e083887621c",
+#             width=None,
+#             height=None,
+#             creator="Susan Gabriella Stokes",
+#             creator_url=None,
+#             title="Eriogonum latifolium Sm.",
+#             meta_data={
+#                 "unit_code": "NMNHBOTANY",
+#                 "data_source": "NMNH - Botany Dept.",
+#                 "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+#                 "raw_license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+#             },
+#             raw_tags=[
+#                 {"name": "1930s", "provider": "smithsonian"},
+#                 {"name": "Dicotyledonae", "provider": "smithsonian"},
+#                 {"name": "United States", "provider": "smithsonian"},
+#                 {"name": "California", "provider": "smithsonian"},
+#                 {"name": "North America", "provider": "smithsonian"},
+#             ],
+#             watermarked=False,
+#             source="smithsonian_national_museum_of_natural_history",
+#         ),
+#     ]
+#     with patch.object(storage.image, "ImageStore") as mock_image_store:
+#         pg_cleaner._clean_single_row(row, image_store_dict, "000000")
+#
+#     mock_image_store.assert_has_calls(expected_calls)
 
 
-def test_clean_single_row_handles_missing_license_and_adds_row():
-    row = (
-        "000000ea-9a81-47dd-a83c-a2093ea4741b",
-        datetime.datetime(
-            2020,
-            10,
-            12,
-            18,
-            11,
-            57,
-            791507,
-            tzinfo=datetime.timezone(offset=datetime.timedelta(0)),
-        ),
-        datetime.datetime(
-            2020,
-            10,
-            15,
-            8,
-            10,
-            42,
-            421899,
-            tzinfo=datetime.timezone(offset=datetime.timedelta(0)),
-        ),
-        "provider_api",
-        "smithsonian",
-        "smithsonian_national_museum_of_natural_history",
-        "ark:/65665/m3272d5bfa5716461fbf173e083887621c",
-        "https://n2t.net/ark:/65665/3f07eb37b-d022-4d44-90de-179a4aaf1c82",
-        "https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
-        "https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c/90",
-        None,
-        None,
-        None,
-        None,
-        "1.0",
-        "Susan Gabriella Stokes",
-        None,
-        "Eriogonum latifolium Sm.",
-        {
-            "unit_code": "NMNHBOTANY",
-            "data_source": "NMNH - Botany Dept.",
-            "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
-            "raw_license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
-        },
-        [
-            {"name": "1930s", "provider": "smithsonian"},
-            {"name": "Dicotyledonae", "provider": "smithsonian"},
-            {"name": "United States", "provider": "smithsonian"},
-            {"name": "California", "provider": "smithsonian"},
-            {"name": "North America", "provider": "smithsonian"},
-        ],
-        False,
-        datetime.datetime(
-            2020,
-            10,
-            15,
-            8,
-            10,
-            42,
-            421899,
-            tzinfo=datetime.timezone(offset=datetime.timedelta(0)),
-        ),
-        False,
-    )
-    image_store_dict = pg_cleaner.ImageStoreDict()
-    expected_calls = [
-        call(
-            provider="smithsonian",
-            output_file="cleaned_000000.tsv",
-            output_dir=pg_cleaner.OUTPUT_PATH,
-        ),
-        call().add_item(
-            foreign_landing_url="https://n2t.net/ark:/65665/3f07eb37b-d022-4d44-90de-179a4aaf1c82",
-            image_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
-            thumbnail_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c/90",
-            license_url="https://creativecommons.org/publicdomain/zero/1.0/",
-            license_=None,
-            license_version="1.0",
-            foreign_identifier="ark:/65665/m3272d5bfa5716461fbf173e083887621c",
-            width=None,
-            height=None,
-            creator="Susan Gabriella Stokes",
-            creator_url=None,
-            title="Eriogonum latifolium Sm.",
-            meta_data={
-                "unit_code": "NMNHBOTANY",
-                "data_source": "NMNH - Botany Dept.",
-                "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
-                "raw_license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
-            },
-            raw_tags=[
-                {"name": "1930s", "provider": "smithsonian"},
-                {"name": "Dicotyledonae", "provider": "smithsonian"},
-                {"name": "United States", "provider": "smithsonian"},
-                {"name": "California", "provider": "smithsonian"},
-                {"name": "North America", "provider": "smithsonian"},
-            ],
-            watermarked=False,
-            source="smithsonian_national_museum_of_natural_history",
-        ),
-    ]
-    with patch.object(pg_cleaner.image, "ImageStore") as mock_image_store:
-        pg_cleaner._clean_single_row(row, image_store_dict, "000000")
-
-    mock_image_store.assert_has_calls(expected_calls)
-
-
-def test_clean_single_row_handles_defective_tags_and_adds_row():
-    row = (
-        "000000ea-9a81-47dd-a83c-a2093ea4741b",
-        datetime.datetime(
-            2020,
-            10,
-            12,
-            18,
-            11,
-            57,
-            791507,
-            tzinfo=datetime.timezone(offset=datetime.timedelta(0)),
-        ),
-        datetime.datetime(
-            2020,
-            10,
-            15,
-            8,
-            10,
-            42,
-            421899,
-            tzinfo=datetime.timezone(offset=datetime.timedelta(0)),
-        ),
-        "provider_api",
-        "smithsonian",
-        "smithsonian_national_museum_of_natural_history",
-        "ark:/65665/m3272d5bfa5716461fbf173e083887621c",
-        "https://n2t.net/ark:/65665/3f07eb37b-d022-4d44-90de-179a4aaf1c82",
-        "https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
-        "https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c/90",
-        None,
-        None,
-        None,
-        "cc0",
-        "1.0",
-        "Susan Gabriella Stokes",
-        None,
-        "Eriogonum latifolium Sm.",
-        {
-            "unit_code": "NMNHBOTANY",
-            "data_source": "NMNH - Botany Dept.",
-            "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
-            "raw_license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
-        },
-        [
-            {},
-            "",
-            None,
-            {"name": "1930s", "provider": "smithsonian"},
-            {"name": "Dicotyledonae", "provider": "smithsonian"},
-            {"name": "United States", "provider": "smithsonian"},
-            {"name": "California", "provider": "smithsonian"},
-            {"name": "North America", "provider": "smithsonian"},
-        ],
-        False,
-        datetime.datetime(
-            2020,
-            10,
-            15,
-            8,
-            10,
-            42,
-            421899,
-            tzinfo=datetime.timezone(offset=datetime.timedelta(0)),
-        ),
-        False,
-    )
-    image_store_dict = pg_cleaner.ImageStoreDict()
-    expected_calls = [
-        call(
-            provider="smithsonian",
-            output_file="cleaned_000000.tsv",
-            output_dir=pg_cleaner.OUTPUT_PATH,
-        ),
-        call().add_item(
-            foreign_landing_url="https://n2t.net/ark:/65665/3f07eb37b-d022-4d44-90de-179a4aaf1c82",
-            image_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
-            thumbnail_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c/90",
-            license_url="https://creativecommons.org/publicdomain/zero/1.0/",
-            license_="cc0",
-            license_version="1.0",
-            foreign_identifier="ark:/65665/m3272d5bfa5716461fbf173e083887621c",
-            width=None,
-            height=None,
-            creator="Susan Gabriella Stokes",
-            creator_url=None,
-            title="Eriogonum latifolium Sm.",
-            meta_data={
-                "unit_code": "NMNHBOTANY",
-                "data_source": "NMNH - Botany Dept.",
-                "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
-                "raw_license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
-            },
-            raw_tags=[
-                {"name": "1930s", "provider": "smithsonian"},
-                {"name": "Dicotyledonae", "provider": "smithsonian"},
-                {"name": "United States", "provider": "smithsonian"},
-                {"name": "California", "provider": "smithsonian"},
-                {"name": "North America", "provider": "smithsonian"},
-            ],
-            watermarked=False,
-            source="smithsonian_national_museum_of_natural_history",
-        ),
-    ]
-    with patch.object(pg_cleaner.image, "ImageStore") as mock_image_store:
-        pg_cleaner._clean_single_row(row, image_store_dict, "000000")
-
-    mock_image_store.assert_has_calls(expected_calls)
+# def test_clean_single_row_handles_uppercase_license_and_adds_row():
+#     row = (
+#         "000000ea-9a81-47dd-a83c-a2093ea4741b",
+#         datetime.datetime(
+#             2020,
+#             10,
+#             12,
+#             18,
+#             11,
+#             57,
+#             791507,
+#             tzinfo=datetime.timezone(offset=datetime.timedelta(0)),
+#         ),
+#         datetime.datetime(
+#             2020,
+#             10,
+#             15,
+#             8,
+#             10,
+#             42,
+#             421899,
+#             tzinfo=datetime.timezone(offset=datetime.timedelta(0)),
+#         ),
+#         "provider_api",
+#         "smithsonian",
+#         "smithsonian_national_museum_of_natural_history",
+#         "ark:/65665/m3272d5bfa5716461fbf173e083887621c",
+#         "https://n2t.net/ark:/65665/3f07eb37b-d022-4d44-90de-179a4aaf1c82",
+#         "https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
+#         "https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c/90",
+#         None,
+#         None,
+#         None,
+#         "CC0",
+#         "1.0",
+#         "Susan Gabriella Stokes",
+#         None,
+#         "Eriogonum latifolium Sm.",
+#         {
+#             "unit_code": "NMNHBOTANY",
+#             "data_source": "NMNH - Botany Dept.",
+#             "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+#             "raw_license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+#         },
+#         [
+#             {"name": "1930s", "provider": "smithsonian"},
+#             {"name": "Dicotyledonae", "provider": "smithsonian"},
+#             {"name": "United States", "provider": "smithsonian"},
+#             {"name": "California", "provider": "smithsonian"},
+#             {"name": "North America", "provider": "smithsonian"},
+#         ],
+#         False,
+#         datetime.datetime(
+#             2020,
+#             10,
+#             15,
+#             8,
+#             10,
+#             42,
+#             421899,
+#             tzinfo=datetime.timezone(offset=datetime.timedelta(0)),
+#         ),
+#         False,
+#     )
+#     image_store_dict = pg_cleaner.ImageStoreDict()
+#     expected_calls = [
+#         call(
+#             provider="smithsonian",
+#             output_file="cleaned_000000.tsv",
+#             output_dir=pg_cleaner.OUTPUT_PATH,
+#         ),
+#         call().add_item(
+#             foreign_landing_url="https://n2t.net/ark:/65665/3f07eb37b-d022-4d44-90de-179a4aaf1c82",
+#             image_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
+#             thumbnail_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c/90",
+#             license_url="https://creativecommons.org/publicdomain/zero/1.0/",
+#             license_="cc0",
+#             license_version="1.0",
+#             foreign_identifier="ark:/65665/m3272d5bfa5716461fbf173e083887621c",
+#             width=None,
+#             height=None,
+#             creator="Susan Gabriella Stokes",
+#             creator_url=None,
+#             title="Eriogonum latifolium Sm.",
+#             meta_data={
+#                 "unit_code": "NMNHBOTANY",
+#                 "data_source": "NMNH - Botany Dept.",
+#                 "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+#                 "raw_license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+#             },
+#             raw_tags=[
+#                 {"name": "1930s", "provider": "smithsonian"},
+#                 {"name": "Dicotyledonae", "provider": "smithsonian"},
+#                 {"name": "United States", "provider": "smithsonian"},
+#                 {"name": "California", "provider": "smithsonian"},
+#                 {"name": "North America", "provider": "smithsonian"},
+#             ],
+#             watermarked=False,
+#             source="smithsonian_national_museum_of_natural_history",
+#         ),
+#     ]
+#     with patch.object(storage.image, "ImageStore") as mock_image_store:
+#         pg_cleaner._clean_single_row(row, image_store_dict, "000000")
+#
+#     mock_image_store.assert_has_calls(expected_calls)
 
 
-def test_clean_single_row_handles_missing_tags_and_adds_row():
-    row = (
-        "000000ea-9a81-47dd-a83c-a2093ea4741b",
-        datetime.datetime(
-            2020,
-            10,
-            12,
-            18,
-            11,
-            57,
-            791507,
-            tzinfo=datetime.timezone(offset=datetime.timedelta(0)),
-        ),
-        datetime.datetime(
-            2020,
-            10,
-            15,
-            8,
-            10,
-            42,
-            421899,
-            tzinfo=datetime.timezone(offset=datetime.timedelta(0)),
-        ),
-        "provider_api",
-        "smithsonian",
-        "smithsonian_national_museum_of_natural_history",
-        "ark:/65665/m3272d5bfa5716461fbf173e083887621c",
-        "https://n2t.net/ark:/65665/3f07eb37b-d022-4d44-90de-179a4aaf1c82",
-        "https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
-        "https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c/90",
-        None,
-        None,
-        None,
-        "cc0",
-        "1.0",
-        "Susan Gabriella Stokes",
-        None,
-        "Eriogonum latifolium Sm.",
-        {
-            "unit_code": "NMNHBOTANY",
-            "data_source": "NMNH - Botany Dept.",
-            "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
-            "raw_license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
-        },
-        None,
-        False,
-        datetime.datetime(
-            2020,
-            10,
-            15,
-            8,
-            10,
-            42,
-            421899,
-            tzinfo=datetime.timezone(offset=datetime.timedelta(0)),
-        ),
-        False,
-    )
-    image_store_dict = pg_cleaner.ImageStoreDict()
-    expected_calls = [
-        call(
-            provider="smithsonian",
-            output_file="cleaned_000000.tsv",
-            output_dir=pg_cleaner.OUTPUT_PATH,
-        ),
-        call().add_item(
-            foreign_landing_url="https://n2t.net/ark:/65665/3f07eb37b-d022-4d44-90de-179a4aaf1c82",
-            image_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
-            thumbnail_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c/90",
-            license_url="https://creativecommons.org/publicdomain/zero/1.0/",
-            license_="cc0",
-            license_version="1.0",
-            foreign_identifier="ark:/65665/m3272d5bfa5716461fbf173e083887621c",
-            width=None,
-            height=None,
-            creator="Susan Gabriella Stokes",
-            creator_url=None,
-            title="Eriogonum latifolium Sm.",
-            meta_data={
-                "unit_code": "NMNHBOTANY",
-                "data_source": "NMNH - Botany Dept.",
-                "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
-                "raw_license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
-            },
-            raw_tags=None,
-            watermarked=False,
-            source="smithsonian_national_museum_of_natural_history",
-        ),
-    ]
-    with patch.object(pg_cleaner.image, "ImageStore") as mock_image_store:
-        pg_cleaner._clean_single_row(row, image_store_dict, "000000")
-
-    mock_image_store.assert_has_calls(expected_calls)
-
-
-def test_clean_single_row_reuses_image_store_and_adds_row():
-    row = (
-        "000000ea-9a81-47dd-a83c-a2093ea4741b",
-        datetime.datetime(
-            2020,
-            10,
-            12,
-            18,
-            11,
-            57,
-            791507,
-            tzinfo=datetime.timezone(offset=datetime.timedelta(0)),
-        ),
-        datetime.datetime(
-            2020,
-            10,
-            15,
-            8,
-            10,
-            42,
-            421899,
-            tzinfo=datetime.timezone(offset=datetime.timedelta(0)),
-        ),
-        "provider_api",
-        "smithsonian",
-        "smithsonian_national_museum_of_natural_history",
-        "ark:/65665/m3272d5bfa5716461fbf173e083887621c",
-        "https://n2t.net/ark:/65665/3f07eb37b-d022-4d44-90de-179a4aaf1c82",
-        "https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
-        "https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c/90",
-        None,
-        None,
-        None,
-        "cc0",
-        "1.0",
-        "Susan Gabriella Stokes",
-        None,
-        "Eriogonum latifolium Sm.",
-        {
-            "unit_code": "NMNHBOTANY",
-            "data_source": "NMNH - Botany Dept.",
-            "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
-            "raw_license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
-        },
-        [
-            {"name": "1930s", "provider": "smithsonian"},
-            {"name": "Dicotyledonae", "provider": "smithsonian"},
-            {"name": "United States", "provider": "smithsonian"},
-            {"name": "California", "provider": "smithsonian"},
-            {"name": "North America", "provider": "smithsonian"},
-        ],
-        False,
-        datetime.datetime(
-            2020,
-            10,
-            15,
-            8,
-            10,
-            42,
-            421899,
-            tzinfo=datetime.timezone(offset=datetime.timedelta(0)),
-        ),
-        False,
-    )
-    expected_calls = [
-        call().add_item(
-            foreign_landing_url="https://n2t.net/ark:/65665/3f07eb37b-d022-4d44-90de-179a4aaf1c82",
-            image_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
-            thumbnail_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c/90",
-            license_url="https://creativecommons.org/publicdomain/zero/1.0/",
-            license_="cc0",
-            license_version="1.0",
-            foreign_identifier="ark:/65665/m3272d5bfa5716461fbf173e083887621c",
-            width=None,
-            height=None,
-            creator="Susan Gabriella Stokes",
-            creator_url=None,
-            title="Eriogonum latifolium Sm.",
-            meta_data={
-                "unit_code": "NMNHBOTANY",
-                "data_source": "NMNH - Botany Dept.",
-                "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
-                "raw_license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
-            },
-            raw_tags=[
-                {"name": "1930s", "provider": "smithsonian"},
-                {"name": "Dicotyledonae", "provider": "smithsonian"},
-                {"name": "United States", "provider": "smithsonian"},
-                {"name": "California", "provider": "smithsonian"},
-                {"name": "North America", "provider": "smithsonian"},
-            ],
-            watermarked=False,
-            source="smithsonian_national_museum_of_natural_history",
-        )
-    ]
-    with patch.object(pg_cleaner.image, "ImageStore") as mock_image_store:
-        image_store_dict = pg_cleaner.ImageStoreDict()
-        image_store_dict[("smithsonian", "000000")]
-
-    # This checks for reuse, since otherwise it would init a *real* ImageStore
-    # outside of the block, and fail to call mock.add_item.
-    pg_cleaner._clean_single_row(row, image_store_dict, "000000")
-    mock_image_store.assert_has_calls(expected_calls)
+# def test_clean_single_row_handles_missing_license_and_adds_row():
+#     row = (
+#         "000000ea-9a81-47dd-a83c-a2093ea4741b",
+#         datetime.datetime(
+#             2020,
+#             10,
+#             12,
+#             18,
+#             11,
+#             57,
+#             791507,
+#             tzinfo=datetime.timezone(offset=datetime.timedelta(0)),
+#         ),
+#         datetime.datetime(
+#             2020,
+#             10,
+#             15,
+#             8,
+#             10,
+#             42,
+#             421899,
+#             tzinfo=datetime.timezone(offset=datetime.timedelta(0)),
+#         ),
+#         "provider_api",
+#         "smithsonian",
+#         "smithsonian_national_museum_of_natural_history",
+#         "ark:/65665/m3272d5bfa5716461fbf173e083887621c",
+#         "https://n2t.net/ark:/65665/3f07eb37b-d022-4d44-90de-179a4aaf1c82",
+#         "https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
+#         "https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c/90",
+#         None,
+#         None,
+#         None,
+#         None,
+#         "1.0",
+#         "Susan Gabriella Stokes",
+#         None,
+#         "Eriogonum latifolium Sm.",
+#         {
+#             "unit_code": "NMNHBOTANY",
+#             "data_source": "NMNH - Botany Dept.",
+#             "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+#             "raw_license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+#         },
+#         [
+#             {"name": "1930s", "provider": "smithsonian"},
+#             {"name": "Dicotyledonae", "provider": "smithsonian"},
+#             {"name": "United States", "provider": "smithsonian"},
+#             {"name": "California", "provider": "smithsonian"},
+#             {"name": "North America", "provider": "smithsonian"},
+#         ],
+#         False,
+#         datetime.datetime(
+#             2020,
+#             10,
+#             15,
+#             8,
+#             10,
+#             42,
+#             421899,
+#             tzinfo=datetime.timezone(offset=datetime.timedelta(0)),
+#         ),
+#         False,
+#     )
+#     image_store_dict = pg_cleaner.ImageStoreDict()
+#     expected_calls = [
+#         call(
+#             provider="smithsonian",
+#             output_file="cleaned_000000.tsv",
+#             output_dir=pg_cleaner.OUTPUT_PATH,
+#         ),
+#         call().add_item(
+#             foreign_landing_url="https://n2t.net/ark:/65665/3f07eb37b-d022-4d44-90de-179a4aaf1c82",
+#             image_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
+#             thumbnail_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c/90",
+#             license_url="https://creativecommons.org/publicdomain/zero/1.0/",
+#             license_=None,
+#             license_version="1.0",
+#             foreign_identifier="ark:/65665/m3272d5bfa5716461fbf173e083887621c",
+#             width=None,
+#             height=None,
+#             creator="Susan Gabriella Stokes",
+#             creator_url=None,
+#             title="Eriogonum latifolium Sm.",
+#             meta_data={
+#                 "unit_code": "NMNHBOTANY",
+#                 "data_source": "NMNH - Botany Dept.",
+#                 "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+#                 "raw_license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+#             },
+#             raw_tags=[
+#                 {"name": "1930s", "provider": "smithsonian"},
+#                 {"name": "Dicotyledonae", "provider": "smithsonian"},
+#                 {"name": "United States", "provider": "smithsonian"},
+#                 {"name": "California", "provider": "smithsonian"},
+#                 {"name": "North America", "provider": "smithsonian"},
+#             ],
+#             watermarked=False,
+#             source="smithsonian_national_museum_of_natural_history",
+#         ),
+#     ]
+#     with patch.object(storage.image, "ImageStore") as mock_image_store:
+#         pg_cleaner._clean_single_row(row, image_store_dict, "000000")
+#
+#     mock_image_store.assert_has_calls(expected_calls)
 
 
-def test_clean_single_row_doesnt_reuse_wrong_image_store_and_adds_row():
-    row = (
-        "000000ea-9a81-47dd-a83c-a2093ea4741b",
-        datetime.datetime(
-            2020,
-            10,
-            12,
-            18,
-            11,
-            57,
-            791507,
-            tzinfo=datetime.timezone(offset=datetime.timedelta(0)),
-        ),
-        datetime.datetime(
-            2020,
-            10,
-            15,
-            8,
-            10,
-            42,
-            421899,
-            tzinfo=datetime.timezone(offset=datetime.timedelta(0)),
-        ),
-        "provider_api",
-        "smithsonian",
-        "smithsonian_national_museum_of_natural_history",
-        "ark:/65665/m3272d5bfa5716461fbf173e083887621c",
-        "https://n2t.net/ark:/65665/3f07eb37b-d022-4d44-90de-179a4aaf1c82",
-        "https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
-        "https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c/90",
-        None,
-        None,
-        None,
-        "cc0",
-        "1.0",
-        "Susan Gabriella Stokes",
-        None,
-        "Eriogonum latifolium Sm.",
-        {
-            "unit_code": "NMNHBOTANY",
-            "data_source": "NMNH - Botany Dept.",
-            "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
-            "raw_license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
-        },
-        [
-            {"name": "1930s", "provider": "smithsonian"},
-            {"name": "Dicotyledonae", "provider": "smithsonian"},
-            {"name": "United States", "provider": "smithsonian"},
-            {"name": "California", "provider": "smithsonian"},
-            {"name": "North America", "provider": "smithsonian"},
-        ],
-        False,
-        datetime.datetime(
-            2020,
-            10,
-            15,
-            8,
-            10,
-            42,
-            421899,
-            tzinfo=datetime.timezone(offset=datetime.timedelta(0)),
-        ),
-        False,
-    )
-    expected_calls = [
-        call().add_item(
-            foreign_landing_url="https://n2t.net/ark:/65665/3f07eb37b-d022-4d44-90de-179a4aaf1c82",
-            image_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
-            thumbnail_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c/90",
-            license_url="https://creativecommons.org/publicdomain/zero/1.0/",
-            license_="cc0",
-            license_version="1.0",
-            foreign_identifier="ark:/65665/m3272d5bfa5716461fbf173e083887621c",
-            width=None,
-            height=None,
-            creator="Susan Gabriella Stokes",
-            creator_url=None,
-            title="Eriogonum latifolium Sm.",
-            meta_data={
-                "unit_code": "NMNHBOTANY",
-                "data_source": "NMNH - Botany Dept.",
-                "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
-                "raw_license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
-            },
-            raw_tags=[
-                {"name": "1930s", "provider": "smithsonian"},
-                {"name": "Dicotyledonae", "provider": "smithsonian"},
-                {"name": "United States", "provider": "smithsonian"},
-                {"name": "California", "provider": "smithsonian"},
-                {"name": "North America", "provider": "smithsonian"},
-            ],
-            watermarked=False,
-            source="smithsonian_national_museum_of_natural_history",
-        )
-    ]
-    image_store_dict = pg_cleaner.ImageStoreDict()
-    image_store_dict[("samsonion", "000000")]
-    with patch.object(pg_cleaner.image, "ImageStore") as mock_image_store:
-        pg_cleaner._clean_single_row(row, image_store_dict, "000000")
-
-    mock_image_store.assert_has_calls(expected_calls)
-
-
-def test_log_and_check_totals_raises_when_number_of_images_cleaned_is_wrong(
-    monkeypatch,
-):
-    monkeypatch.setattr(pg_cleaner.image.ImageStore, "total_items", 1)
-    expected_calls = [
-        call.info("Total images cleaned:  2"),
-        call.info("Image Totals breakdown:  {('abc', '000'): 1, ('def', '000'): 1}"),
-        call.warning("total_images_sum NOT EQUAL TO total_rows!"),
-        call.warning("total_images_sum: 2"),
-        call.warning("total_rows: 3"),
-    ]
-    image_store_dict = pg_cleaner.ImageStoreDict()
-    image_store_dict[("abc", "000")]
-    image_store_dict[("def", "000")]
-    with patch.object(pg_cleaner, "logger") as mock_logger:
-        with pytest.raises(AssertionError):
-            pg_cleaner._log_and_check_totals(3, image_store_dict)
-
-    assert mock_logger.has_calls(expected_calls)
+# def test_clean_single_row_handles_defective_tags_and_adds_row():
+#     row = (
+#         "000000ea-9a81-47dd-a83c-a2093ea4741b",
+#         datetime.datetime(
+#             2020,
+#             10,
+#             12,
+#             18,
+#             11,
+#             57,
+#             791507,
+#             tzinfo=datetime.timezone(offset=datetime.timedelta(0)),
+#         ),
+#         datetime.datetime(
+#             2020,
+#             10,
+#             15,
+#             8,
+#             10,
+#             42,
+#             421899,
+#             tzinfo=datetime.timezone(offset=datetime.timedelta(0)),
+#         ),
+#         "provider_api",
+#         "smithsonian",
+#         "smithsonian_national_museum_of_natural_history",
+#         "ark:/65665/m3272d5bfa5716461fbf173e083887621c",
+#         "https://n2t.net/ark:/65665/3f07eb37b-d022-4d44-90de-179a4aaf1c82",
+#         "https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
+#         "https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c/90",
+#         None,
+#         None,
+#         None,
+#         "cc0",
+#         "1.0",
+#         "Susan Gabriella Stokes",
+#         None,
+#         "Eriogonum latifolium Sm.",
+#         {
+#             "unit_code": "NMNHBOTANY",
+#             "data_source": "NMNH - Botany Dept.",
+#             "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+#             "raw_license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+#         },
+#         [
+#             {},
+#             "",
+#             None,
+#             {"name": "1930s", "provider": "smithsonian"},
+#             {"name": "Dicotyledonae", "provider": "smithsonian"},
+#             {"name": "United States", "provider": "smithsonian"},
+#             {"name": "California", "provider": "smithsonian"},
+#             {"name": "North America", "provider": "smithsonian"},
+#         ],
+#         False,
+#         datetime.datetime(
+#             2020,
+#             10,
+#             15,
+#             8,
+#             10,
+#             42,
+#             421899,
+#             tzinfo=datetime.timezone(offset=datetime.timedelta(0)),
+#         ),
+#         False,
+#     )
+#     image_store_dict = pg_cleaner.ImageStoreDict()
+#     expected_calls = [
+#         call(
+#             provider="smithsonian",
+#             output_file="cleaned_000000.tsv",
+#             output_dir=pg_cleaner.OUTPUT_PATH,
+#         ),
+#         call().add_item(
+#             foreign_landing_url="https://n2t.net/ark:/65665/3f07eb37b-d022-4d44-90de-179a4aaf1c82",
+#             image_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
+#             thumbnail_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c/90",
+#             license_url="https://creativecommons.org/publicdomain/zero/1.0/",
+#             license_="cc0",
+#             license_version="1.0",
+#             foreign_identifier="ark:/65665/m3272d5bfa5716461fbf173e083887621c",
+#             width=None,
+#             height=None,
+#             creator="Susan Gabriella Stokes",
+#             creator_url=None,
+#             title="Eriogonum latifolium Sm.",
+#             meta_data={
+#                 "unit_code": "NMNHBOTANY",
+#                 "data_source": "NMNH - Botany Dept.",
+#                 "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+#                 "raw_license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+#             },
+#             raw_tags=[
+#                 {"name": "1930s", "provider": "smithsonian"},
+#                 {"name": "Dicotyledonae", "provider": "smithsonian"},
+#                 {"name": "United States", "provider": "smithsonian"},
+#                 {"name": "California", "provider": "smithsonian"},
+#                 {"name": "North America", "provider": "smithsonian"},
+#             ],
+#             watermarked=False,
+#             source="smithsonian_national_museum_of_natural_history",
+#         ),
+#     ]
+#     with patch.object(storage.image, "ImageStore") as mock_image_store:
+#         pg_cleaner._clean_single_row(row, image_store_dict, "000000")
+#
+#     mock_image_store.assert_has_calls(expected_calls)
 
 
-def test_log_and_check_totals_logs(monkeypatch):
-    monkeypatch.setattr(pg_cleaner.image.ImageStore, "total_items", 1)
-    expected_calls = [
-        call.info("Total images cleaned:  2"),
-        call.info("Image Totals breakdown:  {('abc', '000'): 1, ('def', '000'): 1}"),
-    ]
-    image_store_dict = pg_cleaner.ImageStoreDict()
-    image_store_dict[("abc", "000")]
-    image_store_dict[("def", "000")]
-    with patch.object(pg_cleaner, "logger") as mock_logger:
-        pg_cleaner._log_and_check_totals(2, image_store_dict)
+# def test_clean_single_row_handles_missing_tags_and_adds_row():
+#     row = (
+#         "000000ea-9a81-47dd-a83c-a2093ea4741b",
+#         datetime.datetime(
+#             2020,
+#             10,
+#             12,
+#             18,
+#             11,
+#             57,
+#             791507,
+#             tzinfo=datetime.timezone(offset=datetime.timedelta(0)),
+#         ),
+#         datetime.datetime(
+#             2020,
+#             10,
+#             15,
+#             8,
+#             10,
+#             42,
+#             421899,
+#             tzinfo=datetime.timezone(offset=datetime.timedelta(0)),
+#         ),
+#         "provider_api",
+#         "smithsonian",
+#         "smithsonian_national_museum_of_natural_history",
+#         "ark:/65665/m3272d5bfa5716461fbf173e083887621c",
+#         "https://n2t.net/ark:/65665/3f07eb37b-d022-4d44-90de-179a4aaf1c82",
+#         "https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
+#         "https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c/90",
+#         None,
+#         None,
+#         None,
+#         "cc0",
+#         "1.0",
+#         "Susan Gabriella Stokes",
+#         None,
+#         "Eriogonum latifolium Sm.",
+#         {
+#             "unit_code": "NMNHBOTANY",
+#             "data_source": "NMNH - Botany Dept.",
+#             "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+#             "raw_license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+#         },
+#         None,
+#         False,
+#         datetime.datetime(
+#             2020,
+#             10,
+#             15,
+#             8,
+#             10,
+#             42,
+#             421899,
+#             tzinfo=datetime.timezone(offset=datetime.timedelta(0)),
+#         ),
+#         False,
+#     )
+#     image_store_dict = pg_cleaner.ImageStoreDict()
+#     expected_calls = [
+#         call(
+#             provider="smithsonian",
+#             output_file="cleaned_000000.tsv",
+#             output_dir=pg_cleaner.OUTPUT_PATH,
+#         ),
+#         call().add_item(
+#             foreign_landing_url="https://n2t.net/ark:/65665/3f07eb37b-d022-4d44-90de-179a4aaf1c82",
+#             image_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
+#             thumbnail_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c/90",
+#             license_url="https://creativecommons.org/publicdomain/zero/1.0/",
+#             license_="cc0",
+#             license_version="1.0",
+#             foreign_identifier="ark:/65665/m3272d5bfa5716461fbf173e083887621c",
+#             width=None,
+#             height=None,
+#             creator="Susan Gabriella Stokes",
+#             creator_url=None,
+#             title="Eriogonum latifolium Sm.",
+#             meta_data={
+#                 "unit_code": "NMNHBOTANY",
+#                 "data_source": "NMNH - Botany Dept.",
+#                 "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+#                 "raw_license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+#             },
+#             raw_tags=None,
+#             watermarked=False,
+#             source="smithsonian_national_museum_of_natural_history",
+#         ),
+#     ]
+#     with patch.object(storage.image, "ImageStore") as mock_image_store:
+#         pg_cleaner._clean_single_row(row, image_store_dict, "000000")
+#
+#     mock_image_store.assert_has_calls(expected_calls)
 
-    assert mock_logger.has_calls(expected_calls)
+
+# def test_clean_single_row_reuses_image_store_and_adds_row():
+#     row = (
+#         "000000ea-9a81-47dd-a83c-a2093ea4741b",
+#         datetime.datetime(
+#             2020,
+#             10,
+#             12,
+#             18,
+#             11,
+#             57,
+#             791507,
+#             tzinfo=datetime.timezone(offset=datetime.timedelta(0)),
+#         ),
+#         datetime.datetime(
+#             2020,
+#             10,
+#             15,
+#             8,
+#             10,
+#             42,
+#             421899,
+#             tzinfo=datetime.timezone(offset=datetime.timedelta(0)),
+#         ),
+#         "provider_api",
+#         "smithsonian",
+#         "smithsonian_national_museum_of_natural_history",
+#         "ark:/65665/m3272d5bfa5716461fbf173e083887621c",
+#         "https://n2t.net/ark:/65665/3f07eb37b-d022-4d44-90de-179a4aaf1c82",
+#         "https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
+#         "https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c/90",
+#         None,
+#         None,
+#         None,
+#         "cc0",
+#         "1.0",
+#         "Susan Gabriella Stokes",
+#         None,
+#         "Eriogonum latifolium Sm.",
+#         {
+#             "unit_code": "NMNHBOTANY",
+#             "data_source": "NMNH - Botany Dept.",
+#             "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+#             "raw_license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+#         },
+#         [
+#             {"name": "1930s", "provider": "smithsonian"},
+#             {"name": "Dicotyledonae", "provider": "smithsonian"},
+#             {"name": "United States", "provider": "smithsonian"},
+#             {"name": "California", "provider": "smithsonian"},
+#             {"name": "North America", "provider": "smithsonian"},
+#         ],
+#         False,
+#         datetime.datetime(
+#             2020,
+#             10,
+#             15,
+#             8,
+#             10,
+#             42,
+#             421899,
+#             tzinfo=datetime.timezone(offset=datetime.timedelta(0)),
+#         ),
+#         False,
+#     )
+#     expected_calls = [
+#         call().add_item(
+#             foreign_landing_url="https://n2t.net/ark:/65665/3f07eb37b-d022-4d44-90de-179a4aaf1c82",
+#             image_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
+#             thumbnail_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c/90",
+#             license_url="https://creativecommons.org/publicdomain/zero/1.0/",
+#             license_="cc0",
+#             license_version="1.0",
+#             foreign_identifier="ark:/65665/m3272d5bfa5716461fbf173e083887621c",
+#             width=None,
+#             height=None,
+#             creator="Susan Gabriella Stokes",
+#             creator_url=None,
+#             title="Eriogonum latifolium Sm.",
+#             meta_data={
+#                 "unit_code": "NMNHBOTANY",
+#                 "data_source": "NMNH - Botany Dept.",
+#                 "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+#                 "raw_license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+#             },
+#             raw_tags=[
+#                 {"name": "1930s", "provider": "smithsonian"},
+#                 {"name": "Dicotyledonae", "provider": "smithsonian"},
+#                 {"name": "United States", "provider": "smithsonian"},
+#                 {"name": "California", "provider": "smithsonian"},
+#                 {"name": "North America", "provider": "smithsonian"},
+#             ],
+#             watermarked=False,
+#             source="smithsonian_national_museum_of_natural_history",
+#         )
+#     ]
+#     with patch.object(storage.image, "ImageStore") as mock_image_store:
+#         image_store_dict = pg_cleaner.ImageStoreDict()
+#         image_store_dict[("smithsonian", "000000")]
+#
+#     # This checks for reuse, since otherwise it would init a *real* ImageStore
+#     # outside of the block, and fail to call mock.add_item.
+#     pg_cleaner._clean_single_row(row, image_store_dict, "000000")
+#     mock_image_store.assert_has_calls(expected_calls)
+
+
+# def test_clean_single_row_doesnt_reuse_wrong_image_store_and_adds_row():
+#     row = (
+#         "000000ea-9a81-47dd-a83c-a2093ea4741b",
+#         datetime.datetime(
+#             2020,
+#             10,
+#             12,
+#             18,
+#             11,
+#             57,
+#             791507,
+#             tzinfo=datetime.timezone(offset=datetime.timedelta(0)),
+#         ),
+#         datetime.datetime(
+#             2020,
+#             10,
+#             15,
+#             8,
+#             10,
+#             42,
+#             421899,
+#             tzinfo=datetime.timezone(offset=datetime.timedelta(0)),
+#         ),
+#         "provider_api",
+#         "smithsonian",
+#         "smithsonian_national_museum_of_natural_history",
+#         "ark:/65665/m3272d5bfa5716461fbf173e083887621c",
+#         "https://n2t.net/ark:/65665/3f07eb37b-d022-4d44-90de-179a4aaf1c82",
+#         "https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
+#         "https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c/90",
+#         None,
+#         None,
+#         None,
+#         "cc0",
+#         "1.0",
+#         "Susan Gabriella Stokes",
+#         None,
+#         "Eriogonum latifolium Sm.",
+#         {
+#             "unit_code": "NMNHBOTANY",
+#             "data_source": "NMNH - Botany Dept.",
+#             "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+#             "raw_license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+#         },
+#         [
+#             {"name": "1930s", "provider": "smithsonian"},
+#             {"name": "Dicotyledonae", "provider": "smithsonian"},
+#             {"name": "United States", "provider": "smithsonian"},
+#             {"name": "California", "provider": "smithsonian"},
+#             {"name": "North America", "provider": "smithsonian"},
+#         ],
+#         False,
+#         datetime.datetime(
+#             2020,
+#             10,
+#             15,
+#             8,
+#             10,
+#             42,
+#             421899,
+#             tzinfo=datetime.timezone(offset=datetime.timedelta(0)),
+#         ),
+#         False,
+#     )
+#     expected_calls = [
+#         call().add_item(
+#             foreign_landing_url="https://n2t.net/ark:/65665/3f07eb37b-d022-4d44-90de-179a4aaf1c82",
+#             image_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c",
+#             thumbnail_url="https://ids.si.edu/ids/deliveryService/id/ark:/65665/m3272d5bfa5716461fbf173e083887621c/90",
+#             license_url="https://creativecommons.org/publicdomain/zero/1.0/",
+#             license_="cc0",
+#             license_version="1.0",
+#             foreign_identifier="ark:/65665/m3272d5bfa5716461fbf173e083887621c",
+#             width=None,
+#             height=None,
+#             creator="Susan Gabriella Stokes",
+#             creator_url=None,
+#             title="Eriogonum latifolium Sm.",
+#             meta_data={
+#                 "unit_code": "NMNHBOTANY",
+#                 "data_source": "NMNH - Botany Dept.",
+#                 "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+#                 "raw_license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+#             },
+#             raw_tags=[
+#                 {"name": "1930s", "provider": "smithsonian"},
+#                 {"name": "Dicotyledonae", "provider": "smithsonian"},
+#                 {"name": "United States", "provider": "smithsonian"},
+#                 {"name": "California", "provider": "smithsonian"},
+#                 {"name": "North America", "provider": "smithsonian"},
+#             ],
+#             watermarked=False,
+#             source="smithsonian_national_museum_of_natural_history",
+#         )
+#     ]
+#     image_store_dict = pg_cleaner.ImageStoreDict()
+#     image_store_dict[("samsonion", "000000")]
+#     with patch.object(storage.image, "ImageStore") as mock_image_store:
+#         pg_cleaner._clean_single_row(row, image_store_dict, "000000")
+#
+#     mock_image_store.assert_has_calls(expected_calls)
+
+
+# def test_log_and_check_totals_raises_when_number_of_images_cleaned_is_wrong(
+#     monkeypatch,
+# ):
+#     monkeypatch.setattr(storage.image.ImageStore, "total_items", 1)
+#     expected_calls = [
+#         call.info("Total images cleaned:  2"),
+#         call.info("Image Totals breakdown:  {('abc', '000'): 1, ('def', '000'): 1}"),
+#         call.warning("total_images_sum NOT EQUAL TO total_rows!"),
+#         call.warning("total_images_sum: 2"),
+#         call.warning("total_rows: 3"),
+#     ]
+#     image_store_dict = pg_cleaner.ImageStoreDict()
+#     image_store_dict[("abc", "000")]
+#     image_store_dict[("def", "000")]
+#     with patch.object(pg_cleaner, "logger") as mock_logger:
+#         with pytest.raises(AssertionError):
+#             pg_cleaner._log_and_check_totals(3, image_store_dict)
+#
+#     assert mock_logger.has_calls(expected_calls)
+
+
+# def test_log_and_check_totals_logs(monkeypatch):
+#     monkeypatch.setattr(storage.image.ImageStore, "total_items", 1)
+#     expected_calls = [
+#         call.info("Total images cleaned:  2"),
+#         call.info("Image Totals breakdown:  {('abc', '000'): 1, ('def', '000'): 1}"),
+#     ]
+#     image_store_dict = pg_cleaner.ImageStoreDict()
+#     image_store_dict[("abc", "000")]
+#     image_store_dict[("def", "000")]
+#     with patch.object(pg_cleaner, "logger") as mock_logger:
+#         pg_cleaner._log_and_check_totals(2, image_store_dict)
+#
+#     assert mock_logger.has_calls(expected_calls)

@@ -1,93 +1,17 @@
 import logging
 from collections import namedtuple
-from typing import Dict, Optional, Union
+from typing import Dict, List, Optional, Union
 
 from common.licenses.licenses import LicenseInfo
-from common.storage import columns
-from common.storage.media import MediaStore
+from storage.columns import Column
+from storage.media import MediaStore
+from storage.tsv_columns import COLUMNS
+from util.constants import AUDIO
 
 
 logger = logging.getLogger(__name__)
 
-# Any changes to the AUDIO_TSV_COLUMNS should also be reflected
-# in the db columns. Please, add the column to the:
-# - `.sql` script in the `local_postgres` folder
-# - dict with DbColumn instances - `util.loader.columns.DB_COLUMNS`
-# - list of db columns, in the correct order:
-# -   `util.loader.columns.common_columns` or
-# -   `util.loader.columns.media_columns[AUDIO]`
-
-AUDIO_TSV_COLUMNS = [
-    # The order of this list maps to the order of the columns in the TSV.
-    columns.StringColumn(
-        name="foreign_identifier", required=False, size=3000, truncate=False
-    ),
-    columns.URLColumn(name="foreign_landing_url", required=True, size=1000),
-    columns.URLColumn(
-        # `url` in DB
-        name="audio_url",
-        required=True,
-        size=3000,
-    ),
-    columns.URLColumn(
-        # `thumbnail` in DB
-        name="thumbnail_url",
-        required=False,
-        size=3000,
-    ),
-    columns.IntegerColumn(name="filesize", required=False),
-    columns.StringColumn(name="license_", required=True, size=50, truncate=False),
-    columns.StringColumn(
-        name="license_version", required=True, size=25, truncate=False
-    ),
-    columns.StringColumn(name="creator", required=False, size=2000, truncate=True),
-    columns.URLColumn(name="creator_url", required=False, size=2000),
-    columns.StringColumn(name="title", required=False, size=5000, truncate=True),
-    columns.JSONColumn(name="meta_data", required=False),
-    columns.JSONColumn(name="tags", required=False),
-    columns.BooleanColumn(
-        name="watermarked",
-        required=False,
-    ),
-    columns.StringColumn(name="provider", required=False, size=80, truncate=False),
-    columns.StringColumn(name="source", required=False, size=80, truncate=False),
-    columns.StringColumn(
-        name="ingestion_type", required=False, size=80, truncate=False
-    ),
-    columns.IntegerColumn(name="duration", required=False),
-    columns.IntegerColumn(
-        name="bit_rate",
-        required=False,
-    ),
-    columns.IntegerColumn(
-        name="sample_rate",
-        required=False,
-    ),
-    columns.StringColumn(
-        name="category",
-        required=False,
-        size=80,
-        truncate=False,
-    ),
-    columns.ArrayColumn(
-        name="genres",
-        required=False,
-        base_column=columns.StringColumn(
-            name="genre", required=False, size=80, truncate=False
-        ),
-    ),
-    columns.JSONColumn(
-        # set name, set thumbnail, position of audio in set, set url
-        name="audio_set",
-        required=False,
-    ),
-    columns.JSONColumn(
-        # Alternative files: url, filesize, bit_rate, sample_rate
-        name="alt_files",
-        required=False,
-    ),
-]
-
+AUDIO_TSV_COLUMNS: List[Column] = COLUMNS[AUDIO]["000"]
 Audio = namedtuple("Audio", [c.NAME for c in AUDIO_TSV_COLUMNS])
 
 
@@ -247,6 +171,8 @@ class AudioStore(MediaStore):
         audio_metadata = self.clean_media_metadata(**kwargs)
         if audio_metadata is None:
             return None
+        audio_metadata["url"] = audio_metadata["audio_url"]
+        audio_metadata.pop("audio_url", None)
         return Audio(**audio_metadata)
 
 
