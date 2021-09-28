@@ -11,6 +11,7 @@ from pathlib import Path
 from textwrap import dedent
 
 from airflow.providers.postgres.hooks.postgres import PostgresHook
+from common import urls
 from storage import column_names as col
 from storage import image
 from util import tsv_cleaner
@@ -20,6 +21,7 @@ from util.loader.sql import TABLE_NAME
 
 logger = logging.getLogger(__name__)
 logging.getLogger(image.__name__).setLevel(logging.WARNING)
+logging.getLogger(urls.__name__).setLevel(logging.WARNING)
 
 MAX_DIR_SIZE = 8 * 1024 ** 3
 OUTPUT_DIR = os.path.realpath(os.getenv("OUTPUT_DIR", "/tmp/"))
