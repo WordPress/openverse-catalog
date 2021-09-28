@@ -1,17 +1,14 @@
 import logging
 from collections import namedtuple
-from typing import Dict, List, Optional, Union
+from typing import Dict, Optional, Union
 
 from common.licenses.licenses import LicenseInfo
-from storage.columns import Column
 from storage.media import MediaStore
-from storage.tsv_columns import COLUMNS
-from util.constants import IMAGE
+from storage.tsv_columns import IMAGE_TSV_COLUMNS
 
 
 logger = logging.getLogger(__name__)
 
-IMAGE_TSV_COLUMNS: List[Column] = COLUMNS[IMAGE]["000"]
 Image = namedtuple("Image", [c.NAME for c in IMAGE_TSV_COLUMNS])
 # This list is the same for all media types
 required_columns = [col for col in IMAGE_TSV_COLUMNS if col.REQUIRED]
@@ -141,8 +138,9 @@ class ImageStore(MediaStore):
         image_metadata = self.clean_media_metadata(**kwargs)
         if image_metadata is None:
             return None
-        image_metadata["url"] = image_metadata["image_url"]
-        image_metadata.pop("image_url", None)
+        # Convert the `image_url` key used in ImageStore, TSV and
+        # provider API scripts into `url` key used in db
+        image_metadata["url"] = image_metadata.pop("image_url")
         return Image(**image_metadata)
 
 

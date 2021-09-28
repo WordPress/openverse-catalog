@@ -14,30 +14,7 @@ from airflow.models import TaskInstance
 from airflow.operators.dummy import DummyOperator
 from psycopg2.errors import InvalidTextRepresentation
 from storage import column_names as col
-from storage.columns import (
-    CREATOR_COLUMN,
-    CREATOR_URL_COLUMN,
-    DIRECT_URL_COLUMN,
-    FILESIZE_COLUMN,
-    FOREIGN_ID_COLUMN,
-    HEIGHT_COLUMN,
-    INGESTION_TYPE_COLUMN,
-    LANDING_URL_COLUMN,
-    LAST_SYNCED_COLUMN,
-    LICENSE_COLUMN,
-    LICENSE_VERSION_COLUMN,
-    META_DATA_COLUMN,
-    PROVIDER_COLUMN,
-    REMOVED_COLUMN,
-    SOURCE_COLUMN,
-    TAGS_COLUMN,
-    THUMBNAIL_COLUMN,
-    TITLE_COLUMN,
-    UPDATED_ON_COLUMN,
-    WATERMARKED_COLUMN,
-    WIDTH_COLUMN,
-)
-from storage.db_table import IMAGE_TABLE_COLUMNS
+from storage.db_columns import IMAGE_TABLE_COLUMNS
 from util.constants import IMAGE
 from util.loader import sql
 from util.loader.sql import TSV_COLUMNS, create_column_definitions
@@ -87,28 +64,30 @@ op_no_dag = DummyOperator(task_id="op_no_dag")
 naive_datetime = datetime(2016, 1, 1).replace(tzinfo=None)
 ti = TaskInstance(task=op_no_dag, execution_date=naive_datetime)
 
+COLUMN_NAMES = [column.db_name for column in IMAGE_TABLE_COLUMNS]
+
 # ids for main database columns
-updated_idx = IMAGE_TABLE_COLUMNS.index(UPDATED_ON_COLUMN)
-ingestion_idx = IMAGE_TABLE_COLUMNS.index(INGESTION_TYPE_COLUMN)
-provider_idx = IMAGE_TABLE_COLUMNS.index(PROVIDER_COLUMN)
-source_idx = IMAGE_TABLE_COLUMNS.index(SOURCE_COLUMN)
-fid_idx = IMAGE_TABLE_COLUMNS.index(FOREIGN_ID_COLUMN)
-land_url_idx = IMAGE_TABLE_COLUMNS.index(LANDING_URL_COLUMN)
-url_idx = IMAGE_TABLE_COLUMNS.index(DIRECT_URL_COLUMN)
-thm_idx = IMAGE_TABLE_COLUMNS.index(THUMBNAIL_COLUMN)
-filesize_idx = IMAGE_TABLE_COLUMNS.index(FILESIZE_COLUMN)
-license_idx = IMAGE_TABLE_COLUMNS.index(LICENSE_COLUMN)
-version_idx = IMAGE_TABLE_COLUMNS.index(LICENSE_VERSION_COLUMN)
-creator_idx = IMAGE_TABLE_COLUMNS.index(CREATOR_COLUMN)
-creator_url_idx = IMAGE_TABLE_COLUMNS.index(CREATOR_URL_COLUMN)
-title_idx = IMAGE_TABLE_COLUMNS.index(TITLE_COLUMN)
-metadata_idx = IMAGE_TABLE_COLUMNS.index(META_DATA_COLUMN)
-tags_idx = IMAGE_TABLE_COLUMNS.index(TAGS_COLUMN)
-synced_idx = IMAGE_TABLE_COLUMNS.index(LAST_SYNCED_COLUMN)
-removed_idx = IMAGE_TABLE_COLUMNS.index(REMOVED_COLUMN)
-watermarked_idx = IMAGE_TABLE_COLUMNS.index(WATERMARKED_COLUMN)
-width_idx = IMAGE_TABLE_COLUMNS.index(WIDTH_COLUMN)
-height_idx = IMAGE_TABLE_COLUMNS.index(HEIGHT_COLUMN)
+updated_idx = COLUMN_NAMES.index(col.UPDATED_ON)
+ingestion_idx = COLUMN_NAMES.index(col.INGESTION_TYPE)
+provider_idx = COLUMN_NAMES.index(col.PROVIDER)
+source_idx = COLUMN_NAMES.index(col.SOURCE)
+fid_idx = COLUMN_NAMES.index(col.FOREIGN_ID)
+land_url_idx = COLUMN_NAMES.index(col.LANDING_URL)
+url_idx = COLUMN_NAMES.index(col.DIRECT_URL)
+thm_idx = COLUMN_NAMES.index(col.THUMBNAIL)
+filesize_idx = COLUMN_NAMES.index(col.FILESIZE)
+license_idx = COLUMN_NAMES.index(col.LICENSE)
+version_idx = COLUMN_NAMES.index(col.LICENSE_VERSION)
+creator_idx = COLUMN_NAMES.index(col.CREATOR)
+creator_url_idx = COLUMN_NAMES.index(col.CREATOR_URL)
+title_idx = COLUMN_NAMES.index(col.TITLE)
+metadata_idx = COLUMN_NAMES.index(col.META_DATA)
+tags_idx = COLUMN_NAMES.index(col.TAGS)
+synced_idx = COLUMN_NAMES.index(col.LAST_SYNCED)
+removed_idx = COLUMN_NAMES.index(col.REMOVED)
+watermarked_idx = COLUMN_NAMES.index(col.WATERMARKED)
+width_idx = COLUMN_NAMES.index(col.WIDTH)
+height_idx = COLUMN_NAMES.index(col.HEIGHT)
 
 
 def create_query_values(
@@ -543,14 +522,22 @@ def test_upsert_records_replaces_updated_on_and_last_synced_with_source(
 
     sql.upsert_records_to_db_table(postgres_conn_id, identifier, db_table=image_table)
     postgres_with_load_and_image_table.cursor.execute(f"SELECT * FROM {image_table};")
-    original_row = postgres_with_load_and_image_table.cursor.fetchall()[0]
+    original_row = postgres_with_load_and_image_table.cursor.fetchall()
+    logging.info(f"\n{len(original_row)}\nOriginal row: {original_row}\n")
+    original_row = original_row[0]
     original_updated_on = original_row[updated_idx]
     original_last_synced = original_row[synced_idx]
+    logging.info(
+        f"\nLast updated: {original_updated_on}\nSynced: {original_last_synced}"
+    )
 
-    time.sleep(0.01)
+    time.sleep(1)
     sql.upsert_records_to_db_table(postgres_conn_id, identifier, db_table=image_table)
     postgres_with_load_and_image_table.cursor.execute(f"SELECT * FROM {image_table};")
     updated_result = postgres_with_load_and_image_table.cursor.fetchall()
+    logging.info(
+        f"\n{len(updated_result)}\nLast updated: {original_updated_on}\nSynced: {original_last_synced}"
+    )
     updated_row = updated_result[0]
     updated_updated_on = updated_row[updated_idx]
     updated_last_synced = updated_row[synced_idx]

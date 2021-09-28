@@ -1,8 +1,12 @@
+from typing import List
+
 from storage import columns as col
+from storage.columns import Column
 from util.constants import AUDIO, IMAGE
 
 
-# The order of this list maps to the order of the columns in the TSV.
+CURRENT_IMAGE_VERSION = "000"
+CURRENT_AUDIO_VERSION = "000"
 COLUMNS = {
     AUDIO: {
         "000": [
@@ -98,6 +102,10 @@ COLUMNS = {
             col.INGESTION_TYPE_COLUMN,
             col.WIDTH_COLUMN,
             col.HEIGHT_COLUMN,
+            col.CATEGORY_COLUMN,
         ],
     },
 }
+
+IMAGE_TSV_COLUMNS: List[Column] = COLUMNS[IMAGE][CURRENT_IMAGE_VERSION]
+AUDIO_TSV_COLUMNS: List[Column] = COLUMNS[AUDIO][CURRENT_AUDIO_VERSION]

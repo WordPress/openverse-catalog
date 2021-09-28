@@ -59,6 +59,7 @@ def test_AudioStore_add_item_adds_realistic_audio_to_buffer():
     license_info = PD_LICENSE_INFO
     audio_store = audio.AudioStore(provider="testing_provider")
     audio_store.add_item(
+        foreign_identifier="01",
         foreign_landing_url="https://audios.org/audio01",
         audio_url="https://audios.org/audio01.jpg",
         license_info=license_info,
@@ -70,21 +71,25 @@ def test_AudioStore_add_item_adds_realistic_audio_to_buffer():
 def test_AudioStore_add_item_adds_multiple_audios_to_buffer():
     audio_store = audio.AudioStore(provider="testing_provider")
     audio_store.add_item(
+        foreign_identifier="01",
         foreign_landing_url="https://audios.org/audio01",
         audio_url="https://audios.org/audio01.jpg",
         license_info=PD_LICENSE_INFO,
     )
     audio_store.add_item(
+        foreign_identifier="02",
         foreign_landing_url="https://audios.org/audio02",
         audio_url="https://audios.org/audio02.jpg",
         license_info=PD_LICENSE_INFO,
     )
     audio_store.add_item(
+        foreign_identifier="03",
         foreign_landing_url="https://audios.org/audio03",
         audio_url="https://audios.org/audio03.jpg",
         license_info=PD_LICENSE_INFO,
     )
     audio_store.add_item(
+        foreign_identifier="04",
         foreign_landing_url="https://audios.org/audio04",
         audio_url="https://audios.org/audio04.jpg",
         license_info=PD_LICENSE_INFO,
@@ -105,21 +110,25 @@ def test_AudioStore_add_item_flushes_buffer(tmpdir):
         buffer_length=3,
     )
     audio_store.add_item(
+        foreign_identifier="01",
         foreign_landing_url="https://audios.org/audio01",
         audio_url="https://audios.org/audio01.jpg",
         license_info=PD_LICENSE_INFO,
     )
     audio_store.add_item(
+        foreign_identifier="02",
         foreign_landing_url="https://audios.org/audio02",
         audio_url="https://audios.org/audio02.jpg",
         license_info=PD_LICENSE_INFO,
     )
     audio_store.add_item(
+        foreign_identifier="03",
         foreign_landing_url="https://audios.org/audio03",
         audio_url="https://audios.org/audio03.jpg",
         license_info=PD_LICENSE_INFO,
     )
     audio_store.add_item(
+        foreign_identifier="04",
         foreign_landing_url="https://audios.org/audio04",
         audio_url="https://audios.org/audio04.jpg",
         license_info=PD_LICENSE_INFO,
@@ -138,16 +147,19 @@ def test_AudioStore_commit_writes_nothing_if_no_lines_in_buffer():
 def test_AudioStore_produces_correct_total_audios():
     audio_store = audio.AudioStore(provider="testing_provider")
     audio_store.add_item(
+        foreign_identifier="01",
         foreign_landing_url="https://audios.org/audio01",
         audio_url="https://audios.org/audio01.jpg",
         license_info=PD_LICENSE_INFO,
     )
     audio_store.add_item(
+        foreign_identifier="02",
         foreign_landing_url="https://audios.org/audio02",
         audio_url="https://audios.org/audio02.jpg",
         license_info=PD_LICENSE_INFO,
     )
     audio_store.add_item(
+        foreign_identifier="03",
         foreign_landing_url="https://audios.org/audio03",
         audio_url="https://audios.org/audio03.jpg",
         license_info=PD_LICENSE_INFO,
@@ -175,7 +187,7 @@ def default_audio_args():
     return dict(
         foreign_identifier="foreign_id",
         foreign_landing_url="https://landing_page.org",
-        audio_url="https://audiourl.org",
+        url="https://audiourl.org",
         thumbnail_url="https://thumbnail.com",
         filesize=None,
         audio_set=None,
@@ -366,7 +378,7 @@ def test_create_tsv_row_returns_none_if_missing_audio_url(
 ):
     audio_store = audio.AudioStore()
     audio_args = default_audio_args
-    audio_args["audio_url"] = None
+    audio_args["url"] = None
     test_audio = audio.Audio(**audio_args)
     expect_row = None
     actual_row = audio_store._create_tsv_row(test_audio)
@@ -405,7 +417,7 @@ def test_create_tsv_row_properly_places_entries(monkeypatch):
     audio_store = audio.AudioStore()
     req_args_dict = {
         "foreign_landing_url": "https://landing_page.com",
-        "audio_url": "https://audiourl.com",
+        "url": "https://audiourl.com",
         "license_": "testlicense",
         "license_version": "1.0",
     }

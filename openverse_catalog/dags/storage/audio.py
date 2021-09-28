@@ -1,17 +1,14 @@
 import logging
 from collections import namedtuple
-from typing import Dict, List, Optional, Union
+from typing import Dict, Optional, Union
 
 from common.licenses.licenses import LicenseInfo
-from storage.columns import Column
 from storage.media import MediaStore
-from storage.tsv_columns import COLUMNS
-from util.constants import AUDIO
+from storage.tsv_columns import AUDIO_TSV_COLUMNS
 
 
 logger = logging.getLogger(__name__)
 
-AUDIO_TSV_COLUMNS: List[Column] = COLUMNS[AUDIO]["000"]
 Audio = namedtuple("Audio", [c.NAME for c in AUDIO_TSV_COLUMNS])
 
 
@@ -171,6 +168,8 @@ class AudioStore(MediaStore):
         audio_metadata = self.clean_media_metadata(**kwargs)
         if audio_metadata is None:
             return None
+        # Convert the `image_url` key used in ImageStore, TSV and
+        # provider API scripts into `url` key used in db
         audio_metadata["url"] = audio_metadata.pop("audio_url")
         return Audio(**audio_metadata)
 
