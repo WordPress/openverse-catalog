@@ -11,7 +11,7 @@ from pathlib import Path
 from textwrap import dedent
 
 from airflow.providers.postgres.hooks.postgres import PostgresHook
-from common.storage import image
+from storage import image
 from util import tsv_cleaner
 from util.loader import column_names as col
 from util.loader.sql import IMAGE_TABLE_NAME
