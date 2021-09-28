@@ -171,8 +171,7 @@ class AudioStore(MediaStore):
         audio_metadata = self.clean_media_metadata(**kwargs)
         if audio_metadata is None:
             return None
-        audio_metadata["url"] = audio_metadata["audio_url"]
-        audio_metadata.pop("audio_url", None)
+        audio_metadata["url"] = audio_metadata.pop("audio_url")
         return Audio(**audio_metadata)
 
 

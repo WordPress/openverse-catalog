@@ -12,7 +12,7 @@ from textwrap import dedent
 
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from storage import column_names as col
-from storage import columns, image
+from storage import image
 from util import tsv_cleaner
 from util.constants import IMAGE
 from util.loader.sql import TABLE_NAME
@@ -20,7 +20,6 @@ from util.loader.sql import TABLE_NAME
 
 logger = logging.getLogger(__name__)
 logging.getLogger(image.__name__).setLevel(logging.WARNING)
-logging.getLogger(columns.urls.__name__).setLevel(logging.WARNING)
 
 MAX_DIR_SIZE = 8 * 1024 ** 3
 OUTPUT_DIR = os.path.realpath(os.getenv("OUTPUT_DIR", "/tmp/"))
