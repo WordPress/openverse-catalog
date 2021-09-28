@@ -240,7 +240,6 @@ def upsert_records_to_db_table(
           {upsert_conflict_string}
         """
     )
-    logger.info(f"Upsert query: \n{upsert_query}")
     postgres.run(upsert_query)
 
 
@@ -252,7 +251,7 @@ def overwrite_records_in_db_table(
     tsv_version=CURRENT_TSV_VERSION,
 ):
     if db_table is None:
-        db_table = TABLE_NAME[media_type]
+        db_table = TABLE_NAME.get(media_type, TABLE_NAME[IMAGE])
     load_table = _get_load_table_name(identifier, media_type=media_type)
     logger.info(f"Updating records in {db_table}. {tsv_version}")
     postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
