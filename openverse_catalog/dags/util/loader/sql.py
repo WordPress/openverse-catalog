@@ -8,11 +8,7 @@ from psycopg2.errors import InvalidTextRepresentation
 from storage import column_names as col
 from storage.audio import AUDIO_TSV_COLUMNS
 from storage.columns import NULL, Column, UpsertStrategy
-from storage.db_columns import (
-    AUDIO_TABLE_COLUMNS,
-    IMAGE_TABLE_COLUMNS,
-    NOT_IN_LOADING_TABLE,
-)
+from storage.db_columns import AUDIO_TABLE_COLUMNS, IMAGE_TABLE_COLUMNS
 from storage.image import IMAGE_TSV_COLUMNS, required_columns
 from storage.tsv_columns import COLUMNS
 from util.constants import AUDIO, IMAGE
@@ -203,7 +199,7 @@ def _is_tsv_column_from_different_version(
     True
     >>> _is_tsv_column_from_different_version(DIRECT_URL_COLUMN, IMAGE, '000')
     False
-    >>> from storage.columns.import IDENTIFIER_COLUMN
+    >>> from storage.columns import IDENTIFIER_COLUMN
     >>> _is_tsv_column_from_different_version(IDENTIFIER_COLUMN, IMAGE, '000')
     False
 
@@ -242,28 +238,18 @@ def upsert_records_to_db_table(
 
     # Remove identifier column
     db_columns: List[Column] = DB_COLUMNS[media_type][1:]
-    tsv_version_columns = COLUMNS[media_type][tsv_version]
-    # logger.info(f"tsv columns: {tsv_version_columns}")
-    db_columns_to_update_from_tsv = [
-        column
-        for column in db_columns
-        if column not in NOT_IN_LOADING_TABLE and column in tsv_version_columns
-    ]
-    # logger.info(f"db columns to update: {db_columns_to_update_from_tsv}")
-
-    upsert_conflict_string = ",\n          ".join(
-        [column.upsert_value for column in db_columns_to_update_from_tsv]
-    )
     column_inserts = {}
+    column_conflict_values = {}
     for column in db_columns:
         if column.upsert_strategy == UpsertStrategy.no_change:
-            continue
-        if _is_tsv_column_from_different_version(column, media_type, tsv_version):
+            column_inserts[column.db_name] = column.upsert_name
+        elif _is_tsv_column_from_different_version(column, media_type, tsv_version):
             column_inserts[column.db_name] = NULL
+            column_conflict_values[column.db_name] = NULL
         else:
             column_inserts[column.db_name] = column.upsert_name
-    # logger.info(f"Upsert: {upsert_conflict_string}")
-    # logger.info(f"column_inserts: {json.dumps(column_inserts, indent=2)}")
+            column_conflict_values[column.db_name] = column.upsert_value
+    upsert_conflict_string = ",\n    ".join(column_conflict_values.values())
     upsert_query = dedent(
         f"""
         INSERT INTO {db_table} AS old ({', '.join(column_inserts.keys())})
@@ -274,7 +260,6 @@ def upsert_records_to_db_table(
           {upsert_conflict_string}
         """
     )
-    logger.info(f"\nUpsert query: {upsert_query}")
     postgres.run(upsert_query)
 
 

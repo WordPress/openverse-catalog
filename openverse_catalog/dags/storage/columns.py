@@ -464,6 +464,10 @@ class TimestampColumn(Column):
             else upsert_strategy,
         )
 
+    @property
+    def upsert_name(self):
+        return NOW
+
     def prepare_string(self, value):
         return value
 
