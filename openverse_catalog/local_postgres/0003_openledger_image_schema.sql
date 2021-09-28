@@ -24,6 +24,8 @@ CREATE TABLE public.image (
     foreign_landing_url character varying(1000),
     url character varying(3000) NOT NULL,
     thumbnail character varying(3000),
+    width integer,
+    height integer,
     filesize integer,
     license character varying(50) NOT NULL,
     license_version character varying(25),
@@ -34,9 +36,7 @@ CREATE TABLE public.image (
     tags jsonb,
     watermarked boolean,
     last_synced_with_source timestamp with time zone,
-    removed_from_source boolean NOT NULL,
-    width integer,
-    height integer
+    removed_from_source boolean NOT NULL
 );
 
 
