@@ -2,9 +2,7 @@ set dotenv-load := false
 
 DEV_DOCKER_FILES := "--file=openverse_catalog/docker-compose.yml --file=openverse_catalog/docker-compose.override.yml"
 SERVICE := "webserver"
-TSV_FILE := "dags/provider_api_scripts/tests/resources/example_output/brooklynmuseum_1559050316.tsv"
-TSV_FILE_NAME := "brooklynmuseum_"
-TS := `date +%s`
+
 
 install:
     pip install -r requirements.txt -r openverse_catalog/requirements_dev.txt
@@ -42,6 +40,3 @@ shell: dotenv up
 
 airflow command="": dotenv up
     docker-compose {{ DEV_DOCKER_FILES }} exec {{ SERVICE }} airflow {{ command }}
-
-loadtsv:
-    docker exec -it openverse_catalog_webserver_1 /bin/bash && cp {{ TSV_FILE }} /tmp/{{ TSV_FILE_NAME }}{{TS}}.tsv && exit
