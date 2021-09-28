@@ -36,7 +36,8 @@ CREATE TABLE public.image (
     tags jsonb,
     watermarked boolean,
     last_synced_with_source timestamp with time zone,
-    removed_from_source boolean NOT NULL
+    removed_from_source boolean NOT NULL,
+    filetype character varying(5)
 );
 
 

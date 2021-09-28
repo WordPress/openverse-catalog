@@ -78,6 +78,7 @@ def test_ImageStore_get_image_places_given_args(
         "license_info": BY_LICENSE_INFO,
         "foreign_identifier": "foreign_id",
         "thumbnail_url": "https://thumbnail.com",
+        "filetype": "svg",
         "width": 200,
         "height": 500,
         "creator": "tyler",
@@ -120,6 +121,7 @@ def default_image_args(
         foreign_landing_url="https://image.org",
         url="https://image.org",
         thumbnail_url=None,
+        filetype=None,
         width=None,
         height=None,
         filesize=None,
@@ -232,7 +234,7 @@ def test_create_tsv_row_turns_empty_into_nullchar(
         all(
             [
                 actual_row[i] == "\\N"
-                for i in [3, 4, 5, 6, 9, 10, 11, 12, 13, 14, 15, 16]
+                for i in [3, 4, 5, 9, 10, 11, 12, 13, 14, 15, 16, 17]
             ]
         )
         is True
@@ -256,6 +258,7 @@ def test_create_tsv_row_properly_places_entries(setup_env, monkeypatch):
     }
     args_dict = {
         "thumbnail_url": "http://thumbnail.com",
+        "filetype": "png",
         "width": 200,
         "height": 500,
         "filesize": None,
@@ -280,8 +283,7 @@ def test_create_tsv_row_properly_places_entries(setup_env, monkeypatch):
                 "https://landing_page.com",
                 "http://imageurl.com",
                 "http://thumbnail.com",
-                "200",
-                "500",
+                "png",
                 "\\N",
                 "testlicense",
                 "1.0",
@@ -294,6 +296,8 @@ def test_create_tsv_row_properly_places_entries(setup_env, monkeypatch):
                 "testing_provider",
                 "testing_source",
                 "provider_api",
+                "200",
+                "500",
             ]
         )
         + "\n"

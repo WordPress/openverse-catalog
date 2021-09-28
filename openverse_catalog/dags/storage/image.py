@@ -45,6 +45,7 @@ class ImageStore(MediaStore):
         image_url: str,
         license_info: LicenseInfo,
         thumbnail_url: Optional[str] = None,
+        filetype: Optional[str] = None,
         foreign_identifier: Optional[str] = None,
         width: Optional[int] = None,
         height: Optional[int] = None,
@@ -84,11 +85,12 @@ class ImageStore(MediaStore):
         Optional Arguments:
 
         thumbnail_url:       Direct link to a thumbnail-sized version of
-                             the image
+                             the image.
+        filetype:            eg. 'jpg', 'svg'.
         foreign_identifier:  Unique identifier for the image on the
                              source site.
-        width:               in pixels
-        height:              in pixels
+        width:               in pixels.
+        height:              in pixels.
         creator:             The creator of the image.
         creator_url:         The user page, or home page of the creator.
         title:               Title of the image.
@@ -115,6 +117,7 @@ class ImageStore(MediaStore):
             "foreign_landing_url": foreign_landing_url,
             "image_url": image_url,
             "thumbnail_url": thumbnail_url,
+            "filetype": filetype,
             "license_info": license_info,
             "foreign_identifier": foreign_identifier,
             "width": width,

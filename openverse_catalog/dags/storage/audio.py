@@ -43,6 +43,7 @@ class AudioStore(MediaStore):
         audio_url: str,
         license_info: LicenseInfo,
         thumbnail_url: Optional[str] = None,
+        filetype: Optional[str] = None,
         foreign_identifier: Optional[str] = None,
         creator: Optional[str] = None,
         creator_url: Optional[str] = None,
@@ -90,7 +91,8 @@ class AudioStore(MediaStore):
         Optional Arguments:
 
         thumbnail_url:       Direct link to a thumbnail-sized version of
-                             the audio
+                             the audio.
+        filetype:            The filetype of the main file, eg. 'mp3', 'ogg'.
         foreign_identifier:  Unique identifier for the audio on the
                              source site.
         creator:             The creator of the audio.
@@ -140,6 +142,7 @@ class AudioStore(MediaStore):
             "audio_url": audio_url,
             "license_info": license_info,
             "thumbnail_url": thumbnail_url,
+            "filetype": filetype,
             "foreign_identifier": foreign_identifier,
             "creator": creator,
             "creator_url": creator_url,

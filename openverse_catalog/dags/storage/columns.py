@@ -674,3 +674,5 @@ LAST_SYNCED_COLUMN = TimestampColumn(name="last_synced_with_source", required=Fa
 REMOVED_COLUMN = BooleanColumn(
     name="removed_from_source", required=True, upsert_strategy=UpsertStrategy.false
 )
+
+FILETYPE_COLUMN = StringColumn(name="filetype", required=False, truncate=False, size=5)
