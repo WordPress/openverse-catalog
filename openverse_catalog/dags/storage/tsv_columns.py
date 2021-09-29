@@ -5,14 +5,16 @@ from storage.columns import Column
 from util.constants import AUDIO, IMAGE
 
 
+# Image has 'legacy' 000 version
+# Audio versions start at 001
 CURRENT_VERSION = {
-    AUDIO: "000",
+    AUDIO: "001",
     IMAGE: "001",
 }
 
 COLUMNS = {
     AUDIO: {
-        "000": [
+        "001": [
             # The order of this list maps to the order of the columns in the TSV.
             col.FOREIGN_ID_COLUMN,
             col.LANDING_URL_COLUMN,
@@ -27,6 +29,7 @@ COLUMNS = {
             col.TITLE_COLUMN,
             col.META_DATA_COLUMN,
             col.TAGS_COLUMN,
+            col.CATEGORY_COLUMN,
             col.WATERMARKED_COLUMN,
             col.PROVIDER_COLUMN,
             col.SOURCE_COLUMN,
@@ -34,7 +37,6 @@ COLUMNS = {
             col.DURATION_COLUMN,
             col.BIT_RATE_COLUMN,
             col.SAMPLE_RATE_COLUMN,
-            col.CATEGORY_COLUMN,
             col.GENRES_COLUMN,
             col.AUDIO_SET_COLUMN,
             col.ALT_FILES_COLUMN,
@@ -76,6 +78,7 @@ COLUMNS = {
             col.TITLE_COLUMN,
             col.META_DATA_COLUMN,
             col.TAGS_COLUMN,
+            col.CATEGORY_COLUMN,
             col.WATERMARKED_COLUMN,
             col.PROVIDER_COLUMN,
             col.SOURCE_COLUMN,

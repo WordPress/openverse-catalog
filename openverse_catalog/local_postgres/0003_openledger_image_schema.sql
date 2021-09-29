@@ -37,7 +37,8 @@ CREATE TABLE public.image (
     watermarked boolean,
     last_synced_with_source timestamp with time zone,
     removed_from_source boolean NOT NULL,
-    filetype character varying(5)
+    filetype character varying(5),
+    category character varying(80)[]
 );
 
 

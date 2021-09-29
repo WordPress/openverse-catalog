@@ -54,8 +54,8 @@ class AudioStore(MediaStore):
         duration: Optional[int] = None,
         bit_rate: Optional[int] = None,
         sample_rate: Optional[int] = None,
-        category: Optional[str] = None,
-        genres: Optional[Union[list, str]] = None,
+        category: Optional[list[str]] = None,
+        genres: Optional[list[str]] = None,
         audio_set: Optional[str] = None,
         set_position: Optional[int] = None,
         set_thumbnail: Optional[str] = None,
@@ -109,7 +109,8 @@ class AudioStore(MediaStore):
         duration:            in milliseconds
         bit_rate:            Audio bit rate as int.
         sample_rate:         Audio sample rate as int.
-        category:            'music', 'sound' or 'podcast'.
+        category:            List of categories such as 'music', 'sound'
+                             or 'podcast'.
         genres:              List of genres
         audio_set:           The name of the set (album, pack) the audio
                              is part of
@@ -149,11 +150,11 @@ class AudioStore(MediaStore):
             "title": title,
             "meta_data": meta_data,
             "raw_tags": raw_tags,
+            "category": category,
             "watermarked": watermarked,
             "duration": duration,
             "bit_rate": bit_rate,
             "sample_rate": sample_rate,
-            "category": category,
             "genres": genres,
             "audio_set": audio_set_data,
             "alt_files": alt_files,

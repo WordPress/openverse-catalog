@@ -256,6 +256,7 @@ def test_MediaStore_get_image_gets_source(
         title=None,
         meta_data=None,
         raw_tags=None,
+        category=None,
         watermarked=None,
         source="diff_source",
         ingestion_type=None,
@@ -282,6 +283,7 @@ def test_MediaStore_sets_source_to_provider_if_source_is_none(
         title=None,
         meta_data=None,
         raw_tags=None,
+        category=None,
         watermarked=None,
         source=None,
         ingestion_type=None,
@@ -440,6 +442,7 @@ def test_MediaStore_get_image_enriches_singleton_tags():
         title=None,
         meta_data=None,
         raw_tags=["lone"],
+        category=None,
         watermarked=None,
         source=None,
         ingestion_type=None,
@@ -468,6 +471,7 @@ def test_MediaStore_get_image_tag_blacklist():
         image_url=None,
         meta_data=None,
         raw_tags=raw_tags,
+        category=None,
         foreign_identifier=None,
         thumbnail_url=None,
         filetype=None,
@@ -503,6 +507,7 @@ def test_MediaStore_get_image_enriches_multiple_tags():
         title=None,
         meta_data=None,
         raw_tags=["tagone", "tag2", "tag3"],
+        category=None,
         watermarked=None,
         source=None,
         ingestion_type=None,
@@ -515,7 +520,7 @@ def test_MediaStore_get_image_enriches_multiple_tags():
     ]
 
 
-def test_ImageStore_get_image_leaves_preenriched_tags(setup_env):
+def test_MediaStore_get_image_leaves_preenriched_tags(setup_env):
     image_store = image.ImageStore("test_provider")
     tags = [
         {"name": "tagone", "provider": "test_provider"},
@@ -541,6 +546,7 @@ def test_ImageStore_get_image_leaves_preenriched_tags(setup_env):
         title=None,
         meta_data=None,
         raw_tags=tags,
+        category=None,
         watermarked=None,
         source=None,
         ingestion_type=None,
@@ -549,7 +555,7 @@ def test_ImageStore_get_image_leaves_preenriched_tags(setup_env):
     assert actual_image.tags == tags
 
 
-def test_ImageStore_get_image_nones_nonlist_tags():
+def test_MediaStore_get_image_nones_nonlist_tags():
     image_store = image.ImageStore("test_provider")
     tags = "notalist"
 
@@ -571,6 +577,7 @@ def test_ImageStore_get_image_nones_nonlist_tags():
         title=None,
         meta_data=None,
         raw_tags=tags,
+        category=None,
         watermarked=None,
         source=None,
         ingestion_type=None,
