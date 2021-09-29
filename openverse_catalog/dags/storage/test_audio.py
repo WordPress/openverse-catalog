@@ -39,6 +39,7 @@ mock_audio_args = {
     "category": None,
     "genres": [],
     "audio_set": {},
+    "set_position": None,
     "alt_files": [],
     "source": "testing_source",
     "ingestion_type": "provider_api",
@@ -193,6 +194,7 @@ def default_audio_args():
         filetype=None,
         filesize=None,
         audio_set=None,
+        set_position=1,
         license_="by",
         license_version="4.0",
         creator="tyler",
@@ -265,6 +267,7 @@ def test_create_tsv_row_creates_alt_files(
                     "\\N",
                     '{"rock", "pop"}',
                     "\\N",
+                    "1",
                     '[{"url": '
                     '"https://alternative.com/audio.mp3", "filesize": "123", "bit_rate": "41000", '
                     '"sample_rate": "16000"}]',
@@ -324,6 +327,7 @@ def test_create_tsv_row_creates_audio_set(
                     '{"rock", "pop"}',
                     '{"audio_set": "test_audio_set", "set_url": "test.com", '
                     '"set_position": "1", "set_thumbnail": "thumbnail.jpg"}',
+                    "1",
                     "\\N",
                 ]
             )
@@ -447,6 +451,7 @@ def test_create_tsv_row_properly_places_entries(monkeypatch):
             "set_url": "https://album.com/",
             "set_thumbnail": "https://album.com/thumbnail.jpg",
         },
+        "set_position": 1,
         "alt_files": None,
         "provider": "testing_provider",
         "source": "testing_source",
@@ -483,6 +488,7 @@ def test_create_tsv_row_properly_places_entries(monkeypatch):
                 '{"pop", "rock"}',
                 '{"audio_set": "album", "set_position": "1", "set_url": "https://album.com/", '
                 '"set_thumbnail": "https://album.com/thumbnail.jpg"}',
+                "1",
                 "\\N",
             ]
         )

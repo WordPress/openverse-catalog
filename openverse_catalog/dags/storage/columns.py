@@ -650,8 +650,12 @@ GENRES_COLUMN = ArrayColumn(
     base_column=StringColumn(name="genre", required=False, size=80, truncate=False),
 )
 AUDIO_SET_COLUMN = JSONColumn(
-    # set name, set thumbnail, position of audio in set, set url
+    # set name, thumbnail, url, identifier etc.
     name="audio_set",
+    required=False,
+)
+SET_POSITION_COLUMN = IntegerColumn(
+    name="set_position",
     required=False,
 )
 ALT_FILES_COLUMN = JSONColumn(

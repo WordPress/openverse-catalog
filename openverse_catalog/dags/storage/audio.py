@@ -56,6 +56,7 @@ class AudioStore(MediaStore):
         sample_rate: Optional[int] = None,
         category: Optional[list[str]] = None,
         genres: Optional[list[str]] = None,
+        set_foreign_id: Optional[str] = None,
         audio_set: Optional[str] = None,
         set_position: Optional[int] = None,
         set_thumbnail: Optional[str] = None,
@@ -112,6 +113,8 @@ class AudioStore(MediaStore):
         category:            List of categories such as 'music', 'sound'
                              or 'podcast'.
         genres:              List of genres
+        set_foreign_id:      Unique identifier for the audio set on the
+                             source site.
         audio_set:           The name of the set (album, pack) the audio
                              is part of
         set_position:        Position of the audio in the audio_set
@@ -132,10 +135,12 @@ class AudioStore(MediaStore):
         """
 
         audio_set_data = {
-            "audio_set": audio_set,
-            "set_url": set_url,
-            "set_position": set_position,
-            "set_thumbnail": set_thumbnail,
+            "title": audio_set,
+            "foreign_landing_url": set_url,
+            "url": set_thumbnail,
+            "creator": creator,
+            "creator_url": creator_url,
+            "foreign_identifier": set_foreign_id,
         }
 
         audio_data = {
@@ -157,6 +162,7 @@ class AudioStore(MediaStore):
             "sample_rate": sample_rate,
             "genres": genres,
             "audio_set": audio_set_data,
+            "set_position": set_position,
             "alt_files": alt_files,
             "source": source,
             "ingestion_type": ingestion_type,

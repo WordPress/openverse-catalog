@@ -39,6 +39,7 @@ COLUMNS = {
             col.SAMPLE_RATE_COLUMN,
             col.GENRES_COLUMN,
             col.AUDIO_SET_COLUMN,
+            col.SET_POSITION_COLUMN,
             col.ALT_FILES_COLUMN,
         ],
     },
