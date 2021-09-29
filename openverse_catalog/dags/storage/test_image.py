@@ -140,12 +140,15 @@ def test_create_tsv_row_non_none_if_req_fields(
     assert actual_row is not None
 
 
-@pytest.mark.parametrize("missing_field", [
-    "foreign_landing_url",
-    "license_",
-    "license_version",
-    "image_url",
-])
+@pytest.mark.parametrize(
+    "missing_field",
+    [
+        "foreign_landing_url",
+        "license_",
+        "license_version",
+        "image_url",
+    ],
+)
 def test_create_tsv_row_none_if_missing_required(
     default_image_args,
     setup_env,
