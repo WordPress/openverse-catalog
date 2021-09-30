@@ -11,6 +11,7 @@ Notes:                  https://commons.wikimedia.org/wiki/API:Main_page
 """
 
 import argparse
+import json
 import logging
 import os
 from copy import deepcopy
@@ -20,7 +21,9 @@ from urllib.parse import urlparse
 import lxml.html as html
 from common.licenses.licenses import get_license_info
 from common.requester import DelayedRequester
+from storage.audio import AudioStore
 from storage.image import ImageStore
+from util.constants import AUDIO, IMAGE
 from util.loader import provider_details as prov
 
 
@@ -49,15 +52,18 @@ DEFAULT_QUERY_PARAMS = {
     "gaidir": "newer",
     "gailimit": LIMIT,
     "prop": "imageinfo|globalusage",
-    "iiprop": "url|user|dimensions|extmetadata|mediatype",
+    "iiprop": "url|user|dimensions|extmetadata|mediatype|size|mime|metadata",
     "gulimit": LIMIT,
     "gunamespace": 0,
     "format": "json",
 }
 PAGES_PATH = ["query", "pages"]
-IMAGE_MEDIATYPES = {"BITMAP"}
+IMAGE_MEDIATYPES = {"BITMAP", "DRAWING"}
+AUDIO_MEDIATYPES = {"AUDIO"}
+# Other types available in the API are OFFICE for pdfs and VIDEO
 
 delayed_requester = DelayedRequester(DELAY)
+audio_store = AudioStore(provider=PROVIDER)
 image_store = ImageStore(provider=PROVIDER)
 
 
@@ -76,6 +82,7 @@ def main(date):
     logger.info(f"Processing Wikimedia Commons API for date: {date}")
 
     continue_token = {}
+    total_audio = 0
     total_images = 0
     start_timestamp, end_timestamp = _derive_timestamp_pair(date)
 
@@ -88,13 +95,15 @@ def main(date):
         if image_pages:
             _process_image_pages(image_pages)
             total_images = image_store.total_items
-        logger.info(f"Total Images so far: {total_images}")
+            total_audio = audio_store.total_items
+        logger.info(f"Total: {total_images} images and {total_audio} audio so far")
         if not continue_token:
             break
 
+    audio_store.commit()
     image_store.commit()
-    total_images = image_store.total_items
-    logger.info(f"Total images: {total_images}")
+    logger.info(f"Total images: {image_store.total_items}")
+    logger.info(f"Total audios: {audio_store.total_items}")
     logger.info("Terminated!")
 
 
@@ -154,7 +163,7 @@ def _get_image_pages(image_batch):
 
 def _process_image_pages(image_pages):
     for i in image_pages.values():
-        _process_image_data(i)
+        _process_media_data(i)
 
 
 def _build_query_params(
@@ -213,32 +222,90 @@ def _merge_image_pages(left_page, right_page):
     return merged_page
 
 
-def _process_image_data(image_data):
+def _extract_file_type(media_info):
+    filetype = media_info.get("mimetype", "").split("/")[-1]
+    if not filetype:
+        filetype = media_info.get("url", "").split(".")[-1]
+    return None if filetype == "" else filetype
+
+
+def _process_media_data(image_data):
     foreign_id = image_data.get("pageid")
     logger.debug(f"Processing page ID: {foreign_id}")
-    image_info = _get_image_info_dict(image_data)
-    valid_mediatype = _check_mediatype(image_info)
+    media_info = _get_image_info_dict(image_data)
+    valid_mediatype = _check_mediatype(media_info)
     if not valid_mediatype:
         return None
-    license_info = _get_license_info(image_info)
+    license_info = _get_license_info(media_info)
     if license_info.url is None:
         return None
-    image_url = image_info.get("url")
-    creator, creator_url = _extract_creator_info(image_info)
-    title = _extract_title(image_info)
+    media_url = media_info.get("url")
+    creator, creator_url = _extract_creator_info(media_info)
+    title = _extract_title(media_info)
+    filesize = media_info.get("size", 0)  # in bytes
+    filetype = _extract_file_type(media_info)
+    parsed_data = {
+        "foreign_landing_url": media_info.get("descriptionshorturl"),
+        "foreign_identifier": foreign_id,
+        "license_info": license_info,
+        "creator": creator,
+        "creator_url": creator_url,
+        "title": title,
+        "filetype": filetype,
+        "filesize": filesize,
+    }
 
-    image_store.add_item(
-        foreign_landing_url=image_info.get("descriptionshorturl"),
-        image_url=image_url,
-        license_info=license_info,
-        foreign_identifier=foreign_id,
-        width=image_info.get("width"),
-        height=image_info.get("height"),
-        creator=creator,
-        creator_url=creator_url,
-        title=title,
-        meta_data=_create_meta_data_dict(image_data),
-    )
+    if valid_mediatype == IMAGE:
+        _add_image(parsed_data, media_url, image_data, media_info)
+    else:
+        _add_audio(parsed_data, media_url, image_data, media_info)
+
+
+def _get_from_stream_header(stream_header, prop_name):
+    prop_list = [_ for _ in stream_header if _["name"] == prop_name]
+    if prop_list:
+        return prop_list[0].get("value")
+
+
+def _add_audio(parsed_data, media_url, image_data, media_info):
+    # Converting duration into milliseconds
+    duration = int(float(media_info.get("duration", 0)) * 1000)
+    parsed_data["audio_url"] = media_url
+    parsed_data["duration"] = duration
+    parsed_data["meta_data"] = _create_meta_data_dict(image_data)
+    if not parsed_data.get("category"):
+        for category in parsed_data["meta_data"].get("categories", []):
+            if "pronunciation" in category.lower():
+                parsed_data["category"] = "pronunciation"
+                break
+    stream_data = [
+        _["value"] for _ in media_info.get("metadata") if _["name"] == "streams"
+    ]
+    if stream_data:
+        stream_data = stream_data[0]
+    if len(stream_data) > 1:
+        logger.warning(f"More than one streams! \n{json.dumps(stream_data, indent=2)}")
+    for stream in stream_data:
+        stream = stream["value"]
+        stream_header = [_ for _ in stream if _["name"] == "header"][0].get("value", [])
+        channels = _get_from_stream_header(stream_header, "audio_channels")
+        if channels:
+            parsed_data["meta_data"]["channels"] = channels
+        sample_rate = _get_from_stream_header(stream_header, "audio_sample_rate")
+        bit_rate = _get_from_stream_header(stream_header, "bitrate_nominal")
+        parsed_data["sample_rate"] = sample_rate
+        parsed_data["bit_rate"] = bit_rate
+    audio_store.add_item(**parsed_data)
+
+
+def _add_image(parsed_data, media_url, image_data, media_info):
+    parsed_data["meta_data"] = _create_meta_data_dict(image_data)
+    parsed_data["width"] = media_info.get("width")
+    parsed_data["height"] = media_info.get("height")
+    parsed_data["image_url"] = media_url
+    if parsed_data["filetype"] == "svg":
+        parsed_data["category"] = ["illustration"]
+    image_store.add_item(**parsed_data)
 
 
 def _get_image_info_dict(image_data):
@@ -250,18 +317,18 @@ def _get_image_info_dict(image_data):
     return image_info
 
 
-def _check_mediatype(image_info, image_mediatypes=None):
-    if image_mediatypes is None:
-        image_mediatypes = IMAGE_MEDIATYPES
+def _check_mediatype(image_info):
     image_mediatype = image_info.get("mediatype")
-    if image_mediatype not in image_mediatypes:
-        logger.debug(
-            f"Incorrect mediatype: {image_mediatype} not in {image_mediatypes}"
-        )
-        valid_mediatype = False
+    if image_mediatype in IMAGE_MEDIATYPES:
+        return IMAGE
+    elif image_mediatype in AUDIO_MEDIATYPES:
+        return AUDIO
     else:
-        valid_mediatype = True
-    return valid_mediatype
+        logger.debug(
+            f"Incorrect mediatype: {image_mediatype} not in "
+            f"valid mediatypes ({IMAGE_MEDIATYPES}, {AUDIO_MEDIATYPES})"
+        )
+        return None
 
 
 def _extract_title(image_info):
@@ -276,7 +343,7 @@ def _extract_title(image_info):
     last_dot_position = title.rfind(".")
     if last_dot_position > 0:
         possible_extension = title[last_dot_position:]
-        if possible_extension.lower() in [".png", ".jpg", ".jpeg"]:
+        if possible_extension.lower() in {".png", ".jpg", ".jpeg", ".ogg", ".wav"}:
             title = title[:last_dot_position]
     return title
 
@@ -336,6 +403,20 @@ def _get_license_info(image_info):
     return license_info
 
 
+def _get_geo_data(image_data):
+    geo_properties = {
+        "latitude": "GPSLatitude",
+        "longitude": "GPSLongitude",
+        "map_datum": "GPSMapDatum",
+    }
+    geo_data = {}
+    for (key, value) in geo_properties.items():
+        key_value = image_data.get(value, {}).get("value")
+        if key_value:
+            geo_data[key] = key_value
+    return geo_data
+
+
 def _create_meta_data_dict(image_data):
     meta_data = {}
     global_usage_length = len(image_data.get("globalusage", []))
@@ -354,6 +435,7 @@ def _create_meta_data_dict(image_data):
     meta_data["date_originally_created"] = date_originally_created
     meta_data["last_modified_at_source"] = last_modified_at_source
     meta_data["categories"] = categories_list
+    meta_data.update(_get_geo_data(image_data))
     return meta_data
 
 

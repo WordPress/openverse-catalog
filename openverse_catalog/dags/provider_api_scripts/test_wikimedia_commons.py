@@ -213,7 +213,7 @@ def test_process_image_data_handles_example_dict():
         image_data = json.load(f)
 
     with patch.object(wmc.image_store, "add_item", return_value=1) as mock_add:
-        wmc._process_image_data(image_data)
+        wmc._process_media_data(image_data)
     expected_license_info = get_license_info(
         license_url="https://creativecommons.org/licenses/by-sa/4.0"
     )
@@ -252,12 +252,12 @@ def test_process_image_data_handles_example_dict():
 
 def test_process_image_data_adds_example_dict():
     """
-    `_process_image_data` calls `ImageStore.add_item` with valid arguments,
+    `_process_media_data` calls `ImageStore.add_item` with valid arguments,
     and doesn't pass unexpected arguments. Saves the item to the `ImageStore`.
     """
     with open(os.path.join(RESOURCES, "image_data_example.json")) as f:
         image_data = json.load(f)
-    wmc._process_image_data(image_data)
+    wmc._process_media_data(image_data)
     assert wmc.image_store.total_items == 1
 
 
@@ -269,7 +269,7 @@ def test_process_image_data_throws_out_invalid_mediatype(monkeypatch):
 
     monkeypatch.setattr(wmc, "_check_mediatype", mock_check_mediatype)
     with patch.object(wmc.image_store, "add_item", return_value=1) as mock_add:
-        wmc._process_image_data(image_data)
+        wmc._process_media_data(image_data)
 
     mock_add.assert_not_called()
 
