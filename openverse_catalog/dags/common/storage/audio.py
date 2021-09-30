@@ -81,6 +81,8 @@ AUDIO_TSV_COLUMNS = [
         required=False,
     ),
     columns.IntegerColumn(
+    	# The position of the audio within an audio set, for example:
+    	# the 200th episode of a podcast or the 2nd track on an album.
         name="set_position",
         required=False,
     ),
