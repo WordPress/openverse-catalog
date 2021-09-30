@@ -4,7 +4,7 @@ from textwrap import dedent
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from storage import column_names as col
 from util.constants import AUDIO, IMAGE
-from util.loader.sql import TABLE_NAMES
+from util.loader.sql import TABLE_NAME
 
 
 DEFAULT_PERCENTILE = 0.85
@@ -185,12 +185,12 @@ def create_media_popularity_percentile_function(
     postgres_conn_id,
     media_type=IMAGE,
     popularity_percentile=IMAGE_POPULARITY_PERCENTILE_FUNCTION,
-    media_table=TABLE_NAMES[IMAGE],
+    media_table=TABLE_NAME[IMAGE],
 ):
     postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
     if media_type == AUDIO:
         popularity_percentile = AUDIO_POPULARITY_PERCENTILE_FUNCTION
-        media_table = TABLE_NAMES[AUDIO]
+        media_table = TABLE_NAME[AUDIO]
     query = dedent(
         f"""
         CREATE OR REPLACE FUNCTION public.{popularity_percentile}(
@@ -301,13 +301,13 @@ def create_media_view(
     postgres_conn_id,
     media_type=IMAGE,
     standardized_popularity_func=STANDARDIZED_IMAGE_POPULARITY_FUNCTION,
-    table_name=TABLE_NAMES[IMAGE],
+    table_name=TABLE_NAME[IMAGE],
     db_view_name=IMAGE_VIEW_NAME,
     db_view_id_idx=IMAGE_VIEW_ID_IDX,
     db_view_provider_fid_idx=IMAGE_VIEW_PROVIDER_FID_IDX,
 ):
     if media_type == AUDIO:
-        table_name = TABLE_NAMES[AUDIO]
+        table_name = TABLE_NAME[AUDIO]
         db_view_name = AUDIO_VIEW_NAME
         db_view_id_idx = AUDIO_VIEW_ID_IDX
         db_view_provider_fid_idx = AUDIO_VIEW_PROVIDER_FID_IDX
