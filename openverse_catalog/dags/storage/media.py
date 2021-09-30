@@ -108,7 +108,6 @@ class MediaStore(metaclass=abc.ABCMeta):
         - replace `raw_tags` with enriched `tags`,
         - validate `source`,
         - add `provider`,
-        - add `filesize` (with value of None)
 
         Returns None if license is invalid
         """
@@ -137,7 +136,6 @@ class MediaStore(metaclass=abc.ABCMeta):
 
         media_data.pop("license_info", None)
         media_data["provider"] = self._PROVIDER
-        media_data["filesize"] = None
         return media_data
 
     def commit(self):

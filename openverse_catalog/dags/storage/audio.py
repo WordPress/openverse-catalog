@@ -43,6 +43,7 @@ class AudioStore(MediaStore):
         audio_url: str,
         license_info: LicenseInfo,
         thumbnail_url: Optional[str] = None,
+        filesize: Optional[int] = None,
         filetype: Optional[str] = None,
         foreign_identifier: Optional[str] = None,
         creator: Optional[str] = None,
@@ -93,6 +94,7 @@ class AudioStore(MediaStore):
 
         thumbnail_url:       Direct link to a thumbnail-sized version of
                              the audio.
+        filesize:            Size of the main file in bytes
         filetype:            The filetype of the main file, eg. 'mp3', 'ogg'.
         foreign_identifier:  Unique identifier for the audio on the
                              source site.
@@ -133,21 +135,24 @@ class AudioStore(MediaStore):
                              provider of the audio.
         ingestion_type:      set programmatically
         """
-
-        audio_set_data = {
-            "title": audio_set,
-            "foreign_landing_url": set_url,
-            "url": set_thumbnail,
-            "creator": creator,
-            "creator_url": creator_url,
-            "foreign_identifier": set_foreign_id,
-        }
+        if audio_set is None:
+            audio_set_data = None
+        else:
+            audio_set_data = {
+                "title": audio_set,
+                "foreign_landing_url": set_url,
+                "url": set_thumbnail,
+                "creator": creator,
+                "creator_url": creator_url,
+                "foreign_identifier": set_foreign_id,
+            }
 
         audio_data = {
             "foreign_landing_url": foreign_landing_url,
             "audio_url": audio_url,
             "license_info": license_info,
             "thumbnail_url": thumbnail_url,
+            "filesize": filesize,
             "filetype": filetype,
             "foreign_identifier": foreign_identifier,
             "creator": creator,
