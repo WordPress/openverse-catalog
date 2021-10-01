@@ -173,8 +173,6 @@ def _get_tsv_version(tsv_file_name: str) -> str:
     """
 
     version_pattern = re.compile(r"_v(\d+)_")
-    matches = re.search(version_pattern, tsv_file_name)
-    if matches:
-        return matches.group(1)
-    else:
-        return "000"
+    if match := re.search(version_pattern, tsv_file_name):
+        return match.group(1)
+    return "000"
