@@ -373,14 +373,6 @@ def test_get_license_url_handles_missing_license_url():
     assert actual_license_url == expect_license_url
 
 
-def test_get_license_url_handles_cc0_license():
-    with open(RESOURCES / "image_info_cc0.json") as f:
-        image_info = json.load(f)
-    expect_license_url = "https://creativecommons.org/publicdomain/zero/1.0/"
-    actual_license_url = wmc._get_license_info(image_info).url
-    assert actual_license_url == expect_license_url
-
-
 def test_create_meta_data_scrapes_text_from_html_description():
     with open(RESOURCES / "image_data_html_description.json") as f:
         media_data = json.load(f)
