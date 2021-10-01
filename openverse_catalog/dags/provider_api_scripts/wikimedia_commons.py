@@ -52,7 +52,7 @@ DEFAULT_QUERY_PARAMS = {
     "gaidir": "newer",
     "gailimit": LIMIT,
     "prop": "imageinfo|globalusage",
-    "iiprop": "url|user|dimensions|extmetadata|mediatype|size|mime|metadata",
+    "iiprop": "url|user|dimensions|extmetadata|mediatype|size|metadata",
     "gulimit": LIMIT,
     "gunamespace": 0,
     "format": "json",
@@ -215,7 +215,9 @@ def _merge_response_jsons(left_json, right_json):
 
 def _merge_image_pages(left_page, right_page):
     merged_page = deepcopy(left_page)
-    merged_globalusage = left_page["globalusage"] + right_page["globalusage"]
+    merged_globalusage = left_page.get("globalusage", []) + right_page.get(
+        "globalusage", []
+    )
     merged_page.update(right_page)
     merged_page["globalusage"] = merged_globalusage
 
@@ -223,9 +225,7 @@ def _merge_image_pages(left_page, right_page):
 
 
 def _extract_file_type(media_info):
-    filetype = media_info.get("mimetype", "").split("/")[-1]
-    if not filetype:
-        filetype = media_info.get("url", "").split(".")[-1]
+    filetype = media_info.get("url", "").split(".")[-1]
     return None if filetype == "" else filetype
 
 
