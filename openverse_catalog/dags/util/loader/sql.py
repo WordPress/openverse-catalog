@@ -19,7 +19,7 @@ from util.loader.paths import _extract_media_type
 logger = logging.getLogger(__name__)
 
 LOAD_TABLE_NAME_STUB = "provider_data_"
-TABLE_NAME = {AUDIO: AUDIO, IMAGE: IMAGE}
+TABLE_NAMES = {AUDIO: AUDIO, IMAGE: IMAGE}
 DB_USER_NAME = "deploy"
 NOW = "NOW()"
 FALSE = "'f'"
@@ -230,7 +230,7 @@ def upsert_records_to_db_table(
     :return:
     """
     if db_table is None:
-        db_table = TABLE_NAME.get(media_type, TABLE_NAME[IMAGE])
+        db_table = TABLE_NAMES.get(media_type, TABLE_NAMES[IMAGE])
 
     load_table = _get_load_table_name(identifier, media_type=media_type)
     logger.info(f"Upserting new records into {db_table}.")
@@ -271,7 +271,7 @@ def overwrite_records_in_db_table(
     tsv_version=CURRENT_TSV_VERSION,
 ):
     if db_table is None:
-        db_table = TABLE_NAME.get(media_type, TABLE_NAME[IMAGE])
+        db_table = TABLE_NAMES.get(media_type, TABLE_NAMES[IMAGE])
     load_table = _get_load_table_name(identifier, media_type=media_type)
     logger.info(f"Updating records in {db_table}. {tsv_version}")
     postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
@@ -387,7 +387,7 @@ def _create_temp_flickr_sub_prov_table(
 
 def update_flickr_sub_providers(
     postgres_conn_id,
-    image_table=TABLE_NAME[IMAGE],
+    image_table=TABLE_NAMES[IMAGE],
     default_provider=prov.FLICKR_DEFAULT_PROVIDER,
 ):
     postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
@@ -482,7 +482,7 @@ def _create_temp_europeana_sub_prov_table(
 
 def update_europeana_sub_providers(
     postgres_conn_id,
-    image_table=TABLE_NAME[IMAGE],
+    image_table=TABLE_NAMES[IMAGE],
     default_provider=prov.EUROPEANA_DEFAULT_PROVIDER,
     sub_providers=prov.EUROPEANA_SUB_PROVIDERS,
 ):
@@ -549,7 +549,7 @@ def update_europeana_sub_providers(
 
 def update_smithsonian_sub_providers(
     postgres_conn_id,
-    image_table=TABLE_NAME[IMAGE],
+    image_table=TABLE_NAMES[IMAGE],
     default_provider=prov.SMITHSONIAN_DEFAULT_PROVIDER,
     sub_providers=prov.SMITHSONIAN_SUB_PROVIDERS,
 ):
@@ -598,7 +598,7 @@ def update_smithsonian_sub_providers(
         )
 
 
-def expire_old_images(postgres_conn_id, provider, image_table=TABLE_NAME[IMAGE]):
+def expire_old_images(postgres_conn_id, provider, image_table=TABLE_NAMES[IMAGE]):
     postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
 
     if provider not in OLDEST_PER_PROVIDER:

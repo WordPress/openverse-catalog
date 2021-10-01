@@ -183,7 +183,7 @@ class AudioStore(MediaStore):
         audio_metadata = self.clean_media_metadata(**kwargs)
         if audio_metadata is None:
             return None
-        # Convert the `image_url` key used in ImageStore, TSV and
+        # Convert the `audio_url` key used in AudioStore, TSV and
         # provider API scripts into `url` key used in db
         audio_metadata["url"] = audio_metadata.pop("audio_url")
         return Audio(**audio_metadata)
