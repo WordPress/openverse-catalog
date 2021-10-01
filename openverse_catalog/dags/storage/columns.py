@@ -122,19 +122,16 @@ class Column(ABC):
         :param constraint: Column constraint in database
         :param db_name: Column name in database, if different from TSV name
         """
-        self.NAME = name
-        self.REQUIRED = required
+        self.name = name
+        self.required = required
         self.datatype = datatype
         self.upsert_strategy = upsert_strategy
         self.constraint = constraint
-        self.db_name = db_name if db_name is not None else name
+        self.db_name = db_name or name
         self.nullable = nullable if nullable is not None else not required
 
     def __str__(self):
-        return f"str {type(self).__name__} {self.NAME}"
-
-    def __repr__(self):
-        return f"{type(self).__name__} {self.NAME}"
+        return f"{type(self).__name__} {self.name}"
 
     @abstractmethod
     def prepare_string(self, value):
@@ -186,7 +183,7 @@ class Column(ABC):
         strategy = Column.strategies.get(self.upsert_strategy)
         if strategy is None:
             logging.warning(
-                f"Unrecognized column {self.NAME}; setting to NULL during upsert"
+                f"Unrecognized column {self.name}; setting to NULL during upsert"
             )
             return NULL
         else:
@@ -195,10 +192,9 @@ class Column(ABC):
     def _create_definition(self, is_loading=True):
         dt = self.datatype.value
         constraint = "" if self.constraint is None else f" {self.constraint}"
-        if is_loading:
-            nullable = ""
-        else:
-            nullable = "" if self.nullable else " NOT NULL"
+        nullable = ""
+        if not is_loading and not self.nullable:
+            nullable = " NOT NULL"
         column_string = f"{self.db_name} {dt}{constraint}{nullable}"
         return column_string
 
@@ -319,16 +315,12 @@ class JSONColumn(Column):
         db_name: Optional[str] = None,
         upsert_strategy: Optional[UpsertStrategy] = None,
     ):
-        json_upsert_strategy = (
-            UpsertStrategy.merge_jsonb_objects
-            if upsert_strategy is None
-            else upsert_strategy
-        )
+        strategy = upsert_strategy or UpsertStrategy.merge_jsonb_objects
         super().__init__(
             name,
             required,
             datatype=Datatype.jsonb,
-            upsert_strategy=json_upsert_strategy,
+            upsert_strategy=strategy,
             db_name=db_name,
             constraint=None,
         )
@@ -459,9 +451,7 @@ class TimestampColumn(Column):
             name,
             required=required,
             datatype=Datatype.timestamp,
-            upsert_strategy=UpsertStrategy.now
-            if not upsert_strategy
-            else upsert_strategy,
+            upsert_strategy=upsert_strategy or UpsertStrategy.now,
         )
 
     @property

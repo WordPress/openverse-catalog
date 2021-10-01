@@ -192,8 +192,8 @@ class MediaStore(metaclass=abc.ABCMeta):
         ]
         logger.debug(f"Prepared strings list:\n{prepared_strings}")
         for i in range(row_length):
-            if self.columns[i].REQUIRED and prepared_strings[i] is None:
-                logger.warning(f"Row missing required {self.columns[i].NAME}")
+            if self.columns[i].required and prepared_strings[i] is None:
+                logger.warning(f"Row missing required {self.columns[i].name}")
                 return None
         else:
             return (

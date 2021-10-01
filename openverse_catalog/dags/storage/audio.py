@@ -9,7 +9,7 @@ from storage.tsv_columns import AUDIO_TSV_COLUMNS
 
 logger = logging.getLogger(__name__)
 
-Audio = namedtuple("Audio", [c.NAME for c in AUDIO_TSV_COLUMNS])
+Audio = namedtuple("Audio", [c.name for c in AUDIO_TSV_COLUMNS])
 
 
 class AudioStore(MediaStore):

@@ -9,9 +9,9 @@ from storage.tsv_columns import IMAGE_TSV_COLUMNS
 
 logger = logging.getLogger(__name__)
 
-Image = namedtuple("Image", [c.NAME for c in IMAGE_TSV_COLUMNS])
+Image = namedtuple("Image", [c.name for c in IMAGE_TSV_COLUMNS])
 # This list is the same for all media types
-required_columns = [col for col in IMAGE_TSV_COLUMNS if col.REQUIRED]
+required_columns = [col for col in IMAGE_TSV_COLUMNS if col.required]
 
 
 class ImageStore(MediaStore):

@@ -68,21 +68,6 @@ def create_loading_table(
     """
     Create intermediary table and indices if they do not exist
     """
-
-    def create_index(column, btree_column=None):
-        if btree_column is None:
-            btree_string = f"btree ({column})"
-        else:
-            btree_string = f"btree ({btree_column}, md5(({column})::text))"
-        postgres.run(
-            dedent(
-                f"""
-            CREATE INDEX IF NOT EXISTS {load_table}_{column}_key
-            ON public.{load_table} USING {btree_string};
-            """
-            )
-        )
-
     media_type = ti.xcom_pull(task_ids="stage_oldest_tsv_file", key="media_type")
     if media_type is None:
         media_type = IMAGE
@@ -97,6 +82,22 @@ def create_loading_table(
     {columns_definition});
     """
     )
+
+    def create_index(column, btree_column=None):
+        btree_string = (
+            f"{column}"
+            if not btree_column
+            else f"{btree_column}, md5(({column})::text)"
+        )
+        postgres.run(
+            dedent(
+                f"""
+               CREATE INDEX IF NOT EXISTS {load_table}_{column}_key
+               ON public.{load_table} USING btree ({btree_string});
+               """
+            )
+        )
+
     postgres.run(table_creation_query)
     postgres.run(f"ALTER TABLE public.{load_table} OWNER TO {DB_USER_NAME};")
     create_index(col.PROVIDER, None)
