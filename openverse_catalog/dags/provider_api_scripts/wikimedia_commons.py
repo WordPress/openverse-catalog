@@ -386,19 +386,17 @@ def _get_license_info(image_info):
     license_url = (
         image_info.get("extmetadata", {}).get("LicenseUrl", {}).get("value", "").strip()
     )
-    if license_url == "":
-        license_name = (
-            image_info.get("extmetadata", {})
-            .get("LicenseShortName", {})
-            .get("value", "")
-            .lower()
-        )
-        if license_name == "public_domain":
-            license_url = "https://creativecommons.org/publicdomain/mark/1.0/"
-        elif license_name == "pdm-owner":
-            license_url = "https://creativecommons.org/publicdomain/zero/1.0/"
-        else:
-            license_url = None
+    # TODO Add public domain items
+    # if license_url == "":
+    #     license_name = (
+    #         image_info.get("extmetadata", {})
+    #         .get("LicenseShortName", {})
+    #         .get("value", "")
+    #         .lower()
+    #     )
+    #     if license_name in {"public_domain", "pdm-owner"}:
+    #         pass
+
     license_info = get_license_info(license_url=license_url)
     return license_info
 
