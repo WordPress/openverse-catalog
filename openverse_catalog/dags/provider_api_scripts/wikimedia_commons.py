@@ -264,7 +264,7 @@ def _process_media_data(media_data):
 
 
 def _get_from_stream_header(stream_header, prop_name):
-    prop_list = [_ for _ in stream_header if _["name"] == prop_name]
+    prop_list = [header for header in stream_header if header["name"] == prop_name]
     if prop_list:
         return prop_list[0].get("value")
 
