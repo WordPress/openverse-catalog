@@ -101,7 +101,7 @@ def test_get_image_batch(monkeypatch):
     monkeypatch.setattr(
         wmc.delayed_requester, "get_response_json", mock_get_response_json
     )
-    actual_image_batch, actual_continue_token = wmc._get_image_batch(
+    actual_image_batch, actual_continue_token = wmc._get_media_batch(
         "2019-01-01", "2019-01-02"
     )
     assert actual_image_batch == expect_image_batch
@@ -115,7 +115,7 @@ def test_get_image_batch_returns_correctly_without_continue(monkeypatch):
     with patch.object(
         wmc.delayed_requester, "get_response_json", return_value=resp_dict
     ) as mock_response_json:
-        actual_result, actual_continue = wmc._get_image_batch(
+        actual_result, actual_continue = wmc._get_media_batch(
             "2019-01-01", "2019-01-02", retries=2
         )
 
@@ -201,16 +201,16 @@ def test_extract_title_gets_cleaned_title():
     assert actual_title == expected_title
 
 
-def test_process_image_data_handles_example_dict():
+def test_process_media_data_handles_example_dict():
     """
     Converts sample json data to correct image metadata,
     and calls `add_item` once for a valid image.
     """
-    with open(RESOURCES / "image_data_example.json") as f:
-        image_data = json.load(f)
+    with open(RESOURCES / "media_data_example.json") as f:
+        media_data = json.load(f)
 
     with patch.object(wmc.image_store, "add_item", return_value=1) as mock_add:
-        wmc._process_media_data(image_data)
+        wmc._process_media_data(media_data)
     expected_license_info = get_license_info(
         license_url="https://creativecommons.org/licenses/by-sa/4.0"
     )
@@ -249,38 +249,38 @@ def test_process_image_data_handles_example_dict():
     )
 
 
-def test_process_image_data_adds_example_dict():
+def test_process_media_data_adds_example_dict():
     """
     `_process_media_data` calls `ImageStore.add_item` with valid arguments,
     and doesn't pass unexpected arguments. Saves the item to the `ImageStore`.
     """
-    with open(RESOURCES / "image_data_example.json") as f:
-        image_data = json.load(f)
-    wmc._process_media_data(image_data)
+    with open(RESOURCES / "media_data_example.json") as f:
+        media_data = json.load(f)
+    wmc._process_media_data(media_data)
     assert wmc.image_store.total_items == 1
 
 
-def test_process_image_data_throws_out_invalid_mediatype(monkeypatch):
-    image_data = {"mediatype": "INVALID"}
+def test_process_media_data_throws_out_invalid_mediatype(monkeypatch):
+    media_data = {"mediatype": "INVALID"}
 
     def mock_check_mediatype(image_info):
         return False
 
     monkeypatch.setattr(wmc, "_check_mediatype", mock_check_mediatype)
     with patch.object(wmc.image_store, "add_item", return_value=1) as mock_add:
-        wmc._process_media_data(image_data)
+        wmc._process_media_data(media_data)
 
     mock_add.assert_not_called()
 
 
 def test_get_image_info_dict():
-    with open(RESOURCES / "image_data_example.json") as f:
-        image_data = json.load(f)
+    with open(RESOURCES / "media_data_example.json") as f:
+        media_data = json.load(f)
 
     with open(RESOURCES / "image_info_from_example_data.json") as f:
         expect_image_info = json.load(f)
 
-    actual_image_info = wmc._get_image_info_dict(image_data)
+    actual_image_info = wmc._get_image_info_dict(media_data)
 
     assert actual_image_info == expect_image_info
 
@@ -382,27 +382,27 @@ def test_get_license_url_handles_cc0_license():
 
 
 def test_create_meta_data_scrapes_text_from_html_description():
-    with open(RESOURCES / "image_data_html_description.json") as f:
-        image_data = json.load(f)
+    with open(RESOURCES / "media_data_html_description.json") as f:
+        media_data = json.load(f)
     expect_description = (
         "Identificatie Titel(s):  Allegorie op kunstenaar Francesco Mazzoli, "
         "bekend als Parmigianino"
     )
-    actual_description = wmc._create_meta_data_dict(image_data)["description"]
+    actual_description = wmc._create_meta_data_dict(media_data)["description"]
     assert actual_description == expect_description
 
 
 def test_create_meta_data_tallies_global_usage_count():
     with open(RESOURCES / "continuation/page_44672185_left.json") as f:
-        image_data = json.load(f)
-    actual_gu = wmc._create_meta_data_dict(image_data)["global_usage_count"]
+        media_data = json.load(f)
+    actual_gu = wmc._create_meta_data_dict(media_data)["global_usage_count"]
     expect_gu = 3
     assert actual_gu == expect_gu
 
 
 def test_create_meta_data_tallies_zero_global_usage_count():
     with open(RESOURCES / "continuation/page_44672185_right.json") as f:
-        image_data = json.load(f)
-    actual_gu = wmc._create_meta_data_dict(image_data)["global_usage_count"]
+        media_data = json.load(f)
+    actual_gu = wmc._create_meta_data_dict(media_data)["global_usage_count"]
     expect_gu = 0
     assert actual_gu == expect_gu
