@@ -152,52 +152,23 @@ def test_create_tsv_row_non_none_if_req_fields(
     assert actual_row is not None
 
 
-def test_create_tsv_row_none_if_no_foreign_landing_url(
+@pytest.mark.parametrize(
+    "missing_field",
+    [
+        "foreign_landing_url",
+        "license_",
+        "license_version",
+        "url",
+    ],
+)
+def test_create_tsv_row_none_if_missing_required(
     default_image_args,
     setup_env,
+    missing_field,
 ):
     image_store = image.ImageStore()
     image_args = default_image_args
-    image_args["foreign_landing_url"] = None
-    test_image = image.Image(**image_args)
-    expect_row = None
-    actual_row = image_store._create_tsv_row(test_image)
-    assert expect_row == actual_row
-
-
-def test_create_tsv_row_none_if_no_license(
-    default_image_args,
-    setup_env,
-):
-    image_store = image.ImageStore()
-    image_args = default_image_args
-    image_args["license_"] = None
-    test_image = image.Image(**image_args)
-    expect_row = None
-    actual_row = image_store._create_tsv_row(test_image)
-    assert expect_row == actual_row
-
-
-def test_create_tsv_row_none_if_no_license_version(
-    default_image_args,
-    setup_env,
-):
-    image_store = image.ImageStore()
-    image_args = default_image_args
-    image_args["license_version"] = None
-    test_image = image.Image(**image_args)
-    expect_row = None
-    actual_row = image_store._create_tsv_row(test_image)
-    assert expect_row == actual_row
-
-
-def test_create_tsv_row_returns_none_if_missing_image_url(
-    default_image_args,
-    setup_env,
-):
-    image_store = image.ImageStore()
-    image_args = default_image_args
-    image_args["url"] = None
+    image_args[missing_field] = None
     test_image = image.Image(**image_args)
     expect_row = None
     actual_row = image_store._create_tsv_row(test_image)
