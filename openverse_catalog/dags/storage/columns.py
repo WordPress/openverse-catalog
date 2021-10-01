@@ -516,7 +516,7 @@ class URLColumn(Column):
 class ArrayColumn(Column):
     """
     Represents a PostgreSQL column of type Array, which should hold elements
-    of the given BASE_COLUMN type.
+    of the given base_column type.
 
     name:           name of the corresponding column in the DB
     required:       whether the column should be considered required by the
@@ -533,7 +533,7 @@ class ArrayColumn(Column):
         base_column: Column,
         db_name: Optional[str] = None,
     ):
-        self.BASE_COLUMN = base_column
+        self.base_column = base_column
         super().__init__(
             name,
             required,
@@ -555,7 +555,7 @@ class ArrayColumn(Column):
         if value is None:
             return value
         elif input_type != list:
-            arr_str = self.BASE_COLUMN.prepare_string(value)
+            arr_str = self.base_column.prepare_string(value)
             return "{" + arr_str + "}" if arr_str else None
 
         values = []
@@ -563,68 +563,68 @@ class ArrayColumn(Column):
             if val is None:
                 values.append(None)
             else:
-                values.append(self.BASE_COLUMN.prepare_string(val))
+                values.append(self.base_column.prepare_string(val))
         arr_str = json.dumps(values, ensure_ascii=False)
         return "{" + arr_str[1:-1] + "}" if arr_str else None
 
 
-FOREIGN_ID_COLUMN = StringColumn(
+FOREIGN_ID = StringColumn(
     name="foreign_identifier",
     required=True,
     size=3000,
     truncate=False,
 )
-LANDING_URL_COLUMN = URLColumn(
+LANDING_URL = URLColumn(
     name="foreign_landing_url", required=True, size=1000, nullable=True
 )
-DIRECT_URL_COLUMN = URLColumn(
+DIRECT_URL = URLColumn(
     # `url` in DB
     name="url",
     required=True,
     size=3000,
     db_name="url",
 )
-THUMBNAIL_COLUMN = URLColumn(
+THUMBNAIL = URLColumn(
     # `thumbnail` in DB
     name="thumbnail_url",
     required=False,
     size=3000,
     db_name="thumbnail",
 )
-FILESIZE_COLUMN = IntegerColumn(name="filesize", required=False)
-LICENSE_COLUMN = StringColumn(
+FILESIZE = IntegerColumn(name="filesize", required=False)
+LICENSE = StringColumn(
     name="license_", required=True, size=50, truncate=False, db_name="license"
 )
-LICENSE_VERSION_COLUMN = StringColumn(
+LICENSE_VERSION = StringColumn(
     name="license_version", required=True, size=25, truncate=False
 )
-CREATOR_COLUMN = StringColumn(name="creator", required=False, size=2000, truncate=True)
-CREATOR_URL_COLUMN = URLColumn(name="creator_url", required=False, size=2000)
-TITLE_COLUMN = StringColumn(name="title", required=False, size=5000, truncate=True)
-META_DATA_COLUMN = JSONColumn(name="meta_data", required=False)
-TAGS_COLUMN = JSONColumn(
+CREATOR = StringColumn(name="creator", required=False, size=2000, truncate=True)
+CREATOR_URL = URLColumn(name="creator_url", required=False, size=2000)
+TITLE = StringColumn(name="title", required=False, size=5000, truncate=True)
+META_DATA = JSONColumn(name="meta_data", required=False)
+TAGS = JSONColumn(
     name="tags", required=False, upsert_strategy=UpsertStrategy.merge_jsonb_arrays
 )
-WATERMARKED_COLUMN = BooleanColumn(name="watermarked", required=False)
-PROVIDER_COLUMN = StringColumn(name="provider", required=False, size=80, truncate=False)
-SOURCE_COLUMN = StringColumn(name="source", required=False, size=80, truncate=False)
-INGESTION_TYPE_COLUMN = StringColumn(
+WATERMARKED = BooleanColumn(name="watermarked", required=False)
+PROVIDER = StringColumn(name="provider", required=False, size=80, truncate=False)
+SOURCE = StringColumn(name="source", required=False, size=80, truncate=False)
+INGESTION_TYPE = StringColumn(
     name="ingestion_type", required=False, size=80, truncate=False
 )
-WIDTH_COLUMN = IntegerColumn(name="width", required=False)
-HEIGHT_COLUMN = IntegerColumn(name="height", required=False)
+WIDTH = IntegerColumn(name="width", required=False)
+HEIGHT = IntegerColumn(name="height", required=False)
 
-DURATION_COLUMN = IntegerColumn(name="duration", required=False)
-BIT_RATE_COLUMN = IntegerColumn(
+DURATION = IntegerColumn(name="duration", required=False)
+BIT_RATE = IntegerColumn(
     name="bit_rate",
     required=False,
 )
 
-SAMPLE_RATE_COLUMN = IntegerColumn(
+SAMPLE_RATE = IntegerColumn(
     name="sample_rate",
     required=False,
 )
-CATEGORY_COLUMN = ArrayColumn(
+CATEGORY = ArrayColumn(
     name="category",
     required=False,
     base_column=StringColumn(
@@ -634,43 +634,43 @@ CATEGORY_COLUMN = ArrayColumn(
         truncate=False,
     ),
 )
-GENRES_COLUMN = ArrayColumn(
+GENRES = ArrayColumn(
     name="genres",
     required=False,
     base_column=StringColumn(name="genre", required=False, size=80, truncate=False),
 )
-AUDIO_SET_COLUMN = JSONColumn(
+AUDIO_SET = JSONColumn(
     # set name, thumbnail, url, identifier etc.
     name="audio_set",
     required=False,
 )
-SET_POSITION_COLUMN = IntegerColumn(
+SET_POSITION = IntegerColumn(
     name="set_position",
     required=False,
 )
-ALT_FILES_COLUMN = JSONColumn(
+ALT_FILES = JSONColumn(
     # Alternative files: url, filesize, bit_rate, sample_rate
     name="alt_files",
     required=False,
 )
 
-IDENTIFIER_COLUMN = UUIDColumn(
+IDENTIFIER = UUIDColumn(
     name="identifier",
 )
 
-CREATED_ON_COLUMN = TimestampColumn(
+CREATED_ON = TimestampColumn(
     name="created_on", required=True, upsert_strategy=UpsertStrategy.no_change
 )
 
-UPDATED_ON_COLUMN = TimestampColumn(
+UPDATED_ON = TimestampColumn(
     name="updated_on",
     required=True,
 )
 
-LAST_SYNCED_COLUMN = TimestampColumn(name="last_synced_with_source", required=False)
+LAST_SYNCED = TimestampColumn(name="last_synced_with_source", required=False)
 
-REMOVED_COLUMN = BooleanColumn(
+REMOVED = BooleanColumn(
     name="removed_from_source", required=True, upsert_strategy=UpsertStrategy.false
 )
 
-FILETYPE_COLUMN = StringColumn(name="filetype", required=False, truncate=False, size=5)
+FILETYPE = StringColumn(name="filetype", required=False, truncate=False, size=5)
