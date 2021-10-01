@@ -255,10 +255,11 @@ def _process_media_data(image_data):
         "filesize": filesize,
     }
 
-    if valid_mediatype == IMAGE:
-        _add_image(parsed_data, media_url, image_data, media_info)
-    else:
-        _add_audio(parsed_data, media_url, image_data, media_info)
+    funcs = {
+        IMAGE: _add_image,
+        AUDIO: _add_audio,
+    }
+    funcs[valid_mediatype](parsed_data, media_url, image_data, media_info)
 
 
 def _get_from_stream_header(stream_header, prop_name):
