@@ -206,7 +206,7 @@ def test_process_media_data_handles_example_dict():
     Converts sample json data to correct image metadata,
     and calls `add_item` once for a valid image.
     """
-    with open(RESOURCES / "media_data_example.json") as f:
+    with open(RESOURCES / "image_data_example.json") as f:
         media_data = json.load(f)
 
     with patch.object(wmc.image_store, "add_item", return_value=1) as mock_add:
@@ -254,7 +254,7 @@ def test_process_media_data_adds_example_dict():
     `_process_media_data` calls `ImageStore.add_item` with valid arguments,
     and doesn't pass unexpected arguments. Saves the item to the `ImageStore`.
     """
-    with open(RESOURCES / "media_data_example.json") as f:
+    with open(RESOURCES / "image_data_example.json") as f:
         media_data = json.load(f)
     wmc._process_media_data(media_data)
     assert wmc.image_store.total_items == 1
@@ -274,7 +274,7 @@ def test_process_media_data_throws_out_invalid_mediatype(monkeypatch):
 
 
 def test_get_image_info_dict():
-    with open(RESOURCES / "media_data_example.json") as f:
+    with open(RESOURCES / "image_data_example.json") as f:
         media_data = json.load(f)
 
     with open(RESOURCES / "image_info_from_example_data.json") as f:
@@ -382,7 +382,7 @@ def test_get_license_url_handles_cc0_license():
 
 
 def test_create_meta_data_scrapes_text_from_html_description():
-    with open(RESOURCES / "media_data_html_description.json") as f:
+    with open(RESOURCES / "image_data_html_description.json") as f:
         media_data = json.load(f)
     expect_description = (
         "Identificatie Titel(s):  Allegorie op kunstenaar Francesco Mazzoli, "
