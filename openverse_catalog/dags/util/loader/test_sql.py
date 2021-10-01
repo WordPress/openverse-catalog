@@ -13,7 +13,7 @@ import pytest
 from airflow.models import TaskInstance
 from airflow.operators.dummy import DummyOperator
 from psycopg2.errors import InvalidTextRepresentation
-from storage import column_names as col
+from storage import columns as col
 from storage.db_columns import IMAGE_TABLE_COLUMNS
 from util.constants import IMAGE
 from util.loader import sql
@@ -67,27 +67,27 @@ ti = TaskInstance(task=op_no_dag, execution_date=naive_datetime)
 COLUMN_NAMES = [column.db_name for column in IMAGE_TABLE_COLUMNS]
 
 # ids for main database columns
-updated_idx = COLUMN_NAMES.index(col.UPDATED_ON)
-ingestion_idx = COLUMN_NAMES.index(col.INGESTION_TYPE)
-provider_idx = COLUMN_NAMES.index(col.PROVIDER)
-source_idx = COLUMN_NAMES.index(col.SOURCE)
-fid_idx = COLUMN_NAMES.index(col.FOREIGN_ID)
-land_url_idx = COLUMN_NAMES.index(col.LANDING_URL)
-url_idx = COLUMN_NAMES.index(col.DIRECT_URL)
-thm_idx = COLUMN_NAMES.index(col.THUMBNAIL)
-filesize_idx = COLUMN_NAMES.index(col.FILESIZE)
-license_idx = COLUMN_NAMES.index(col.LICENSE)
-version_idx = COLUMN_NAMES.index(col.LICENSE_VERSION)
-creator_idx = COLUMN_NAMES.index(col.CREATOR)
-creator_url_idx = COLUMN_NAMES.index(col.CREATOR_URL)
-title_idx = COLUMN_NAMES.index(col.TITLE)
-metadata_idx = COLUMN_NAMES.index(col.META_DATA)
-tags_idx = COLUMN_NAMES.index(col.TAGS)
-synced_idx = COLUMN_NAMES.index(col.LAST_SYNCED)
-removed_idx = COLUMN_NAMES.index(col.REMOVED)
-watermarked_idx = COLUMN_NAMES.index(col.WATERMARKED)
-width_idx = COLUMN_NAMES.index(col.WIDTH)
-height_idx = COLUMN_NAMES.index(col.HEIGHT)
+updated_idx = COLUMN_NAMES.index(col.UPDATED_ON.db_name)
+ingestion_idx = COLUMN_NAMES.index(col.INGESTION_TYPE.db_name)
+provider_idx = COLUMN_NAMES.index(col.PROVIDER.db_name)
+source_idx = COLUMN_NAMES.index(col.SOURCE.db_name)
+fid_idx = COLUMN_NAMES.index(col.FOREIGN_ID.db_name)
+land_url_idx = COLUMN_NAMES.index(col.LANDING_URL.db_name)
+url_idx = COLUMN_NAMES.index(col.DIRECT_URL.db_name)
+thm_idx = COLUMN_NAMES.index(col.THUMBNAIL.db_name)
+filesize_idx = COLUMN_NAMES.index(col.FILESIZE.db_name)
+license_idx = COLUMN_NAMES.index(col.LICENSE.db_name)
+version_idx = COLUMN_NAMES.index(col.LICENSE_VERSION.db_name)
+creator_idx = COLUMN_NAMES.index(col.CREATOR.db_name)
+creator_url_idx = COLUMN_NAMES.index(col.CREATOR_URL.db_name)
+title_idx = COLUMN_NAMES.index(col.TITLE.db_name)
+metadata_idx = COLUMN_NAMES.index(col.META_DATA.db_name)
+tags_idx = COLUMN_NAMES.index(col.TAGS.db_name)
+synced_idx = COLUMN_NAMES.index(col.LAST_SYNCED.db_name)
+removed_idx = COLUMN_NAMES.index(col.REMOVED.db_name)
+watermarked_idx = COLUMN_NAMES.index(col.WATERMARKED.db_name)
+width_idx = COLUMN_NAMES.index(col.WIDTH.db_name)
+height_idx = COLUMN_NAMES.index(col.HEIGHT.db_name)
 
 
 def create_query_values(
@@ -405,24 +405,24 @@ def test_upsert_records_inserts_one_record_to_empty_image_table(
 
     query_values = create_query_values(
         {
-            col.FOREIGN_ID: FID,
-            col.LANDING_URL: LAND_URL,
-            col.DIRECT_URL: IMG_URL,
-            col.THUMBNAIL: THM_URL,
-            col.FILESIZE: FILESIZE,
-            col.LICENSE: LICENSE,
-            col.LICENSE_VERSION: VERSION,
-            col.CREATOR: CREATOR,
-            col.CREATOR_URL: CREATOR_URL,
-            col.TITLE: TITLE,
-            col.META_DATA: META_DATA,
-            col.TAGS: TAGS,
-            col.WATERMARKED: WATERMARKED,
-            col.PROVIDER: PROVIDER,
-            col.SOURCE: SOURCE,
-            col.INGESTION_TYPE: INGESTION_TYPE,
-            col.WIDTH: WIDTH,
-            col.HEIGHT: HEIGHT,
+            col.FOREIGN_ID.db_name: FID,
+            col.LANDING_URL.db_name: LAND_URL,
+            col.DIRECT_URL.db_name: IMG_URL,
+            col.THUMBNAIL.db_name: THM_URL,
+            col.FILESIZE.db_name: FILESIZE,
+            col.LICENSE.db_name: LICENSE,
+            col.LICENSE_VERSION.db_name: VERSION,
+            col.CREATOR.db_name: CREATOR,
+            col.CREATOR_URL.db_name: CREATOR_URL,
+            col.TITLE.db_name: TITLE,
+            col.META_DATA.db_name: META_DATA,
+            col.TAGS.db_name: TAGS,
+            col.WATERMARKED.db_name: WATERMARKED,
+            col.PROVIDER.db_name: PROVIDER,
+            col.SOURCE.db_name: SOURCE,
+            col.INGESTION_TYPE.db_name: INGESTION_TYPE,
+            col.WIDTH.db_name: WIDTH,
+            col.HEIGHT.db_name: HEIGHT,
         }
     )
     load_data_query = f"""INSERT INTO {load_table} VALUES(
@@ -587,24 +587,24 @@ def test_upsert_records_replaces_data(postgres_with_load_and_image_table, tmpdir
 
     query_values = create_query_values(
         {
-            col.FOREIGN_ID: FID,
-            col.LANDING_URL: LAND_URL_A,
-            col.DIRECT_URL: IMG_URL_A,
-            col.THUMBNAIL: THM_URL_A,
-            col.FILESIZE: FILESIZE,
-            col.LICENSE: LICENSE_A,
-            col.LICENSE_VERSION: VERSION_A,
-            col.CREATOR: CREATOR_A,
-            col.CREATOR_URL: CREATOR_URL_A,
-            col.TITLE: TITLE_A,
-            col.META_DATA: META_DATA_A,
-            col.TAGS: TAGS,
-            col.WATERMARKED: WATERMARKED,
-            col.PROVIDER: PROVIDER,
-            col.SOURCE: SOURCE,
-            col.INGESTION_TYPE: INGESTION_TYPE,
-            col.WIDTH: WIDTH_A,
-            col.HEIGHT: HEIGHT_A,
+            col.FOREIGN_ID.db_name: FID,
+            col.LANDING_URL.db_name: LAND_URL_A,
+            col.DIRECT_URL.db_name: IMG_URL_A,
+            col.THUMBNAIL.db_name: THM_URL_A,
+            col.FILESIZE.db_name: FILESIZE,
+            col.LICENSE.db_name: LICENSE_A,
+            col.LICENSE_VERSION.db_name: VERSION_A,
+            col.CREATOR.db_name: CREATOR_A,
+            col.CREATOR_URL.db_name: CREATOR_URL_A,
+            col.TITLE.db_name: TITLE_A,
+            col.META_DATA.db_name: META_DATA_A,
+            col.TAGS.db_name: TAGS,
+            col.WATERMARKED.db_name: WATERMARKED,
+            col.PROVIDER.db_name: PROVIDER,
+            col.SOURCE.db_name: SOURCE,
+            col.INGESTION_TYPE.db_name: INGESTION_TYPE,
+            col.WIDTH.db_name: WIDTH_A,
+            col.HEIGHT.db_name: HEIGHT_A,
         }
     )
     load_data_query_a = f"""INSERT INTO {load_table} VALUES(
@@ -617,24 +617,24 @@ def test_upsert_records_replaces_data(postgres_with_load_and_image_table, tmpdir
 
     query_values = create_query_values(
         {
-            col.FOREIGN_ID: FID,
-            col.LANDING_URL: LAND_URL_B,
-            col.DIRECT_URL: IMG_URL_B,
-            col.THUMBNAIL: THM_URL_B,
-            col.FILESIZE: FILESIZE,
-            col.LICENSE: LICENSE_B,
-            col.LICENSE_VERSION: VERSION_B,
-            col.CREATOR: CREATOR_B,
-            col.CREATOR_URL: CREATOR_URL_B,
-            col.TITLE: TITLE_B,
-            col.META_DATA: META_DATA_B,
-            col.TAGS: TAGS,
-            col.WATERMARKED: WATERMARKED,
-            col.PROVIDER: PROVIDER,
-            col.SOURCE: SOURCE,
-            col.INGESTION_TYPE: INGESTION_TYPE,
-            col.WIDTH: WIDTH_B,
-            col.HEIGHT: HEIGHT_B,
+            col.FOREIGN_ID.db_name: FID,
+            col.LANDING_URL.db_name: LAND_URL_B,
+            col.DIRECT_URL.db_name: IMG_URL_B,
+            col.THUMBNAIL.db_name: THM_URL_B,
+            col.FILESIZE.db_name: FILESIZE,
+            col.LICENSE.db_name: LICENSE_B,
+            col.LICENSE_VERSION.db_name: VERSION_B,
+            col.CREATOR.db_name: CREATOR_B,
+            col.CREATOR_URL.db_name: CREATOR_URL_B,
+            col.TITLE.db_name: TITLE_B,
+            col.META_DATA.db_name: META_DATA_B,
+            col.TAGS.db_name: TAGS,
+            col.WATERMARKED.db_name: WATERMARKED,
+            col.PROVIDER.db_name: PROVIDER,
+            col.SOURCE.db_name: SOURCE,
+            col.INGESTION_TYPE.db_name: INGESTION_TYPE,
+            col.WIDTH.db_name: WIDTH_B,
+            col.HEIGHT.db_name: HEIGHT_B,
         }
     )
     load_data_query_b = f"""INSERT INTO {load_table} VALUES(
@@ -697,24 +697,24 @@ def test_upsert_records_does_not_replace_with_nulls(
 
     query_values_a = create_query_values(
         {
-            col.FOREIGN_ID: FID,
-            col.LANDING_URL: LAND_URL_A,
-            col.DIRECT_URL: IMG_URL,
-            col.THUMBNAIL: THM_URL_A,
-            col.FILESIZE: FILESIZE,
-            col.LICENSE: LICENSE_A,
-            col.LICENSE_VERSION: VERSION_A,
-            col.CREATOR: CREATOR_A,
-            col.CREATOR_URL: CREATOR_URL_A,
-            col.TITLE: TITLE_A,
-            col.META_DATA: META_DATA_A,
-            col.TAGS: TAGS,
-            col.WATERMARKED: WATERMARKED,
-            col.PROVIDER: PROVIDER,
-            col.SOURCE: SOURCE,
-            col.INGESTION_TYPE: INGESTION_TYPE,
-            col.WIDTH: WIDTH_A,
-            col.HEIGHT: HEIGHT_A,
+            col.FOREIGN_ID.db_name: FID,
+            col.LANDING_URL.db_name: LAND_URL_A,
+            col.DIRECT_URL.db_name: IMG_URL,
+            col.THUMBNAIL.db_name: THM_URL_A,
+            col.FILESIZE.db_name: FILESIZE,
+            col.LICENSE.db_name: LICENSE_A,
+            col.LICENSE_VERSION.db_name: VERSION_A,
+            col.CREATOR.db_name: CREATOR_A,
+            col.CREATOR_URL.db_name: CREATOR_URL_A,
+            col.TITLE.db_name: TITLE_A,
+            col.META_DATA.db_name: META_DATA_A,
+            col.TAGS.db_name: TAGS,
+            col.WATERMARKED.db_name: WATERMARKED,
+            col.PROVIDER.db_name: PROVIDER,
+            col.SOURCE.db_name: SOURCE,
+            col.INGESTION_TYPE.db_name: INGESTION_TYPE,
+            col.WIDTH.db_name: WIDTH_A,
+            col.HEIGHT.db_name: HEIGHT_A,
         }
     )
     load_data_query_a = f"""INSERT INTO {load_table} VALUES(
@@ -727,14 +727,14 @@ def test_upsert_records_does_not_replace_with_nulls(
 
     query_values_b = create_query_values(
         {
-            col.FOREIGN_ID: FID,
-            col.LANDING_URL: LAND_URL_B,
-            col.DIRECT_URL: IMG_URL,
-            col.LICENSE: LICENSE_B,
-            col.LICENSE_VERSION: VERSION_B,
-            col.TAGS: TAGS,
-            col.PROVIDER: PROVIDER,
-            col.SOURCE: SOURCE,
+            col.FOREIGN_ID.db_name: FID,
+            col.LANDING_URL.db_name: LAND_URL_B,
+            col.DIRECT_URL.db_name: IMG_URL,
+            col.LICENSE.db_name: LICENSE_B,
+            col.LICENSE_VERSION.db_name: VERSION_B,
+            col.TAGS.db_name: TAGS,
+            col.PROVIDER.db_name: PROVIDER,
+            col.SOURCE.db_name: SOURCE,
         }
     )
     load_data_query_b = f"""INSERT INTO {load_table} VALUES(
@@ -780,11 +780,11 @@ def test_upsert_records_merges_meta_data(postgres_with_load_and_image_table, tmp
 
     query_values_a = create_query_values(
         {
-            col.FOREIGN_ID: FID,
-            col.DIRECT_URL: IMG_URL,
-            col.LICENSE: LICENSE,
-            col.META_DATA: META_DATA_A,
-            col.PROVIDER: PROVIDER,
+            col.FOREIGN_ID.db_name: FID,
+            col.DIRECT_URL.db_name: IMG_URL,
+            col.LICENSE.db_name: LICENSE,
+            col.META_DATA.db_name: META_DATA_A,
+            col.PROVIDER.db_name: PROVIDER,
         }
     )
     load_data_query_a = f"""INSERT INTO {load_table} VALUES(
@@ -793,11 +793,11 @@ def test_upsert_records_merges_meta_data(postgres_with_load_and_image_table, tmp
 
     query_values_b = create_query_values(
         {
-            col.FOREIGN_ID: FID,
-            col.DIRECT_URL: IMG_URL,
-            col.LICENSE: LICENSE,
-            col.META_DATA: META_DATA_B,
-            col.PROVIDER: PROVIDER,
+            col.FOREIGN_ID.db_name: FID,
+            col.DIRECT_URL.db_name: IMG_URL,
+            col.LICENSE.db_name: LICENSE,
+            col.META_DATA.db_name: META_DATA_B,
+            col.PROVIDER.db_name: PROVIDER,
         }
     )
     load_data_query_b = f"""INSERT INTO {load_table} VALUES(
@@ -840,11 +840,11 @@ def test_upsert_records_does_not_replace_with_null_values_in_meta_data(
 
     query_values_a = create_query_values(
         {
-            col.FOREIGN_ID: FID,
-            col.DIRECT_URL: IMG_URL,
-            col.LICENSE: LICENSE,
-            col.META_DATA: META_DATA_A,
-            col.PROVIDER: PROVIDER,
+            col.FOREIGN_ID.db_name: FID,
+            col.DIRECT_URL.db_name: IMG_URL,
+            col.LICENSE.db_name: LICENSE,
+            col.META_DATA.db_name: META_DATA_A,
+            col.PROVIDER.db_name: PROVIDER,
         }
     )
     load_data_query_a = f"""INSERT INTO {load_table} VALUES(
@@ -853,11 +853,11 @@ def test_upsert_records_does_not_replace_with_null_values_in_meta_data(
 
     query_values_b = create_query_values(
         {
-            col.FOREIGN_ID: FID,
-            col.DIRECT_URL: IMG_URL,
-            col.LICENSE: LICENSE,
-            col.META_DATA: META_DATA_B,
-            col.PROVIDER: PROVIDER,
+            col.FOREIGN_ID.db_name: FID,
+            col.DIRECT_URL.db_name: IMG_URL,
+            col.LICENSE.db_name: LICENSE,
+            col.META_DATA.db_name: META_DATA_B,
+            col.PROVIDER.db_name: PROVIDER,
         }
     )
     load_data_query_b = f"""INSERT INTO {load_table} VALUES(
@@ -907,11 +907,11 @@ def test_upsert_records_merges_tags(postgres_with_load_and_image_table, tmpdir):
 
     query_values_a = create_query_values(
         {
-            col.FOREIGN_ID: FID,
-            col.DIRECT_URL: IMG_URL,
-            col.LICENSE: LICENSE,
-            col.TAGS: TAGS_A,
-            col.PROVIDER: PROVIDER,
+            col.FOREIGN_ID.db_name: FID,
+            col.DIRECT_URL.db_name: IMG_URL,
+            col.LICENSE.db_name: LICENSE,
+            col.TAGS.db_name: TAGS_A,
+            col.PROVIDER.db_name: PROVIDER,
         }
     )
     load_data_query_a = f"""INSERT INTO {load_table} VALUES(
@@ -920,11 +920,11 @@ def test_upsert_records_merges_tags(postgres_with_load_and_image_table, tmpdir):
 
     query_values_b = create_query_values(
         {
-            col.FOREIGN_ID: FID,
-            col.DIRECT_URL: IMG_URL,
-            col.LICENSE: LICENSE,
-            col.TAGS: TAGS_B,
-            col.PROVIDER: PROVIDER,
+            col.FOREIGN_ID.db_name: FID,
+            col.DIRECT_URL.db_name: IMG_URL,
+            col.LICENSE.db_name: LICENSE,
+            col.TAGS.db_name: TAGS_B,
+            col.PROVIDER.db_name: PROVIDER,
         }
     )
     load_data_query_b = f"""INSERT INTO {load_table} VALUES(
@@ -975,11 +975,11 @@ def test_upsert_records_does_not_replace_tags_with_null(
 
     query_values_a = create_query_values(
         {
-            col.FOREIGN_ID: FID,
-            col.DIRECT_URL: IMG_URL,
-            col.LICENSE: LICENSE,
-            col.TAGS: json.dumps(TAGS),
-            col.PROVIDER: PROVIDER,
+            col.FOREIGN_ID.db_name: FID,
+            col.DIRECT_URL.db_name: IMG_URL,
+            col.LICENSE.db_name: LICENSE,
+            col.TAGS.db_name: json.dumps(TAGS),
+            col.PROVIDER.db_name: PROVIDER,
         }
     )
     load_data_query_a = f"""INSERT INTO {load_table} VALUES(
@@ -988,10 +988,10 @@ def test_upsert_records_does_not_replace_tags_with_null(
 
     query_values_b = create_query_values(
         {
-            col.FOREIGN_ID: FID,
-            col.DIRECT_URL: IMG_URL,
-            col.LICENSE: LICENSE,
-            col.PROVIDER: PROVIDER,
+            col.FOREIGN_ID.db_name: FID,
+            col.DIRECT_URL.db_name: IMG_URL,
+            col.LICENSE.db_name: LICENSE,
+            col.PROVIDER.db_name: PROVIDER,
         }
     )
     load_data_query_b = f"""INSERT INTO {load_table} VALUES(
@@ -1037,10 +1037,10 @@ def test_upsert_records_replaces_null_tags(postgres_with_load_and_image_table, t
     ]
     query_values_a = create_query_values(
         {
-            col.FOREIGN_ID: FID,
-            col.DIRECT_URL: IMG_URL,
-            col.LICENSE: LICENSE,
-            col.PROVIDER: PROVIDER,
+            col.FOREIGN_ID.db_name: FID,
+            col.DIRECT_URL.db_name: IMG_URL,
+            col.LICENSE.db_name: LICENSE,
+            col.PROVIDER.db_name: PROVIDER,
         }
     )
     logging.info(f"Query values a: {query_values_a}")
@@ -1049,11 +1049,11 @@ def test_upsert_records_replaces_null_tags(postgres_with_load_and_image_table, t
         );"""
     query_values_b = create_query_values(
         {
-            col.FOREIGN_ID: FID,
-            col.DIRECT_URL: IMG_URL,
-            col.LICENSE: LICENSE,
-            col.TAGS: json.dumps(TAGS),
-            col.PROVIDER: PROVIDER,
+            col.FOREIGN_ID.db_name: FID,
+            col.DIRECT_URL.db_name: IMG_URL,
+            col.LICENSE.db_name: LICENSE,
+            col.TAGS.db_name: json.dumps(TAGS),
+            col.PROVIDER.db_name: PROVIDER,
         }
     )
     load_data_query_b = f"""INSERT INTO {load_table} VALUES(
@@ -1168,23 +1168,23 @@ def test_overwrite_records_replaces_data(postgres_with_load_and_image_table, tmp
 
     query_values_a = create_query_values(
         {
-            col.FOREIGN_ID: FID,
-            col.LANDING_URL: LAND_URL_A,
-            col.DIRECT_URL: IMG_URL_A,
-            col.THUMBNAIL: THM_URL_A,
-            col.FILESIZE: FILESIZE,
-            col.LICENSE: LICENSE_A,
-            col.LICENSE_VERSION: VERSION_A,
-            col.CREATOR: CREATOR_A,
-            col.CREATOR_URL: CREATOR_URL_A,
-            col.TITLE: TITLE_A,
-            col.META_DATA: META_DATA_A,
-            col.TAGS: TAGS,
-            col.WATERMARKED: WATERMARKED,
-            col.PROVIDER: PROVIDER,
-            col.SOURCE: SOURCE,
-            col.WIDTH: WIDTH_A,
-            col.HEIGHT: HEIGHT_A,
+            col.FOREIGN_ID.db_name: FID,
+            col.LANDING_URL.db_name: LAND_URL_A,
+            col.DIRECT_URL.db_name: IMG_URL_A,
+            col.THUMBNAIL.db_name: THM_URL_A,
+            col.FILESIZE.db_name: FILESIZE,
+            col.LICENSE.db_name: LICENSE_A,
+            col.LICENSE_VERSION.db_name: VERSION_A,
+            col.CREATOR.db_name: CREATOR_A,
+            col.CREATOR_URL.db_name: CREATOR_URL_A,
+            col.TITLE.db_name: TITLE_A,
+            col.META_DATA.db_name: META_DATA_A,
+            col.TAGS.db_name: TAGS,
+            col.WATERMARKED.db_name: WATERMARKED,
+            col.PROVIDER.db_name: PROVIDER,
+            col.SOURCE.db_name: SOURCE,
+            col.WIDTH.db_name: WIDTH_A,
+            col.HEIGHT.db_name: HEIGHT_A,
         }
     )
     load_data_query_a = f"""INSERT INTO {load_table} VALUES(
@@ -1198,23 +1198,23 @@ def test_overwrite_records_replaces_data(postgres_with_load_and_image_table, tmp
 
     query_values_b = create_query_values(
         {
-            col.FOREIGN_ID: FID,
-            col.LANDING_URL: LAND_URL_B,
-            col.DIRECT_URL: IMG_URL_B,
-            col.THUMBNAIL: THM_URL_B,
-            col.FILESIZE: FILESIZE,
-            col.LICENSE: LICENSE_B,
-            col.LICENSE_VERSION: VERSION_B,
-            col.CREATOR: CREATOR_B,
-            col.CREATOR_URL: CREATOR_URL_B,
-            col.TITLE: TITLE_B,
-            col.META_DATA: META_DATA_B,
-            col.TAGS: TAGS,
-            col.WATERMARKED: WATERMARKED,
-            col.PROVIDER: PROVIDER,
-            col.SOURCE: SOURCE,
-            col.WIDTH: WIDTH_B,
-            col.HEIGHT: HEIGHT_B,
+            col.FOREIGN_ID.db_name: FID,
+            col.LANDING_URL.db_name: LAND_URL_B,
+            col.DIRECT_URL.db_name: IMG_URL_B,
+            col.THUMBNAIL.db_name: THM_URL_B,
+            col.FILESIZE.db_name: FILESIZE,
+            col.LICENSE.db_name: LICENSE_B,
+            col.LICENSE_VERSION.db_name: VERSION_B,
+            col.CREATOR.db_name: CREATOR_B,
+            col.CREATOR_URL.db_name: CREATOR_URL_B,
+            col.TITLE.db_name: TITLE_B,
+            col.META_DATA.db_name: META_DATA_B,
+            col.TAGS.db_name: TAGS,
+            col.WATERMARKED.db_name: WATERMARKED,
+            col.PROVIDER.db_name: PROVIDER,
+            col.SOURCE.db_name: SOURCE,
+            col.WIDTH.db_name: WIDTH_B,
+            col.HEIGHT.db_name: HEIGHT_B,
         }
     )
     load_data_query_b = f"""INSERT INTO {load_table} VALUES(
@@ -1279,22 +1279,22 @@ def test_update_flickr_sub_providers(postgres_with_load_and_image_table):
 
     insert_data_query = f"""INSERT INTO {load_table} VALUES
         ({create_query_values({
-        col.FOREIGN_ID: FID_A,
-        col.DIRECT_URL: IMG_URL_A,
-        col.LICENSE: LICENSE,
-        col.CREATOR_URL: CREATOR_URL_A,
-        col.TAGS: json.dumps(TAGS),
-        col.PROVIDER: PROVIDER,
-        col.SOURCE: PROVIDER,
+        col.FOREIGN_ID.db_name: FID_A,
+        col.DIRECT_URL.db_name: IMG_URL_A,
+        col.LICENSE.db_name: LICENSE,
+        col.CREATOR_URL.db_name: CREATOR_URL_A,
+        col.TAGS.db_name: json.dumps(TAGS),
+        col.PROVIDER.db_name: PROVIDER,
+        col.SOURCE.db_name: PROVIDER,
         })}),
         ({create_query_values({
-        col.FOREIGN_ID: FID_B,
-        col.DIRECT_URL: IMG_URL_B,
-        col.LICENSE: LICENSE,
-        col.CREATOR_URL: CREATOR_URL_B,
-        col.TAGS: json.dumps(TAGS),
-        col.PROVIDER: PROVIDER,
-        col.SOURCE: PROVIDER,
+        col.FOREIGN_ID.db_name: FID_B,
+        col.DIRECT_URL.db_name: IMG_URL_B,
+        col.LICENSE.db_name: LICENSE,
+        col.CREATOR_URL.db_name: CREATOR_URL_B,
+        col.TAGS.db_name: json.dumps(TAGS),
+        col.PROVIDER.db_name: PROVIDER,
+        col.SOURCE.db_name: PROVIDER,
         })});"""
 
     postgres_with_load_and_image_table.cursor.execute(insert_data_query)
@@ -1345,22 +1345,22 @@ def test_update_europeana_sub_providers(postgres_with_load_and_image_table):
     query_values = [
         create_query_values(
             {
-                col.FOREIGN_ID: FID_A,
-                col.DIRECT_URL: IMG_URL_A,
-                col.LICENSE: LICENSE,
-                col.META_DATA: json.dumps(META_DATA_A),
-                col.PROVIDER: PROVIDER,
-                col.SOURCE: PROVIDER,
+                col.FOREIGN_ID.db_name: FID_A,
+                col.DIRECT_URL.db_name: IMG_URL_A,
+                col.LICENSE.db_name: LICENSE,
+                col.META_DATA.db_name: json.dumps(META_DATA_A),
+                col.PROVIDER.db_name: PROVIDER,
+                col.SOURCE.db_name: PROVIDER,
             }
         ),
         create_query_values(
             {
-                col.FOREIGN_ID: FID_B,
-                col.DIRECT_URL: IMG_URL_B,
-                col.LICENSE: LICENSE,
-                col.META_DATA: json.dumps(META_DATA_B),
-                col.PROVIDER: PROVIDER,
-                col.SOURCE: PROVIDER,
+                col.FOREIGN_ID.db_name: FID_B,
+                col.DIRECT_URL.db_name: IMG_URL_B,
+                col.LICENSE.db_name: LICENSE,
+                col.META_DATA.db_name: json.dumps(META_DATA_B),
+                col.PROVIDER.db_name: PROVIDER,
+                col.SOURCE.db_name: PROVIDER,
             }
         ),
     ]
@@ -1413,22 +1413,22 @@ def test_update_smithsonian_sub_providers(postgres_with_load_and_image_table):
     query_values = [
         create_query_values(
             {
-                col.FOREIGN_ID: FID_A,
-                col.DIRECT_URL: IMG_URL_A,
-                col.LICENSE: LICENSE,
-                col.META_DATA: json.dumps(META_DATA_A),
-                col.PROVIDER: PROVIDER,
-                col.SOURCE: PROVIDER,
+                col.FOREIGN_ID.db_name: FID_A,
+                col.DIRECT_URL.db_name: IMG_URL_A,
+                col.LICENSE.db_name: LICENSE,
+                col.META_DATA.db_name: json.dumps(META_DATA_A),
+                col.PROVIDER.db_name: PROVIDER,
+                col.SOURCE.db_name: PROVIDER,
             }
         ),
         create_query_values(
             {
-                col.FOREIGN_ID: FID_B,
-                col.DIRECT_URL: IMG_URL_B,
-                col.LICENSE: LICENSE,
-                col.META_DATA: json.dumps(META_DATA_B),
-                col.PROVIDER: PROVIDER,
-                col.SOURCE: PROVIDER,
+                col.FOREIGN_ID.db_name: FID_B,
+                col.DIRECT_URL.db_name: IMG_URL_B,
+                col.LICENSE.db_name: LICENSE,
+                col.META_DATA.db_name: json.dumps(META_DATA_B),
+                col.PROVIDER.db_name: PROVIDER,
+                col.SOURCE.db_name: PROVIDER,
             }
         ),
     ]
@@ -1478,20 +1478,20 @@ def test_image_expiration(postgres_with_load_and_image_table):
     query_values = [
         create_query_values(
             {
-                col.FOREIGN_ID: FID_A,
-                col.DIRECT_URL: IMG_URL_A,
-                col.LICENSE: LICENSE,
-                col.PROVIDER: PROVIDER_A,
-                col.SOURCE: PROVIDER_A,
+                col.FOREIGN_ID.db_name: FID_A,
+                col.DIRECT_URL.db_name: IMG_URL_A,
+                col.LICENSE.db_name: LICENSE,
+                col.PROVIDER.db_name: PROVIDER_A,
+                col.SOURCE.db_name: PROVIDER_A,
             }
         ),
         create_query_values(
             {
-                col.FOREIGN_ID: FID_B,
-                col.DIRECT_URL: IMG_URL_B,
-                col.LICENSE: LICENSE,
-                col.PROVIDER: PROVIDER_B,
-                col.SOURCE: PROVIDER_B,
+                col.FOREIGN_ID.db_name: FID_B,
+                col.DIRECT_URL.db_name: IMG_URL_B,
+                col.LICENSE.db_name: LICENSE,
+                col.PROVIDER.db_name: PROVIDER_B,
+                col.SOURCE.db_name: PROVIDER_B,
             }
         ),
     ]

@@ -5,7 +5,7 @@ from typing import List
 
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from psycopg2.errors import InvalidTextRepresentation
-from storage import column_names as col
+from storage import columns as col
 from storage.audio import AUDIO_TSV_COLUMNS
 from storage.columns import NULL, Column, UpsertStrategy
 from storage.db_columns import AUDIO_TABLE_COLUMNS, IMAGE_TABLE_COLUMNS
@@ -100,9 +100,9 @@ def create_loading_table(
 
     postgres.run(table_creation_query)
     postgres.run(f"ALTER TABLE public.{load_table} OWNER TO {DB_USER_NAME};")
-    create_index(col.PROVIDER, None)
-    create_index(col.FOREIGN_ID, "provider")
-    create_index(col.DIRECT_URL, "provider")
+    create_index(col.PROVIDER.db_name, None)
+    create_index(col.FOREIGN_ID.db_name, "provider")
+    create_index(col.DIRECT_URL.db_name, "provider")
 
 
 def load_local_data_to_intermediate_table(
@@ -181,8 +181,8 @@ def _clean_intermediate_table_data(postgres_hook, load_table):
             USING {load_table} p2
             WHERE
               p1.ctid < p2.ctid
-              AND p1.{col.PROVIDER} = p2.{col.PROVIDER}
-              AND p1.{col.FOREIGN_ID} = p2.{col.FOREIGN_ID};
+              AND p1.{col.PROVIDER.db_name} = p2.{col.PROVIDER.db_name}
+              AND p1.{col.FOREIGN_ID.db_name} = p2.{col.FOREIGN_ID.db_name};
             """
         )
     )
@@ -195,13 +195,13 @@ def _is_tsv_column_from_different_version(
     Checks that column is a column that exists in TSV files (unlike the db-only
     columns like IDENTIFIER or CREATED_ON), but is not available for `tsv_version`.
     For example, Category column was added to Image TSV in version 001
-    >>> from storage.columns import CATEGORY_COLUMN, DIRECT_URL_COLUMN
-    >>> _is_tsv_column_from_different_version(CATEGORY_COLUMN, IMAGE, '000')
+    >>> from storage.columns import CATEGORY, DIRECT_URL
+    >>> _is_tsv_column_from_different_version(CATEGORY, IMAGE, '000')
     True
-    >>> _is_tsv_column_from_different_version(DIRECT_URL_COLUMN, IMAGE, '000')
+    >>> _is_tsv_column_from_different_version(DIRECT_URL, IMAGE, '000')
     False
-    >>> from storage.columns import IDENTIFIER_COLUMN
-    >>> _is_tsv_column_from_different_version(IDENTIFIER_COLUMN, IMAGE, '000')
+    >>> from storage.columns import IDENTIFIER
+    >>> _is_tsv_column_from_different_version(IDENTIFIER, IMAGE, '000')
     False
 
     """
@@ -256,7 +256,7 @@ def upsert_records_to_db_table(
         INSERT INTO {db_table} AS old ({', '.join(column_inserts.keys())})
         SELECT {', '.join(column_inserts.values())}
         FROM {load_table}
-        ON CONFLICT ({col.PROVIDER}, md5({col.FOREIGN_ID}))
+        ON CONFLICT ({col.PROVIDER.db_name}, md5({col.FOREIGN_ID.db_name}))
         DO UPDATE SET
           {upsert_conflict_string}
         """
@@ -291,10 +291,10 @@ def overwrite_records_in_db_table(
         {update_set_string}
         FROM {load_table}
         WHERE
-          {db_table}.{col.PROVIDER} = {load_table}.{col.PROVIDER}
+          {db_table}.{col.PROVIDER.db_name} = {load_table}.{col.PROVIDER.db_name}
           AND
-          md5({db_table}.{col.FOREIGN_ID})
-            = md5({load_table}.{col.FOREIGN_ID});
+          md5({db_table}.{col.FOREIGN_ID.db_name})
+            = md5({load_table}.{col.FOREIGN_ID.db_name});
         """
     )
     postgres.run(update_query)
@@ -353,7 +353,7 @@ def _create_temp_flickr_sub_prov_table(
         dedent(
             f"""
             CREATE TABLE public.{temp_table} (
-              {col.CREATOR_URL} character varying(2000),
+              {col.CREATOR_URL.db_name} character varying(2000),
               sub_provider character varying(80)
             );
             """
@@ -372,7 +372,7 @@ def _create_temp_flickr_sub_prov_table(
                 dedent(
                     f"""
                     INSERT INTO public.{temp_table} (
-                      {col.CREATOR_URL},
+                      {col.CREATOR_URL.db_name},
                       sub_provider
                     )
                     VALUES (
@@ -397,15 +397,15 @@ def update_flickr_sub_providers(
     select_query = dedent(
         f"""
         SELECT
-        {col.FOREIGN_ID} AS foreign_id,
+        {col.FOREIGN_ID.db_name} AS foreign_id,
         public.{temp_table}.sub_provider AS sub_provider
         FROM {image_table}
         INNER JOIN public.{temp_table}
         ON
-        {image_table}.{col.CREATOR_URL} = public.{temp_table}.{
-        col.CREATOR_URL}
+        {image_table}.{col.CREATOR_URL.db_name} = public.{temp_table}.{
+        col.CREATOR_URL.db_name}
         AND
-        {image_table}.{col.PROVIDER} = '{default_provider}';
+        {image_table}.{col.PROVIDER.db_name} = '{default_provider}';
         """
     )
 
@@ -419,11 +419,11 @@ def update_flickr_sub_providers(
             dedent(
                 f"""
                 UPDATE {image_table}
-                SET {col.SOURCE} = '{sub_provider}'
+                SET {col.SOURCE.db_name} = '{sub_provider}'
                 WHERE
-                {image_table}.{col.PROVIDER} = '{default_provider}'
+                {image_table}.{col.PROVIDER.db_name} = '{default_provider}'
                 AND
-                MD5({image_table}.{col.FOREIGN_ID}) = MD5('{foreign_id}');
+                MD5({image_table}.{col.FOREIGN_ID.db_name}) = MD5('{foreign_id}');
                 """
             )
         )
@@ -495,14 +495,14 @@ def update_europeana_sub_providers(
         SELECT L.foreign_id, L.data_providers, R.sub_provider
         FROM(
         SELECT
-        {col.FOREIGN_ID} AS foreign_id,
-        {col.META_DATA} ->> 'dataProvider' AS data_providers,
-        {col.META_DATA}
+        {col.FOREIGN_ID.db_name} AS foreign_id,
+        {col.META_DATA.db_name} ->> 'dataProvider' AS data_providers,
+        {col.META_DATA.db_name}
         FROM {image_table}
-        WHERE {col.PROVIDER} = '{default_provider}'
+        WHERE {col.PROVIDER.db_name} = '{default_provider}'
         ) L INNER JOIN
         {temp_table} R ON
-        L.{col.META_DATA} ->'dataProvider' ? R.data_provider;
+        L.{col.META_DATA.db_name} ->'dataProvider' ? R.data_provider;
         """
     )
 
@@ -533,11 +533,11 @@ def update_europeana_sub_providers(
             dedent(
                 f"""
                 UPDATE {image_table}
-                SET {col.SOURCE} = '{sub_provider}'
+                SET {col.SOURCE.db_name} = '{sub_provider}'
                 WHERE
-                {image_table}.{col.PROVIDER} = '{default_provider}'
+                {image_table}.{col.PROVIDER.db_name} = '{default_provider}'
                 AND
-                MD5({image_table}.{col.FOREIGN_ID}) = MD5('{foreign_id}');
+                MD5({image_table}.{col.FOREIGN_ID.db_name}) = MD5('{foreign_id}');
                 """
             )
         )
@@ -561,13 +561,13 @@ def update_smithsonian_sub_providers(
     """
     select_query = dedent(
         f"""
-        SELECT {col.FOREIGN_ID},
-        {col.META_DATA} ->> 'unit_code' AS unit_code
+        SELECT {col.FOREIGN_ID.db_name},
+        {col.META_DATA.db_name} ->> 'unit_code' AS unit_code
         FROM {image_table}
         WHERE
-        {col.PROVIDER} = '{default_provider}'
+        {col.PROVIDER.db_name} = '{default_provider}'
         AND
-        {col.SOURCE} = '{default_provider}';
+        {col.SOURCE.db_name} = '{default_provider}';
         """
     )
 
@@ -589,11 +589,11 @@ def update_smithsonian_sub_providers(
             dedent(
                 f"""
                 UPDATE {image_table}
-                SET {col.SOURCE} = '{source}'
+                SET {col.SOURCE.db_name} = '{source}'
                 WHERE
-                {image_table}.{col.PROVIDER} = '{default_provider}'
+                {image_table}.{col.PROVIDER.db_name} = '{default_provider}'
                 AND
-                MD5({image_table}.{col.FOREIGN_ID}) = MD5('{foreign_id}');
+                MD5({image_table}.{col.FOREIGN_ID.db_name}) = MD5('{foreign_id}');
                 """
             )
         )
@@ -613,12 +613,12 @@ def expire_old_images(postgres_conn_id, provider, image_table=TABLE_NAMES[IMAGE]
     """
     select_query = dedent(
         f"""
-        SELECT {col.FOREIGN_ID}
+        SELECT {col.FOREIGN_ID.db_name}
         FROM {image_table}
         WHERE
-        {col.PROVIDER} = '{provider}'
+        {col.PROVIDER.db_name} = '{provider}'
         AND
-        {col.UPDATED_ON} < {NOW} - INTERVAL '{OLDEST_PER_PROVIDER[provider]}';
+        {col.UPDATED_ON.db_name} < {NOW} - INTERVAL '{OLDEST_PER_PROVIDER[provider]}';
         """
     )
 
@@ -635,11 +635,11 @@ def expire_old_images(postgres_conn_id, provider, image_table=TABLE_NAMES[IMAGE]
             dedent(
                 f"""
                 UPDATE {image_table}
-                SET {col.REMOVED} = 't'
+                SET {col.REMOVED.db_name} = 't'
                 WHERE
-                {image_table}.{col.PROVIDER} = '{provider}'
+                {image_table}.{col.PROVIDER.db_name} = '{provider}'
                 AND
-                MD5({image_table}.{col.FOREIGN_ID}) = MD5('{foreign_id}');
+                MD5({image_table}.{col.FOREIGN_ID.db_name}) = MD5('{foreign_id}');
                 """
             )
         )
