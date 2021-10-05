@@ -3,7 +3,7 @@ version: '3'
 services:
   # Services only needed for local development
   postgres:
-    build: ./local_postgres
+    build: docker/local_postgres
     environment:
       - POSTGRES_USER=deploy
       - POSTGRES_PASSWORD=deploy
@@ -16,7 +16,7 @@ services:
 
   s3:
     build:
-      context: ./local_s3
+      context: docker/local_s3
     ports:
       - "5000:5000"
 

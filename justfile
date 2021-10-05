@@ -4,7 +4,7 @@ set dotenv-load := false
 default:
   @just --list --unsorted
 
-DEV_DOCKER_FILES := "--file=openverse_catalog/docker-compose.yml --file=openverse_catalog/docker-compose.override.yml"
+DEV_DOCKER_FILES := "--file=docker-compose.yml --file=docker-compose.override.yml"
 SERVICE := "webserver"
 
 
@@ -16,6 +16,10 @@ install:
 # Create the .env file from the template
 dotenv:
     @([ ! -f openverse_catalog/.env ] && cp openverse_catalog/env.template openverse_catalog/.env) || true
+
+# Build all (or specified) container(s)
+build service="":
+    docker-compose {{ DEV_DOCKER_FILES }} build {{ service }}
 
 # Bring all Docker services up
 up flags="": dotenv

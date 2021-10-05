@@ -197,7 +197,7 @@ just recreate
 ```
 
 [justfile]: justfile
-[dockercompose]: openverse_catalog/docker-compose.yml
+[dockercompose]: docker-compose.yml
 [cc_airflow]: openverse_catalog/
 
 ## PySpark development setup

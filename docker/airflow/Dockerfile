@@ -1,26 +1,30 @@
-FROM python:3.9
+FROM python:3.9-slim
 
-ENV AIRFLOW_HOME=/usr/local/airflow
-ARG OUTPUT_DIR=/tmp/workflow_output/
-ENV PATH=/usr/local/airflow/.local/bin:$PATH
+ARG OUTPUT_DIR=/var/workflow_output/
 ARG REQUIREMENTS_FILE=requirements_prod.txt
 # https://airflow.apache.org/docs/apache-airflow/2.1.2/installation.html#constraints-files
 ARG CONSTRAINTS_FILE="https://raw.githubusercontent.com/apache/airflow/constraints-2.1.2/constraints-3.9.txt"
+ENV AIRFLOW_HOME=/usr/local/airflow
+ENV PATH=/usr/local/airflow/.local/bin:$PATH
+ENV PIPNOCACHEDIR=1
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+ENV PIP_NO_COLOR=1
 
 
-RUN apt-get -yqq update \
-  && apt-get -yqq upgrade \
-  && apt-get -yqq install build-essential libpq-dev libffi-dev
+RUN apt-get update && apt-get -yqq upgrade && apt-get -yqq install \
+    build-essential \
+    libpq-dev \
+    libffi-dev \
+    && apt-get autoremove -y \
+    && rm -rf /var/lib/apt/lists/*
 RUN useradd -m -d ${AIRFLOW_HOME} airflow
 USER airflow
 
 RUN mkdir -p ${OUTPUT_DIR}
 WORKDIR  ${AIRFLOW_HOME}
-ADD ./${REQUIREMENTS_FILE} ${AIRFLOW_HOME}
 # Always add the prod req because the dev reqs depend on it for deduplication
-ADD ./requirements_prod.txt ${AIRFLOW_HOME}
-ADD ./wait_for_db.py ${AIRFLOW_HOME}
-ADD ./dags ${AIRFLOW_HOME}/dags
+COPY ${REQUIREMENTS_FILE} requirements_prod.txt wait_for_db.py ${AIRFLOW_HOME}/
 
 RUN pip install --user -r ${REQUIREMENTS_FILE} -c ${CONSTRAINTS_FILE}
 
