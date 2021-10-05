@@ -1,5 +1,6 @@
 commoncrawl_s3_syncer
 provider_api_scripts
+storage
 scripts
 util
 test_*.py
