@@ -1,0 +1,4 @@
+-r requirements_prod.txt
+
+pytest-mock==3.6.1
+pytest-socket==0.4.0
