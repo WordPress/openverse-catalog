@@ -21,7 +21,6 @@ RUN apt-get update && apt-get -yqq upgrade && apt-get -yqq install \
 RUN useradd -m -d ${AIRFLOW_HOME} airflow
 USER airflow
 
-RUN mkdir -p ${OUTPUT_DIR}
 WORKDIR  ${AIRFLOW_HOME}
 # Always add the prod req because the dev reqs depend on it for deduplication
 COPY ${REQUIREMENTS_FILE} requirements_prod.txt wait_for_db.py ${AIRFLOW_HOME}/
