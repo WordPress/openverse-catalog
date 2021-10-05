@@ -10,12 +10,12 @@ SERVICE := "webserver"
 
 # Install dependencies into the current environment
 install:
-    pip install -r requirements.txt -r openverse_catalog/requirements_dev.txt
+    pip install -r requirements.txt -r requirements_dev.txt
     pre-commit install
 
 # Create the .env file from the template
 dotenv:
-    @([ ! -f openverse_catalog/.env ] && cp openverse_catalog/env.template openverse_catalog/.env) || true
+    @([ ! -f .env ] && cp env.template .env) || true
 
 # Build all (or specified) container(s)
 build service="":
