@@ -54,12 +54,7 @@ CURRENT_TSV_VERSION = "001"
 def create_column_definitions(table_columns: List[Column], is_loading=True):
     """Loading table should not have 'NOT NULL' constraints: all TSV values
     are copied, and then the items without required columns are dropped"""
-    definitions = []
-    for column in table_columns:
-        definition = (
-            column.column_definition if is_loading else column.main_column_definition
-        )
-        definitions.append(definition)
+    definitions = [column.create_definition(is_loading) for column in table_columns]
     return ",\n  ".join(definitions)
 
 

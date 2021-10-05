@@ -189,22 +189,13 @@ class Column(ABC):
         else:
             return strategy(self.db_name)
 
-    def _create_definition(self, is_loading=True):
+    def create_definition(self, is_loading: bool):
         dt = self.datatype.value
         constraint = "" if self.constraint is None else f" {self.constraint}"
         nullable = ""
         if not is_loading and not self.nullable:
             nullable = " NOT NULL"
-        column_string = f"{self.db_name} {dt}{constraint}{nullable}"
-        return column_string
-
-    @property
-    def column_definition(self):
-        return self._create_definition(is_loading=True)
-
-    @property
-    def main_column_definition(self):
-        return self._create_definition(is_loading=False)
+        return f"{self.db_name} {dt}{constraint}{nullable}"
 
 
 class IntegerColumn(Column):
