@@ -4,14 +4,12 @@ from typing import Dict, Optional, Union
 
 from common.licenses.licenses import LicenseInfo
 from storage.media import MediaStore
-from storage.tsv_columns import IMAGE_TSV_COLUMNS
+from storage.tsv_columns import CURRENT_IMAGE_TSV_COLUMNS
 
 
 logger = logging.getLogger(__name__)
 
-Image = namedtuple("Image", [c.name for c in IMAGE_TSV_COLUMNS])
-# This list is the same for all media types
-required_columns = [col for col in IMAGE_TSV_COLUMNS if col.required]
+Image = namedtuple("Image", [c.name for c in CURRENT_IMAGE_TSV_COLUMNS])
 
 
 class ImageStore(MediaStore):
@@ -37,7 +35,7 @@ class ImageStore(MediaStore):
         tsv_columns=None,
     ):
         super().__init__(provider, output_file, output_dir, buffer_length, media_type)
-        self.columns = IMAGE_TSV_COLUMNS if tsv_columns is None else tsv_columns
+        self.columns = CURRENT_IMAGE_TSV_COLUMNS if tsv_columns is None else tsv_columns
 
     def add_item(
         self,

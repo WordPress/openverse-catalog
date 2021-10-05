@@ -16,7 +16,7 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-IMAGE_COLUMN_NAMES = [x.name for x in image.IMAGE_TSV_COLUMNS]
+IMAGE_COLUMN_NAMES = [x.name for x in image.CURRENT_IMAGE_TSV_COLUMNS]
 
 PD_LICENSE_INFO = LicenseInfo(
     "zero", "1.0", "https://creativecommons.org/publicdomain/zero/1.0/", None

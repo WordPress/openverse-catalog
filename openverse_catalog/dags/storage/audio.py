@@ -4,12 +4,12 @@ from typing import Dict, Optional, Union
 
 from common.licenses.licenses import LicenseInfo
 from storage.media import MediaStore
-from storage.tsv_columns import AUDIO_TSV_COLUMNS
+from storage.tsv_columns import CURRENT_AUDIO_TSV_COLUMNS
 
 
 logger = logging.getLogger(__name__)
 
-Audio = namedtuple("Audio", [c.name for c in AUDIO_TSV_COLUMNS])
+Audio = namedtuple("Audio", [c.name for c in CURRENT_AUDIO_TSV_COLUMNS])
 
 
 class AudioStore(MediaStore):
@@ -35,7 +35,7 @@ class AudioStore(MediaStore):
         tsv_columns=None,
     ):
         super().__init__(provider, output_file, output_dir, buffer_length, media_type)
-        self.columns = AUDIO_TSV_COLUMNS if tsv_columns is None else tsv_columns
+        self.columns = CURRENT_AUDIO_TSV_COLUMNS if tsv_columns is None else tsv_columns
 
     def add_item(
         self,

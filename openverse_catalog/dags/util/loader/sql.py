@@ -6,11 +6,14 @@ from typing import List
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from psycopg2.errors import InvalidTextRepresentation
 from storage import columns as col
-from storage.audio import AUDIO_TSV_COLUMNS
 from storage.columns import NULL, Column, UpsertStrategy
 from storage.db_columns import AUDIO_TABLE_COLUMNS, IMAGE_TABLE_COLUMNS
-from storage.image import IMAGE_TSV_COLUMNS, required_columns
-from storage.tsv_columns import COLUMNS
+from storage.tsv_columns import (
+    COLUMNS,
+    CURRENT_AUDIO_TSV_COLUMNS,
+    CURRENT_IMAGE_TSV_COLUMNS,
+    required_columns,
+)
 from util.constants import AUDIO, IMAGE
 from util.loader import provider_details as prov
 from util.loader.paths import _extract_media_type
@@ -42,8 +45,8 @@ DB_COLUMNS = {
     AUDIO: AUDIO_TABLE_COLUMNS,
 }
 TSV_COLUMNS = {
-    AUDIO: AUDIO_TSV_COLUMNS,
-    IMAGE: IMAGE_TSV_COLUMNS,
+    AUDIO: CURRENT_AUDIO_TSV_COLUMNS,
+    IMAGE: CURRENT_IMAGE_TSV_COLUMNS,
 }
 CURRENT_TSV_VERSION = "001"
 
