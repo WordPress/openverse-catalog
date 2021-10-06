@@ -12,7 +12,7 @@ def test_dag_loads_with_no_errors(tmpdir):
     dag_bag.process_file(
         os.path.join(
             FILE_DIR,
-            "../../openverse_catalog/dags/check_new_smithsonian_unit_codes_workflow.py",
+            "../../dags/check_new_smithsonian_unit_codes_workflow.py",
         )
     )
     print(dag_bag.dags)

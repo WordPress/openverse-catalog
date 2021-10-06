@@ -12,7 +12,7 @@ def test_flickr_dag_loads_with_no_errors(tmpdir):
     dag_bag.process_file(
         os.path.join(
             FILE_DIR,
-            "../../openverse_catalog/dags/flickr_sub_provider_update_workflow.py",
+            "../../dags/flickr_sub_provider_update_workflow.py",
         )
     )
     assert len(dag_bag.import_errors) == 0
@@ -25,7 +25,7 @@ def test_europeana_dag_loads_with_no_errors(tmpdir):
     dag_bag.process_file(
         os.path.join(
             FILE_DIR,
-            "../../openverse_catalog/dags/europeana_sub_provider_update_workflow.py",
+            "../../dags/europeana_sub_provider_update_workflow.py",
         )
     )
     assert len(dag_bag.import_errors) == 0
@@ -38,7 +38,7 @@ def test_smithsonian_dag_loads_with_no_errors(tmpdir):
     dag_bag.process_file(
         os.path.join(
             FILE_DIR,
-            "../../openverse_catalog/dags/smithsonian_sub_provider_update_workflow.py",
+            "../../dags/smithsonian_sub_provider_update_workflow.py",
         )
     )
     assert len(dag_bag.import_errors) == 0

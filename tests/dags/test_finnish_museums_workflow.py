@@ -11,9 +11,7 @@ def test_dag_loads_with_no_errors(tmpdir):
     print(tmp_directory)
     dag_bag = DagBag(dag_folder=tmp_directory, include_examples=False)
     dag_bag.process_file(
-        os.path.join(
-            FILE_DIR, "../../openverse_catalog/dags/finnish_museums_workflow.py"
-        )
+        os.path.join(FILE_DIR, "../../dags/finnish_museums_workflow.py")
     )
     print(dag_bag.dags)
     assert len(dag_bag.import_errors) == 0

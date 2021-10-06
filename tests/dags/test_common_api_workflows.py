@@ -14,9 +14,7 @@ FILE_DIR = os.path.abspath(os.path.dirname(__file__))
 def test_dags_load_with_no_errors(tmpdir):
     tmp_directory = str(tmpdir)
     dag_bag = DagBag(dag_folder=tmp_directory, include_examples=False)
-    dag_bag.process_file(
-        os.path.join(FILE_DIR, "../../openverse_catalog/dags/common_api_workflows.py")
-    )
+    dag_bag.process_file(os.path.join(FILE_DIR, "../../dags/common_api_workflows.py"))
     assert len(dag_bag.import_errors) == 0
 
 

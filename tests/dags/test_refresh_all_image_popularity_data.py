@@ -12,7 +12,7 @@ def test_dag_loads_with_no_errors(tmpdir):
     dag_bag.process_file(
         os.path.join(
             FILE_DIR,
-            "../../openverse_catalog/dags/refresh_all_image_popularity_data.py",
+            "../../dags/refresh_all_image_popularity_data.py",
         )
     )
     assert len(dag_bag.import_errors) == 0
