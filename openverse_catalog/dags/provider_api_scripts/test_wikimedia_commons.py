@@ -398,3 +398,31 @@ def test_create_meta_data_tallies_zero_global_usage_count():
     actual_gu = wmc._create_meta_data_dict(media_data)["global_usage_count"]
     expect_gu = 0
     assert actual_gu == expect_gu
+
+
+def test_parse_audio_file_data_parses_ogg_streams():
+    with open(RESOURCES / "audio_filedata_ogg.json") as f:
+        file_metadata = json.load(f)
+    original_data = {"meta_data": {}}
+    actual_parsed_data = wmc._parse_audio_file_data(original_data, file_metadata)
+
+    expected_parsed_data = {
+        "bit_rate": 112000,
+        "sample_rate": 48000,
+        "meta_data": {"channels": 2},
+    }
+    assert actual_parsed_data == expected_parsed_data
+
+
+def test_parse_audio_file_data_parses_wav_audio_data():
+    with open(RESOURCES / "audio_filedata_wav.json") as f:
+        file_metadata = json.load(f)
+    original_data = {"meta_data": {}}
+    actual_parsed_data = wmc._parse_audio_file_data(original_data, file_metadata)
+
+    expected_parsed_data = {
+        "bit_rate": 768000,
+        "sample_rate": 48000,
+        "meta_data": {"channels": 1},
+    }
+    assert actual_parsed_data == expected_parsed_data

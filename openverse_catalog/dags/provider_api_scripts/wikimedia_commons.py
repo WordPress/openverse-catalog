@@ -11,7 +11,6 @@ Notes:                  https://commons.wikimedia.org/wiki/API:Main_page
 """
 
 import argparse
-import json
 import logging
 import os
 from copy import deepcopy
@@ -242,11 +241,14 @@ def _process_media_data(media_data):
     if license_info.url is None:
         return None
     media_url = media_info.get("url")
+    if media_url is None:
+        return None
     creator, creator_url = _extract_creator_info(media_info)
     title = _extract_title(media_info)
     filesize = media_info.get("size", 0)  # in bytes
     filetype = _extract_file_type(media_info)
     parsed_data = {
+        "media_url": media_url,
         "foreign_landing_url": media_info.get("descriptionshorturl"),
         "foreign_identifier": foreign_id,
         "license_info": license_info,
@@ -261,51 +263,76 @@ def _process_media_data(media_data):
         IMAGE: _add_image,
         AUDIO: _add_audio,
     }
-    funcs[valid_mediatype](parsed_data, media_url, media_data, media_info)
+    funcs[valid_mediatype](parsed_data, media_data, media_info)
 
 
-def _get_from_stream_header(stream_header, prop_name):
-    prop_list = [header for header in stream_header if header["name"] == prop_name]
+def _get_value_by_name(key_value_list: list, prop_name: str):
+    prop_list = [
+        key_value_pair
+        for key_value_pair in key_value_list
+        if key_value_pair["name"] == prop_name
+    ]
     if prop_list:
         return prop_list[0].get("value")
 
 
-def _add_audio(parsed_data, media_url, media_data, media_info):
+def _get_value_by_names(key_value_list: list, prop_names: list):
+    """Gets the first available value for one of the `prop_names`
+    property names"""
+    for prop_name in prop_names:
+        if val := _get_value_by_name(key_value_list, prop_name):
+            return val
+
+
+def _parse_audio_file_data(parsed_data: dict, file_metadata: list) -> dict:
+    streams = _get_value_by_name(file_metadata, "streams")
+    if not streams:
+        audio = _get_value_by_name(file_metadata, "audio")
+        streams = _get_value_by_name(audio, "streams")
+    try:
+        streams_data = [stream["value"] for stream in streams][0]
+        file_data = _get_value_by_name(streams_data, "header")
+        if not file_data:
+            file_data = streams_data
+    except (IndexError, TypeError):
+        file_data = []
+    if sample_rate := _get_value_by_names(
+        file_data, ["audio_sample_rate", "sample_rate"]
+    ):
+        parsed_data["sample_rate"] = sample_rate
+    if bit_rate := _get_value_by_names(file_data, ["bitrate_nominal", "bitrate"]):
+        parsed_data["bit_rate"] = bit_rate
+    if channels := _get_value_by_names(file_data, ["audio_channels", "channels"]):
+        parsed_data["meta_data"]["channels"] = channels
+    return parsed_data
+
+
+def _extract_audio_category(parsed_data):
+    """Set category to ["sound"] for any audio with
+    pronunciation of a word or a phrase"""
+    for category in parsed_data["meta_data"].get("categories", []):
+        if "pronunciation" in category.lower():
+            return ["sound"]
+
+
+def _add_audio(parsed_data, media_data, media_info):
     # Converting duration into milliseconds
     duration = int(float(media_info.get("duration", 0)) * 1000)
-    parsed_data["audio_url"] = media_url
+    parsed_data["audio_url"] = parsed_data.pop("media_url")
     parsed_data["duration"] = duration
     parsed_data["meta_data"] = _create_meta_data_dict(media_data)
     if not parsed_data.get("category"):
-        for category in parsed_data["meta_data"].get("categories", []):
-            if "pronunciation" in category.lower():
-                parsed_data["category"] = "pronunciation"
-                break
-    stream_data = [
-        _["value"] for _ in media_info.get("metadata") if _["name"] == "streams"
-    ]
-    if stream_data:
-        stream_data = stream_data[0]
-    if len(stream_data) > 1:
-        logger.warning(f"More than one streams! \n{json.dumps(stream_data, indent=2)}")
-    for stream in stream_data:
-        stream = stream["value"]
-        stream_header = [_ for _ in stream if _["name"] == "header"][0].get("value", [])
-        channels = _get_from_stream_header(stream_header, "audio_channels")
-        if channels:
-            parsed_data["meta_data"]["channels"] = channels
-        sample_rate = _get_from_stream_header(stream_header, "audio_sample_rate")
-        bit_rate = _get_from_stream_header(stream_header, "bitrate_nominal")
-        parsed_data["sample_rate"] = sample_rate
-        parsed_data["bit_rate"] = bit_rate
+        parsed_data["category"] = _extract_audio_category(parsed_data)
+    file_metadata: list = media_info.get("metadata", [])
+    parsed_data = _parse_audio_file_data(parsed_data, file_metadata)
     audio_store.add_item(**parsed_data)
 
 
-def _add_image(parsed_data, media_url, media_data, media_info):
+def _add_image(parsed_data, media_data, media_info):
     parsed_data["meta_data"] = _create_meta_data_dict(media_data)
     parsed_data["width"] = media_info.get("width")
     parsed_data["height"] = media_info.get("height")
-    parsed_data["image_url"] = media_url
+    parsed_data["image_url"] = parsed_data.pop("media_url")
     if parsed_data["filetype"] == "svg":
         parsed_data["category"] = ["illustration"]
     image_store.add_item(**parsed_data)
