@@ -43,6 +43,7 @@ DELAY = 1
 HOST = "commons.wikimedia.org"
 ENDPOINT = f"https://{HOST}/w/api.php"
 PROVIDER = prov.WIKIMEDIA_DEFAULT_PROVIDER
+AUDIO_PROVIDER = prov.WIKIMEDIA_AUDIO_PROVIDER
 CONTACT_EMAIL = os.getenv("WM_SCRIPT_CONTACT")
 UA_STRING = f"CC-Catalog/0.1 (https://creativecommons.org; {CONTACT_EMAIL})"
 DEFAULT_REQUEST_HEADERS = {"User-Agent": UA_STRING}
@@ -64,7 +65,7 @@ AUDIO_MEDIATYPES = {"AUDIO"}
 # Other types available in the API are OFFICE for pdfs and VIDEO
 
 delayed_requester = DelayedRequester(DELAY)
-audio_store = AudioStore(provider=PROVIDER)
+audio_store = AudioStore(provider=AUDIO_PROVIDER)
 image_store = ImageStore(provider=PROVIDER)
 
 
