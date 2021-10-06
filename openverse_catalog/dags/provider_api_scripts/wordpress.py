@@ -151,7 +151,7 @@ def _process_item_batch(items_batch):
 
 
 def _get_image_details(media_data):
-    url = media_data.get("_links", {}).get("wp:featuredmedia", {})
+    url = media_data.get("_links", {}).get("wp:featuredmedia", {}).get("href")
     response_json = delayed_requester.get_response_json(url)
     return response_json
 
@@ -161,20 +161,25 @@ def _extract_item_data(media_data):
     Extract data for individual item.
     """
     # TODO: remove the code for saving json files from the final script
-    foreign_landing_url = _get_foreign_landing_page(media_data)
+    try:
+        foreign_landing_url = media_data["link"]
+    except (TypeError, KeyError, AttributeError):
+        print("Found no foreign landing url:")
+        print(json.dumps(media_data, indent=2))
+        check_and_save_json_for_test("no_foreign_landing_url", media_data)
+        return None
     foreign_identifier = _get_foreign_identifier(media_data)
     title = _get_title(media_data)
 
     image_details = _get_image_details(media_data)
     image_url, height, width, filetype = _get_file_info(image_details)
-    thumbnail = _get_thumbnail_url(image_details)
-
     if image_url is None:
         print("Found no image url:")
         print(json.dumps(media_data, indent=2))
         check_and_save_json_for_test("no_image_url", media_data)
         return None
-    metadata = _get_metadata(media_data)
+    thumbnail = _get_thumbnail_url(image_details)
+    metadata = _get_metadata(image_details)
 
     creator, creator_url = _get_creator_data(media_data)
     tags = _get_tags(media_data)
@@ -197,17 +202,6 @@ def _extract_item_data(media_data):
     }
 
 
-def _get_foreign_landing_page(media_data):
-    try:
-        url = f'https://{HOST}/photos/photo/{media_data["slug"]}'
-        return _cleanse_url(url)
-    except (TypeError, KeyError, AttributeError):
-        print("Found no foreign landing url:")
-        print(json.dumps(media_data, indent=2))
-        check_and_save_json_for_test("no_foreign_landing_url", media_data)
-        return None
-
-
 def _get_foreign_identifier(media_data):
     try:
         return media_data["slug"]
@@ -217,9 +211,9 @@ def _get_foreign_identifier(media_data):
 
 def _get_file_info(image_details):
     file_details = image_details.get("media_details").get("sizes", {}).get("full", {})
+    image_url = file_details.get("source_url", {})
     height = file_details.get("height")
     width = file_details.get("width")
-    image_url = file_details.get("source_url", {}).get("self", {}).get("href")
     filetype = None
     if filename := file_details.get("file"):
         filetype = Path(filename).suffix.replace(".", "")
@@ -243,23 +237,31 @@ def _get_creator_data(item):
 
 
 def _get_title(item):
-    title = item.get("content").get("rendered")
+    title = item.get("content", {}).get("rendered")
     if title:
         title = html.fromstring(title).text_content()
     return title
 
 
-def _get_metadata(item):
-    """
-    Metadata may include: description, date created and modified at source,
-    categories, popularity statistics.
-    """
-    # TODO: Add function to extract metadata from the item dictionary
-    #  Do not includes keys without value
+def _get_metadata(image_details):
+    raw_metadata = image_details.get("media_details", {}).get("image_meta", {})
+    extras = [
+        "aperture",
+        "camera",
+        "created_timestamp",
+        "focal_length",
+        "iso",
+        "shutter_speed",
+    ]
     metadata = {}
-    some_other_key_value = item.get("some_other_key")
-    if some_other_key_value is not None:
-        metadata["some_other_key"] = some_other_key_value
+    for key in extras:
+        value = raw_metadata.get(key)
+        if value not in [None, ""]:
+            metadata[key] = value
+
+    if published_date := image_details.get("date"):
+        metadata["published_date"] = published_date
+    # TODO: include categories, colors, orientation
     return metadata
 
 
