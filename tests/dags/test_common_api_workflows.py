@@ -7,7 +7,6 @@ from airflow.models import DagBag
 
 SCRIPT = conf.SCRIPT
 CRONTAB_STR = conf.CRONTAB_STR
-RESOURCES = os.path.join(conf.API_SCRIPT_PATH, "tests/resources")
 FILE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 
@@ -58,7 +57,9 @@ def test_load_dag_conf_validates_script_location():
 
 def test_load_dag_conf_returns_valid_script_location():
     source = "test_source"
-    expected_script_location = os.path.join(RESOURCES, "FakeSource.py")
+    expected_script_location = os.path.join(
+        os.path.join(FILE_DIR, "provider_api_scripts/resources"), "FakeSource.py"
+    )
     dag_variables = {"test_source": {SCRIPT: expected_script_location}}
     script_location, dag_id, crontab_str = caw.load_dag_conf(source, dag_variables)
     assert script_location == expected_script_location
