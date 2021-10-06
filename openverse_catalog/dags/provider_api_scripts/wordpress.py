@@ -45,8 +45,8 @@ HEADERS = {
 
 DEFAULT_QUERY_PARAMS = {
     "format": "json",
+    "page": 1,
     "per_page": LIMIT,
-    "offset": 0,
     "order": "desc",
     "orderby": "date",
 }
@@ -91,46 +91,58 @@ def main():
     logger.info("Terminated!")
 
 
-def _get_query_params(offset, default_query_params=None):
+def _get_query_params(page, default_query_params=None):
     if default_query_params is None:
         default_query_params = DEFAULT_QUERY_PARAMS
     query_params = default_query_params.copy()
-    query_params["offset"] = offset
+    query_params["page"] = page
     return query_params
 
 
 def _get_items():
-    item_count = 0
-    offset = 0
+    item_count, page = 0, 1
     should_continue = True
     while should_continue:
-        query_params = _get_query_params(offset=offset)
-        batch_data = _get_batch_json(query_params=query_params)
-        if isinstance(batch_data, list) and len(batch_data) > 0:
+        query_params = _get_query_params(page=page)
+        batch_data, total_pages = _get_batch_json(query_params=query_params)
+        if isinstance(batch_data, list) and len(batch_data) > 0 and total_pages >= page:
             item_count = _process_item_batch(batch_data)
-            offset += LIMIT
+            page += 1
         else:
             should_continue = False
     return item_count
 
 
-def _get_batch_json(
-    endpoint=ENDPOINT, headers=None, retries=RETRIES, query_params=None
-):
+def _get_batch_json(query_params, endpoint=ENDPOINT, headers=None, retries=RETRIES):
+    response_json, total_pages = None, None
+    if retries < 0:
+        logger.error("No retries remaining. Returning Nonetypes.")
+        return None, 0
+
     if headers is None:
         headers = HEADERS.copy()
-    response_json = delayed_requester.get_response_json(
-        endpoint, retries, query_params, headers=headers
-    )
-    if response_json is None:
-        return None
-    else:
-        data = response_json.get("data")
-        if data:
-            check_and_save_json_for_test("full_response", data)
-        else:
-            check_and_save_json_for_test("empty_response", data)
-        return data
+
+    response = delayed_requester.get(endpoint, query_params, headers=headers)
+    if response is not None and response.status_code == 200:
+        try:
+            response_json = response.json()
+            total_pages = response["headers"]["X-WP-TotalPages"]
+        except Exception as e:
+            logger.warning(f"Response not captured due to {e}")
+            response_json = None
+
+    if response_json is None or total_pages is None:
+        logger.warning(
+            "Retrying:\n_get_batch_json(\n"
+            f"    {endpoint},\n"
+            f"    {query_params},\n"
+            f"    retries={retries - 1}"
+            ")"
+        )
+        response_json, total_pages = _get_batch_json(
+            query_params, endpoint, headers, retries - 1
+        )
+    return response_json, total_pages
 
 
 def _process_item_batch(items_batch):
