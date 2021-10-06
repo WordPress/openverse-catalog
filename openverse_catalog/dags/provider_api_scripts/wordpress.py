@@ -147,10 +147,6 @@ def _get_batch_json(query_params, endpoint=ENDPOINT, headers=None, retries=RETRI
 
 def _process_item_batch(items_batch):
     for item in items_batch:
-        # For testing purposes, you would need to save json data for single
-        # media objects. To make sure that you test edge cases,
-        # we add the code that saves a json file per each condition:
-        # full, and without one of the required properties.
         # TODO: save the resulting json files (if any) in the
         #  `provider_api_scripts/tests/resources/<provider_name>` folder
         # TODO: remove the code for saving json files from the final script
