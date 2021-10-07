@@ -18,7 +18,7 @@ dotenv:
     @([ ! -f .env ] && cp env.template .env) || true
 
 # Build all (or specified) container(s)
-build service="":
+build service="": dotenv
     docker-compose {{ DEV_DOCKER_FILES }} build {{ service }}
 
 # Bring all Docker services up
