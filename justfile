@@ -43,7 +43,7 @@ lint:
     pre-commit run --all-files
 
 # Run pytest using the webserver image
-test pytestargs="": up
+test pytestargs="": (up "postgres s3")  # The webserver isn't required to run tests
     # The test directory is mounted into the container only during testing
     docker-compose {{ DEV_DOCKER_FILES }} run -v {{ justfile_directory() }}/tests:/usr/local/airflow/tests/ --rm {{ SERVICE }} /usr/local/airflow/.local/bin/pytest {{ pytestargs }}
 
