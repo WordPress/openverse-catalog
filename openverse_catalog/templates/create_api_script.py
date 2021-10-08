@@ -41,7 +41,7 @@ def _render_file(
     with target.open("w") as target_file:
         filled_template = _get_filled_template(template_path, provider, media_type)
         target_file.write(filled_template)
-        print(f"{name}: {target.relative_to(PROJECT_PATH)}")
+        print(f"{name + ':':<24} {target.relative_to(PROJECT_PATH)}")
 
 
 def fill_template(provider, media_type):
