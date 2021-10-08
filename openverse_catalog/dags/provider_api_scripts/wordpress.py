@@ -13,7 +13,6 @@ import logging
 
 # import os
 from pathlib import Path
-from urllib.parse import urlparse
 
 import lxml.html as html
 from common.licenses.licenses import get_license_info
@@ -58,7 +57,7 @@ image_store = ImageStore(provider=PROVIDER)
 license_url = "https://creativecommons.org/publicdomain/zero/1.0/"
 license_info = get_license_info(license_url=license_url)
 
-image_related = {
+IMAGE_RELATED_RESOURCES = {
     "users": {},  # authors
     "photo-categories": {},
     "photo-colors": {},
@@ -69,7 +68,6 @@ image_related = {
 saved_json_counter = {
     "full_response": 0,
     "empty_response": 0,
-    "full_item": 0,
     "no_image_details": 0,
     "no_image_url": 0,
     "no_foreign_landing_url_or_id": 0,
@@ -103,9 +101,9 @@ def main():
 
 
 def _prefetch_image_related_data():
-    for resource in image_related.keys():
+    for resource in IMAGE_RELATED_RESOURCES.keys():
         collection = _get_resources(resource)
-        image_related[resource] = collection
+        IMAGE_RELATED_RESOURCES[resource] = collection
 
 
 def _get_resources(resource_type):
@@ -135,7 +133,7 @@ def _process_resource_batch(resource_type, batch_data):
             if resource_type == "users":
                 # 'url' is the website of the author and 'link' would be their wp.org
                 # profile, so at least the last must always be present
-                url = _cleanse_url(item["url"] or item["link"])
+                url = item["url"] or item["link"]
         except Exception as e:
             logger.error(f"Couldn't save resource({resource_type}) info due to {e}")
             continue
@@ -241,11 +239,9 @@ def _extract_image_data(media_data):
         check_and_save_json_for_test("no_image_url", media_data)
         return None
     thumbnail = _get_thumbnail_url(image_details)
-    metadata = _get_metadata(image_details)
-
+    metadata = _get_metadata(media_data, image_details)
     creator, creator_url = _get_creator_data(media_data)
-    # tags = _get_tags(media_data)
-    # check_and_save_json_for_test("full_item", media_data)
+    tags = _get_related_data("tags", media_data)
 
     return {
         "title": title,
@@ -260,7 +256,7 @@ def _extract_image_data(media_data):
         "filetype": filetype,
         "license_info": license_info,
         "meta_data": metadata,
-        # "raw_tags": tags,
+        "raw_tags": tags,
     }
 
 
@@ -286,22 +282,21 @@ def _get_thumbnail_url(image_details):
     )
 
 
-def _get_creator_data(item):
+def _get_creator_data(image):
     creator, creator_url = None, None
-    if author_id := item.get("author"):
-        creator = image_related.get("users").get(author_id, {}).get("name")
-        creator_url = image_related.get("users").get(author_id, {}).get("url")
+    if author_id := image.get("author"):
+        creator = IMAGE_RELATED_RESOURCES.get("users").get(author_id, {}).get("name")
+        creator_url = IMAGE_RELATED_RESOURCES.get("users").get(author_id, {}).get("url")
     return creator, creator_url
 
 
-def _get_title(item):
-    title = item.get("content", {}).get("rendered")
-    if title:
+def _get_title(image):
+    if title := image.get("content", {}).get("rendered"):
         title = html.fromstring(title).text_content()
     return title
 
 
-def _get_metadata(image_details):
+def _get_metadata(image, image_details):
     raw_metadata = image_details.get("media_details", {}).get("image_meta", {})
     extras = [
         "aperture",
@@ -318,33 +313,27 @@ def _get_metadata(image_details):
             metadata[key] = value
 
     if published_date := image_details.get("date"):
+        # Does it need to be saved in a specific format/timezone?
         metadata["published_date"] = published_date
-    # TODO: include categories, colors, orientation
+
+    extras = ["categories", "colors", "orientations"]
+    for resource in extras:
+        metadata[resource] = sorted(_get_related_data(resource, image))
     return metadata
 
 
-def _get_tags(item):
-    # TODO: Add correct implementation of _get_tags
-    return item.get("tags")
-
-
-def _cleanse_url(url_string):
-    """
-    Check to make sure that a url is valid, and prepend a protocol if needed.
-    """
-    parse_result = urlparse(url_string)
-
-    if parse_result.netloc == HOST:
-        parse_result = urlparse(url_string, scheme="https")
-    elif not parse_result.scheme:
-        parse_result = urlparse(url_string, scheme="http")
-
-    if parse_result.netloc or parse_result.path:
-        return parse_result.geturl()
+def _get_related_data(resource_type, image):
+    resource_type = f"photo-{resource_type}"
+    ids = image.get(resource_type)
+    resource_names = set()
+    resources_ids = IMAGE_RELATED_RESOURCES[resource_type].keys()
+    for rid in ids:
+        if rid in resources_ids:
+            resource_names.add(IMAGE_RELATED_RESOURCES[resource_type][rid])
+    return list(resource_names)
 
 
 if __name__ == "__main__":
     main()
 
 # TODO: Remove unnecessary comments
-# TODO: Lint your code with pycodestyle
