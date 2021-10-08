@@ -127,20 +127,22 @@ def _get_resources(resource_type):
 
 def _process_resource_batch(resource_type, batch_data):
     collected_page = {}
-    id, name, url = None, None, None
+    item_id, name, url = None, None, None
     for item in batch_data:
         try:
-            id = item["id"]
+            item_id = item["id"]
             name = item["name"]
             if resource_type == "users":
-                url = item["url"] or item["link"]
+                # 'url' is the website of the author and 'link' would be their wp.org
+                # profile, so at least the last must always be present
+                url = _cleanse_url(item["url"] or item["link"])
         except Exception as e:
             logger.error(f"Couldn't save resource({resource_type}) info due to {e}")
             continue
         if resource_type == "users":
-            collected_page[id] = {"name": name, "url": url}
+            collected_page[item_id] = {"name": name, "url": url}
         else:
-            collected_page[id] = name
+            collected_page[item_id] = name
     return collected_page
 
 
@@ -241,14 +243,14 @@ def _extract_image_data(media_data):
     thumbnail = _get_thumbnail_url(image_details)
     metadata = _get_metadata(image_details)
 
-    # creator, creator_url = _get_creator_data(media_data)
+    creator, creator_url = _get_creator_data(media_data)
     # tags = _get_tags(media_data)
     # check_and_save_json_for_test("full_item", media_data)
 
     return {
         "title": title,
-        # "creator": creator,
-        # "creator_url": creator_url,
+        "creator": creator,
+        "creator_url": creator_url,
         "foreign_identifier": foreign_identifier,
         "foreign_landing_url": foreign_landing_url,
         "image_url": image_url,
@@ -285,9 +287,10 @@ def _get_thumbnail_url(image_details):
 
 
 def _get_creator_data(item):
-    # TODO: Add correct implementation of _get_creator_data
-    creator = item.get("author")
-    creator_url = _cleanse_url(item.get("_links", {}).get("author", {}).get("href"))
+    creator, creator_url = None, None
+    if author_id := item.get("author"):
+        creator = image_related.get("users").get(author_id, {}).get("name")
+        creator_url = image_related.get("users").get(author_id, {}).get("url")
     return creator, creator_url
 
 

@@ -146,50 +146,38 @@ def test_get_file_info():
     assert actual_result == expected_result
 
 
-# @patch("wordpress.delayed_requester.get_response_json")
-# with patch.object(wp.delayed_requester, 'get', return_value=requests.Response()):
+def test_get_creator_data():
+    with open(SAMPLE_MEDIA_DATA) as f:
+        image_data = json.load(f)
+    image_related_patch = {
+        "users": {
+            3606: {"name": "Scott Reilly", "url": "http://coffee2code.com"},
+        }
+    }
+    with patch.object(wp, "image_related", image_related_patch):
+        actual_creator, actual_creator_url = wp._get_creator_data(image_data)
+    expected_creator = "Scott Reilly"
+    expected_creator_url = "http://coffee2code.com"
 
-# def test_get_creator_data():
-#     with open(SAMPLE_MEDIA_DATA) as f:
-#         image_data = json.load(f)
-#     actual_creator, actual_creator_url = wp._get_creator_data(image_data)
-#     expected_creator = ''
-#     expected_creator_url = ''
-#
-#     assert actual_creator == expected_creator
-#     assert actual_creator_url == expected_creator_url
-#
-#
-# def test_get_creator_data_handles_no_url():
-#     with open(SAMPLE_MEDIA_DATA) as f:
-#         image_data = json.load(f)
-#     image_data.pop('artist_url', None)
-#     expected_creator = ''
-#
-#     actual_creator, actual_creator_url = wp._get_creator_data(image_data)
-#     assert actual_creator == expected_creator
-#     assert actual_creator_url is None
-#
-#
-# def test_get_creator_data_returns_none_when_no_artist():
-#     with open(SAMPLE_MEDIA_DATA) as f:
-#         image_data = json.load(f)
-#     image_data.pop('artist_name', None)
-#     actual_creator, actual_creator_url = wp._get_creator_data(image_data)
-#
-#     assert actual_creator is None
-#     assert actual_creator_url is None
-#
-#
-# def test_extract_image_data_handles_example_dict():
-#     with open(SAMPLE_MEDIA_DATA) as f:
-#         image_data = json.load(f)
-#
-#     actual_image_info = wp._extract_image_data(image_data)
-#     expected_image_info = {}
-#     assert actual_image_info == expected_image_info
-#
-#
+    assert actual_creator == expected_creator
+    assert actual_creator_url == expected_creator_url
+
+
+def test_get_creator_data_handle_no_author():
+    with open(SAMPLE_MEDIA_DATA) as f:
+        image_data = json.load(f)
+    image_data.pop("author")
+    image_related_patch = {
+        "users": {
+            3606: {"name": "Scott Reilly", "url": "http://coffee2code.com"},
+        }
+    }
+    with patch.object(wp, "image_related", image_related_patch):
+        actual_creator, actual_creator_url = wp._get_creator_data(image_data)
+    assert actual_creator is None
+    assert actual_creator_url is None
+
+
 # def test_get_tags():
 #     item_data = {
 #         "tags": ['tag1', 'tag2']
