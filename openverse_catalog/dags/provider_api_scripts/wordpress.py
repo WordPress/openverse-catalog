@@ -5,13 +5,11 @@ ETL Process:            Use the API to identify all openly licensed media.
 
 Output:                 TSV file containing the media metadata.
 
-Notes:                  {{API URL}}
+Notes:                  https://wordpress.org/photos/wp-json/wp/v2
+                        Provide photos, media, users and more related resources.
                         No rate limit specified.
 """
-import json
 import logging
-
-# import os
 from pathlib import Path
 
 import lxml.html as html
@@ -31,24 +29,14 @@ DELAY = 1  # in seconds
 RETRIES = 3
 
 HOST = "wordpress.org"
-ENDPOINT = f"http://{HOST}/photos/wp-json/wp/v2"
+ENDPOINT = f"https://{HOST}/photos/wp-json/wp/v2"
 
 PROVIDER = prov.WORDPRESS_DEFAULT_PROVIDER
-# TODO: Add the API key to `openverse_catalog/env.template` if required
-# API_KEY = os.getenv("WORDPRESS", "nokeyprovided")
-# USERNAME = os.getenv("WP_USERNAME")
-# PASSWORD = os.getenv("WP_PASSWORD")
-
-HEADERS = {
-    "Accept": "application/json",
-}
 
 DEFAULT_QUERY_PARAMS = {
     "format": "json",
     "page": 1,
     "per_page": LIMIT,
-    "order": "desc",
-    "orderby": "date",
 }
 
 delayed_requester = DelayedRequester(DELAY)
@@ -64,26 +52,6 @@ IMAGE_RELATED_RESOURCES = {
     "photo-orientations": {},
     "photo-tags": {},
 }
-
-saved_json_counter = {
-    "full_response": 0,
-    "empty_response": 0,
-    "no_image_details": 0,
-    "no_image_url": 0,
-    "no_foreign_landing_url_or_id": 0,
-    "no_license": 0,
-}
-
-
-def check_and_save_json_for_test(name, data):
-    parent = Path(__file__).parent
-    test_resources_path = parent / "tests" / "resources" / "wordpress"
-    if not Path.is_dir(test_resources_path):
-        Path.mkdir(test_resources_path)
-    if saved_json_counter[name] == 0:
-        with open(f"{name}.json", "w+", encoding="utf-8") as outf:
-            json.dump(data, outf, indent=2)
-        saved_json_counter[name] += 1
 
 
 def main():
@@ -104,22 +72,20 @@ def _prefetch_image_related_data():
     for resource in IMAGE_RELATED_RESOURCES.keys():
         collection = _get_resources(resource)
         IMAGE_RELATED_RESOURCES[resource] = collection
+    logger.info("Prefetch of image-related data completed.")
 
 
 def _get_resources(resource_type):
-    page = 1
-    collection = {}
+    total_pages = page = 1
     endpoint = f"{ENDPOINT}/{resource_type}"
-    should_continue = True
-    while should_continue:
+    collection = {}
+    while total_pages >= page:
         query_params = _get_query_params(page=page)
         batch_data, total_pages = _get_item_page(endpoint, query_params=query_params)
-        if isinstance(batch_data, list) and len(batch_data) > 0 and total_pages >= page:
+        if isinstance(batch_data, list) and len(batch_data) > 0:
             collection_page = _process_resource_batch(resource_type, batch_data)
             collection = collection | collection_page
             page += 1
-        else:
-            should_continue = False
     return collection
 
 
@@ -158,11 +124,12 @@ def _get_item_page(endpoint, retries=RETRIES, query_params=None):
         logger.error("No retries remaining. Returning Nonetypes.")
         return None, 0
 
-    response = delayed_requester.get(endpoint, query_params)
-    if response is not None and response.status_code == 200:
+    response = delayed_requester.get(endpoint, query_params, allow_redirects=False)
+
+    if response is not None and response.status_code in [200, 301, 302]:
         try:
             response_json = response.json()
-            total_pages = response.headers["X-WP-TotalPages"]
+            total_pages = int(response.headers["X-WP-TotalPages"])
         except Exception as e:
             logger.warning(f"Response not captured due to {e}")
             response_json = None
@@ -180,17 +147,15 @@ def _get_item_page(endpoint, retries=RETRIES, query_params=None):
 
 
 def _get_images():
-    item_count, page = 0, 1
+    item_count = 0
+    total_pages = page = 1
     endpoint = f"{ENDPOINT}/photos"
-    should_continue = True
-    while should_continue:
+    while total_pages >= page:
         query_params = _get_query_params(page=page)
         batch_data, total_pages = _get_item_page(endpoint, query_params=query_params)
-        if isinstance(batch_data, list) and len(batch_data) > 0 and total_pages >= page:
+        if isinstance(batch_data, list) and len(batch_data) > 0:
             item_count = _process_image_batch(batch_data)
             page += 1
-        else:
-            should_continue = False
     return item_count
 
 
@@ -204,10 +169,47 @@ def _process_image_batch(image_batch):
 
 
 def _get_image_details(media_data):
-    url = media_data.get("_links", {}).get("wp:featuredmedia", {}).get("href")
-    if url is None:
+    try:
+        url = media_data.get("_links").get("wp:featuredmedia")[0].get("href")
+        response_json = _get_response_json(url, RETRIES, allow_redirects=False)
+        return response_json
+    except (KeyError, AttributeError):
         return None
-    response_json = delayed_requester.get_response_json(url, RETRIES)
+
+
+def _get_response_json(endpoint, retries=0, query_params=None, **kwargs):
+    """
+    Function copied from common.requester.DelayedRequester class to allow responses
+    with status code 301 or 302. It's expected it can be removed once the API is
+    fully ready.
+    """
+    response_json = None
+
+    if retries < 0:
+        logger.error("No retries remaining.  Failure.")
+        raise Exception("Retries exceeded")
+
+    response = delayed_requester.get(endpoint, params=query_params, **kwargs)
+    if response is not None and response.status_code in [200, 301, 302]:
+        try:
+            response_json = response.json()
+        except Exception as e:
+            logger.warning(f"Could not get response_json.\n{e}")
+            response_json = None
+
+    if response_json is None or response_json.get("error") is not None:
+        logger.warning(f"Bad response_json:  {response_json}")
+        logger.warning(
+            "Retrying:\n_get_response_json(\n"
+            f"    {endpoint},\n"
+            f"    {query_params},\n"
+            f"    retries={retries - 1}"
+            ")"
+        )
+        response_json = _get_response_json(
+            endpoint, retries=retries - 1, query_params=query_params, **kwargs
+        )
+
     return response_json
 
 
@@ -215,28 +217,17 @@ def _extract_image_data(media_data):
     """
     Extract data for individual item.
     """
-    # TODO: remove the code for saving json files from the final script
     try:
         foreign_identifier = media_data["slug"]
         foreign_landing_url = media_data["link"]
     except (TypeError, KeyError, AttributeError):
-        print("Found no foreign identifier or no foreign landing url:")
-        print(json.dumps(media_data, indent=2))
-        check_and_save_json_for_test("no_foreign_landing_url_or_id", media_data)
         return None
     title = _get_title(media_data)
-
     image_details = _get_image_details(media_data)
     if image_details is None:
-        print("Found no image details:")
-        print(json.dumps(media_data, indent=2))
-        check_and_save_json_for_test("no_image_details", media_data)
         return None
     image_url, height, width, filetype = _get_file_info(image_details)
     if image_url is None:
-        print("Found no image url:")
-        print(json.dumps(media_data, indent=2))
-        check_and_save_json_for_test("no_image_url", media_data)
         return None
     thumbnail = _get_thumbnail_url(image_details)
     metadata = _get_metadata(media_data, image_details)
@@ -335,5 +326,3 @@ def _get_related_data(resource_type, image):
 
 if __name__ == "__main__":
     main()
-
-# TODO: Remove unnecessary comments

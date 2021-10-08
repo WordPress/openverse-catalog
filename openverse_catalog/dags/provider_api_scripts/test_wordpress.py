@@ -22,8 +22,6 @@ def test_get_query_params_returns_defaults():
         "format": "json",
         "page": 1,
         "per_page": 100,
-        "order": "desc",
-        "orderby": "date",
     }
     actual_result = wp._get_query_params()
     assert actual_result == expected_result
@@ -34,8 +32,6 @@ def test_get_query_params_returns_defaults_with_given_page():
         "format": "json",
         "page": 3,
         "per_page": 100,
-        "order": "desc",
-        "orderby": "date",
     }
     actual_result = wp._get_query_params(page=3)
     assert actual_result == expected_result
