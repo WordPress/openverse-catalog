@@ -79,6 +79,13 @@ def fill_template(provider, media_type):
         test_script_path, script_template_path, provider, media_type, "API script test"
     )
 
+    print(
+        """
+NOTE: You will also need to add the Airflow workflow file to the WORKFLOWS list in the \
+DAG parsing test file (openverse-catalog/tests/dags/test_dag_parsing.py).
+"""
+    )
+
 
 def main():
     parser = argparse.ArgumentParser(
