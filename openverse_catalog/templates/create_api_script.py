@@ -5,7 +5,8 @@ from pathlib import Path
 IMAGE_STORE_INIT = "image_store = ImageStore(provider=PROVIDER)"
 AUDIO_STORE_INIT = "audio_store = AudioStore(provider=PROVIDER)"
 TEMPLATES_PATH = Path(__file__).parent
-PROJECT_PATH = TEMPLATES_PATH.parents[2]
+REPO_PATH = TEMPLATES_PATH.parents[1]
+PROJECT_PATH = REPO_PATH.parent
 
 
 def _get_filled_template(template_path: Path, provider: str, media_type: str):
@@ -45,7 +46,7 @@ def _render_file(
 
 
 def fill_template(provider, media_type):
-    print(f"Creating files in {TEMPLATES_PATH.parents[1]}")
+    print(f"Creating files in {REPO_PATH}")
 
     dags_path = TEMPLATES_PATH.parent / "dags"
     api_path = dags_path / "provider_api_scripts"
@@ -60,7 +61,9 @@ def fill_template(provider, media_type):
 
     # Render the tests
     script_template_path = TEMPLATES_PATH / "template_test.py_template"
-    test_script_path = api_path / f"test_{filename}.py"
+    tests_path = REPO_PATH / "tests"
+    # Mirror the directory structure, but under the "tests" top level directory
+    test_script_path = tests_path.joinpath(*api_path.parts[-2:]) / f"test_{filename}.py"
     _render_file(
         test_script_path, script_template_path, provider, media_type, "API script test"
     )
