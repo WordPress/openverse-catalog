@@ -10,6 +10,8 @@ Notes:                  {{API URL}}
 """
 import json
 import logging
+
+# import os
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -29,18 +31,17 @@ LIMIT = 100  # number of items per page in API response
 DELAY = 1  # in seconds
 RETRIES = 3
 
-# TODO: Update HOST and ENDPOINT when the actual API is ready
-HOST = "photodir.zack.cat"
-ENDPOINT = f"https://{HOST}/api/wp-json/wp/v2/photos"
+HOST = "wordpress.org"
+ENDPOINT = f"http://{HOST}/photos/wp-json/wp/v2"
 
 PROVIDER = prov.WORDPRESS_DEFAULT_PROVIDER
 # TODO: Add the API key to `openverse_catalog/env.template` if required
 # API_KEY = os.getenv("WORDPRESS", "nokeyprovided")
+# USERNAME = os.getenv("WP_USERNAME")
+# PASSWORD = os.getenv("WP_PASSWORD")
 
-# TODO: Add any headers necessary for API request
 HEADERS = {
     "Accept": "application/json",
-    # "api_key": API_KEY,
 }
 
 DEFAULT_QUERY_PARAMS = {
@@ -56,6 +57,14 @@ image_store = ImageStore(provider=PROVIDER)
 
 license_url = "https://creativecommons.org/publicdomain/zero/1.0/"
 license_info = get_license_info(license_url=license_url)
+
+image_related = {
+    "users": {},  # authors
+    "photo-categories": {},
+    "photo-colors": {},
+    "photo-orientations": {},
+    "photo-tags": {},
+}
 
 saved_json_counter = {
     "full_response": 0,
@@ -86,10 +95,53 @@ def main():
     """
 
     logger.info("Begin: Wordpress Photo Directory script")
-    image_count = _get_items()
+    _prefetch_image_related_data()
+    image_count = _get_images()
     image_store.commit()
     logger.info(f"Total images pulled: {image_count}")
     logger.info("Terminated!")
+
+
+def _prefetch_image_related_data():
+    for resource in image_related.keys():
+        collection = _get_resources(resource)
+        image_related[resource] = collection
+
+
+def _get_resources(resource_type):
+    page = 1
+    collection = {}
+    endpoint = f"{ENDPOINT}/{resource_type}"
+    should_continue = True
+    while should_continue:
+        query_params = _get_query_params(page=page)
+        batch_data, total_pages = _get_item_page(endpoint, query_params=query_params)
+        if isinstance(batch_data, list) and len(batch_data) > 0 and total_pages >= page:
+            collection_page = _process_resource_batch(resource_type, batch_data)
+            collection = collection | collection_page
+            page += 1
+        else:
+            should_continue = False
+    return collection
+
+
+def _process_resource_batch(resource_type, batch_data):
+    collected_page = {}
+    id, name, url = None, None, None
+    for item in batch_data:
+        try:
+            id = item["id"]
+            name = item["name"]
+            if resource_type == "users":
+                url = item["url"] or item["link"]
+        except Exception as e:
+            logger.error(f"Couldn't save resource({resource_type}) info due to {e}")
+            continue
+        if resource_type == "users":
+            collected_page[id] = {"name": name, "url": url}
+        else:
+            collected_page[id] = name
+    return collected_page
 
 
 def _get_query_params(page=1, default_query_params=None):
@@ -100,32 +152,13 @@ def _get_query_params(page=1, default_query_params=None):
     return query_params
 
 
-def _get_items():
-    item_count, page = 0, 1
-    should_continue = True
-    while should_continue:
-        query_params = _get_query_params(page=page)
-        batch_data, total_pages = _get_image_pages(query_params=query_params)
-        if isinstance(batch_data, list) and len(batch_data) > 0 and total_pages >= page:
-            item_count = _process_item_batch(batch_data)
-            page += 1
-        else:
-            should_continue = False
-    return item_count
-
-
-def _get_image_pages(
-    endpoint=ENDPOINT, headers=None, retries=RETRIES, query_params=None
-):
+def _get_item_page(endpoint, retries=RETRIES, query_params=None):
     response_json, total_pages = None, None
     if retries < 0:
         logger.error("No retries remaining. Returning Nonetypes.")
         return None, 0
 
-    if headers is None:
-        headers = HEADERS.copy()
-
-    response = delayed_requester.get(endpoint, query_params, headers=headers)
+    response = delayed_requester.get(endpoint, query_params)
     if response is not None and response.status_code == 200:
         try:
             response_json = response.json()
@@ -136,21 +169,34 @@ def _get_image_pages(
 
     if response_json is None or total_pages is None:
         logger.warning(
-            "Retrying:\n_get_batch_json(\n"
+            "Retrying:\n_get_item_page(\n"
             f"    {endpoint},\n"
             f"    {query_params},\n"
             f"    retries={retries - 1}"
             ")"
         )
-        response_json, total_pages = _get_image_pages(
-            endpoint, headers, retries - 1, query_params
-        )
+        response_json, total_pages = _get_item_page(endpoint, retries - 1, query_params)
     return response_json, total_pages
 
 
-def _process_item_batch(items_batch):
-    for item in items_batch:
-        item_meta_data = _extract_item_data(item)
+def _get_images():
+    item_count, page = 0, 1
+    endpoint = f"{ENDPOINT}/photos"
+    should_continue = True
+    while should_continue:
+        query_params = _get_query_params(page=page)
+        batch_data, total_pages = _get_item_page(endpoint, query_params=query_params)
+        if isinstance(batch_data, list) and len(batch_data) > 0 and total_pages >= page:
+            item_count = _process_image_batch(batch_data)
+            page += 1
+        else:
+            should_continue = False
+    return item_count
+
+
+def _process_image_batch(image_batch):
+    for item in image_batch:
+        item_meta_data = _extract_image_data(item)
         if item_meta_data is None:
             continue
         image_store.add_item(**item_meta_data)
@@ -165,7 +211,7 @@ def _get_image_details(media_data):
     return response_json
 
 
-def _extract_item_data(media_data):
+def _extract_image_data(media_data):
     """
     Extract data for individual item.
     """
@@ -195,14 +241,14 @@ def _extract_item_data(media_data):
     thumbnail = _get_thumbnail_url(image_details)
     metadata = _get_metadata(image_details)
 
-    creator, creator_url = _get_creator_data(media_data)
-    tags = _get_tags(media_data)
-    check_and_save_json_for_test("full_item", media_data)
+    # creator, creator_url = _get_creator_data(media_data)
+    # tags = _get_tags(media_data)
+    # check_and_save_json_for_test("full_item", media_data)
 
     return {
         "title": title,
-        "creator": creator,
-        "creator_url": creator_url,
+        # "creator": creator,
+        # "creator_url": creator_url,
         "foreign_identifier": foreign_identifier,
         "foreign_landing_url": foreign_landing_url,
         "image_url": image_url,
@@ -212,7 +258,7 @@ def _extract_item_data(media_data):
         "filetype": filetype,
         "license_info": license_info,
         "meta_data": metadata,
-        "raw_tags": tags,
+        # "raw_tags": tags,
     }
 
 

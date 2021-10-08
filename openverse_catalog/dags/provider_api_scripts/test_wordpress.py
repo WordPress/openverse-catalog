@@ -41,18 +41,36 @@ def test_get_query_params_returns_defaults_with_given_page():
     assert actual_result == expected_result
 
 
-def test_get_image_pages_returns_correctly_with_none_response():
-    expect_result = (None, 0)
+def test_get_item_page_returns_correctly_with_none_response():
+    expected_result = (None, 0)
+    endpoint = "example.com"
     with patch.object(wp.delayed_requester, "get", return_value=None):
-        actual_result = wp._get_image_pages()
-    assert actual_result == expect_result
+        actual_result = wp._get_item_page(endpoint)
+    assert actual_result == expected_result
 
 
-def test_get_image_pages_returns_correctly_with_no_results():
-    expect_result = (None, 0)
+def test_get_item_page_returns_correctly_with_no_results():
+    expected_result = (None, 0)
+    endpoint = "example.com"
     with patch.object(wp.delayed_requester, "get", return_value=requests.Response()):
-        actual_result = wp._get_image_pages()
-    assert actual_result == expect_result
+        actual_result = wp._get_item_page(endpoint)
+    assert actual_result == expected_result
+
+
+def test_process_resource_batch_with_tags():
+    with open(RESOURCES / "orientations_batch.json") as f:
+        batch_data = json.load(f)
+    actual_result = wp._process_resource_batch("photo-orientations", batch_data)
+    expected_result = {23: "landscape", 24: "portrait", 25: "square"}
+    assert actual_result == expected_result
+
+
+def test_process_resource_batch_with_users():
+    with open(RESOURCES / "users_batch.json") as f:
+        batch_data = json.load(f)
+    actual_result = wp._process_resource_batch("users", batch_data)
+    expected_result = {3606: {"name": "Scott Reilly", "url": "http://coffee2code.com"}}
+    assert actual_result == expected_result
 
 
 # def test_get_items():
@@ -84,26 +102,26 @@ def test_get_image_pages_returns_correctly_with_no_results():
 #         assert actual_call_args == expected_call_args
 
 
-def test_extract_item_data_returns_none_when_media_data_none():
-    actual_image_info = wp._extract_item_data(None)
+def test_extract_image_data_returns_none_when_media_data_none():
+    actual_image_info = wp._extract_image_data(None)
     expected_image_info = None
     assert actual_image_info is expected_image_info
 
 
-def test_extract_item_data_returns_none_when_no_foreign_id():
+def test_extract_image_data_returns_none_when_no_foreign_id():
     with open(SAMPLE_MEDIA_DATA) as f:
         image_data = json.load(f)
         image_data.pop("slug", None)
-    actual_image_info = wp._extract_item_data(image_data)
+    actual_image_info = wp._extract_image_data(image_data)
     expected_image_info = None
     assert actual_image_info is expected_image_info
 
 
-def test_extract_item_data_returns_none_when_no_image_details():
+def test_extract_image_data_returns_none_when_no_image_details():
     with open(SAMPLE_MEDIA_DATA) as f:
         image_data = json.load(f)
         image_data.pop("_links", None)
-    actual_image_info = wp._extract_item_data(image_data)
+    actual_image_info = wp._extract_image_data(image_data)
     assert actual_image_info is None
 
 
@@ -167,7 +185,7 @@ def test_get_file_info():
 #     with open(SAMPLE_MEDIA_DATA) as f:
 #         image_data = json.load(f)
 #
-#     actual_image_info = wp._extract_item_data(image_data)
+#     actual_image_info = wp._extract_image_data(image_data)
 #     expected_image_info = {}
 #     assert actual_image_info == expected_image_info
 #
