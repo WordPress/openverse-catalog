@@ -42,7 +42,7 @@ def _render_file(
     with target.open("w") as target_file:
         filled_template = _get_filled_template(template_path, provider, media_type)
         target_file.write(filled_template)
-        print(f"{name + ':':<24} {target.relative_to(PROJECT_PATH)}")
+        print(f"{name + ':':<18} {target.relative_to(PROJECT_PATH)}")
 
 
 def fill_template(provider, media_type):
@@ -59,15 +59,6 @@ def fill_template(provider, media_type):
         api_script_path, script_template_path, provider, media_type, "API script"
     )
 
-    # Render the tests
-    script_template_path = TEMPLATES_PATH / "template_test.py_template"
-    tests_path = REPO_PATH / "tests"
-    # Mirror the directory structure, but under the "tests" top level directory
-    test_script_path = tests_path.joinpath(*api_path.parts[-2:]) / f"test_{filename}.py"
-    _render_file(
-        test_script_path, script_template_path, provider, media_type, "API script test"
-    )
-
     # Render the DAG workflow
     workflow_template_path = TEMPLATES_PATH / "workflow.py_template"
     workflow_path = dags_path / f"{filename}_workflow.py"
@@ -76,7 +67,16 @@ def fill_template(provider, media_type):
         workflow_template_path,
         provider,
         media_type,
-        "Airflow workflow file",
+        "Airflow DAG",
+    )
+
+    # Render the tests
+    script_template_path = TEMPLATES_PATH / "template_test.py_template"
+    tests_path = REPO_PATH / "tests"
+    # Mirror the directory structure, but under the "tests" top level directory
+    test_script_path = tests_path.joinpath(*api_path.parts[-2:]) / f"test_{filename}.py"
+    _render_file(
+        test_script_path, script_template_path, provider, media_type, "API script test"
     )
 
 
