@@ -7,7 +7,7 @@ import requests
 import wordpress as wp
 
 
-RESOURCES = Path(__file__).parent / "tests/resources/wordpress"
+RESOURCES = Path(__file__).parent / "resources/wordpress"
 SAMPLE_MEDIA_DATA = RESOURCES / "full_item.json"
 SAMPLE_MEDIA_DETAILS = RESOURCES / "full_item_details.json"
 
