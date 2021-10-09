@@ -18,6 +18,8 @@ Notes:                  https://api.jamendo.com/v3.0/tracks/
 import logging
 import os
 from functools import lru_cache
+from typing import Optional
+from urllib.parse import parse_qs, urlencode, urlsplit
 
 import common
 from common.licenses.licenses import get_license_info
@@ -143,8 +145,8 @@ def _extract_audio_data(media_data):
     tags = _get_tags(media_data)
     # Jamendo has only music
     category = "music"
-    # We request mp3 files
-    filetype = "mp3"
+    # We request mp32 (VBR) files
+    filetype = "mp32"
     genres = _get_genres(media_data)
     (
         set_foreign_id,
@@ -203,12 +205,21 @@ def _get_audio_info(media_data):
     return audio_url, duration, download_url
 
 
+def _remove_trackid(thumbnail_url: Optional[str]):
+    if thumbnail_url is None:
+        return
+    parsed_url = urlsplit(thumbnail_url)
+    query = parse_qs(parsed_url.query)
+    query.pop("trackid", None)
+    return parsed_url._replace(query=urlencode(query, doseq=True)).geturl()
+
+
 def _get_audio_set_info(media_data):
     url = None
     base_url = "https://www.jamendo.com/album/"
     audio_set = media_data.get("album_name")
     position = media_data.get("position")
-    thumbnail = media_data.get("album_image")
+    thumbnail = _remove_trackid(media_data.get("album_image"))
     set_id = media_data.get("album_id")
     if set_id and audio_set:
         set_slug = (
