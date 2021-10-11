@@ -289,6 +289,7 @@ def _get_title(image):
 
 def _get_metadata(image, image_details):
     raw_metadata = image_details.get("media_details", {}).get("image_meta", {})
+    metadata = {}
     extras = [
         "aperture",
         "camera",
@@ -297,18 +298,17 @@ def _get_metadata(image, image_details):
         "iso",
         "shutter_speed",
     ]
-    metadata = {}
     for key in extras:
         value = raw_metadata.get(key)
         if value not in [None, ""]:
             metadata[key] = value
 
     if published_date := image_details.get("date"):
-        # Does it need to be saved in a specific format/timezone?
         metadata["published_date"] = published_date
 
-    extras = ["categories", "colors", "orientations"]
-    for resource in extras:
+    # these fields require looking up additional queried data
+    resource_extras = ["categories", "colors", "orientations"]
+    for resource in resource_extras:
         metadata[resource] = sorted(_get_related_data(resource, image))
     return metadata
 
