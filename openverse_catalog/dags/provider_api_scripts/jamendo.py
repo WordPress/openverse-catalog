@@ -207,13 +207,14 @@ def _get_audio_info(media_data):
 
 def _remove_trackid(thumbnail_url: Optional[str]):
     """
-    `audio_set` data is used to create a separate database
-    table in the API. To make sure that any given `audio_set` appears in
-    that table only once, all the fields for that `audio_set` need to have the
-    same values. In Jamendo, the `audio_set`'s thumbnail has a
-    `trackid` query parameter, which breaks this rule.
-    This function removes `trackid` query parameter from `audio_set`'s `thumbnail`
-    field, so that all `thumbnail` fields for one audio contain identical url values.
+    ``audio_set`` data is used to create a separate database table in the API.
+    To make sure that any given ``audio_set`` appears in that table only once,
+    all the fields for that ``audio_set`` need to have the same values. In
+    Jamendo, the ``audio_set`` thumbnail has a ``trackid`` query parameter,
+    which breaks this rule.
+
+    This function removes the ``trackid`` query parameter from the URL to make
+    all thumbnail values identical for an audio set.
     >>> base_url = "https://usercontent.jamendo.com"
     >>> url = f"{base_url}?type=album&id=119&width=200&trackid=732"
     >>> _remove_trackid(url)
