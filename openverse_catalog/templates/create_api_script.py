@@ -10,7 +10,7 @@ PROJECT_PATH = REPO_PATH.parent
 
 
 def _get_filled_template(template_path: Path, provider: str, media_type: str):
-    with template_path.open("r") as template:
+    with template_path.open("r", encoding="utf-8") as template:
         template_string = template.read()
         script_string = (
             template_string.replace("{provider_title_case}", provider.title())
@@ -39,7 +39,7 @@ def _render_file(
     media_type: str,
     name: str,
 ):
-    with target.open("w") as target_file:
+    with target.open("w", encoding="utf-8") as target_file:
         filled_template = _get_filled_template(template_path, provider, media_type)
         target_file.write(filled_template)
         print(f"{name + ':':<18} {target.relative_to(PROJECT_PATH)}")
