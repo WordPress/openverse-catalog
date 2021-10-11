@@ -1,5 +1,5 @@
 """
-Content Provider:       Wordpress Photo Directory
+Content Provider:       WordPress Photo Directory
 
 ETL Process:            Use the API to identify all openly licensed media.
 
