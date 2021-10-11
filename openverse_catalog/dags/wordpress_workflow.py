@@ -1,5 +1,5 @@
 """
-This file configures the Apache Airflow DAG to (re)ingest Wordpress data.
+This file configures the Apache Airflow DAG to (re)ingest WordPress data.
 """
 import logging
 from datetime import datetime

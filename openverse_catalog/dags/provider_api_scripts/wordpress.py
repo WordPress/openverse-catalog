@@ -56,11 +56,11 @@ IMAGE_RELATED_RESOURCES = {
 
 def main():
     """
-    This script pulls the data from the Wordpress Photo Directory and writes it into a
+    This script pulls the data from the WordPress Photo Directory and writes it into a
     .TSV file to be eventually read into our DB.
     """
 
-    logger.info("Begin: Wordpress Photo Directory script")
+    logger.info("Begin: WordPress Photo Directory script")
     _prefetch_image_related_data()
     image_count = _get_images()
     image_store.commit()
@@ -181,7 +181,7 @@ def _get_response_json(endpoint, retries=0, query_params=None, **kwargs):
     """
     Function copied from common.requester.DelayedRequester class to allow responses
     with status code 301 or 302. It's expected it can be removed once the API is
-    fully ready.
+    fully ready. This API currently returns a `302` with a JSON body.
     """
     response_json = None
 
