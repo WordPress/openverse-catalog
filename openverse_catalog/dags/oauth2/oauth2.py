@@ -86,7 +86,7 @@ def refresh(provider: OauthProvider) -> None:
             f"Provider {provider.name} had no stored tokens, it may need to be "
             f"authorized first."
         )
-    refresh_token = tokens[provider.name]["refresh_token"]
+    refresh_token = tokens[provider.name]["refresh"]
     secrets = _get_provider_secrets(provider.name)
     client = OAuth2Session(secrets["client_id"])
     log.info(f"Attempting token refresh for provider: {provider.name}")
