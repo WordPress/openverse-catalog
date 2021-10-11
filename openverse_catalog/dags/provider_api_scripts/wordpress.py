@@ -91,8 +91,8 @@ def _get_resources(resource_type):
 
 def _process_resource_batch(resource_type, batch_data):
     collected_page = {}
-    item_id, name, url = None, None, None
     for item in batch_data:
+        item_id, name, url = None, None, None
         try:
             item_id = item["id"]
             name = item["name"]
