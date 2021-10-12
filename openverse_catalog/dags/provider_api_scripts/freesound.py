@@ -10,14 +10,15 @@ Notes:                  https://freesound.org/apiv2/search/text'
                         No rate limit specified.
 """
 import functools
-import os
 import logging
+import os
 from urllib.parse import urlparse
 
 from common.licenses.licenses import get_license_info
 from common.requester import DelayedRequester
 from storage.audio import AudioStore
 from util.loader import provider_details as prov
+
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s", level=logging.INFO
@@ -180,7 +181,7 @@ def _get_alt_files(media_data):
     alt_files = [
         {
             "url": media_data.get("download"),
-            "format": media_data.get("type"),
+            "filetype": media_data.get("type"),
             "filesize": media_data.get("filesize"),
             "bit_rate": media_data.get("bitrate"),
             "sample_rate": media_data.get("samplerate"),
