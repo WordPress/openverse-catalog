@@ -192,7 +192,7 @@ def _get_alt_files(media_data):
         for preview_type in previews:
             preview_url = previews[preview_type]
             alt_files.append(
-                {"url": preview_url, "format": preview_type.split("-")[-1]}
+                {"url": preview_url, "filetype": preview_type.split("-")[-1]}
             )
     return alt_files
 
