@@ -61,6 +61,17 @@ def _get_provider_secrets(
     return secrets
 
 
+def get_oauth_client(provider_name: str) -> OAuth2Session:
+    secrets = _get_provider_secrets(provider_name)
+    tokens = _var_get(OAUTH2_TOKEN_KEY)
+    if provider_name not in tokens:
+        raise KeyError(f"Access token not found for provider {provider_name}")
+    return OAuth2Session(
+        client_id=secrets["client_id"],
+        token=tokens[provider_name]["access"],
+    )
+
+
 def authorize_providers() -> None:
     provider_secrets = _var_get(OAUTH2_PROVIDERS_KEY)
     auth_tokens = _var_get(OAUTH2_AUTH_KEY)

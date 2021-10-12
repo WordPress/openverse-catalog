@@ -1,8 +1,8 @@
 from datetime import datetime
 
+import oauth2
 from airflow.models import DAG
 from airflow.operators.python import PythonOperator
-from oauth2 import oauth2
 
 
 dag = DAG(
