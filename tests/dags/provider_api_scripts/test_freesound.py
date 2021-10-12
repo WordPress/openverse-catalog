@@ -3,10 +3,11 @@ import logging
 from pathlib import Path
 from unittest.mock import patch
 
-import freesound
 from common.licenses.licenses import LicenseInfo
+from provider_api_scripts import freesound
 
-RESOURCES = Path(__file__).parent / "tests/resources/freesound"
+
+RESOURCES = Path(__file__).parent.resolve() / "resources/freesound"
 AUDIO_DATA_EXAMPLE = RESOURCES / "audio_data_example.json"
 
 logging.basicConfig(
@@ -69,24 +70,24 @@ def test_process_item_batch_handles_example_batch():
                 {
                     "bit_rate": 1381,
                     "filesize": 107592,
-                    "format": "wav",
+                    "filetype": "wav",
                     "sample_rate": 44100.0,
                     "url": "https://freesound.org/apiv2/sounds/415362/download/",
                 },
                 {
-                    "format": "ogg",
+                    "filetype": "ogg",
                     "url": "https://freesound.org/data/previews/415/415362_6044691-lq.ogg",
                 },
                 {
-                    "format": "mp3",
+                    "filetype": "mp3",
                     "url": "https://freesound.org/data/previews/415/415362_6044691-lq.mp3",
                 },
                 {
-                    "format": "ogg",
+                    "filetype": "ogg",
                     "url": "https://freesound.org/data/previews/415/415362_6044691-hq.ogg",
                 },
                 {
-                    "format": "mp3",
+                    "filetype": "mp3",
                     "url": "https://freesound.org/data/previews/415/415362_6044691-hq.mp3",
                 },
             ],
@@ -99,6 +100,8 @@ def test_process_item_batch_handles_example_batch():
             "creator": "owly-bee",
             "creator_url": "https://freesound.org/people/owly-bee/",
             "duration": 608,
+            "filesize": 107592,
+            "filetype": "wav",
             "foreign_identifier": 415362,
             "foreign_landing_url": "https://freesound.org/people/owly-bee/sounds/415362/",
             "license_info": LicenseInfo(
@@ -124,12 +127,6 @@ def test_process_item_batch_handles_example_batch():
             "title": "Ehh disinterested.wav",
         }
         assert actual_call_args == expected_call_args
-
-
-def test_extract_audio_data_returns_none_when_media_data_none():
-    actual_audio_info = freesound._extract_audio_data(None)
-    expected_audio_info = None
-    assert actual_audio_info is expected_audio_info
 
 
 def test_extract_audio_data_returns_none_when_no_foreign_id():
@@ -203,14 +200,14 @@ def test_extract_audio_data_handles_example_dict():
             {
                 "bit_rate": 1381,
                 "filesize": 107592,
-                "format": "wav",
+                "filetype": "wav",
                 "sample_rate": 44100.0,
                 "url": "https://freesound.org/apiv2/sounds/415362/download/",
             },
-            {"format": "ogg", "url": f"{preview_url_base}/415362_6044691-lq.ogg"},
-            {"format": "mp3", "url": f"{preview_url_base}/415362_6044691-lq.mp3"},
-            {"format": "ogg", "url": f"{preview_url_base}/415362_6044691-hq.ogg"},
-            {"format": "mp3", "url": f"{preview_url_base}/415362_6044691-hq.mp3"},
+            {"filetype": "ogg", "url": f"{preview_url_base}/415362_6044691-lq.ogg"},
+            {"filetype": "mp3", "url": f"{preview_url_base}/415362_6044691-lq.mp3"},
+            {"filetype": "ogg", "url": f"{preview_url_base}/415362_6044691-hq.ogg"},
+            {"filetype": "mp3", "url": f"{preview_url_base}/415362_6044691-hq.mp3"},
         ],
         "audio_set": "https://freesound.org/apiv2/packs/23434/",
         "audio_url": "https://freesound.org/people/owly-bee/sounds/415362/",
@@ -219,6 +216,8 @@ def test_extract_audio_data_handles_example_dict():
         "creator": "owly-bee",
         "creator_url": "https://freesound.org/people/owly-bee/",
         "duration": 608,
+        "filesize": 107592,
+        "filetype": "wav",
         "foreign_identifier": 415362,
         "foreign_landing_url": "https://freesound.org/people/owly-bee/sounds/415362/",
         "license_info": LicenseInfo(

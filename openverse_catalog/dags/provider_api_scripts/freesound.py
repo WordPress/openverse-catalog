@@ -12,7 +12,6 @@ Notes:                  https://freesound.org/apiv2/search/text'
 import functools
 import logging
 import os
-from urllib.parse import urlparse
 
 from common.licenses.licenses import get_license_info
 from common.requester import DelayedRequester
@@ -121,9 +120,8 @@ def _process_item_batch(items_batch):
 def _extract_audio_data(media_data):
     """Extracts meta data about the audio file
     Freesound does not have audio thumbnails"""
-    try:
-        foreign_landing_url = media_data["url"]
-    except (TypeError, KeyError, KeyError):
+    foreign_landing_url = media_data.get("url")
+    if not foreign_landing_url:
         return None
     foreign_identifier = _get_foreign_identifier(media_data)
     if foreign_identifier is None:
@@ -137,7 +135,7 @@ def _extract_audio_data(media_data):
     creator, creator_url = _get_creator_data(media_data)
     file_properties = _get_file_properties(media_data)
     audio_set, set_url = _get_audio_set(media_data)
-
+    logger.info(f"File properties: {file_properties}")
     return {
         "title": _get_title(media_data),
         "creator": creator,
@@ -198,18 +196,16 @@ def _get_alt_files(media_data):
 
 
 def _get_file_properties(media_data):
-    props = {
+    return {
         "bit_rate": int(media_data.get("bitrate")),
         "sample_rate": int(media_data.get("samplerate")),
+        "filetype": media_data.get("type"),
+        "filesize": media_data.get("filesize"),
     }
-    return props
 
 
 def _get_foreign_identifier(media_data):
-    try:
-        return media_data["id"]
-    except (TypeError, IndexError, KeyError):
-        return None
+    return media_data.get("id")
 
 
 def _get_audio_info(media_data):
@@ -224,17 +220,16 @@ def _get_audio_info(media_data):
 
 
 def _get_creator_data(item):
-    creator = item.get("username", "").strip()
-    if creator:
+    if creator := item.get("username"):
+        creator = creator.strip()
         creator_url = f"https://freesound.org/people/{creator}/"
     else:
-        creator, creator_url = None, None
+        creator_url = None
     return creator, creator_url
 
 
 def _get_title(item):
-    title = item.get("name")
-    return title
+    return item.get("name")
 
 
 def _get_metadata(item):
@@ -252,8 +247,7 @@ def _get_metadata(item):
         "previews",
     ]
     for field in fields:
-        field_value = item.get(field)
-        if field_value:
+        if field_value := item.get(field):
             metadata[field] = field_value
     return metadata
 
@@ -265,22 +259,6 @@ def _get_license(item):
     if item_license.license is None:
         return None
     return item_license
-
-
-def _cleanse_url(url_string):
-    """
-    Check to make sure that a url is valid, and prepend a protocol if needed
-    """
-
-    parse_result = urlparse(url_string)
-
-    if parse_result.netloc == HOST:
-        parse_result = urlparse(url_string, scheme="https")
-    elif not parse_result.scheme:
-        parse_result = urlparse(url_string, scheme="http")
-
-    if parse_result.netloc or parse_result.path:
-        return parse_result.geturl()
 
 
 if __name__ == "__main__":
