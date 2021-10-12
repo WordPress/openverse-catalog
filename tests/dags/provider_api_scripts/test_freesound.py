@@ -75,12 +75,8 @@ def test_process_item_batch_handles_example_batch():
                     "url": "https://freesound.org/apiv2/sounds/415362/download/",
                 },
                 {
-                    "filetype": "ogg",
-                    "url": "https://freesound.org/data/previews/415/415362_6044691-lq.ogg",
-                },
-                {
                     "filetype": "mp3",
-                    "url": "https://freesound.org/data/previews/415/415362_6044691-lq.mp3",
+                    "url": "https://freesound.org/data/previews/415/415362_6044691-hq.mp3",
                 },
                 {
                     "filetype": "ogg",
@@ -88,7 +84,11 @@ def test_process_item_batch_handles_example_batch():
                 },
                 {
                     "filetype": "mp3",
-                    "url": "https://freesound.org/data/previews/415/415362_6044691-hq.mp3",
+                    "url": "https://freesound.org/data/previews/415/415362_6044691-lq.mp3",
+                },
+                {
+                    "filetype": "ogg",
+                    "url": "https://freesound.org/data/previews/415/415362_6044691-lq.ogg",
                 },
             ],
             # To avoid making API requests during tests, we return the URL
@@ -204,10 +204,22 @@ def test_extract_audio_data_handles_example_dict():
                 "sample_rate": 44100.0,
                 "url": "https://freesound.org/apiv2/sounds/415362/download/",
             },
-            {"filetype": "ogg", "url": f"{preview_url_base}/415362_6044691-lq.ogg"},
-            {"filetype": "mp3", "url": f"{preview_url_base}/415362_6044691-lq.mp3"},
-            {"filetype": "ogg", "url": f"{preview_url_base}/415362_6044691-hq.ogg"},
-            {"filetype": "mp3", "url": f"{preview_url_base}/415362_6044691-hq.mp3"},
+            {
+                "filetype": "mp3",
+                "url": "https://freesound.org/data/previews/415/415362_6044691-hq.mp3",
+            },
+            {
+                "filetype": "ogg",
+                "url": "https://freesound.org/data/previews/415/415362_6044691-hq.ogg",
+            },
+            {
+                "filetype": "mp3",
+                "url": "https://freesound.org/data/previews/415/415362_6044691-lq.mp3",
+            },
+            {
+                "filetype": "ogg",
+                "url": "https://freesound.org/data/previews/415/415362_6044691-lq.ogg",
+            },
         ],
         "audio_set": "https://freesound.org/apiv2/packs/23434/",
         "audio_url": "https://freesound.org/people/owly-bee/sounds/415362/",
