@@ -65,6 +65,11 @@ test pytestargs="": up
 shell: up
     docker-compose {{ DOCKER_FILES }} exec {{ SERVICE }} /bin/bash
 
+# Launch an IPython REPL within the webserver container
+ipython: up
+    docker-compose {{ DEV_DOCKER_FILES }} exec -w /usr/local/airflow/openverse_catalog/dags {{ SERVICE }} /usr/local/airflow/.local/bin/ipython
+
+
 # Run a given airflow command using the webserver image
 airflow command="": up
     docker-compose {{ DOCKER_FILES }} exec {{ SERVICE }} airflow {{ command }}
