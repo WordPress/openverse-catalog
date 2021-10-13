@@ -1,7 +1,6 @@
 import logging
-from typing import Any, NamedTuple
+from typing import Any, Collection, NamedTuple
 
-from airflow.exceptions import AirflowSkipException
 from airflow.models import Variable
 from requests_oauthlib import OAuth2Session
 
@@ -14,22 +13,18 @@ class OauthProvider(NamedTuple):
     auth_url: str
     refresh_url: str
     # Note: As of now these are specific to Freesound's flow. It appears that other
-    # apps may use different "extras", so we may need to consider how to store/use
-    # this info appropriately.
-    extras: list[str]
 
 
 OAUTH2_TOKEN_KEY = "OAUTH2_ACCESS_TOKENS"
 OAUTH2_AUTH_KEY = "OAUTH2_AUTH_KEYS"
 OAUTH2_PROVIDERS_KEY = "OAUTH2_PROVIDER_SECRETS"
-OAUTH_PROVIDERS = [
+OAUTH_PROVIDERS = (
     OauthProvider(
         name="freesound",
         auth_url="https://freesound.org/apiv2/oauth2/access_token/",
         refresh_url="https://freesound.org/apiv2/oauth2/access_token/",
-        extras=["client_id", "client_secret"],
-    )
-]
+    ),
+)
 
 
 def _var_get(key: str) -> dict[str, Any]:
@@ -38,12 +33,12 @@ def _var_get(key: str) -> dict[str, Any]:
 
 
 def _update_tokens(
-    provider: OauthProvider,
+    provider_name: str,
     tokens: dict[str, str],
 ) -> None:
-    log.info(f"Updating tokens for provider: {provider.name}")
+    log.info(f"Updating tokens for provider: {provider_name}")
     current_tokens = _var_get(OAUTH2_TOKEN_KEY)
-    current_tokens[provider.name] = {
+    current_tokens[provider_name] = {
         "access_token": tokens["access_token"],
         "refresh_token": tokens["refresh_token"],
     }
@@ -76,10 +71,10 @@ def get_oauth_client(provider_name: str) -> OAuth2Session:
     )
 
 
-def authorize_providers() -> None:
+def authorize_providers(providers: Collection[OauthProvider] = OAUTH_PROVIDERS) -> None:
     provider_secrets = _var_get(OAUTH2_PROVIDERS_KEY)
     auth_tokens = _var_get(OAUTH2_AUTH_KEY)
-    for provider in OAUTH_PROVIDERS:
+    for provider in providers:
         # Only authorize if a token was provided
         if provider.name not in auth_tokens:
             continue
@@ -87,8 +82,10 @@ def authorize_providers() -> None:
         log.info(f"Attempting to authorize provider: {provider.name}")
         secrets = _get_provider_secrets(provider.name, provider_secrets)
         client = OAuth2Session(secrets["client_id"])
+        # NOTE: It's possible that the secrets being stored might not all be needed
+        # here, and may in fact be rejected. We won't know until we add more providers.
         tokens = client.fetch_token(provider.auth_url, code=auth_token, **secrets)
-        _update_tokens(provider, tokens)
+        _update_tokens(provider.name, tokens)
         # Remove the auth token since it is no longer needed nor accurate
         auth_tokens.pop(provider.name)
         Variable.set(OAUTH2_AUTH_KEY, auth_tokens, serialize_json=True)
@@ -97,7 +94,7 @@ def authorize_providers() -> None:
 def refresh(provider: OauthProvider) -> None:
     current_tokens = _var_get(OAUTH2_TOKEN_KEY)
     if provider.name not in current_tokens:
-        raise AirflowSkipException(
+        raise KeyError(
             f"Provider {provider.name} had no stored tokens, it may need to be "
             f"authorized first."
         )
@@ -105,7 +102,8 @@ def refresh(provider: OauthProvider) -> None:
     secrets = _get_provider_secrets(provider.name)
     client = OAuth2Session(secrets["client_id"])
     log.info(f"Attempting token refresh for provider: {provider.name}")
+    # NOTE: Same as above, **secrets may be too much info for some requests.
     new_tokens = client.refresh_token(
         provider.refresh_url, refresh_token=refresh_token, **secrets
     )
-    _update_tokens(provider, new_tokens)
+    _update_tokens(provider.name, new_tokens)
