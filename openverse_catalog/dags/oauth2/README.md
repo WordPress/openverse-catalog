@@ -7,6 +7,7 @@
 - Access/refresh token pairs are stored in `OAUTH2_ACCESS_TOKENS`.
 - The Authorization DAG can be run as needed to authorize (or re-authorize) providers.
 - The Token Refresh DAG is run every 12 hours and refreshes all tokens currently stored.
+- Use the [`OAuth2DelayedRequester`](../common/requester.py) in a provider API script that requires OAuth2
 
 ## Overview
 
@@ -124,3 +125,8 @@ Out[3]:
 ### Known Authorization URLs:
 
 1. [Freesound](https://freesound.org/docs/api/authentication.html#oauth2-authentication): https://freesound.org/apiv2/oauth2/authorize/
+
+## Integration with Provider API Scripts
+
+Once everything is set up for an OAuth2 provider, the [`OAuth2DelayedRequester`](../common/requester.py) can be used instead of the `DelayedRequester` for the provider API script.
+No other changes are necessary!
