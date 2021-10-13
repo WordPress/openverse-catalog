@@ -38,12 +38,16 @@ def _var_get(key: str) -> dict[str, Any]:
 
 
 def _update_tokens(
-    provider: OauthProvider, access_token: str, refresh_token: str
+    provider: OauthProvider,
+    tokens: dict[str, str],
 ) -> None:
     log.info(f"Updating tokens for provider: {provider.name}")
-    tokens = _var_get(OAUTH2_TOKEN_KEY)
-    tokens[provider.name] = {"access": access_token, "refresh": refresh_token}
-    Variable.set(OAUTH2_TOKEN_KEY, tokens, serialize_json=True)
+    current_tokens = _var_get(OAUTH2_TOKEN_KEY)
+    current_tokens[provider.name] = {
+        "access_token": tokens["access_token"],
+        "refresh_token": tokens["refresh_token"],
+    }
+    Variable.set(OAUTH2_TOKEN_KEY, current_tokens, serialize_json=True)
 
 
 def _get_provider_secrets(
@@ -68,7 +72,7 @@ def get_oauth_client(provider_name: str) -> OAuth2Session:
         raise KeyError(f"Access token not found for provider {provider_name}")
     return OAuth2Session(
         client_id=secrets["client_id"],
-        token=tokens[provider_name]["access"],
+        token={**tokens[provider_name], "token_type": "Bearer"},
     )
 
 
@@ -83,25 +87,25 @@ def authorize_providers() -> None:
         log.info(f"Attempting to authorize provider: {provider.name}")
         secrets = _get_provider_secrets(provider.name, provider_secrets)
         client = OAuth2Session(secrets["client_id"])
-        token = client.fetch_token(provider.auth_url, code=auth_token, **secrets)
-        _update_tokens(provider, token["access_token"], token["refresh_token"])
+        tokens = client.fetch_token(provider.auth_url, code=auth_token, **secrets)
+        _update_tokens(provider, tokens)
         # Remove the auth token since it is no longer needed nor accurate
         auth_tokens.pop(provider.name)
         Variable.set(OAUTH2_AUTH_KEY, auth_tokens, serialize_json=True)
 
 
 def refresh(provider: OauthProvider) -> None:
-    tokens = _var_get(OAUTH2_TOKEN_KEY)
-    if provider.name not in tokens:
+    current_tokens = _var_get(OAUTH2_TOKEN_KEY)
+    if provider.name not in current_tokens:
         raise AirflowSkipException(
             f"Provider {provider.name} had no stored tokens, it may need to be "
             f"authorized first."
         )
-    refresh_token = tokens[provider.name]["refresh"]
+    refresh_token = current_tokens[provider.name]["refresh_token"]
     secrets = _get_provider_secrets(provider.name)
     client = OAuth2Session(secrets["client_id"])
     log.info(f"Attempting token refresh for provider: {provider.name}")
-    new_token = client.refresh_token(
+    new_tokens = client.refresh_token(
         provider.refresh_url, refresh_token=refresh_token, **secrets
     )
-    _update_tokens(provider, new_token["access_token"], new_token["refresh_token"])
+    _update_tokens(provider, new_tokens)
