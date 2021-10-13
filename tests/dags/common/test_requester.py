@@ -4,6 +4,9 @@ from unittest.mock import MagicMock, patch
 import pytest
 import requests
 from common import requester
+from requests_oauthlib import OAuth2Session
+
+from tests.dags.conftest import FAKE_OAUTH_PROVIDER
 
 
 def test_get_waits_before_getting(monkeypatch):
@@ -88,3 +91,9 @@ def test_get_response_json_returns_response_json_when_all_ok():
 
     assert mock_get.call_count == 1
     assert actual_response_json == expect_response_json
+
+
+def test_oauth_requester_initializes_correctly(oauth_provider_vars):
+    odq = requester.OAuth2DelayedRequester(FAKE_OAUTH_PROVIDER, 1)
+    assert isinstance(odq.session, OAuth2Session)
+    assert odq.session.client_id == "fakeclient"
