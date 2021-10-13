@@ -66,7 +66,7 @@ test-session:
     @just _mount-tests bash
 
 # Run pytest using the webserver image
-test pytestargs="": up
+test pytestargs="":
     @just _mount-tests /usr/local/airflow/.local/bin/pytest {{ pytestargs }}
 
 # Open a shell into the webserver container
