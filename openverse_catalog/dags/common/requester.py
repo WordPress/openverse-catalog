@@ -94,7 +94,7 @@ class DelayedRequester:
         return response_json
 
 
-class OauthDelayedRequester(DelayedRequester):
+class OAuth2DelayedRequester(DelayedRequester):
     def __init__(self, provider_name: str, delay: int = 0):
         super().__init__(delay)
         # Replace session with Oauth one
