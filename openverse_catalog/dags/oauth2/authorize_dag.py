@@ -2,7 +2,9 @@
 # OAuth Provider Authorization
 
 **Author**: Madison Swain-Bowden
+
 **Created**: 2021-10-13
+
 """
 from datetime import datetime
 
@@ -26,7 +28,9 @@ dag = DAG(
     },
 )
 
-_current_providers = [f"- {provider.name}\n" for provider in oauth2.OAUTH_PROVIDERS]
+_current_providers = [
+    f"- {provider.name.title()}\n" for provider in oauth2.OAUTH_PROVIDERS
+]
 
 dag.doc_md = (
     __doc__
@@ -38,6 +42,7 @@ completed successfully, the auth token is removed from that Variable. The author
 will create an access/refresh token pair in the `{oauth2.OAUTH2_TOKEN_KEY}` Variable.
 
 **Current Providers**:
+
 {"".join(_current_providers)}
 """
 )

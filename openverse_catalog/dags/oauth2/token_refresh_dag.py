@@ -2,6 +2,7 @@
 # OAuth Provider Token Refresh
 
 **Author**: Madison Swain-Bowden
+
 **Created**: 2021-10-13
 """
 from datetime import datetime
@@ -26,7 +27,9 @@ dag = DAG(
     },
 )
 
-_current_providers = [f"- {provider.name}\n" for provider in oauth2.OAUTH_PROVIDERS]
+_current_providers = [
+    f"- {provider.name.title()}\n" for provider in oauth2.OAUTH_PROVIDERS
+]
 
 dag.doc_md = (
     __doc__
@@ -37,6 +40,7 @@ the refresh token stored in the `{oauth2.OAUTH2_TOKEN_KEY}` Variable. This DAG w
 update the tokens stored in the Variable upon successful refresh.
 
 **Current Providers**:
+
 {"".join(_current_providers)}
 """
 )
