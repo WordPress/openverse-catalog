@@ -52,14 +52,22 @@ deploy:
 lint:
     pre-commit run --all-files
 
-# Run pytest using the webserver image
-test pytestargs="": up
+# Mount the tests directory and run a particular command
+@_mount-tests command: up
     # The test directory is mounted into the container only during testing
     docker-compose {{ DOCKER_FILES }} run \
         -v {{ justfile_directory() }}/tests:/usr/local/airflow/tests/ \
         --rm \
         {{ SERVICE }} \
-        /usr/local/airflow/.local/bin/pytest {{ pytestargs }}
+        {{ command }}
+
+# Run a container that can be used for repeated interactive testing
+test-session:
+    @just _mount-tests bash
+
+# Run pytest using the webserver image
+test pytestargs="": up
+    @just _mount-tests /usr/local/airflow/.local/bin/pytest {{ pytestargs }}
 
 # Open a shell into the webserver container
 shell: up
