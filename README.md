@@ -100,12 +100,14 @@ own dependency requirements.
 
 [api_scripts]: openverse_catalog/dags/provider_api_scripts
 
-### Development setup
+### Requirements
 
 You'll need `docker` and `docker-compose` installed on your machine, with
 versions new enough to use version `3` of Docker Compose `.yml` files.
 
 You will also need the [`just`](https://github.com/casey/just#installation) command runner installed.
+
+### Setup
 
 To set up the local python environment along with the pre-commit hook, run:
 
@@ -115,15 +117,27 @@ source venv/bin/activate
 just install
 ```
 
+The containers will be built when starting the stack up for the first time.
+If you'd like to build them prior to that, run:
+
+```shell
+just build
+```
+
+### Environment
+
 To set up environment variables run:
 
 ```shell
 just dotenv
 ```
 
-If needed, fill in API keys or other secrets and variables in `.env`. This is
-not needed if you only want to run the tests. There is a
-[`docker-compose.yml`][dockercompose] provided in the
+If needed, fill in API keys or other secrets and variables in `.env`.
+This is not needed if you only want to run the tests.
+
+### Running & Testing
+
+There is a [`docker-compose.yml`][dockercompose] provided in the
 [`openverse_catalog`][cc_airflow] directory, so from that directory, run
 
 ```shell
