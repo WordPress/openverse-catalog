@@ -132,8 +132,15 @@ To set up environment variables run:
 just dotenv
 ```
 
-If needed, fill in API keys or other secrets and variables in `.env`.
-This is not needed if you only want to run the tests.
+This will generate a `.env` file which is used by the containers.
+
+The `.env` file is split into four sections:
+1. Airflow Settings - these can be used to tweak various Airflow properties
+2. API Keys - set these if you intend to test one of the provider APIs referenced
+3. Connection/Variable info - this will not likely need to be modified for local development, though the values will need to be changed in production
+4. Other config - misc. configuration settings, some of which are useful for local dev
+
+The `.env` file does not need to be modified if you only want to run the tests.
 
 ### Running & Testing
 
