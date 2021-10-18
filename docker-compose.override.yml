@@ -14,7 +14,7 @@ services:
     ports:
       - "5434:5432"
     volumes:
-      - postgres-volume:/var/lib/postgresql/data
+      - postgres:/var/lib/postgresql/data
 
   s3:
     build:
@@ -33,8 +33,8 @@ services:
     # Volume override to include *all* of openverse_catalog, not just the DAGs folder
     # Note, this overrides the whole block, so existing volumes must be duplicated
     volumes:
-      - airflow-volume:/var/workflow_output
+      - airflow:/var/workflow_output
       - ./openverse_catalog:/usr/local/airflow/openverse_catalog
 
 volumes:
-  postgres-volume:
+  postgres:
