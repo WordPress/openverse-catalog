@@ -35,8 +35,8 @@ recreate: dotenv
     @just up "--force-recreate --build"
 
 # Show logs of all, or named, Docker services
-logs: up
-    docker-compose {{ DEV_DOCKER_FILES }} logs -f
+logs service="": up
+    docker-compose {{ DEV_DOCKER_FILES }} logs -f {{ service }}
 
 # Run pre-commit on all files
 lint:
@@ -45,7 +45,11 @@ lint:
 # Run pytest using the webserver image
 test pytestargs="": up
     # The test directory is mounted into the container only during testing
-    docker-compose {{ DEV_DOCKER_FILES }} run -v {{ justfile_directory() }}/tests:/usr/local/airflow/tests/ --rm {{ SERVICE }} /usr/local/airflow/.local/bin/pytest {{ pytestargs }}
+    docker-compose {{ DEV_DOCKER_FILES }} run \
+        -v {{ justfile_directory() }}/tests:/usr/local/airflow/tests/ \
+        --rm \
+        {{ SERVICE }} \
+        /usr/local/airflow/.local/bin/pytest {{ pytestargs }}
 
 # Open a shell into the webserver container
 shell: up
@@ -54,3 +58,7 @@ shell: up
 # Run a given airflow command using the webserver image
 airflow command="": up
     docker-compose {{ DEV_DOCKER_FILES }} exec {{ SERVICE }} airflow {{ command }}
+
+# Launch a pgcli shell on the postgres container
+db-shell: up
+    docker-compose {{ DEV_DOCKER_FILES }} exec postgres pgcli

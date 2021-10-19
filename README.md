@@ -100,12 +100,14 @@ own dependency requirements.
 
 [api_scripts]: openverse_catalog/dags/provider_api_scripts
 
-### Development setup
+### Requirements
 
 You'll need `docker` and `docker-compose` installed on your machine, with
 versions new enough to use version `3` of Docker Compose `.yml` files.
 
 You will also need the [`just`](https://github.com/casey/just#installation) command runner installed.
+
+### Setup
 
 To set up the local python environment along with the pre-commit hook, run:
 
@@ -115,15 +117,34 @@ source venv/bin/activate
 just install
 ```
 
+The containers will be built when starting the stack up for the first time.
+If you'd like to build them prior to that, run:
+
+```shell
+just build
+```
+
+### Environment
+
 To set up environment variables run:
 
 ```shell
 just dotenv
 ```
 
-If needed, fill in API keys or other secrets and variables in `.env`. This is
-not needed if you only want to run the tests. There is a
-[`docker-compose.yml`][dockercompose] provided in the
+This will generate a `.env` file which is used by the containers.
+
+The `.env` file is split into four sections:
+1. Airflow Settings - these can be used to tweak various Airflow properties
+2. API Keys - set these if you intend to test one of the provider APIs referenced
+3. Connection/Variable info - this will not likely need to be modified for local development, though the values will need to be changed in production
+4. Other config - misc. configuration settings, some of which are useful for local dev
+
+The `.env` file does not need to be modified if you only want to run the tests.
+
+### Running & Testing
+
+There is a [`docker-compose.yml`][dockercompose] provided in the
 [`openverse_catalog`][cc_airflow] directory, so from that directory, run
 
 ```shell
@@ -143,9 +164,10 @@ and some networking setup so that they can communicate. Note:
 - `openverse_catalog_postgres_1` is running PostgreSQL, and is setup with some
   databases and tables to emulate the production environment. It also provides a
   database for Airflow to store its running state.
-- The directory containing the DAG files, as well as dependencies will be
-  mounted to the `/usr/local/airflow/dags` directory in the container
-  `openverse_catalog_webserver_1`.
+- The directory containing all modules files (including DAGs, dependencies, and other
+  tooling) will be mounted to the directory `/usr/local/airflow/openverse_catalog`
+  in the container `openverse_catalog_webserver_1`. On production, only the DAGs folder
+  will be mounted, e.g. `/usr/local/airflow/openverse_catalog/dags`.
 
 At this stage, you can run the tests via:
 
@@ -175,6 +197,12 @@ just logs
 ```
 
 To see the Airflow web UI, point your browser to `localhost:9090`. The default user name and password for the airflow UI are both `airflow`.
+
+To begin an interactive [`pgcli` shell](https://www.pgcli.com/) on the database container, run:
+
+```shell
+just db-shell
+```
 
 If you'd like to bring down the containers, run
 
