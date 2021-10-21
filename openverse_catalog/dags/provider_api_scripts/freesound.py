@@ -70,12 +70,12 @@ def _get_query_params(
     page_number=1,
     default_query_params=None,
 ):
-    if default_query_params is None:
-        default_query_params = DEFAULT_QUERY_PARAMS
-    query_param = default_query_params.copy()
-    query_param["page"] = str(page_number)
-    query_param["license"] = license_name
-    return query_param
+    default_query_params = default_query_params or DEFAULT_QUERY_PARAMS
+    return {
+        **default_query_params,
+        "page": str(page_number),
+        "license": license_name,
+    }
 
 
 def _get_items(license_name):
@@ -87,7 +87,7 @@ def _get_items(license_name):
             license_name=license_name, page_number=page_number
         )
         batch_data = _get_batch_json(query_param=query_param)
-        if isinstance(batch_data, list) and len(batch_data) > 0:
+        if batch_data:
             item_count = _process_item_batch(batch_data)
             page_number += 1
         else:
