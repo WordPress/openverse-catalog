@@ -21,7 +21,7 @@ def create_provider_api_workflow(
     dated=True,
     day_shift=0,
     dagrun_timeout=timedelta(minutes=30),
-    doc_str="",
+    doc_md="",
 ):
     """
     This factory method instantiates a DAG that will run the given
@@ -71,7 +71,7 @@ def create_provider_api_workflow(
         start_date=start_date,
         schedule_interval=schedule_string,
         catchup=False,
-        doc_md=doc_str,
+        doc_md=doc_md,
     )
 
     with dag:

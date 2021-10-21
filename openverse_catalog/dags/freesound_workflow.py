@@ -26,5 +26,5 @@ globals()[DAG_ID] = create_provider_api_workflow(
     concurrency=1,
     schedule_string="@monthly",
     dated=False,
-    doc_str=freesound.__doc__,
+    doc_md=freesound.__doc__,
 )
