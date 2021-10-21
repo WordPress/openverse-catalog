@@ -118,107 +118,105 @@ def _extract_audio_data(media_data):
     foreign_landing_url = media_data.get("url")
     if not foreign_landing_url:
         return None
-    foreign_identifier = _get_foreign_identifier(media_data)
-    if foreign_identifier is None:
+
+    foreign_identifier = media_data.get("id")
+    if not foreign_identifier:
         return None
-    audio_url, duration = _get_audio_info(media_data)
-    if audio_url is None:
-        return None
+
     item_license = _get_license(media_data)
     if item_license is None:
         return None
+
+    # We use the mp3-hq url as `audio_url` for playing on the frontend
+    # download link (that requires authentication) for download button
+    # media_data['url'] as the foreign_landing_url
+    main_audio, alt_files = _get_audio_files(media_data)
+    if main_audio is None:
+        return None
+
     creator, creator_url = _get_creator_data(media_data)
-    file_properties = _get_file_properties(media_data)
-    audio_set, set_url = _get_audio_set(media_data)
+    duration = int(media_data.get("duration") * 1000)
+    set_foreign_id, audio_set, set_url = _get_audio_set_info(media_data)
     return {
         "title": media_data.get("name"),
         "creator": creator,
         "creator_url": creator_url,
         "foreign_identifier": foreign_identifier,
         "foreign_landing_url": foreign_landing_url,
-        "audio_url": audio_url,
         "duration": duration,
         "license_info": item_license,
         "meta_data": _get_metadata(media_data),
         "raw_tags": media_data.get("tags"),
+        "set_foreign_id": set_foreign_id,
         "audio_set": audio_set,
         "set_url": set_url,
-        "alt_files": _get_alt_files(media_data),
+        "alt_files": alt_files,
         "category": FREESOUND_CATEGORY,
-        **file_properties,
+        # audio_url, filetype, bit_rate
+        **main_audio,
     }
 
 
-def _get_audio_set(media_data):
-    # set name, set thumbnail, position of audio in set, set url
-    set_name = None
+def _get_audio_set_info(media_data):
+    # set id, set name, set url
     set_url = media_data.get("pack")
     if set_url is not None:
-        set_name = _get_set_name(set_url)
-    return set_name, set_url
+        set_id, set_name = _get_set_info(set_url)
+        return set_id, set_name, set_url
+    else:
+        return None, None, None
 
 
 @functools.lru_cache(maxsize=1024)
-def _get_set_name(set_url):
+def _get_set_info(set_url):
     response_json = delayed_requester.get_response_json(
         set_url,
         3,
         query_params={"token": API_KEY},
     )
-    name = response_json.get("name")
-    return name
+    set_id = response_json.get("id")
+    set_name = response_json.get("name")
+    return set_id, set_name
 
 
 preview_bitrates = {
-    "review-hq-mp3": 128000,
+    "preview-hq-mp3": 128000,
     "preview-lq-mp3": 64000,
     "preview-hq-ogg": 192000,
     "preview-lq-ogg": 80000,
 }
 
 
-def _get_alt_files(media_data):
-    alt_files = [
-        {
-            "url": media_data.get("download"),
-            **_get_file_properties(media_data),
-        }
-    ]
-    if previews := media_data.get("previews"):
-        for preview_type in previews:
-            preview_url = previews[preview_type]
-            alt_files.append(
-                {
-                    "url": preview_url,
-                    "filetype": preview_type.split("-")[-1],
-                    "bit_rate": preview_bitrates[preview_type],
-                }
-            )
-    return alt_files
-
-
-def _get_file_properties(media_data):
+def _get_preview_filedata(preview_type, preview_url):
     return {
-        "bit_rate": int(media_data.get("bitrate")),
-        "sample_rate": int(media_data.get("samplerate")),
-        "filetype": media_data.get("type"),
-        "filesize": media_data.get("filesize"),
+        "url": preview_url,
+        "filetype": preview_type.split("-")[-1],
+        "bit_rate": preview_bitrates[preview_type],
     }
 
 
-def _get_foreign_identifier(media_data):
-    return media_data.get("id")
-
-
-def _get_audio_info(media_data):
-    duration = int(media_data.get("duration") * 1000)
-    # TODO: Decide whether to use
-    # 1. foreign landing url - not playable
-    # 2. download url - needs OAuth2
-    # 3. mp3 preview - is probably lower quality. Is full file?
-    # This URL is foreign_landing_url
-    audio_url = media_data.get("url")
-    return audio_url, duration
+def _get_audio_files(media_data):
+    # This is the original file, needs auth for downloading
+    alt_files = [
+        {
+            "url": media_data.get("download"),
+            "bit_rate": int(media_data.get("bitrate")),
+            "sample_rate": int(media_data.get("samplerate")),
+            "filetype": media_data.get("type"),
+            "filesize": media_data.get("filesize"),
+        }
+    ]
+    previews = media_data.get("previews")
+    # If there are no previews, then we will not be able to play the file
+    if not previews:
+        return None
+    main_file = _get_preview_filedata("preview-hq-mp3", previews["preview-hq-mp3"])
+    main_file["audio_url"] = main_file.pop("url")
+    for preview_type, preview_url in previews.items():
+        file_data = _get_preview_filedata(preview_type, preview_url)
+        if preview_type != "preview-hq-mp3":
+            alt_files.append(file_data)
+    return main_file, alt_files
 
 
 def _get_creator_data(item):
@@ -231,9 +229,6 @@ def _get_creator_data(item):
 
 
 def _get_metadata(item):
-    # previews is a dictionary with URIs for mp3 and ogg
-    # versions of the file (preview-hq-mp3 ~128kbps, preview-lq-mp3 ~64kbps
-    # preview-hq-ogg ~192kbps, preview-lq-ogg ~80kbps).
     metadata = {}
     fields = [
         "description",
@@ -242,7 +237,6 @@ def _get_metadata(item):
         "num_ratings",
         "geotag",
         "download",
-        "previews",
     ]
     for field in fields:
         if field_value := item.get(field):
@@ -251,8 +245,7 @@ def _get_metadata(item):
 
 
 def _get_license(item):
-    item_license_url = item.get("license")
-    item_license = get_license_info(license_url=item_license_url)
+    item_license = get_license_info(license_url=item.get("license"))
 
     if item_license.license is None:
         return None

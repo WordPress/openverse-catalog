@@ -12,10 +12,10 @@ RESOURCES = Path(__file__).parent.resolve() / "resources/freesound"
 
 @pytest.fixture(autouse=True)
 def freesound_module():
-    old_get_set = freesound._get_set_name
-    freesound._get_set_name = lambda x: x
+    old_get_set = freesound._get_set_info
+    freesound._get_set_info = lambda x: ("foo", x)
     yield
-    freesound._get_set_name = old_get_set
+    freesound._get_set_info = old_get_set
 
 
 @pytest.fixture
@@ -77,37 +77,33 @@ def test_process_item_batch_handles_example_batch(audio_data):
                     "bit_rate": 1381,
                     "filesize": 107592,
                     "filetype": "wav",
-                    "sample_rate": 44100.0,
+                    "sample_rate": 44100,
                     "url": "https://freesound.org/apiv2/sounds/415362/download/",
                 },
                 {
-                    "filetype": "mp3",
-                    "url": "https://freesound.org/data/previews/415/415362_6044691-hq.mp3",
-                },
-                {
+                    "bit_rate": 192000,
                     "filetype": "ogg",
                     "url": "https://freesound.org/data/previews/415/415362_6044691-hq.ogg",
                 },
                 {
+                    "bit_rate": 64000,
                     "filetype": "mp3",
                     "url": "https://freesound.org/data/previews/415/415362_6044691-lq.mp3",
                 },
                 {
+                    "bit_rate": 80000,
                     "filetype": "ogg",
                     "url": "https://freesound.org/data/previews/415/415362_6044691-lq.ogg",
                 },
             ],
-            # To avoid making API requests during tests, we return the URL
-            # instead of querying API for audio set name
             "audio_set": "https://freesound.org/apiv2/packs/23434/",
-            "audio_url": "https://freesound.org/people/owly-bee/sounds/415362/",
-            "bit_rate": 1381,
+            "audio_url": "https://freesound.org/data/previews/415/415362_6044691-hq.mp3",
+            "bit_rate": 128000,
             "category": "sound",
             "creator": "owly-bee",
             "creator_url": "https://freesound.org/people/owly-bee/",
             "duration": 608,
-            "filesize": 107592,
-            "filetype": "wav",
+            "filetype": "mp3",
             "foreign_identifier": 415362,
             "foreign_landing_url": "https://freesound.org/people/owly-bee/sounds/415362/",
             "license_info": LicenseInfo(
@@ -120,15 +116,9 @@ def test_process_item_batch_handles_example_batch(audio_data):
                 "description": "A disinterested noise in a somewhat low tone.",
                 "download": "https://freesound.org/apiv2/sounds/415362/download/",
                 "num_downloads": 164,
-                "previews": {
-                    "preview-hq-mp3": "https://freesound.org/data/previews/415/415362_6044691-hq.mp3",
-                    "preview-hq-ogg": "https://freesound.org/data/previews/415/415362_6044691-hq.ogg",
-                    "preview-lq-mp3": "https://freesound.org/data/previews/415/415362_6044691-lq.mp3",
-                    "preview-lq-ogg": "https://freesound.org/data/previews/415/415362_6044691-lq.ogg",
-                },
             },
             "raw_tags": ["eh", "disinterest", "low", "uh", "voice", "uncaring"],
-            "sample_rate": 44100,
+            "set_foreign_id": "foo",
             "set_url": "https://freesound.org/apiv2/packs/23434/",
             "title": "Ehh disinterested.wav",
         }
@@ -156,14 +146,13 @@ def test_extract_audio_data_returns_none_when_no_license(audio_data):
 
 
 def test_get_audio_set_info(audio_data):
-    audio_set, set_url = freesound._get_audio_set(audio_data)
+    set_foreign_id, audio_set, set_url = freesound._get_audio_set_info(audio_data)
     expected_audio_set_info = (
-        "Opera I",
-        6,
-        "https://www.freesound.com/album/119/opera-i",
-        "https://usercontent.freesound.com?type=album&id=119&width=200&trackid=732",
+        "foo",
+        "https://freesound.org/apiv2/packs/23434/",
+        "https://freesound.org/apiv2/packs/23434/",
     )
-    assert audio_set, set_url == expected_audio_set_info
+    assert (set_foreign_id, audio_set, set_url) == expected_audio_set_info
 
 
 def test_get_creator_data(audio_data):
