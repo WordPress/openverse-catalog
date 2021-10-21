@@ -19,11 +19,6 @@ from storage.audio import AudioStore
 from util.loader import provider_details as prov
 
 
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s", level=logging.INFO
-)
-logger = logging.getLogger(__name__)
-
 LIMIT = 150
 DELAY = 1  # in seconds
 RETRIES = 3
@@ -136,7 +131,7 @@ def _extract_audio_data(media_data):
     file_properties = _get_file_properties(media_data)
     audio_set, set_url = _get_audio_set(media_data)
     return {
-        "title": _get_title(media_data),
+        "title": media_data.get("name"),
         "creator": creator,
         "creator_url": creator_url,
         "foreign_identifier": foreign_identifier,
@@ -174,22 +169,30 @@ def _get_set_name(set_url):
     return name
 
 
+preview_bitrates = {
+    "review-hq-mp3": 128000,
+    "preview-lq-mp3": 64000,
+    "preview-hq-ogg": 192000,
+    "preview-lq-ogg": 80000,
+}
+
+
 def _get_alt_files(media_data):
     alt_files = [
         {
             "url": media_data.get("download"),
-            "filetype": media_data.get("type"),
-            "filesize": media_data.get("filesize"),
-            "bit_rate": media_data.get("bitrate"),
-            "sample_rate": media_data.get("samplerate"),
+            **_get_file_properties(media_data),
         }
     ]
-    previews = media_data.get("previews")
-    if previews is not None:
+    if previews := media_data.get("previews"):
         for preview_type in previews:
             preview_url = previews[preview_type]
             alt_files.append(
-                {"url": preview_url, "filetype": preview_type.split("-")[-1]}
+                {
+                    "url": preview_url,
+                    "filetype": preview_type.split("-")[-1],
+                    "bit_rate": preview_bitrates[preview_type],
+                }
             )
     return alt_files
 
@@ -227,10 +230,6 @@ def _get_creator_data(item):
     return creator, creator_url
 
 
-def _get_title(item):
-    return item.get("name")
-
-
 def _get_metadata(item):
     # previews is a dictionary with URIs for mp3 and ogg
     # versions of the file (preview-hq-mp3 ~128kbps, preview-lq-mp3 ~64kbps
@@ -261,4 +260,9 @@ def _get_license(item):
 
 
 if __name__ == "__main__":
+    logging.basicConfig(
+        format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s",
+        level=logging.INFO,
+    )
+    logger = logging.getLogger(__name__)
     main()
