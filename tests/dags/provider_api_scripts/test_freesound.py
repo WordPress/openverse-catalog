@@ -1,21 +1,28 @@
 import json
-import logging
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
 from common.licenses.licenses import LicenseInfo
 from provider_api_scripts import freesound
 
 
 RESOURCES = Path(__file__).parent.resolve() / "resources/freesound"
-AUDIO_DATA_EXAMPLE = RESOURCES / "audio_data_example.json"
 
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s",
-    level=logging.DEBUG,
-)
 
-freesound._get_set_name = lambda x: x
+@pytest.fixture(autouse=True)
+def freesound_module():
+    old_get_set = freesound._get_set_name
+    freesound._get_set_name = lambda x: x
+    yield
+    freesound._get_set_name = old_get_set
+
+
+@pytest.fixture
+def audio_data():
+    AUDIO_DATA_EXAMPLE = RESOURCES / "audio_data_example.json"
+    with open(AUDIO_DATA_EXAMPLE) as f:
+        yield json.load(f)
 
 
 def test_get_audio_pages_returns_correctly_with_none_json():
@@ -58,9 +65,8 @@ def test_get_items():
         assert expected_audio_count == actual_audio_count
 
 
-def test_process_item_batch_handles_example_batch():
-    with open(AUDIO_DATA_EXAMPLE) as f:
-        items_batch = [json.load(f)]
+def test_process_item_batch_handles_example_batch(audio_data):
+    items_batch = [audio_data]
     with patch.object(freesound.audio_store, "add_item", return_value=1) as mock_add:
         freesound._process_item_batch(items_batch)
         mock_add.assert_called_once()
@@ -129,35 +135,27 @@ def test_process_item_batch_handles_example_batch():
         assert actual_call_args == expected_call_args
 
 
-def test_extract_audio_data_returns_none_when_no_foreign_id():
-    with open(AUDIO_DATA_EXAMPLE) as f:
-        audio_data = json.load(f)
-        audio_data.pop("id", None)
+def test_extract_audio_data_returns_none_when_no_foreign_id(audio_data):
+    audio_data.pop("id", None)
     actual_audio_info = freesound._extract_audio_data(audio_data)
     expected_audio_info = None
     assert actual_audio_info is expected_audio_info
 
 
-def test_extract_audio_data_returns_none_when_no_audio_url():
-    with open(AUDIO_DATA_EXAMPLE) as f:
-        audio_data = json.load(f)
-        audio_data.pop("url", None)
-        audio_data.pop("download", None)
+def test_extract_audio_data_returns_none_when_no_audio_url(audio_data):
+    audio_data.pop("url", None)
+    audio_data.pop("download", None)
     actual_audio_info = freesound._extract_audio_data(audio_data)
     assert actual_audio_info is None
 
 
-def test_extract_audio_data_returns_none_when_no_license():
-    with open(AUDIO_DATA_EXAMPLE) as f:
-        audio_data = json.load(f)
-        audio_data.pop("license", None)
+def test_extract_audio_data_returns_none_when_no_license(audio_data):
+    audio_data.pop("license", None)
     actual_audio_info = freesound._extract_audio_data(audio_data)
     assert actual_audio_info is None
 
 
-def test_get_audio_set_info():
-    with open(AUDIO_DATA_EXAMPLE) as f:
-        audio_data = json.load(f)
+def test_get_audio_set_info(audio_data):
     audio_set, set_url = freesound._get_audio_set(audio_data)
     expected_audio_set_info = (
         "Opera I",
@@ -168,9 +166,7 @@ def test_get_audio_set_info():
     assert audio_set, set_url == expected_audio_set_info
 
 
-def test_get_creator_data():
-    with open(AUDIO_DATA_EXAMPLE) as f:
-        audio_data = json.load(f)
+def test_get_creator_data(audio_data):
     actual_creator, actual_creator_url = freesound._get_creator_data(audio_data)
     expected_creator = "owly-bee"
     expected_creator_url = "https://freesound.org/people/owly-bee/"
@@ -179,9 +175,7 @@ def test_get_creator_data():
     assert actual_creator_url == expected_creator_url
 
 
-def test_get_creator_data_returns_none_when_no_artist():
-    with open(AUDIO_DATA_EXAMPLE) as f:
-        audio_data = json.load(f)
+def test_get_creator_data_returns_none_when_no_artist(audio_data):
     audio_data.pop("username", None)
     actual_creator, actual_creator_url = freesound._get_creator_data(audio_data)
 
@@ -189,10 +183,7 @@ def test_get_creator_data_returns_none_when_no_artist():
     assert actual_creator_url is None
 
 
-def test_extract_audio_data_handles_example_dict():
-    with open(AUDIO_DATA_EXAMPLE) as f:
-        audio_data = json.load(f)
-
+def test_extract_audio_data_handles_example_dict(audio_data):
     actual_audio_info = freesound._extract_audio_data(audio_data)
     preview_url_base = "https://freesound.org/data/previews/415"
     expected_audio_info = {
@@ -257,10 +248,7 @@ def test_extract_audio_data_handles_example_dict():
     assert actual_audio_info == expected_audio_info
 
 
-def test_get_tags():
-    with open(AUDIO_DATA_EXAMPLE) as f:
-        audio_data = json.load(f)
-
+def test_get_tags(audio_data):
     item_data = freesound._extract_audio_data(audio_data)
     actual_tags = item_data["raw_tags"]
     expected_tags = ["eh", "disinterest", "low", "uh", "voice", "uncaring"]

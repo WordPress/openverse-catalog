@@ -135,7 +135,6 @@ def _extract_audio_data(media_data):
     creator, creator_url = _get_creator_data(media_data)
     file_properties = _get_file_properties(media_data)
     audio_set, set_url = _get_audio_set(media_data)
-    logger.info(f"File properties: {file_properties}")
     return {
         "title": _get_title(media_data),
         "creator": creator,
