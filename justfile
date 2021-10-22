@@ -46,7 +46,7 @@ logs service="": up
 
 # Pull, build, and deploy all services
 deploy:
-    -just down
+    @just down
     -git pull
     @just build
     @just up
