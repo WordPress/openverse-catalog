@@ -1,21 +1,22 @@
 import json
 
-import retired.update_workflows
+from retired.update_workflows import update_sql
 from storage import columns as col
 from util.loader import sql
 
-from tests.dags.util.loader.test_sql import (
+from tests.dags.util.loader.test_sql import (  # noqa: F401
     POSTGRES_CONN_ID,
     TEST_ID,
     TEST_IMAGE_TABLE,
     TEST_LOAD_TABLE,
     create_query_values,
     fid_idx,
+    postgres_with_load_and_image_table,
     source_idx,
 )
 
 
-def test_update_flickr_sub_providers(postgres_with_load_and_image_table):
+def test_update_flickr_sub_providers(postgres_with_load_and_image_table):  # noqa: F811
     postgres_conn_id = POSTGRES_CONN_ID
     load_table = TEST_LOAD_TABLE
     image_table = TEST_IMAGE_TABLE
@@ -61,9 +62,7 @@ def test_update_flickr_sub_providers(postgres_with_load_and_image_table):
     postgres_with_load_and_image_table.cursor.execute(f"DELETE FROM {load_table};")
     postgres_with_load_and_image_table.connection.commit()
 
-    retired.update_workflows.update_sql.update_flickr_sub_providers(
-        postgres_conn_id, image_table
-    )
+    update_sql.update_flickr_sub_providers(postgres_conn_id, image_table)
     postgres_with_load_and_image_table.connection.commit()
     postgres_with_load_and_image_table.cursor.execute(f"SELECT * FROM {image_table};")
     actual_rows = postgres_with_load_and_image_table.cursor.fetchall()
@@ -76,7 +75,9 @@ def test_update_flickr_sub_providers(postgres_with_load_and_image_table):
             assert actual_row[fid_idx] == "b" and actual_row[source_idx] == "flickr"
 
 
-def test_update_europeana_sub_providers(postgres_with_load_and_image_table):
+def test_update_europeana_sub_providers(
+    postgres_with_load_and_image_table,  # noqa: F811
+):
     postgres_conn_id = POSTGRES_CONN_ID
     load_table = TEST_LOAD_TABLE
     image_table = TEST_IMAGE_TABLE
@@ -135,9 +136,7 @@ def test_update_europeana_sub_providers(postgres_with_load_and_image_table):
     postgres_with_load_and_image_table.cursor.execute(f"DELETE FROM {load_table};")
     postgres_with_load_and_image_table.connection.commit()
 
-    retired.update_workflows.update_sql.update_europeana_sub_providers(
-        postgres_conn_id, image_table
-    )
+    update_sql.update_europeana_sub_providers(postgres_conn_id, image_table)
     postgres_with_load_and_image_table.connection.commit()
     postgres_with_load_and_image_table.cursor.execute(f"SELECT * FROM {image_table};")
     actual_rows = postgres_with_load_and_image_table.cursor.fetchall()
@@ -150,7 +149,9 @@ def test_update_europeana_sub_providers(postgres_with_load_and_image_table):
             assert actual_row[fid_idx] == "b" and actual_row[source_idx] == "europeana"
 
 
-def test_update_smithsonian_sub_providers(postgres_with_load_and_image_table):
+def test_update_smithsonian_sub_providers(
+    postgres_with_load_and_image_table,  # noqa: F811
+):
     postgres_conn_id = POSTGRES_CONN_ID
     load_table = TEST_LOAD_TABLE
     image_table = TEST_IMAGE_TABLE
@@ -205,9 +206,7 @@ def test_update_smithsonian_sub_providers(postgres_with_load_and_image_table):
     postgres_with_load_and_image_table.cursor.execute(f"DELETE FROM {load_table};")
     postgres_with_load_and_image_table.connection.commit()
 
-    retired.update_workflows.update_sql.update_smithsonian_sub_providers(
-        postgres_conn_id, image_table
-    )
+    update_sql.update_smithsonian_sub_providers(postgres_conn_id, image_table)
     postgres_with_load_and_image_table.connection.commit()
     postgres_with_load_and_image_table.cursor.execute(f"SELECT * FROM {image_table};")
     actual_rows = postgres_with_load_and_image_table.cursor.fetchall()
