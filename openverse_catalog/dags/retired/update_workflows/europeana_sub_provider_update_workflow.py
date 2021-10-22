@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 
 from airflow import DAG
 from airflow.operators.python import PythonOperator
-from util.loader import sql
+from retired.update_workflows import update_sql
 
 
 logging.basicConfig(
@@ -53,7 +53,7 @@ def create_dag(
     with dag:
         PythonOperator(
             task_id="update_europeana_sub_providers",
-            python_callable=sql.update_europeana_sub_providers,
+            python_callable=update_sql.update_europeana_sub_providers,
             op_args=[postgres_conn_id],
         )
 
