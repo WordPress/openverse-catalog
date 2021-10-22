@@ -44,6 +44,13 @@ recreate: dotenv
 logs service="": up
     docker-compose {{ DOCKER_FILES }} logs -f {{ service }}
 
+# Pull, build, and deploy all services
+deploy:
+    -just down
+    -git pull
+    @just build
+    @just up
+
 # Run pre-commit on all files
 lint:
     pre-commit run --all-files
