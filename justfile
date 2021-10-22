@@ -8,7 +8,6 @@ IS_PROD := env_var_or_default("IS_PROD", "")
 DOCKER_FILES := "--file=docker-compose.yml" + (
     if IS_PROD != "true" {" --file=docker-compose.override.yml"} else {""}
 )
-
 SERVICE := "webserver"
 
 
