@@ -5,11 +5,9 @@ default:
   @just --list --unsorted
 
 IS_PROD := env_var_or_default("IS_PROD", "")
-DOCKER_FILES := if IS_PROD == "true" {
-    "--file=docker-compose.yml"
-} else {
-    "--file=docker-compose.yml --file=docker-compose.override.yml"
-}
+DOCKER_FILES := "--file=docker-compose.yml" + (
+    if IS_PROD != "true" {" --file=docker-compose.override.yml"} else {""}
+)
 
 SERVICE := "webserver"
 
