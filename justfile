@@ -4,7 +4,13 @@ set dotenv-load := false
 default:
   @just --list --unsorted
 
-DOCKER_FILES := "--file=docker-compose.yml --file=docker-compose.override.yml"
+IS_PROD := env_var_or_default("IS_PROD", "")
+DOCKER_FILES := if IS_PROD == "true" {
+    "--file=docker-compose.yml"
+} else {
+    "--file=docker-compose.yml --file=docker-compose.override.yml"
+}
+
 SERVICE := "webserver"
 
 
