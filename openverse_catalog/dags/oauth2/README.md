@@ -11,7 +11,7 @@
 
 ## Overview
 
-The functions and DAGs defined in this module intend to provide a mechanism for generating and maintaining the tokens necessary for interacting with sources that require OAuth2 authentication.
+The functions and DAGs defined in this module provide a mechanism for generating and maintaining the tokens necessary for interacting with sources that require OAuth2 authentication.
 
 OAuth2 providers are authenticated through a three-step mechanism:
 1. Initiate authorization
