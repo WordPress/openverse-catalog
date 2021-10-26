@@ -21,7 +21,8 @@ If it is not `export`ed for the session, `IS_PROD=true` will need to be prepende
 1. Clone the repository onto the target machine.
 2. Run `just dotenv` to create a new `.env` file from the template.
 3. Generate a secure password for the `airflow` account on the Airflow Metastore DB, and update the account using `ALTER USER airflow WITH PASSWORD '<generated-password>';`  _(Note: this process will be changed in [gh-260](https://github.com/WordPress/openverse-catalog/issues/260))_
-4. Change the following variables in the `.env` file:
+4. Create an `AIRFLOW__CORE__FERNET_KEY` using the instructions described in the `.env` file
+5. Change the following variables in the `.env` file:
    - **(Required)**
       - `AIRFLOW__CORE__SQL_ALCHEMY_CONN` (using the password created above)
       - `AIRFLOW_CONN_AWS_DEFAULT`
