@@ -59,10 +59,10 @@ Our API-based workflows run at different schedules: some daily, others monthly. 
 Workflows that have a `schedule_string='@daily'` parameter are run daily. The DAG
 workflows run `provider_api_scripts` to load and extract media data from the APIs. The following provider scripts are run daily:
 
-- [Flickr](openverse_catalog/dags/provider_api_scripts/flickr.py)
-- [Met Museum](openverse_catalog/dags/provider_api_scripts/metropolitan_museum_of_art.py)
-- [PhyloPic](openverse_catalog/dags/provider_api_scripts/phylopic.py)
-- [Wikimedia Commons](openverse_catalog/dags/provider_api_scripts/wikimedia_commons.py)
+- [Flickr](openverse_catalog/dags/providers/provider_api_scripts/flickr.py)
+- [Met Museum](openverse_catalog/dags/providers/provider_api_scripts/metropolitan_museum_of_art.py)
+- [PhyloPic](openverse_catalog/dags/providers/provider_api_scripts/phylopic.py)
+- [Wikimedia Commons](openverse_catalog/dags/providers/provider_api_scripts/wikimedia_commons.py)
 
 #### Monthly
 
@@ -71,12 +71,12 @@ month at 16:00 UTC. These workflows are reserved for long-running jobs or
 APIs that do not have date filtering capabilities, so the data is reprocessed
 monthly to keep the catalog updated. The following provider scripts are run monthly:
 
-- [Brooklyn Museum](openverse_catalog/dags/provider_api_scripts/brooklyn_museum.py)
-- [Cleveland Museum of Art](openverse_catalog/dags/provider_api_scripts/cleveland_museum_of_art.py)
+- [Brooklyn Museum](openverse_catalog/dags/providers/provider_api_scripts/brooklyn_museum.py)
+- [Cleveland Museum of Art](openverse_catalog/dags/providers/provider_api_scripts/cleveland_museum_of_art.py)
 - [Common Crawl Syncer](openverse_catalog/dags/commoncrawl_scripts/commoncrawl_s3_syncer/SyncImageProviders.py)
-- [NYPL](openverse_catalog/dags/provider_api_scripts/nypl.py)
-- [RawPixel](openverse_catalog/dags/provider_api_scripts/raw_pixel.py)
-- [StockSnap](openverse_catalog/dags/provider_api_scripts/stocksnap.py)
+- [NYPL](openverse_catalog/dags/providers/provider_api_scripts/nypl.py)
+- [RawPixel](openverse_catalog/dags/providers/provider_api_scripts/raw_pixel.py)
+- [StockSnap](openverse_catalog/dags/providers/provider_api_scripts/stocksnap.py)
 
 ### TSV to Postgres Loader
 
@@ -98,7 +98,7 @@ loaded into a database to be indexed for searching in the Openverse API. These r
 different environment than the PySpark portion of the project, and so have their
 own dependency requirements.
 
-[api_scripts]: openverse_catalog/dags/provider_api_scripts
+[api_scripts]: openverse_catalog/dags/providers/provider_api_scripts
 
 ### Requirements
 

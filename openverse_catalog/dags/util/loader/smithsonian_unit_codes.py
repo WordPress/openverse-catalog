@@ -8,7 +8,7 @@ from textwrap import dedent
 
 import requests
 from airflow.providers.postgres.hooks.postgres import PostgresHook
-from provider_api_scripts import smithsonian
+from providers.provider_api_scripts import smithsonian
 from util.loader import provider_details as prov
 
 
