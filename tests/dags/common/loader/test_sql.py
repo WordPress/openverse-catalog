@@ -173,7 +173,7 @@ def postgres_with_load_and_image_table():
 
 
 @pytest.fixture
-def empty_s3_bucket(socket_enabled):
+def empty_s3_bucket():
     bucket = boto3.resource(
         "s3",
         aws_access_key_id=ACCESS_KEY,

@@ -49,7 +49,6 @@ def test_alert_new_unit_codes():
     )
 
 
-@pytest.mark.enable_socket
 def test_alert_unit_codes_from_api(postgres_with_test_unit_code_table):
     postgres_conn_id = POSTGRES_CONN_ID
     unit_code_table = SI_UNIT_CODE_TABLE

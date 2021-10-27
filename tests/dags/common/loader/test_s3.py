@@ -20,7 +20,7 @@ S3_HOST = socket.gethostbyname(urlparse(S3_LOCAL_ENDPOINT).hostname)
 
 
 @pytest.fixture
-def empty_s3_bucket(socket_enabled):
+def empty_s3_bucket():
     bucket = boto3.resource(
         "s3",
         aws_access_key_id=ACCESS_KEY,
