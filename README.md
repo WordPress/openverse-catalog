@@ -73,7 +73,7 @@ monthly to keep the catalog updated. The following provider scripts are run mont
 
 - [Brooklyn Museum](openverse_catalog/dags/providers/provider_api_scripts/brooklyn_museum.py)
 - [Cleveland Museum of Art](openverse_catalog/dags/providers/provider_api_scripts/cleveland_museum_of_art.py)
-- [Common Crawl Syncer](openverse_catalog/dags/commoncrawl_scripts/commoncrawl_s3_syncer/SyncImageProviders.py)
+- [Common Crawl Syncer](openverse_catalog/dags/commoncrawl/commoncrawl_scripts/commoncrawl_s3_syncer/SyncImageProviders.py)
 - [NYPL](openverse_catalog/dags/providers/provider_api_scripts/nypl.py)
 - [RawPixel](openverse_catalog/dags/providers/provider_api_scripts/raw_pixel.py)
 - [StockSnap](openverse_catalog/dags/providers/provider_api_scripts/stocksnap.py)
@@ -232,25 +232,30 @@ just recreate
 [dockercompose]: docker-compose.yml
 [cc_airflow]: openverse_catalog/
 
-## PySpark development setup
+## Directory Structure
 
-### Prerequisites
-
+```text
+openverse-catalog
+├── .github/                                # Templates for GitHub
+├── archive/                                # Files related to the previous CommonCrawl parsing implementation
+├── docker/                                 # Dockerfiles and supporting files
+│   ├── airflow/                            #   - Docker image for Airflow server and workers
+│   └── local_postgres/                     #   - Docker image for development Postgres database
+├── openverse_catalog/                      # Primary code directory
+│   ├── dags/                               # DAGs & DAG support code
+│   │   ├── common/                         #   - Shared modules used across DAGs
+│   │   ├── commoncrawl/                    #   - DAGs & scripts for commoncrawl parsing
+│   │   ├── database/                       #   - DAGs related to database actions (matview refresh, cleaning, etc.)
+│   │   ├── maintenance/                    #   - DAGs related to airflow/infrastructure maintenance
+│   │   ├── oauth2/                         #   - DAGs & code for Oauth2 key management
+│   │   ├── providers/                      #   - DAGs & code for provider ingestion
+│   │   │   ├── provider_api_scripts/       #       - API access code specific to providers
+│   │   │   └── *.py                        #       - DAG definition files for providers
+│   │   └── retired/                        #   - DAGs & code that is no longer needed but might be a useful guide for the future
+│   └── templates/                          # Templates for generating new provider code
+└── *                                       # Documentation, configuration files, and project requirements
 ```
-JDK 9.0.1
-Python 3.6
-Pytest 4.3.1
-Spark 2.2.1
-Airflow 1.10.4
 
-pip install -r requirements.txt
-```
-
-### Running the tests
-
-```
-python -m pytest tests/test_ExtractCCLinks.py
-```
 
 ## Contributing
 
