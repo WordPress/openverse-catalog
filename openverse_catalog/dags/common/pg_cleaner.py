@@ -11,12 +11,11 @@ from pathlib import Path
 from textwrap import dedent
 
 from airflow.providers.postgres.hooks.postgres import PostgresHook
-from common import urls
+from common import tsv_cleaner, urls
+from common.constants import IMAGE
+from common.loader.sql import TABLE_NAMES
 from storage import columns as column
 from storage import image
-from util import tsv_cleaner
-from util.constants import IMAGE
-from util.loader.sql import TABLE_NAMES
 
 
 logger = logging.getLogger(__name__)

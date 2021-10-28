@@ -1,8 +1,8 @@
 from typing import List
 
+from common.constants import AUDIO, IMAGE
 from storage import columns as col
 from storage.columns import Column
-from util.constants import AUDIO, IMAGE
 
 
 # Image has 'legacy' 000 version

@@ -2,10 +2,10 @@ import logging
 from urllib.parse import parse_qs, urlparse
 
 import requests
-from common.licenses.licenses import get_license_info
+from common.licenses import get_license_info
+from common.loader import provider_details as prov
 from common.requester import DelayedRequester
 from storage.image import ImageStore
-from util.loader import provider_details as prov
 
 
 DELAY = 1.0  # time delay (in seconds)

@@ -1,7 +1,7 @@
 import logging
 from pathlib import Path
 
-from util.loader import ingestion_column as ic
+from common.loader import ingestion_column as ic
 
 
 logging.basicConfig(

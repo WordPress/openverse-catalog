@@ -6,8 +6,8 @@ import logging
 # airflow DAG (necessary for Airflow to find this file)
 from datetime import datetime
 
+from common.dag_factory import create_provider_api_workflow
 from providers.provider_api_scripts import healthcheck
-from util.dag_factory import create_provider_api_workflow
 
 
 logging.basicConfig(

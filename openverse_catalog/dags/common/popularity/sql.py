@@ -2,9 +2,9 @@ from collections import namedtuple
 from textwrap import dedent
 
 from airflow.providers.postgres.hooks.postgres import PostgresHook
+from common.constants import AUDIO, IMAGE
+from common.loader.sql import TABLE_NAMES
 from storage import columns as col
-from util.constants import AUDIO, IMAGE
-from util.loader.sql import TABLE_NAMES
 
 
 DEFAULT_PERCENTILE = 0.85

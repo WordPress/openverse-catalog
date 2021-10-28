@@ -12,7 +12,7 @@ import os
 from datetime import datetime, timedelta
 
 from airflow import DAG
-from util.popularity import operators
+from common.popularity import operators
 
 
 logging.basicConfig(

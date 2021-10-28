@@ -1,5 +1,5 @@
-from util.loader import paths, s3, sql
-from util.loader.paths import _extract_media_type
+from common.loader import paths, s3, sql
+from common.loader.paths import _extract_media_type
 
 
 def load_local_data(output_dir, postgres_conn_id, identifier, ti, overwrite=False):

@@ -2,7 +2,7 @@ import logging
 from copy import deepcopy
 from datetime import datetime, timedelta
 
-import util.config as conf
+import common.config as conf
 from airflow import DAG
 from airflow.models.baseoperator import cross_downstream
 from airflow.operators.dummy import DummyOperator

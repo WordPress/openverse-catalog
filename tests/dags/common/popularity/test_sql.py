@@ -4,7 +4,7 @@ from textwrap import dedent
 
 import psycopg2
 import pytest
-from util.popularity import sql
+from common.popularity import sql
 
 
 TEST_ID = "testing"

@@ -3,7 +3,7 @@ import logging
 from pathlib import Path
 from unittest.mock import patch
 
-from common.licenses.licenses import LicenseInfo
+from common.licenses import LicenseInfo
 from providers.provider_api_scripts import jamendo
 
 

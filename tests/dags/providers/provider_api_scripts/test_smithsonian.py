@@ -4,7 +4,7 @@ import os
 from unittest.mock import call, patch
 
 import pytest
-from common.licenses.licenses import LicenseInfo
+from common.licenses import LicenseInfo
 from providers.provider_api_scripts import smithsonian as si
 
 

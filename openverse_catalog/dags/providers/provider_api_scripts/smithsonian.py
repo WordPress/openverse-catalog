@@ -13,10 +13,10 @@ import logging
 import os
 from datetime import datetime
 
-from common.licenses.licenses import LicenseInfo
+from common.licenses import LicenseInfo
+from common.loader import provider_details as prov
 from common.requester import DelayedRequester
 from storage.image import ImageStore
-from util.loader import provider_details as prov
 
 
 logger = logging.getLogger(__name__)

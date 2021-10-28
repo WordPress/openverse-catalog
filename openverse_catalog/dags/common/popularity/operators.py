@@ -1,7 +1,7 @@
 import logging
 
 from airflow.operators.python import PythonOperator
-from util.popularity import sql
+from common.popularity import sql
 
 
 logger = logging.getLogger(__name__)

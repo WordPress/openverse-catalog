@@ -3,7 +3,7 @@ import logging
 from airflow.operators.dummy import DummyOperator
 from airflow.operators.python import PythonOperator, ShortCircuitOperator
 from airflow.utils.trigger_rule import TriggerRule
-from util.loader import loader, paths, smithsonian_unit_codes, sql
+from common.loader import loader, paths, smithsonian_unit_codes, sql
 
 
 logger = logging.getLogger(__name__)

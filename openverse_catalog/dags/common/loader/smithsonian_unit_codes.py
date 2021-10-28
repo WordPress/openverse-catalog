@@ -8,8 +8,8 @@ from textwrap import dedent
 
 import requests
 from airflow.providers.postgres.hooks.postgres import PostgresHook
+from common.loader import provider_details as prov
 from providers.provider_api_scripts import smithsonian
-from util.loader import provider_details as prov
 
 
 logger = logging.getLogger(__name__)

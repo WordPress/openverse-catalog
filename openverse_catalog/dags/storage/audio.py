@@ -2,7 +2,7 @@ import logging
 from collections import namedtuple
 from typing import Dict, Optional, Union
 
-from common.licenses.licenses import LicenseInfo
+from common.licenses import LicenseInfo
 from storage.media import MediaStore
 from storage.tsv_columns import CURRENT_AUDIO_TSV_COLUMNS
 

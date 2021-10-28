@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from util import log_cleanup
+from common import log_cleanup
 
 
 TEST_LOGS_FOLDER = Path(__file__).parent / "test_resources" / "logs"

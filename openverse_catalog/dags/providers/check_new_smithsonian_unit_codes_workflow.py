@@ -9,7 +9,7 @@ import os
 from datetime import datetime, timedelta
 
 from airflow import DAG
-from util.loader import operators
+from common.loader import operators
 
 
 logging.basicConfig(

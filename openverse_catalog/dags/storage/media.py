@@ -4,7 +4,7 @@ import os
 from datetime import datetime
 from typing import Optional, Union
 
-from common.licenses.licenses import is_valid_license_info
+from common.licenses import is_valid_license_info
 from storage import util
 from storage.tsv_columns import CURRENT_VERSION
 

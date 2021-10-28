@@ -3,9 +3,9 @@ import logging
 from pathlib import Path
 from unittest.mock import call, patch
 
-from common.licenses.licenses import get_license_info
+from common.constants import IMAGE
+from common.licenses import get_license_info
 from providers.provider_api_scripts import wikimedia_commons as wmc
-from util.constants import IMAGE
 
 
 RESOURCES = Path(__file__).parent.resolve() / "resources/wikimedia"

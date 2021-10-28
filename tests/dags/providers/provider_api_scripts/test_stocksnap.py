@@ -3,7 +3,7 @@ import logging
 import os
 from unittest.mock import patch
 
-from common.licenses.licenses import get_license_info
+from common.licenses import get_license_info
 from providers.provider_api_scripts import stocksnap
 
 

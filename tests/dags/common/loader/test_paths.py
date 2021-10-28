@@ -4,7 +4,7 @@ import time
 import pytest
 from airflow.models import TaskInstance
 from airflow.operators.dummy import DummyOperator
-from util.loader import paths
+from common.loader import paths
 
 
 TEST_ID = "testing"

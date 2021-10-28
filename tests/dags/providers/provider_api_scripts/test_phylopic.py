@@ -3,7 +3,7 @@ import logging
 import os
 from unittest.mock import patch
 
-from common.licenses.licenses import LicenseInfo
+from common.licenses import LicenseInfo
 from providers.provider_api_scripts import phylopic as pp
 
 

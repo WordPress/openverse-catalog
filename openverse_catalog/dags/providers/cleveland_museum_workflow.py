@@ -2,8 +2,8 @@
 import logging
 from datetime import datetime
 
+from common.dag_factory import create_provider_api_workflow
 from providers.provider_api_scripts import cleveland_museum_of_art
-from util.dag_factory import create_provider_api_workflow
 
 
 logging.basicConfig(

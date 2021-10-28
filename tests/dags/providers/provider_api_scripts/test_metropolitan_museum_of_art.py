@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 import requests
-from common.licenses.licenses import LicenseInfo
+from common.licenses import LicenseInfo
 from providers.provider_api_scripts import metropolitan_museum_of_art as mma
 
 

@@ -22,11 +22,11 @@ from typing import Optional
 from urllib.parse import parse_qs, urlencode, urlsplit
 
 import common
-from common.licenses.licenses import get_license_info
+from common.licenses import get_license_info
+from common.loader import provider_details as prov
 from common.requester import DelayedRequester
 from common.urls import rewrite_redirected_url
 from storage.audio import AudioStore
-from util.loader import provider_details as prov
 
 
 logging.basicConfig(

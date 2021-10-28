@@ -11,7 +11,7 @@ Notes:                  {{API URL}}
 import logging
 from time import sleep
 
-from util.loader import provider_details as prov
+from common.loader import provider_details as prov
 
 
 logging.basicConfig(

@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 import pytest
 import storage.columns
-from common.licenses.licenses import LicenseInfo
+from common.licenses import LicenseInfo
 from storage import audio
 
 

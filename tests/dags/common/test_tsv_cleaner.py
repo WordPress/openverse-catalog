@@ -1,9 +1,9 @@
 from pathlib import Path
 from unittest.mock import call, patch
 
-from common.licenses.licenses import LicenseInfo
+from common import tsv_cleaner
+from common.licenses import LicenseInfo
 from storage import image
-from util import tsv_cleaner
 
 
 RESOURCES = Path(__file__).parent.resolve() / "test_resources"

@@ -1,6 +1,6 @@
 from unittest.mock import patch
 
-from util.etl import operators
+from common.etl import operators
 
 
 def test_load_file_to_s3_uses_connection_id():

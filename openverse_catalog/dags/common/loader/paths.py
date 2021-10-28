@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 
 from airflow.models import TaskInstance
-from util.loader.ingestion_column import _fix_ingestion_column
+from common.loader.ingestion_column import _fix_ingestion_column
 
 
 FAILURE_SUBDIRECTORY = "db_loader_failures"

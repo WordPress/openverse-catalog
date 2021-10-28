@@ -5,7 +5,7 @@ from urllib.parse import urlparse
 
 import boto3
 import pytest
-from util.loader import s3
+from common.loader import s3
 
 
 TEST_ID = "testing"

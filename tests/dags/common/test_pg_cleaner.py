@@ -7,7 +7,7 @@ import pytest
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 
 # from util import pg_cleaner
-from .loader import test_sql
+from tests.dags.common.loader import test_sql
 
 
 # from unittest.mock import call, patch

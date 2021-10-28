@@ -13,9 +13,9 @@ method.
 import logging
 from datetime import datetime, timedelta
 
+from common.dag_factory import create_day_partitioned_ingestion_dag
+from common.helpers import get_reingestion_day_list_list
 from providers.provider_api_scripts import flickr
-from util.dag_factory import create_day_partitioned_ingestion_dag
-from util.helpers import get_reingestion_day_list_list
 
 
 logging.basicConfig(

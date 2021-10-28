@@ -1,4 +1,4 @@
-import util.dag_factory as df
+import common.dag_factory as df
 
 
 def test_create_day_partitioned_ingestion_dag_with_single_layer_dependencies():

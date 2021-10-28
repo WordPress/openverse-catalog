@@ -51,8 +51,8 @@ import os
 from datetime import datetime, timedelta
 
 from airflow import DAG
-from util.loader import operators
-from util.pg_cleaner import OVERWRITE_DIR
+from common.loader import operators
+from common.pg_cleaner import OVERWRITE_DIR
 
 
 logging.basicConfig(

@@ -3,6 +3,9 @@ from textwrap import dedent
 from typing import List
 
 from airflow.providers.postgres.hooks.postgres import PostgresHook
+from common.constants import AUDIO, IMAGE
+from common.loader import provider_details as prov
+from common.loader.paths import _extract_media_type
 from psycopg2.errors import InvalidTextRepresentation
 from storage import columns as col
 from storage.columns import NULL, Column, UpsertStrategy
@@ -13,9 +16,6 @@ from storage.tsv_columns import (
     CURRENT_IMAGE_TSV_COLUMNS,
     required_columns,
 )
-from util.constants import AUDIO, IMAGE
-from util.loader import provider_details as prov
-from util.loader.paths import _extract_media_type
 
 
 logger = logging.getLogger(__name__)

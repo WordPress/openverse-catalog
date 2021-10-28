@@ -22,7 +22,7 @@ import jinja2
 from airflow.configuration import conf
 from airflow.models import DAG
 from airflow.operators.python import PythonOperator
-from util import log_cleanup
+from common import log_cleanup
 
 
 logging.basicConfig(

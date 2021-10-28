@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import psycopg2
 import pytest
-from util.loader import smithsonian_unit_codes as si
+from common.loader import smithsonian_unit_codes as si
 
 
 POSTGRES_TEST_URI = os.getenv("AIRFLOW_CONN_POSTGRES_OPENLEDGER_TESTING")
