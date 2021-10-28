@@ -37,20 +37,21 @@ PROVIDER_WORKFLOWS = [
 
 # Extra DAGs to test
 ADDITIONAL_DAGS = [
-    "cleaner_workflow.py",
-    "loader_workflow.py",
-    "sync_commoncrawl_workflow.py",
-    "recreate_image_popularity_calculation.py",
-    "refresh_all_image_popularity_data.py",
-    "refresh_image_view_data.py",
-    "commoncrawl_etl.py",
+    "maintenance/airflow_log_cleanup_workflow.py",
+    "commoncrawl/sync_commoncrawl_workflow.py",
+    "commoncrawl/commoncrawl_etl.py",
+    "database/cleaner_workflow.py",
+    "database/loader_workflow.py",
+    "database/recreate_image_popularity_calculation.py",
+    "database/refresh_all_image_popularity_data.py",
+    "database/refresh_image_view_data.py",
     "oauth2/authorize_dag.py",
     "oauth2/token_refresh_dag.py",
 ]
 
 # Expected count from the DagBag once a file has been parsed
 # (this will likely not need to be edited for new providers)
-EXPECTED_COUNT = {"loader_workflow.py": 2}
+EXPECTED_COUNT = {"database/loader_workflow.py": 2}
 
 
 # relative_path represents the path from the DAG folder to the file
@@ -60,5 +61,5 @@ def test_dag_loads_with_no_errors(relative_path, tmpdir):
     expected_count = EXPECTED_COUNT.get(relative_path, 1)
     dag_bag = DagBag(dag_folder=tmpdir, include_examples=False)
     dag_bag.process_file(str(DAG_FOLDER / relative_path))
-    assert len(dag_bag.import_errors) == 0
-    assert len(dag_bag.dags) == expected_count
+    assert len(dag_bag.import_errors) == 0, "Errors found during DAG import"
+    assert len(dag_bag.dags) == expected_count, "An unexpected # of DAGs was found"

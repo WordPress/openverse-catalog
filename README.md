@@ -84,7 +84,7 @@ The Airflow DAG defined in [`loader_workflow.py`][db_loader] runs every minute,
 and loads the oldest file which has not been modified in the last 15 minutes
 into the upstream database. It includes some data preprocessing steps.
 
-[db_loader]: openverse_catalog/dags/loader_workflow.py
+[db_loader]: openverse_catalog/dags/database/loader_workflow.py
 
 See each provider API script's notes in their respective [handbook][ov-handbook] entry.
 
