@@ -2,8 +2,8 @@ import logging
 import string
 
 import tldextract
-from storage import columns
-from storage.columns import Datatype
+from common.storage import columns
+from common.storage.columns import Datatype
 
 
 logging.basicConfig(

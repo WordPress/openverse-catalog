@@ -5,8 +5,8 @@ from datetime import datetime
 from typing import Optional, Union
 
 from common.licenses import is_valid_license_info
-from storage import util
-from storage.tsv_columns import CURRENT_VERSION
+from common.storage import util
+from common.storage.tsv_columns import CURRENT_VERSION
 
 
 logger = logging.getLogger(__name__)

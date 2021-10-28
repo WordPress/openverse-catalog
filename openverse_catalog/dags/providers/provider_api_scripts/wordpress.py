@@ -16,7 +16,7 @@ import lxml.html as html
 from common.licenses import get_license_info
 from common.loader import provider_details as prov
 from common.requester import DelayedRequester
-from storage.image import ImageStore
+from common.storage.image import ImageStore
 
 
 logging.basicConfig(

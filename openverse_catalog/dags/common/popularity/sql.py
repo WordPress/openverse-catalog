@@ -4,7 +4,7 @@ from textwrap import dedent
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from common.constants import AUDIO, IMAGE
 from common.loader.sql import TABLE_NAMES
-from storage import columns as col
+from common.storage import columns as col
 
 
 DEFAULT_PERCENTILE = 0.85

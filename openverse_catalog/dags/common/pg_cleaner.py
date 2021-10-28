@@ -14,8 +14,8 @@ from airflow.providers.postgres.hooks.postgres import PostgresHook
 from common import tsv_cleaner, urls
 from common.constants import IMAGE
 from common.loader.sql import TABLE_NAMES
-from storage import columns as column
-from storage import image
+from common.storage import columns as column
+from common.storage import image
 
 
 logger = logging.getLogger(__name__)

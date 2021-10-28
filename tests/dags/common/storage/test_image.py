@@ -3,7 +3,7 @@ import logging
 import pytest
 from common import urls
 from common.licenses import LicenseInfo
-from storage import image, util
+from common.storage import image, util
 
 
 logging.basicConfig(

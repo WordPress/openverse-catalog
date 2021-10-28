@@ -15,9 +15,9 @@ from airflow.operators.dummy import DummyOperator
 from common.constants import IMAGE
 from common.loader import sql
 from common.loader.sql import TSV_COLUMNS, create_column_definitions
+from common.storage import columns as col
+from common.storage.db_columns import IMAGE_TABLE_COLUMNS
 from psycopg2.errors import InvalidTextRepresentation
-from storage import columns as col
-from storage.db_columns import IMAGE_TABLE_COLUMNS
 
 
 TEST_ID = "testing"

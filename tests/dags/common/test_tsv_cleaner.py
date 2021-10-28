@@ -3,7 +3,7 @@ from unittest.mock import call, patch
 
 from common import tsv_cleaner
 from common.licenses import LicenseInfo
-from storage import image
+from common.storage import image
 
 
 RESOURCES = Path(__file__).parent.resolve() / "test_resources"

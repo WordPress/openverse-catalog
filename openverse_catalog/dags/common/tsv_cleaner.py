@@ -3,7 +3,7 @@ import logging
 import os
 
 from common.licenses import get_license_info
-from storage import image
+from common.storage import image
 
 
 logger = logging.getLogger(__name__)

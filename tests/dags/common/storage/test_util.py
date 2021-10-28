@@ -1,6 +1,6 @@
 import logging
 
-from storage import util
+from common.storage import util
 
 
 logging.basicConfig(

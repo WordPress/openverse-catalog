@@ -25,8 +25,8 @@ import common
 from common.licenses import get_license_info
 from common.loader import provider_details as prov
 from common.requester import DelayedRequester
+from common.storage.audio import AudioStore
 from common.urls import rewrite_redirected_url
-from storage.audio import AudioStore
 
 
 logging.basicConfig(

@@ -1,10 +1,10 @@
 import logging
 from unittest.mock import patch
 
+import common.storage.columns
 import pytest
-import storage.columns
 from common.licenses import LicenseInfo
-from storage import audio
+from common.storage import audio
 
 
 logging.basicConfig(
@@ -237,7 +237,7 @@ def test_create_tsv_row_creates_alt_files(
         return value
 
     with patch.object(
-        storage.columns.urls,
+        common.storage.columns.urls,
         "validate_url_string",
         side_effect=mock_url_validator,
     ):
@@ -298,7 +298,9 @@ def test_create_tsv_row_creates_audio_set(
         return value
 
     with patch.object(
-        storage.columns.urls, "validate_url_string", side_effect=mock_url_validator
+        common.storage.columns.urls,
+        "validate_url_string",
+        side_effect=mock_url_validator,
     ):
         actual_row = audio_store._create_tsv_row(test_audio)
         expected_row = (
@@ -422,7 +424,9 @@ def test_create_tsv_row_properly_places_entries(monkeypatch):
     def mock_validate_url(url_string):
         return url_string
 
-    monkeypatch.setattr(storage.columns.urls, "validate_url_string", mock_validate_url)
+    monkeypatch.setattr(
+        common.storage.columns.urls, "validate_url_string", mock_validate_url
+    )
     audio_store = audio.AudioStore()
     req_args_dict = {
         "foreign_landing_url": "https://landing_page.com",

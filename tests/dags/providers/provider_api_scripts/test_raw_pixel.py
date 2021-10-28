@@ -4,8 +4,8 @@ import os
 from unittest.mock import patch
 
 from common.licenses import LicenseInfo
+from common.storage.image import MockImageStore
 from providers.provider_api_scripts import raw_pixel as rwp
-from storage.image import MockImageStore
 
 
 _license_info = (

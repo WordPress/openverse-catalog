@@ -23,8 +23,8 @@ from common.constants import AUDIO, IMAGE
 from common.licenses import get_license_info
 from common.loader import provider_details as prov
 from common.requester import DelayedRequester
-from storage.audio import AudioStore
-from storage.image import ImageStore
+from common.storage.audio import AudioStore
+from common.storage.image import ImageStore
 
 
 logger = logging.getLogger(__name__)

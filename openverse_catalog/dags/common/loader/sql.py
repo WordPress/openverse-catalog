@@ -6,16 +6,16 @@ from airflow.providers.postgres.hooks.postgres import PostgresHook
 from common.constants import AUDIO, IMAGE
 from common.loader import provider_details as prov
 from common.loader.paths import _extract_media_type
-from psycopg2.errors import InvalidTextRepresentation
-from storage import columns as col
-from storage.columns import NULL, Column, UpsertStrategy
-from storage.db_columns import AUDIO_TABLE_COLUMNS, IMAGE_TABLE_COLUMNS
-from storage.tsv_columns import (
+from common.storage import columns as col
+from common.storage.columns import NULL, Column, UpsertStrategy
+from common.storage.db_columns import AUDIO_TABLE_COLUMNS, IMAGE_TABLE_COLUMNS
+from common.storage.tsv_columns import (
     COLUMNS,
     CURRENT_AUDIO_TSV_COLUMNS,
     CURRENT_IMAGE_TSV_COLUMNS,
     required_columns,
 )
+from psycopg2.errors import InvalidTextRepresentation
 
 
 logger = logging.getLogger(__name__)
@@ -192,12 +192,12 @@ def _is_tsv_column_from_different_version(
     Checks that column is a column that exists in TSV files (unlike the db-only
     columns like IDENTIFIER or CREATED_ON), but is not available for `tsv_version`.
     For example, Category column was added to Image TSV in version 001
-    >>> from storage.columns import CATEGORY, DIRECT_URL
+    >>> from common.storage import CATEGORY, DIRECT_URL
     >>> _is_tsv_column_from_different_version(CATEGORY, IMAGE, '000')
     True
     >>> _is_tsv_column_from_different_version(DIRECT_URL, IMAGE, '000')
     False
-    >>> from storage.columns import IDENTIFIER
+    >>> from common.storage import IDENTIFIER
     >>> _is_tsv_column_from_different_version(IDENTIFIER, IMAGE, '000')
     False
 

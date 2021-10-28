@@ -3,8 +3,8 @@ from collections import namedtuple
 from typing import Dict, Optional, Union
 
 from common.licenses import LicenseInfo
-from storage.media import MediaStore
-from storage.tsv_columns import CURRENT_AUDIO_TSV_COLUMNS
+from common.storage.media import MediaStore
+from common.storage.tsv_columns import CURRENT_AUDIO_TSV_COLUMNS
 
 
 logger = logging.getLogger(__name__)

@@ -2,7 +2,7 @@
 This module contains the lists of database columns
 in the same order as in the main image / audio databases.
 """
-from storage import columns as col
+from common.storage import columns as col
 
 
 # Columns that are only in the main table;

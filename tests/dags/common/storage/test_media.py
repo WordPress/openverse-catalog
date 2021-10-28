@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 import pytest
 from common.licenses import LicenseInfo, get_license_info
-from storage import image
+from common.storage import image
 
 
 logging.basicConfig(
