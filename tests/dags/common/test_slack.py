@@ -265,6 +265,17 @@ def test_send_with_context(http_hook_mock):
     assert s._payload == s._base_payload
 
 
+def test_send_fails(http_hook_mock):
+    s = SlackMessage()
+    # Cause an exception within the raise_for_status call
+    http_hook_mock.return_value.run.return_value.raise_for_status.side_effect = (
+        Exception("HTTP Error 666")
+    )
+    s.add_text("Sample message")
+    with pytest.raises(Exception, match="HTTP Error 666"):
+        s.send()
+
+
 def test_send_message(http_hook_mock):
     send_message("Sample text", username="DifferentUser")
     http_hook_mock.return_value.run.assert_called_with(

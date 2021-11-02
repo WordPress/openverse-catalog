@@ -124,7 +124,9 @@ class SlackMessage:
         self.blocks.append(self._context.copy())
         self._context = {}
 
-    def _add_context(self, body_generator: Callable, main_text: str, **options: Any):
+    def _add_context(
+        self, body_generator: Callable, main_text: str, **options: Any
+    ) -> None:
         if not self._context:
             self._context = {"type": "context", "elements": []}
         body = body_generator(main_text, **options)
@@ -196,6 +198,7 @@ class SlackMessage:
         )
 
         self.clear()
+        response.raise_for_status()
         return response
 
 
