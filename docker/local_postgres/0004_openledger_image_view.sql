@@ -79,3 +79,5 @@ CREATE MATERIALIZED VIEW image_view AS
       image.provider, image.meta_data
     ) AS standardized_popularity
   FROM image;
+
+CREATE UNIQUE INDEX ON image_view (identifier);

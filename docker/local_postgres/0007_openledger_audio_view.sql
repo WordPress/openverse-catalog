@@ -82,3 +82,5 @@ CREATE MATERIALIZED VIEW audio_view AS
       audio.provider, audio.meta_data
     ) AS standardized_popularity
   FROM audio;
+
+CREATE UNIQUE INDEX ON audio_view (identifier);
