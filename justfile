@@ -75,7 +75,12 @@ shell: up
 
 # Launch an IPython REPL using the webserver image
 ipython: (up "postgres s3")
-    docker-compose {{ DOCKER_FILES }} run --rm -w /usr/local/airflow/openverse_catalog/dags {{ SERVICE }} /usr/local/airflow/.local/bin/ipython
+    docker-compose {{ DOCKER_FILES }} run \
+        --rm \
+        -w /usr/local/airflow/openverse_catalog/dags \
+        -v {{ justfile_directory() }}/.ipython:/usr/local/airflow/.ipython:z \
+        {{ SERVICE }} \
+        /usr/local/airflow/.local/bin/ipython
 
 # Run a given command using the webserver image
 run *args: (up "postgres s3")
