@@ -55,8 +55,7 @@ More information can be found here: https://app.slack.com/block-kit-builder.
 
 import json
 from os.path import basename
-from time import perf_counter, sleep
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 from airflow.providers.http.hooks.http import HttpHook
 from requests import Response
@@ -64,24 +63,6 @@ from requests import Response
 
 SLACK_CONN_ID = "slack"
 JsonDict = dict[str, Any]
-
-
-def _text_section(msg: str, plain_text: bool) -> JsonDict:
-    text_type = "plain_text" if plain_text else "mrkdwn"
-    return {"type": "section", "text": {"type": text_type, "text": msg}}
-
-
-def _image_section(
-    url: str, title: Optional[str] = None, alt_text: Optional[str] = None
-) -> JsonDict:
-    img = {"type": "image", "image_url": url}
-    if title:
-        img.update({"title": {"type": "plain_text", "text": title}})
-    if alt_text:
-        img["alt_text"] = alt_text
-    else:
-        img["alt_text"] = basename(url)
-    return img
 
 
 class SlackMessage:
@@ -93,12 +74,9 @@ class SlackMessage:
         icon_emoji: str = ":airflow:",
         unfurl_links: bool = True,
         unfurl_media: bool = True,
-        rate_limit: bool = True,
         http_conn_id: str = SLACK_CONN_ID,
     ):
 
-        self._time_sent = 0
-        self.rate_limit = rate_limit
         self.http = HttpHook(method="POST", http_conn_id=http_conn_id)
         self.blocks = []
         self._context = {}
@@ -111,13 +89,31 @@ class SlackMessage:
         if icon_emoji:
             self._payload["icon_emoji"] = icon_emoji
 
-        self.__base_payload = self._payload.copy()
+        self._base_payload = self._payload.copy()
+
+    @staticmethod
+    def _text_block(message: str, plain_text: bool) -> JsonDict:
+        text_type = "plain_text" if plain_text else "mrkdwn"
+        return {"type": text_type, "text": message}
+
+    @staticmethod
+    def _image_block(
+        url: str, title: Optional[str] = None, alt_text: Optional[str] = None
+    ) -> JsonDict:
+        img = {"type": "image", "image_url": url}
+        if title:
+            img.update({"title": {"type": "plain_text", "text": title}})
+        if alt_text:
+            img["alt_text"] = alt_text
+        else:
+            img["alt_text"] = basename(url)
+        return img
 
     def clear(self) -> None:
         """Clear all stored data to prime the instance for a new message."""
         self.blocks = []
         self._context = {}
-        self._payload = self.__base_payload.copy()
+        self._payload = self._base_payload.copy()
 
     def display(self) -> None:
         """Prints current payload, intended for local development only."""
@@ -132,40 +128,34 @@ class SlackMessage:
         payload.update({"blocks": self.blocks})
         return payload
 
-    def _set_payload(self, payload: JsonDict, blocks: list[JsonDict] = None) -> None:
-        """For debug and testing. Use carefully."""
-
-        self._payload = payload
-        self.blocks = blocks or []
-
     ####################################################################################
     # Context
     ####################################################################################
 
     def _append_context(self) -> None:
         self.blocks.append(self._context.copy())
-        self._context = None
+        self._context = {}
 
-    def add_context(self, msg: str, plain_text: bool = False) -> None:
-        """Display context above or below a text block"""
-
+    def _add_context(self, body_generator: Callable, main_text: str, **options: Any):
         if not self._context:
             self._context = {"type": "context", "elements": []}
-
-        text = _text_section(msg, plain_text)
+        body = body_generator(main_text, **options)
         if len(self._context["elements"]) < 10:
-            self._context["elements"].append(text["text"])
+            self._context["elements"].append(body)
         else:
             raise ValueError("Unable to include more than 10 context elements")
 
+    def add_context(self, message: str, plain_text: bool = False) -> None:
+        """Display context above or below a text block"""
+        self._add_context(
+            self._text_block,
+            message,
+            plain_text=plain_text,
+        )
+
     def add_context_image(self, url: str, alt_text: Optional[str] = None) -> None:
         """Display context image inline within a text block"""
-
-        if not self._context:
-            self._context = {"type": "context", "elements": []}
-
-        img = _image_section(url, alt_text=alt_text)
-        self._context["elements"].append(img)
+        self._add_context(self._image_block, url, alt_text=alt_text)
 
     ####################################################################################
     # Blocks
@@ -180,56 +170,20 @@ class SlackMessage:
         """Add a divider between blocks."""
         self._add_block({"type": "divider"})
 
-    def add_text(self, msg: str, plain_text: bool = False) -> None:
+    def add_text(self, message: str, plain_text: bool = False) -> None:
         """Add a text block, using markdown or plain text."""
-        self._add_block(_text_section(msg, plain_text))
+        text = self._text_block(message, plain_text)
+        self._add_block({"type": "section", "text": text})
 
     def add_image(
         self, url, title: Optional[str] = None, alt_text: Optional[str] = None
     ) -> None:
         """Add an image block, with optional title and alt text."""
-        self._add_block(_image_section(url, title, alt_text))
+        self._add_block(self._image_block(url, title, alt_text))
 
     ####################################################################################
-    # Attachments
+    # Send
     ####################################################################################
-
-    def attach_image(
-        self, url: str, title: Optional[str] = None, fallback: Optional[str] = None
-    ) -> None:
-        """Appends image to message attachments (legacy)"""
-
-        img = {"image_url": url}
-
-        if title:
-            img["title"] = title
-        if fallback:
-            img["fallback"] = fallback
-        if "attachments" in self._payload:
-            self._payload["attachments"].append(img)
-        else:
-            self._payload["attachments"] = [img]
-
-    # SEND -----------------------------------------------------------------------------
-
-    def _send_payload(self, data: str) -> Response:
-
-        if self.rate_limit:
-            if self._time_sent:
-                delta = perf_counter() - self._time_sent
-                if delta < 1:
-                    sleep(1 - delta)
-
-            self._time_sent = perf_counter()
-
-        response = self.http.run(
-            endpoint=None,
-            data=data,
-            headers={"Content-type": "application/json"},
-            extra_options={"verify": True},
-        )
-
-        return response
 
     def send(self, notification_text: str = "Airflow notification") -> Response:
         """
@@ -238,13 +192,20 @@ class SlackMessage:
         Any notification text provided will only show up as the content within
         the notification pushed to various devices.
         """
+        if not self._context and not self.blocks:
+            raise ValueError("Nothing to send!")
 
         if self._context:
             self._append_context()
         self._payload.update({"blocks": self.blocks})
         self._payload["text"] = notification_text
 
-        response = self._send_payload(json.dumps(self._payload))
+        response = self.http.run(
+            endpoint=None,
+            data=json.dumps(self._payload),
+            headers={"Content-type": "application/json"},
+            extra_options={"verify": True},
+        )
 
         self.clear()
         return response
