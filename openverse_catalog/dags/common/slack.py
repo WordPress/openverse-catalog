@@ -5,44 +5,32 @@ TODO:
     - track number of characters, raise error after 4k
     - attach text, fields
 
-## Usage
-
 This class is intended to be used with a channel-specific slack webhook.
 More information can be found here: https://app.slack.com/block-kit-builder.
 
-### Send multiple messages - payload is reset after sending
+## Send multiple messages - payload is reset after sending
 
-    slack = SlackMessage(username="Multi-message Test")
+>>> slack = SlackMessage(username="Multi-message Test")
 
-    slack.add_text("message 1")
-    slack.send()
+>>> slack.add_text("message 1")
+>>> slack.send()
 
-    slack.add_text("message 2")
-    slack.send()
+>>> slack.add_text("message 2")
+>>> slack.send()
 
-### Embed images, plus context
+## Embed images, plus context
 
-    slack = SlackMessage(username="Blocks - Referenced Images")
+>>> slack = SlackMessage(username="Blocks - Referenced Images")
 
-    slack.add_context(":pika-love: context stuff *here*")
+>>> slack.add_context(":pika-love: context stuff *here*")
 
-    msg = "Example message with new method of embedding images and divider below."
+>>> msg = "Example message with new method of embedding images and divider below."
 
-    slack.add_text(msg)
-    slack.add_divider()
-    slack.add_image(url1, title=img1_title, alt_text="img #1")
-    slack.add_image(url2, title=img2_title, alt_text="img #2")
-    slack.send()
-
-### Attached images - displayed below inline text
-
-    slack = SlackMessage(channel, username="Blocks - Attached Images")
-
-    slack.add_text("Example of attaching images to a section.")
-    slack.attach_image(url1, title=img1_title, fallback="img #1")
-    slack.attach_image(url2, title=img2_title, fallback="img #2")
-    slack.send()
-
+>>> slack.add_text(msg)
+>>> slack.add_divider()
+>>> slack.add_image(url1, title=img1_title, alt_text="img #1")
+>>> slack.add_image(url2, title=img2_title, alt_text="img #2")
+>>> slack.send()
 
 ## Dev Tools
 >>> # prints current payload
