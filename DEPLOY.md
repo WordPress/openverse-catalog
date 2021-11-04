@@ -34,7 +34,6 @@ If it is not `export`ed for the session, `IS_PROD=true` will need to be prepende
    - **(Recommended)**
        - `AIRFLOW_PORT`
        - `LOADER_FILE_AGE`
-       - `OUTPUT_DIR`
        - Any API key variables
 6. Run `just build`, verify the image built correctly
 7. Run `just up`, verify that the Airflow container has started successfully
