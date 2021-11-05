@@ -20,9 +20,10 @@ ENV OUTPUT_DIR=/var/workflow_output/
 ENV AIRFLOW__CORE__DAGS_FOLDER=${AIRFLOW_HOME}/openverse_catalog/dags
 ENV AIRFLOW__CORE__LOAD_EXAMPLES=False
 ENV AIRFLOW__CORE__LOAD_DEFAULT_CONNECTIONS=False
+# TODO: Test if moving this to .env changes anything!
 ENV AIRFLOW__LOGGING__REMOTE_LOGGING=True
 ENV AIRFLOW__LOGGING__REMOTE_LOG_CONN_ID=aws_default
-ENV AIRFLOW__LOGGING__REMOTE_BASE_LOG_FOLDER=s3://openverse-airflow-logs/logs
+ENV AIRFLOW__LOGGING__REMOTE_BASE_LOG_FOLDER=s3://openverse-airflow-logs
 
 
 RUN apt-get update && apt-get -yqq upgrade && apt-get -yqq install \
@@ -36,11 +37,11 @@ USER airflow
 
 WORKDIR  ${AIRFLOW_HOME}
 # Always add the prod req because the dev reqs depend on it for deduplication
-COPY ${REQUIREMENTS_FILE} requirements_prod.txt wait_for_db.py ${AIRFLOW_HOME}/
+COPY ${REQUIREMENTS_FILE} requirements_prod.txt docker/airflow/wait_for_db.py ${AIRFLOW_HOME}/
 
 RUN pip install --user -r ${REQUIREMENTS_FILE} -c ${CONSTRAINTS_FILE}
 
-CMD python wait_for_db.py && \
-  airflow db init && \
-  airflow users create -r Admin -u airflow -f Air -l Flow -p airflow --email airflow@example.org && \
-  (airflow scheduler & airflow webserver)
+COPY docker/airflow/entrypoint.sh entrypoint.sh
+
+ENTRYPOINT ["./entrypoint.sh"]
+CMD ["server"]
