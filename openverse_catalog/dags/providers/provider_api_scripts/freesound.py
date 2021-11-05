@@ -14,9 +14,9 @@ import logging
 import os
 
 from common.licenses.licenses import get_license_info
+from common.loader import provider_details as prov
 from common.requester import DelayedRequester
-from storage.audio import AudioStore
-from util.loader import provider_details as prov
+from common.storage.audio import AudioStore
 
 
 LIMIT = 150
@@ -27,7 +27,7 @@ ENDPOINT = f"https://{HOST}/apiv2/search/text"
 PROVIDER = prov.FREESOUND_DEFAULT_PROVIDER
 # Freesound only has 'sounds'
 FREESOUND_CATEGORY = "sound"
-API_KEY = os.getenv("FREESOUND_API_KEY", "not_set")
+API_KEY = os.getenv("FREESOUND_API_KEY", "OD27HB2CT5Aaw1DoPMG5KUtK0ULjadPFDtNj4npC")
 
 HEADERS = {
     "Accept": "application/json",
@@ -44,6 +44,14 @@ DEFAULT_QUERY_PARAMS = {
 
 delayed_requester = DelayedRequester(DELAY)
 audio_store = AudioStore(provider=PROVIDER)
+
+
+preview_bitrates = {
+    "preview-hq-mp3": 128000,
+    "preview-lq-mp3": 64000,
+    "preview-hq-ogg": 192000,
+    "preview-lq-ogg": 80000,
+}
 
 
 def main():
@@ -177,14 +185,6 @@ def _get_set_info(set_url):
     set_id = response_json.get("id")
     set_name = response_json.get("name")
     return set_id, set_name
-
-
-preview_bitrates = {
-    "preview-hq-mp3": 128000,
-    "preview-lq-mp3": 64000,
-    "preview-hq-ogg": 192000,
-    "preview-lq-ogg": 80000,
-}
 
 
 def _get_preview_filedata(preview_type, preview_url):

@@ -8,7 +8,7 @@ import logging
 # airflow DAG (necessary for Airflow to find this file)
 from datetime import datetime
 
-from provider_api_scripts import freesound
+from providers.provider_api_scripts import freesound
 from util.dag_factory import create_provider_api_workflow
 
 

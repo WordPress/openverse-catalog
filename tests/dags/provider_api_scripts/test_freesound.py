@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 from common.licenses.licenses import LicenseInfo
-from provider_api_scripts import freesound
+from providers.provider_api_scripts import freesound
 
 
 RESOURCES = Path(__file__).parent.resolve() / "resources/freesound"
