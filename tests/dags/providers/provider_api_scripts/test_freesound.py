@@ -74,7 +74,7 @@ def test_process_item_batch_handles_example_batch(audio_data):
         expected_call_args = {
             "alt_files": [
                 {
-                    "bit_rate": 1381,
+                    "bit_rate": 1381000,
                     "filesize": 107592,
                     "filetype": "wav",
                     "sample_rate": 44100,
@@ -174,42 +174,40 @@ def test_get_creator_data_returns_none_when_no_artist(audio_data):
 
 def test_extract_audio_data_handles_example_dict(audio_data):
     actual_audio_info = freesound._extract_audio_data(audio_data)
-    preview_url_base = "https://freesound.org/data/previews/415"
     expected_audio_info = {
         "alt_files": [
             {
-                "bit_rate": 1381,
+                "bit_rate": 1381000,
                 "filesize": 107592,
                 "filetype": "wav",
-                "sample_rate": 44100.0,
+                "sample_rate": 44100,
                 "url": "https://freesound.org/apiv2/sounds/415362/download/",
             },
             {
-                "filetype": "mp3",
-                "url": "https://freesound.org/data/previews/415/415362_6044691-hq.mp3",
-            },
-            {
+                "bit_rate": 192000,
                 "filetype": "ogg",
                 "url": "https://freesound.org/data/previews/415/415362_6044691-hq.ogg",
             },
             {
+                "bit_rate": 64000,
                 "filetype": "mp3",
                 "url": "https://freesound.org/data/previews/415/415362_6044691-lq.mp3",
             },
             {
+                "bit_rate": 80000,
                 "filetype": "ogg",
                 "url": "https://freesound.org/data/previews/415/415362_6044691-lq.ogg",
             },
         ],
         "audio_set": "https://freesound.org/apiv2/packs/23434/",
-        "audio_url": "https://freesound.org/people/owly-bee/sounds/415362/",
-        "bit_rate": 1381,
+        "audio_url": "https://freesound.org/data/previews/415/415362_6044691-hq.mp3",
+        "bit_rate": 128000,
         "category": "sound",
         "creator": "owly-bee",
         "creator_url": "https://freesound.org/people/owly-bee/",
         "duration": 608,
         "filesize": 107592,
-        "filetype": "wav",
+        "filetype": "mp3",
         "foreign_identifier": 415362,
         "foreign_landing_url": "https://freesound.org/people/owly-bee/sounds/415362/",
         "license_info": LicenseInfo(
@@ -222,12 +220,6 @@ def test_extract_audio_data_handles_example_dict(audio_data):
             "description": "A disinterested noise in a somewhat low tone.",
             "download": "https://freesound.org/apiv2/sounds/415362/download/",
             "num_downloads": 164,
-            "previews": {
-                "preview-hq-mp3": f"{preview_url_base}/415362_6044691-hq.mp3",
-                "preview-hq-ogg": f"{preview_url_base}/415362_6044691-hq.ogg",
-                "preview-lq-mp3": f"{preview_url_base}/415362_6044691-lq.mp3",
-                "preview-lq-ogg": f"{preview_url_base}/415362_6044691-lq.ogg",
-            },
         },
         "raw_tags": ["eh", "disinterest", "low", "uh", "voice", "uncaring"],
         "sample_rate": 44100,

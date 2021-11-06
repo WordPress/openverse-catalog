@@ -13,6 +13,7 @@ import functools
 import logging
 import os
 
+import requests
 from common.licenses.licenses import get_license_info
 from common.loader import provider_details as prov
 from common.requester import DelayedRequester
@@ -27,7 +28,7 @@ ENDPOINT = f"https://{HOST}/apiv2/search/text"
 PROVIDER = prov.FREESOUND_DEFAULT_PROVIDER
 # Freesound only has 'sounds'
 FREESOUND_CATEGORY = "sound"
-API_KEY = os.getenv("FREESOUND_API_KEY", "OD27HB2CT5Aaw1DoPMG5KUtK0ULjadPFDtNj4npC")
+API_KEY = os.getenv("FREESOUND_API_KEY", "not_set")
 
 HEADERS = {
     "Accept": "application/json",
@@ -196,11 +197,12 @@ def _get_preview_filedata(preview_type, preview_url):
 
 
 def _get_audio_files(media_data):
-    # This is the original file, needs auth for downloading
+    # This is the original file, needs auth for downloading.
+    # bit_rate in kilobytes, converted to bytes
     alt_files = [
         {
             "url": media_data.get("download"),
-            "bit_rate": int(media_data.get("bitrate")),
+            "bit_rate": int(media_data.get("bitrate")) * 1000,
             "sample_rate": int(media_data.get("samplerate")),
             "filetype": media_data.get("type"),
             "filesize": media_data.get("filesize"),
@@ -212,6 +214,9 @@ def _get_audio_files(media_data):
         return None
     main_file = _get_preview_filedata("preview-hq-mp3", previews["preview-hq-mp3"])
     main_file["audio_url"] = main_file.pop("url")
+    # TODO: move filesize detection to the polite crawler
+    filesize = requests.head(main_file["audio_url"]).headers["content-length"]
+    main_file["filesize"] = filesize
     for preview_type, preview_url in previews.items():
         file_data = _get_preview_filedata(preview_type, preview_url)
         if preview_type != "preview-hq-mp3":
