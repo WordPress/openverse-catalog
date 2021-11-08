@@ -48,6 +48,7 @@ https://github.com/creativecommons/cccatalog/issues/334)
 """
 import os
 from datetime import datetime, timedelta
+from textwrap import dedent as d
 
 from airflow import DAG
 from airflow.operators.python import PythonOperator
@@ -92,6 +93,13 @@ with dag:
             "identifier": TIMESTAMP_TEMPLATE,
             "minimum_file_age_minutes": MINIMUM_FILE_AGE_MINUTES,
         },
+        doc_md=d(
+            f"""
+        Find the oldest TSV in the output directory ({OUTPUT_DIR_PATH}) that hasn't been
+        modified in {MINIMUM_FILE_AGE_MINUTES} minutes and transfer it to the staging
+        directory. If no files are found matching this criteria, the DAG is skipped.
+        """
+        ),
     )
     create_loading_table = PythonOperator(
         task_id="create_loading_table",
@@ -100,6 +108,7 @@ with dag:
             "postgres_conn_id": DB_CONN_ID,
             "identifier": TIMESTAMP_TEMPLATE,
         },
+        doc_md="Create a temporary loading table for ingesting data from a TSV.",
     )
     copy_to_s3 = PythonOperator(
         task_id="copy_to_s3",
@@ -110,6 +119,12 @@ with dag:
             "aws_conn_id": AWS_CONN_ID,
             "identifier": TIMESTAMP_TEMPLATE,
         },
+        doc_md=d(
+            f"""
+        Copy the TSV from the local output directory ({OUTPUT_DIR_PATH}) into the S3
+        bucket ({OPENVERSE_BUCKET}) for direct loading into the database.
+        """
+        ),
     )
     load_s3_data = PythonOperator(
         task_id="load_s3_data",
@@ -120,18 +135,32 @@ with dag:
             "postgres_conn_id": DB_CONN_ID,
             "identifier": TIMESTAMP_TEMPLATE,
         },
+        doc_md="Load the TSV from S3 into the database.",
     )
     delete_staged_file = PythonOperator(
         task_id="delete_staged_file",
         python_callable=paths.delete_staged_file,
         op_kwargs={"output_dir": OUTPUT_DIR_PATH, "identifier": TIMESTAMP_TEMPLATE},
         trigger_rule=TriggerRule.ALL_SUCCESS,
+        doc_md=d(
+            """
+        Delete the staged TSV. This step will only be run if the file was _both_ copied
+        into S3 and loaded into the database successfully.
+        """
+        ),
     )
     drop_loading_table = PythonOperator(
         task_id="drop_loading_table",
         python_callable=sql.drop_load_table,
         op_kwargs={"postgres_conn_id": DB_CONN_ID, "identifier": TIMESTAMP_TEMPLATE},
         trigger_rule=TriggerRule.NONE_SKIPPED,
+        doc_md=d(
+            """
+        Drop the temporary loading table used to store the TSV records. This step will
+        always occur after table creation unless the DAG has been skipped in order to
+        ensure tables are cleaned up in all cases.
+        """
+        ),
     )
     move_staged_failures = PythonOperator(
         task_id="move_staged_failures",
@@ -141,6 +170,13 @@ with dag:
             "identifier": TIMESTAMP_TEMPLATE,
         },
         trigger_rule=TriggerRule.ONE_FAILED,
+        doc_md=d(
+            """
+        Move any staged files that have failed to upload into the failed directory.
+        This task will run if any of the critical loader tasks fail. This allows
+        operators to retry the loading once the problem has been addressed.
+        """
+        ),
     )
 
     # If there is a TSV to load, copy it to S3 & create the loading table,
