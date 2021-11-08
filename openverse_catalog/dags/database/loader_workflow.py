@@ -77,7 +77,7 @@ dag = DAG(
         "retry_delay": timedelta(seconds=15),
     },
     concurrency=CONCURRENCY,
-    max_active_runs=CONCURRENCY,
+    max_active_runs=1,
     schedule_interval="* * * * *",
     catchup=False,
     doc_md=__doc__,
