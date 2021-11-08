@@ -131,7 +131,7 @@ with dag:
         task_id="drop_loading_table",
         python_callable=sql.drop_load_table,
         op_kwargs={"postgres_conn_id": DB_CONN_ID, "identifier": TIMESTAMP_TEMPLATE},
-        trigger_rule=TriggerRule.ALL_DONE,
+        trigger_rule=TriggerRule.NONE_SKIPPED,
     )
     move_staged_failures = PythonOperator(
         task_id="move_staged_failures",
