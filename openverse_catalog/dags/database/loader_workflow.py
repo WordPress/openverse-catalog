@@ -84,7 +84,6 @@ dag = DAG(
 )
 
 with dag:
-    # Important, but skip here
     stage_oldest_tsv_file = PythonOperator(
         task_id="stage_oldest_tsv_file",
         python_callable=paths.stage_oldest_tsv_file,
@@ -144,5 +143,11 @@ with dag:
         trigger_rule=TriggerRule.ONE_FAILED,
     )
 
+    # If there is a TSV to load, copy it to S3 & create the loading table,
+    # then perform the load into Postgres from S3
     stage_oldest_tsv_file >> [copy_to_s3, create_loading_table] >> load_s3_data
-    load_s3_data >> [drop_loading_table, delete_staged_file] >> move_staged_failures
+    # Should any of these tasks fail, move the TSV to the failed location
+    [copy_to_s3, create_loading_table, load_s3_data] >> move_staged_failures
+    # Once the data is loaded successfully, drop the loading table and delete
+    # the staged TSV locally (since it exists in S3)
+    load_s3_data >> [drop_loading_table, delete_staged_file]
