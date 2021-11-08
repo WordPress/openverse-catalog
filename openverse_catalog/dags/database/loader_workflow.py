@@ -106,7 +106,7 @@ with dag:
         python_callable=loader.copy_to_s3,
         op_kwargs={
             "output_dir": OUTPUT_DIR_PATH,
-            "storage_bucket": OPENVERSE_BUCKET,
+            "bucket": OPENVERSE_BUCKET,
             "aws_conn_id": AWS_CONN_ID,
             "identifier": TIMESTAMP_TEMPLATE,
         },
@@ -148,6 +148,8 @@ with dag:
     stage_oldest_tsv_file >> [copy_to_s3, create_loading_table] >> load_s3_data
     # Should any of these tasks fail, move the TSV to the failed location
     [copy_to_s3, create_loading_table, load_s3_data] >> move_staged_failures
-    # Once the data is loaded successfully, drop the loading table and delete
-    # the staged TSV locally (since it exists in S3)
-    load_s3_data >> [drop_loading_table, delete_staged_file]
+    # If any of the loading steps fail, we don't need the loading table anymore
+    [create_loading_table, load_s3_data] >> drop_loading_table
+    # Once the data is loaded successfully, delete the staged TSV locally
+    # (since it exists in S3)
+    load_s3_data >> delete_staged_file
