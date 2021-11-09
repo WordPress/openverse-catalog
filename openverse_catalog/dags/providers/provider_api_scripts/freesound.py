@@ -46,6 +46,11 @@ DEFAULT_QUERY_PARAMS = {
 delayed_requester = DelayedRequester(DELAY)
 audio_store = AudioStore(provider=PROVIDER)
 
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s",
+    level=logging.INFO,
+)
+logger = logging.getLogger(__name__)
 
 preview_bitrates = {
     "preview-hq-mp3": 128000,
@@ -216,7 +221,7 @@ def _get_audio_files(media_data):
     main_file["audio_url"] = main_file.pop("url")
     # TODO: move filesize detection to the polite crawler
     filesize = requests.head(main_file["audio_url"]).headers["content-length"]
-    main_file["filesize"] = filesize
+    main_file["filesize"] = int(filesize)
     for preview_type, preview_url in previews.items():
         file_data = _get_preview_filedata(preview_type, preview_url)
         if preview_type != "preview-hq-mp3":
@@ -258,9 +263,4 @@ def _get_license(item):
 
 
 if __name__ == "__main__":
-    logging.basicConfig(
-        format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s",
-        level=logging.INFO,
-    )
-    logger = logging.getLogger(__name__)
     main()
