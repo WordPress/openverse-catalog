@@ -1,4 +1,6 @@
 import sqlalchemy as sa
+from alembic_utils.pg_function import PGFunction
+from alembic_utils.pg_materialized_view import PGMaterializedView
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -58,6 +60,91 @@ class ImagePopularityMetric(Base):
     provider = sa.Column(sa.String(80), primary_key=True)
     metric = sa.Column(sa.String(80))
     percentile = sa.Column(sa.Float)
+
+
+ImagePopularityPercentileFunction = PGFunction(
+    schema="public",
+    signature="image_popularity_percentile(provider text, pop_field text, percentile float)",  # noqa
+    definition="""
+RETURNS FLOAT AS $$
+  SELECT percentile_disc($3) WITHIN GROUP (
+    ORDER BY (meta_data->>$2)::float
+  )
+  FROM image WHERE provider=$1;
+$$
+LANGUAGE SQL
+STABLE
+RETURNS NULL ON NULL INPUT;
+""",
+)
+
+# TODO: Add unique index!!
+ImagePopularityConstantsMatView = PGMaterializedView(
+    schema="public",
+    signature="image_popularity_constants",
+    definition="""
+WITH popularity_metric_values AS (
+    SELECT
+    *,
+    image_popularity_percentile(provider, metric, percentile) AS val
+    FROM image_popularity_metrics
+)
+SELECT *, ((1 - percentile) / percentile) * val AS constant
+FROM popularity_metric_values;
+""",
+)
+
+StandardizedImagePopularityFunction = PGFunction(
+    schema="public",
+    signature="standardized_image_popularity(provider text, meta_data jsonb)",
+    definition="""
+RETURNS FLOAT AS $$
+  SELECT ($2->>metric)::FLOAT / (($2->>metric)::FLOAT + constant)
+  FROM image_popularity_constants WHERE provider=$1;
+$$
+LANGUAGE SQL
+STABLE
+RETURNS NULL ON NULL INPUT;
+""",
+)
+
+# TODO: Add unique index!!
+ImageViewMatView = PGMaterializedView(
+    schema="public",
+    signature="image_view",
+    definition="""
+SELECT
+identifier,
+created_on,
+updated_on,
+ingestion_type,
+provider,
+source,
+foreign_identifier,
+foreign_landing_url,
+url,
+thumbnail,
+width,
+height,
+filesize,
+license,
+license_version,
+creator,
+creator_url,
+title,
+meta_data,
+tags,
+watermarked,
+last_synced_with_source,
+removed_from_source,
+filetype,
+category,
+standardized_image_popularity(
+  image.provider, image.meta_data
+) AS standardized_popularity
+FROM image;
+""",
+)
 
 
 ########################################################################################

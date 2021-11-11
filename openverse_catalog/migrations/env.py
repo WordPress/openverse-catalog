@@ -3,6 +3,7 @@ from logging.config import fileConfig
 
 import models
 from alembic import context
+from alembic_utils.replaceable_entity import register_entities
 from sqlalchemy import engine_from_config, pool
 
 
@@ -29,6 +30,16 @@ config.set_section_option(
     config.config_ini_section,
     "sqlalchemy.url",
     os.getenv("AIRFLOW_CONN_POSTGRES_OPENLEDGER_UPSTREAM"),
+)
+
+# Register non-table entities
+register_entities(
+    [
+        models.ImagePopularityPercentileFunction,
+        models.ImagePopularityConstantsMatView,
+        models.StandardizedImagePopularityFunction,
+        models.ImageViewMatView,
+    ]
 )
 
 
