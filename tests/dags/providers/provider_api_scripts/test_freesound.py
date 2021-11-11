@@ -61,7 +61,9 @@ def test_get_items():
         first_response = json.load(f)
     with patch.object(freesound, "_get_batch_json", side_effect=[first_response, []]):
         expected_audio_count = 6
-        actual_audio_count = freesound._get_items(license_name="Attribution")
+        actual_audio_count = freesound._get_items(
+            license_name="Attribution", date="all"
+        )
         assert expected_audio_count == actual_audio_count
 
 

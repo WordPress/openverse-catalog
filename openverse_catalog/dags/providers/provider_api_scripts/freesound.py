@@ -9,9 +9,11 @@ Output:                 TSV file containing the image, the respective
 Notes:                  https://freesound.org/apiv2/search/text'
                         No rate limit specified.
 """
+import copy
 import functools
 import logging
 import os
+from datetime import datetime
 
 import requests
 from common.licenses.licenses import get_license_info
@@ -60,16 +62,21 @@ preview_bitrates = {
 }
 
 
-def main():
+def main(date="all"):
     """This script pulls the data for a given date from the Freesound,
     and writes it into a .TSV file to be eventually read
     into our DB.
+
+    Required Arguments:
+
+    date:  Date String in the form YYYY-MM-DD.  This is the date for
+           which running the script will pull data.
     """
 
     logger.info("Begin: Freesound script")
     licenses = ["Attribution", "Attribution Noncommercial", "Creative Commons 0"]
     for license_name in licenses:
-        audio_count = _get_items(license_name)
+        audio_count = _get_items(license_name, date)
         logger.info(f"Audios for {license_name} pulled: {audio_count}")
     logger.info("Terminated!")
 
@@ -87,13 +94,23 @@ def _get_query_params(
     }
 
 
-def _get_items(license_name):
+def _get_items(license_name, date):
     item_count = 0
     page_number = 1
     should_continue = True
+    default_query_params = copy.deepcopy(DEFAULT_QUERY_PARAMS)
+    try:
+        start_date = datetime.strftime(
+            datetime.fromisoformat(date), "%Y-%m-%dT%H:%M:%S.%3NZ"
+        )
+    except ValueError:
+        start_date = "*"
+    default_query_params["filter"] = f"created:[{start_date} TO NOW]"
     while should_continue:
         query_param = _get_query_params(
-            license_name=license_name, page_number=page_number
+            default_query_params=default_query_params,
+            license_name=license_name,
+            page_number=page_number,
         )
         batch_data = _get_batch_json(query_param=query_param)
         if batch_data:
@@ -263,4 +280,4 @@ def _get_license(item):
 
 
 if __name__ == "__main__":
-    main()
+    main(date="2020-01-01")
