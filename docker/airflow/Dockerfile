@@ -17,6 +17,7 @@ ENV PIP_NO_COLOR=1
 
 # Airflow/workflow configuration
 ENV OUTPUT_DIR=/var/workflow_output/
+ENV ALEMBIC_CONFIG=${AIRFLOW_HOME}/openverse_catalog/migrations/alembic.ini
 ENV AIRFLOW__CORE__DAGS_FOLDER=${AIRFLOW_HOME}/openverse_catalog/dags
 ENV AIRFLOW__CORE__LOAD_EXAMPLES=False
 ENV AIRFLOW__CORE__LOAD_DEFAULT_CONNECTIONS=False
