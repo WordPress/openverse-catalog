@@ -21,7 +21,6 @@ def upgrade():
     ####################################################################################
     # Set up database
     ####################################################################################
-    print("starting")
     op.execute(
         """
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
@@ -31,7 +30,6 @@ COMMENT ON EXTENSION "uuid-ossp" IS 'generate universally unique identifiers (UU
     ####################################################################################
     # Audio tables
     ####################################################################################
-    print("making tables")
     op.create_table(
         "audio",
         sa.Column(
@@ -81,12 +79,28 @@ COMMENT ON EXTENSION "uuid-ossp" IS 'generate universally unique identifiers (UU
         ],
         unique=True,
     )
-    op.create_table(
+    audio_pop_metrics = op.create_table(
         "audio_popularity_metrics",
         sa.Column("provider", sa.String(length=80), nullable=False),
         sa.Column("metric", sa.String(length=80), nullable=True),
         sa.Column("percentile", sa.Float(), nullable=True),
         sa.PrimaryKeyConstraint("provider"),
+    )
+    # Insert initial values
+    op.bulk_insert(
+        audio_pop_metrics,
+        [
+            {
+                "provider": "wikimedia_audio",
+                "metric": "global_usage_count",
+                "percentile": 0.85,
+            },
+            {
+                "provider": "jamendo",
+                "metric": "listens",
+                "percentile": 0.85,
+            },
+        ],
     )
     ####################################################################################
     # Image tables
@@ -125,13 +139,6 @@ COMMENT ON EXTENSION "uuid-ossp" IS 'generate universally unique identifiers (UU
         sa.Column("category", sa.String(length=80), nullable=True),
         sa.PrimaryKeyConstraint("identifier"),
     )
-    op.create_table(
-        "image_popularity_metrics",
-        sa.Column("provider", sa.String(length=80), nullable=False),
-        sa.Column("metric", sa.String(length=80), nullable=True),
-        sa.Column("percentile", sa.Float(), nullable=True),
-        sa.PrimaryKeyConstraint("provider"),
-    )
     # Add index manually
     op.create_index(
         index_name="image_provider_fid_idx",
@@ -141,6 +148,34 @@ COMMENT ON EXTENSION "uuid-ossp" IS 'generate universally unique identifiers (UU
             sa.func.md5("foreign_identifier"),
         ],
         unique=True,
+    )
+    image_pop_metrics = op.create_table(
+        "image_popularity_metrics",
+        sa.Column("provider", sa.String(length=80), nullable=False),
+        sa.Column("metric", sa.String(length=80), nullable=True),
+        sa.Column("percentile", sa.Float(), nullable=True),
+        sa.PrimaryKeyConstraint("provider"),
+    )
+    # Insert initial values
+    op.bulk_insert(
+        image_pop_metrics,
+        [
+            {
+                "provider": "flickr",
+                "metric": "views",
+                "percentile": 0.85,
+            },
+            {
+                "provider": "wikimedia",
+                "metric": "global_usage_count",
+                "percentile": 0.85,
+            },
+            {
+                "provider": "stocksnap",
+                "metric": "downloads_raw",
+                "percentile": 0.85,
+            },
+        ],
     )
 
 
