@@ -158,9 +158,10 @@ def _extract_audio_data(media_data):
     if item_license is None:
         return None
 
-    # We use the mp3-hq url as `audio_url` for playing on the frontend
-    # download link (that requires authentication) for download button
-    # media_data['url'] as the foreign_landing_url
+    # We use the mp3-hq preview url as `audio_url` as the main url
+    # for playing on the frontend,
+    # and the actual uploaded file as an alt_file that is available
+    # for download (and requires a user to be authenticated to download)
     main_audio, alt_files = _get_audio_files(media_data)
     if main_audio is None:
         return None
@@ -236,13 +237,9 @@ def _get_audio_files(media_data):
         return None
     main_file = _get_preview_filedata("preview-hq-mp3", previews["preview-hq-mp3"])
     main_file["audio_url"] = main_file.pop("url")
-    # TODO: move filesize detection to the polite crawler
+    # TODO(obulat): move filesize detection to the polite crawler
     filesize = requests.head(main_file["audio_url"]).headers["content-length"]
     main_file["filesize"] = int(filesize)
-    for preview_type, preview_url in previews.items():
-        file_data = _get_preview_filedata(preview_type, preview_url)
-        if preview_type != "preview-hq-mp3":
-            alt_files.append(file_data)
     return main_file, alt_files
 
 
@@ -280,4 +277,4 @@ def _get_license(item):
 
 
 if __name__ == "__main__":
-    main(date="2020-01-01")
+    main()
