@@ -81,22 +81,7 @@ def test_process_item_batch_handles_example_batch(audio_data):
                     "filetype": "wav",
                     "sample_rate": 44100,
                     "url": "https://freesound.org/apiv2/sounds/415362/download/",
-                },
-                {
-                    "bit_rate": 192000,
-                    "filetype": "ogg",
-                    "url": "https://freesound.org/data/previews/415/415362_6044691-hq.ogg",
-                },
-                {
-                    "bit_rate": 64000,
-                    "filetype": "mp3",
-                    "url": "https://freesound.org/data/previews/415/415362_6044691-lq.mp3",
-                },
-                {
-                    "bit_rate": 80000,
-                    "filetype": "ogg",
-                    "url": "https://freesound.org/data/previews/415/415362_6044691-lq.ogg",
-                },
+                }
             ],
             "audio_set": "https://freesound.org/apiv2/packs/23434/",
             "audio_url": "https://freesound.org/data/previews/415/415362_6044691-hq.mp3",
@@ -185,21 +170,6 @@ def test_extract_audio_data_handles_example_dict(audio_data):
                 "filetype": "wav",
                 "sample_rate": 44100,
                 "url": "https://freesound.org/apiv2/sounds/415362/download/",
-            },
-            {
-                "bit_rate": 192000,
-                "filetype": "ogg",
-                "url": "https://freesound.org/data/previews/415/415362_6044691-hq.ogg",
-            },
-            {
-                "bit_rate": 64000,
-                "filetype": "mp3",
-                "url": "https://freesound.org/data/previews/415/415362_6044691-lq.mp3",
-            },
-            {
-                "bit_rate": 80000,
-                "filetype": "ogg",
-                "url": "https://freesound.org/data/previews/415/415362_6044691-lq.ogg",
             },
         ],
         "audio_set": "https://freesound.org/apiv2/packs/23434/",
