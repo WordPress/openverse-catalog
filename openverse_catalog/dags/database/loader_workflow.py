@@ -46,131 +46,147 @@ https://github.com/creativecommons/cccatalog/issues/333)
 https://github.com/creativecommons/cccatalog/issues/334)
 
 """
-import logging
 import os
 from datetime import datetime, timedelta
+from textwrap import dedent as d
 
 from airflow import DAG
-from common.loader import operators
-from common.pg_cleaner import OVERWRITE_DIR
+from airflow.operators.python import PythonOperator
+from airflow.utils.trigger_rule import TriggerRule
+from common.loader import loader, paths, sql
 
-
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s", level=logging.INFO
-)
-
-logger = logging.getLogger(__name__)
 
 DAG_ID = "tsv_to_postgres_loader"
-OVERWRITE_DAG_ID = "tsv_to_postgres_loader_overwrite"
 DB_CONN_ID = os.getenv("OPENLEDGER_CONN_ID", "postgres_openledger_testing")
 AWS_CONN_ID = os.getenv("AWS_CONN_ID", "no_aws_conn_id")
 OPENVERSE_BUCKET = os.getenv("OPENVERSE_BUCKET")
 MINIMUM_FILE_AGE_MINUTES = int(os.getenv("LOADER_FILE_AGE", 15))
 CONCURRENCY = 5
-SCHEDULE_CRON = "* * * * *"
 TIMESTAMP_TEMPLATE = "{{ ts_nodash }}"
 
 OUTPUT_DIR_PATH = os.path.realpath(os.getenv("OUTPUT_DIR", "/tmp/"))
 
-DAG_DEFAULT_ARGS = {
-    "owner": "data-eng-admin",
-    "depends_on_past": False,
-    "start_date": datetime(2020, 1, 15),
-    "email_on_retry": False,
-    "retries": 2,
-    "retry_delay": timedelta(seconds=15),
-}
 
-
-def create_dag(
+dag = DAG(
     dag_id=DAG_ID,
-    args=DAG_DEFAULT_ARGS,
+    default_args={
+        "owner": "data-eng-admin",
+        "depends_on_past": False,
+        "start_date": datetime(2020, 1, 15),
+        "email_on_retry": False,
+        "retries": 2,
+        "retry_delay": timedelta(seconds=15),
+    },
     concurrency=CONCURRENCY,
-    max_active_runs=CONCURRENCY,
-    schedule_cron=SCHEDULE_CRON,
-    postgres_conn_id=DB_CONN_ID,
-    aws_conn_id=AWS_CONN_ID,
-    output_dir=OUTPUT_DIR_PATH,
-    storage_bucket=OPENVERSE_BUCKET,
-    minimum_file_age_minutes=MINIMUM_FILE_AGE_MINUTES,
-    overwrite=False,
-):
-    dag = DAG(
-        dag_id=dag_id,
-        default_args=args,
-        concurrency=concurrency,
-        max_active_runs=max_active_runs,
-        schedule_interval=schedule_cron,
-        catchup=False,
-    )
-    if overwrite is True:
-        identifier = "overwrite" + TIMESTAMP_TEMPLATE
-    else:
-        identifier = TIMESTAMP_TEMPLATE
-
-    with dag:
-        stage_oldest_tsv_file = operators.get_file_staging_operator(
-            output_dir,
-            minimum_file_age_minutes,
-            identifier=identifier,
-        )
-        create_loading_table = operators.get_table_creator_operator(
-            postgres_conn_id,
-            identifier=identifier,
-        )
-        copy_to_s3 = operators.get_copy_to_s3_operator(
-            output_dir,
-            storage_bucket,
-            aws_conn_id,
-            identifier=identifier,
-        )
-        load_s3_data = operators.get_load_s3_data_operator(
-            storage_bucket,
-            aws_conn_id,
-            postgres_conn_id,
-            overwrite=overwrite,
-            identifier=identifier,
-        )
-        one_failed_s3 = operators.get_one_failed_switch("s3")
-        load_local_data = operators.get_load_local_data_operator(
-            output_dir,
-            postgres_conn_id,
-            overwrite=overwrite,
-            identifier=identifier,
-        )
-        one_success_save = operators.get_one_success_switch("save")
-        all_done_save = operators.get_all_done_switch("save")
-        all_failed_save = operators.get_all_failed_switch("save")
-        delete_staged_file = operators.get_file_deletion_operator(
-            output_dir,
-            identifier=identifier,
-        )
-        one_failed_delete = operators.get_one_failed_switch("delete")
-        drop_loading_table = operators.get_drop_table_operator(
-            postgres_conn_id,
-            identifier=identifier,
-        )
-        move_staged_failures = operators.get_failure_moving_operator(
-            output_dir,
-            identifier=identifier,
-        )
-        (stage_oldest_tsv_file >> [create_loading_table, copy_to_s3] >> load_s3_data)
-        [copy_to_s3, load_s3_data] >> one_failed_s3
-        [create_loading_table, one_failed_s3] >> load_local_data
-        [copy_to_s3, load_local_data] >> one_success_save
-        [copy_to_s3, load_local_data] >> all_done_save
-        [copy_to_s3, load_local_data] >> all_failed_save
-        [one_success_save, all_done_save] >> delete_staged_file
-        [load_s3_data, load_local_data] >> drop_loading_table
-        delete_staged_file >> one_failed_delete
-        [one_failed_delete, all_failed_save] >> move_staged_failures
-    return dag
-
-
-globals()[DAG_ID] = create_dag()
-globals()[OVERWRITE_DAG_ID] = create_dag(
-    dag_id=OVERWRITE_DAG_ID,
-    output_dir=os.path.join(OUTPUT_DIR_PATH, OVERWRITE_DIR),
-    overwrite=True,
+    max_active_runs=1,
+    schedule_interval="* * * * *",
+    catchup=False,
+    tags=["database"],
+    doc_md=__doc__,
 )
+
+with dag:
+    stage_oldest_tsv_file = PythonOperator(
+        task_id="stage_oldest_tsv_file",
+        python_callable=paths.stage_oldest_tsv_file,
+        op_kwargs={
+            "output_dir": OUTPUT_DIR_PATH,
+            "identifier": TIMESTAMP_TEMPLATE,
+            "minimum_file_age_minutes": MINIMUM_FILE_AGE_MINUTES,
+        },
+        doc_md=d(
+            f"""
+        Find the oldest TSV in the output directory ({OUTPUT_DIR_PATH}) that hasn't been
+        modified in {MINIMUM_FILE_AGE_MINUTES} minutes and transfer it to the staging
+        directory. If no files are found matching this criteria, the DAG is skipped.
+        """
+        ),
+    )
+    create_loading_table = PythonOperator(
+        task_id="create_loading_table",
+        python_callable=sql.create_loading_table,
+        op_kwargs={
+            "postgres_conn_id": DB_CONN_ID,
+            "identifier": TIMESTAMP_TEMPLATE,
+        },
+        doc_md="Create a temporary loading table for ingesting data from a TSV.",
+    )
+    copy_to_s3 = PythonOperator(
+        task_id="copy_to_s3",
+        python_callable=loader.copy_to_s3,
+        op_kwargs={
+            "output_dir": OUTPUT_DIR_PATH,
+            "bucket": OPENVERSE_BUCKET,
+            "aws_conn_id": AWS_CONN_ID,
+            "identifier": TIMESTAMP_TEMPLATE,
+        },
+        doc_md=d(
+            f"""
+        Copy the TSV from the local output directory ({OUTPUT_DIR_PATH}) into the S3
+        bucket ({OPENVERSE_BUCKET}) for direct loading into the database.
+        """
+        ),
+    )
+    load_s3_data = PythonOperator(
+        task_id="load_s3_data",
+        python_callable=loader.load_s3_data,
+        op_kwargs={
+            "bucket": OPENVERSE_BUCKET,
+            "aws_conn_id": AWS_CONN_ID,
+            "postgres_conn_id": DB_CONN_ID,
+            "identifier": TIMESTAMP_TEMPLATE,
+        },
+        doc_md="Load the TSV from S3 into the database.",
+    )
+    delete_staged_file = PythonOperator(
+        task_id="delete_staged_file",
+        python_callable=paths.delete_staged_file,
+        op_kwargs={"output_dir": OUTPUT_DIR_PATH, "identifier": TIMESTAMP_TEMPLATE},
+        trigger_rule=TriggerRule.ALL_SUCCESS,
+        doc_md=d(
+            """
+        Delete the staged TSV. This step will only be run if the file was _both_ copied
+        into S3 and loaded into the database successfully.
+        """
+        ),
+    )
+    drop_loading_table = PythonOperator(
+        task_id="drop_loading_table",
+        python_callable=sql.drop_load_table,
+        op_kwargs={"postgres_conn_id": DB_CONN_ID, "identifier": TIMESTAMP_TEMPLATE},
+        trigger_rule=TriggerRule.NONE_SKIPPED,
+        doc_md=d(
+            """
+        Drop the temporary loading table used to store the TSV records. This step will
+        always occur after table creation unless the DAG has been skipped in order to
+        ensure tables are cleaned up in all cases.
+        """
+        ),
+    )
+    move_staged_failures = PythonOperator(
+        task_id="move_staged_failures",
+        python_callable=paths.move_staged_files_to_failure_directory,
+        op_kwargs={
+            "output_dir": OUTPUT_DIR_PATH,
+            "identifier": TIMESTAMP_TEMPLATE,
+        },
+        trigger_rule=TriggerRule.ONE_FAILED,
+        doc_md=d(
+            """
+        Move any staged files that have failed to upload into the failed directory.
+        This task will run if any of the critical loader tasks fail. This allows
+        operators to retry the loading once the problem has been addressed.
+        """
+        ),
+    )
+
+    # If there is a TSV to load, copy it to S3 & create the loading table,
+    # then perform the load into Postgres from S3
+    stage_oldest_tsv_file >> [copy_to_s3, create_loading_table] >> load_s3_data
+    # Should any of these tasks fail, move the TSV to the failed location
+    [copy_to_s3, create_loading_table, load_s3_data] >> move_staged_failures
+    # If any of the loading steps fail, we don't need the loading table anymore
+    [create_loading_table, load_s3_data] >> drop_loading_table
+    # Once the data is loaded successfully, delete the staged TSV locally
+    # (since it exists in S3)
+    load_s3_data >> delete_staged_file

@@ -32,16 +32,19 @@ RUN apt-get update && apt-get -yqq upgrade && apt-get -yqq install \
     libffi-dev \
     && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/*
-RUN useradd -m -d ${AIRFLOW_HOME} airflow
+RUN useradd -m -d ${AIRFLOW_HOME} airflow && \
+    mkdir -p ${OUTPUT_DIR} && \
+    chown airflow:airflow ${OUTPUT_DIR}
 USER airflow
 
 WORKDIR  ${AIRFLOW_HOME}
 # Always add the prod req because the dev reqs depend on it for deduplication
-COPY ${REQUIREMENTS_FILE} requirements_prod.txt docker/airflow/wait_for_db.py ${AIRFLOW_HOME}/
+COPY ${REQUIREMENTS_FILE} requirements_prod.txt ${AIRFLOW_HOME}/
+COPY docker/airflow/wait_for_db.py /opt/airflow/
 
 RUN pip install --user -r ${REQUIREMENTS_FILE} -c ${CONSTRAINTS_FILE}
 
-COPY docker/airflow/entrypoint.sh entrypoint.sh
+COPY docker/airflow/entrypoint.sh /opt/airflow/entrypoint.sh
 
-ENTRYPOINT ["./entrypoint.sh"]
+ENTRYPOINT ["/opt/airflow/entrypoint.sh"]
 CMD ["server"]

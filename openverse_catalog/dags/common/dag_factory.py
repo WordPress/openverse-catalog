@@ -90,6 +90,7 @@ def create_provider_api_workflow(
         schedule_interval=schedule_string,
         catchup=False,
         doc_md=doc_md,
+        tags=["provider"],
     )
 
     with dag:
@@ -201,6 +202,7 @@ def create_day_partitioned_ingestion_dag(
         schedule_interval="@daily",
         start_date=start_date,
         catchup=False,
+        tags=["provider-reingestion"],
     )
     with dag:
         ingest_operator_list_list = _build_ingest_operator_list_list(
