@@ -237,27 +237,32 @@ def on_failure_callback(context: dict) -> None:
     force_alert = Variable.get(
         "force_slack_alert", default_var=False, deserialize_json=True
     )
-    if not (environment == "production" or force_alert):
+    if not (environment == "prod" or force_alert):
         return
 
     # Get relevant info
     ti = context["task_instance"]
     execution_date = context["execution_date"]
     exception: Optional[Exception] = context.get("exception")
+    exception_message = ""
 
-    # Forgo the alert on upstream failures
-    if exception and "Upstream task(s) failed" in exception.args:
-        log.info("Forgoing Slack alert due to upstream failures")
-        return
+    if exception:
+        # Forgo the alert on upstream failures
+        if "Upstream task(s) failed" in exception.args:
+            log.info("Forgoing Slack alert due to upstream failures")
+            return
+        exception_message = f"""
+*Exception*: {exception}
+*Exception Type*: `{exception.__class__.__module__}.{exception.__class__.__name__}`
+"""
 
     message = textwrap.dedent(
         f"""
     *DAG*: `{ti.dag_id}`
     *Task*: `{ti.task_id}`
     *Execution Date*: {execution_date.strftime('%Y-%m-%dT%H:%M:%SZ')}
-    *Exception*: {exception}
-    *Exception Type*: `{exception.__class__.__module__}.{exception.__class__.__name__}`
     *Log*: {ti.log_url}
+    {exception_message}
     """
     )
     send_message(message, username="Airflow DAG Failure")
