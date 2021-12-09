@@ -62,7 +62,3 @@ def create_dag(
 
 
 globals()[DAG_ID] = create_dag()
-
-
-def get_image_expiration_operator(postgres_conn_id, provider):
-    return
