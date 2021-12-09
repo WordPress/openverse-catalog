@@ -8,6 +8,8 @@ Apart from that, this file stores other provider related information which
 might be useful for retrieving sub-providers at the database level and the
 API level.
 """
+from enum import Enum
+
 
 # Default provider names
 FLICKR_DEFAULT_PROVIDER = "flickr"
@@ -105,3 +107,30 @@ SMITHSONIAN_SUB_PROVIDERS = {
     "smithsonian_institution_archives": {"SIA"},  # Smithsonian Institution Archives
     "smithsonian_libraries": {"SIL"},  # Smithsonian Libraries
 }
+
+
+class ImageCategory(Enum):
+    PHOTOGRAPH = "photograph"
+    DIGITIZED_ARTWORK = "digitized_artwork"
+    ILLUSTRATION = "illustration"
+
+
+# Default image category by source
+ANIMALDIVERSITY_DEFAULT_IMAGE_CATEGORY = ImageCategory.PHOTOGRAPH.value
+BROOKLYNMUSEUM_DEFAULT_IMAGE_CATEGORY = ImageCategory.DIGITIZED_ARTWORK.value
+CAPL_DEFAULT_IMAGE_CATEGORY = ImageCategory.PHOTOGRAPH.value
+CLEVELANDMUSEUM_DEFAULT_IMAGE_CATEGORY = ImageCategory.DIGITIZED_ARTWORK.value
+DEVIANTART_DEFAULT_IMAGE_CATEGORY = ImageCategory.DIGITIZED_ARTWORK.value
+DIGITALTMUSEUM_DEFAULT_IMAGE_CATEGORY = ImageCategory.DIGITIZED_ARTWORK.value
+FLICKR_DEFAULT_IMAGE_CATEGORY = ImageCategory.PHOTOGRAPH.value
+FLORAON_DEFAULT_IMAGE_CATEGORY = ImageCategory.PHOTOGRAPH.value
+MCCORDMUSEUM_DEFAULT_IMAGE_CATEGORY = ImageCategory.DIGITIZED_ARTWORK.value
+MET_DEFAULT_IMAGE_CATEGORY = ImageCategory.DIGITIZED_ARTWORK.value
+MUSEUMSVICTORIA_DEFAULT_IMAGE_CATEGORY = ImageCategory.DIGITIZED_ARTWORK.value
+PHYLOPIC_DEFAULT_IMAGE_CATEGORY = ImageCategory.ILLUSTRATION.value
+RIJKSMUSEUM_DEFAULT_IMAGE_CATEGORY = ImageCategory.DIGITIZED_ARTWORK.value
+SCIENCEMUSEUM_DEFAULT_IMAGE_CATEGORY = ImageCategory.PHOTOGRAPH.value
+STOCKSNAP_DEFAULT_IMAGE_CATEGORY = ImageCategory.PHOTOGRAPH.value
+SVGSILH_DEFAULT_IMAGE_CATEGORY = ImageCategory.ILLUSTRATION.value
+THORVALDSENMUSEUM_DEFAULT_IMAGE_CATEGORY = ImageCategory.DIGITIZED_ARTWORK.value
+WORMS_DEFAULT_IMAGE_CATEGORY = ImageCategory.PHOTOGRAPH.value
