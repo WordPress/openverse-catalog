@@ -8,7 +8,8 @@ import os
 from datetime import datetime, timedelta
 
 from airflow import DAG
-from common.loader import operators, sql
+from airflow.operators.python import PythonOperator
+from common.loader import sql
 
 
 logging.basicConfig(
@@ -50,12 +51,18 @@ def create_dag(
     )
 
     with dag:
-        [
-            operators.get_image_expiration_operator(postgres_conn_id, provider)
-            for provider in sql.OLDEST_PER_PROVIDER
-        ]
+        for provider in sql.OLDEST_PER_PROVIDER:
+            PythonOperator(
+                task_id=f"expire_outdated_images_of_{provider}",
+                python_callable=sql.expire_old_images,
+                op_args=[postgres_conn_id, provider],
+            )
 
     return dag
 
 
 globals()[DAG_ID] = create_dag()
+
+
+def get_image_expiration_operator(postgres_conn_id, provider):
+    return
