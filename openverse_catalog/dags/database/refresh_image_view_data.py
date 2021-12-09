@@ -7,19 +7,12 @@ refreshed.
 
 This should be run once per day.
 """
-import logging
 import os
 from datetime import datetime, timedelta
 
 from airflow import DAG
 from common.popularity import operators
 
-
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s", level=logging.INFO
-)
-
-logger = logging.getLogger(__name__)
 
 DAG_ID = "refresh_image_view_data"
 DB_CONN_ID = os.getenv("OPENLEDGER_CONN_ID", "postgres_openledger_testing")

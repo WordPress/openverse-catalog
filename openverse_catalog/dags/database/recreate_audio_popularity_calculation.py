@@ -7,19 +7,12 @@ The results are available in the `image_view` materialized view.
 
 This should only be run when new SQL code is deployed for the calculation.
 """
-import logging
 import os
 from datetime import datetime, timedelta
 
 from airflow import DAG
 from common.popularity import operators
 
-
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s", level=logging.INFO
-)
-
-logger = logging.getLogger(__name__)
 
 DAG_ID = "recreate_audio_popularity_calculation"
 DB_CONN_ID = os.getenv("OPENLEDGER_CONN_ID", "postgres_openledger_testing")
