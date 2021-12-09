@@ -269,12 +269,13 @@ def test_send_with_context(http_hook_mock):
 
 def test_send_fails(http_hook_mock):
     s = SlackMessage()
+    error_message = "Some fake error"
     # Cause an exception within the raise_for_status call
     http_hook_mock.run.return_value.raise_for_status.side_effect = Exception(
-        "HTTP Error 666"
+        error_message
     )
     s.add_text("Sample message")
-    with pytest.raises(Exception, match="HTTP Error 666"):
+    with pytest.raises(Exception, match=error_message):
         s.send()
 
 
