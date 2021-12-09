@@ -1,3 +1,4 @@
+import time
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -29,6 +30,23 @@ def test_delay_processing(mock_time, delay, last_request, time_value, expected_w
         mock_time.sleep.assert_called_with(expected_wait)
     else:
         mock_time.sleep.assert_not_called()
+
+
+def test_get_delays_processing(monkeypatch):
+    def mock_requests_get(url, params, **kwargs):
+        r = requests.Response()
+        r.status_code = 200
+        return r
+
+    monkeypatch.setattr(requester.requests.Session, "get", mock_requests_get)
+
+    delay = 2
+    dq = requester.DelayedRequester(delay=delay)
+    start = time.time()
+    dq.get("http://fake_url")
+    dq.get("http://fake_url")
+    end = time.time()
+    assert end - start >= delay
 
 
 def test_get_handles_exception(monkeypatch):
