@@ -63,7 +63,7 @@ DEFAULT_QUERY_PARAMS = {
     "content_type": 1,
     "extras": (
         "description,license,date_upload,date_taken,owner_name,tags,o_dims,"
-        "url_t,url_s,url_m,url_l,views"
+        "url_t,url_s,url_m,url_l,views,content_type"
     ),
     "format": "json",
     "nojsoncallback": 1,
@@ -248,16 +248,14 @@ def _process_image_list(image_list):
 def _process_image_data(image_data, sub_providers=SUB_PROVIDERS, provider=PROVIDER):
     logger.debug(f"Processing image data: {image_data}")
     image_url, height, width = _get_image_url(image_data)
-    license_, license_version = _get_license(image_data.get("license"))
+    license_info = _get_license(image_data.get("license"))
     creator_url = _build_creator_url(image_data)
     foreign_id = image_data.get("id")
     if foreign_id is None:
         logger.warning("No foreign_id in image_data!")
     foreign_landing_url = _build_foreign_landing_url(creator_url, foreign_id)
-
     owner = image_data.get("owner").strip()
     source = next((s for s in sub_providers if owner in sub_providers[s]), provider)
-    license_info = get_license_info(license_=license_, license_version=license_version)
     return image_store.add_item(
         foreign_landing_url=foreign_landing_url,
         image_url=image_url,
@@ -266,12 +264,15 @@ def _process_image_data(image_data, sub_providers=SUB_PROVIDERS, provider=PROVID
         foreign_identifier=foreign_id,
         width=width,
         height=height,
+        # filesize=,
+        filetype=_extract_file_type(image_url),
         creator=image_data.get("ownername"),
         creator_url=creator_url,
         title=image_data.get("title"),
         meta_data=_create_meta_data_dict(image_data),
         raw_tags=_create_tags_list(image_data),
         source=source,
+        category=_get_category(image_data),
     )
 
 
@@ -319,6 +320,12 @@ def _get_image_url(image_data):
     return None, None, None
 
 
+def _extract_file_type(image_url):
+    if image_url:
+        filetype = image_url.split(".")[-1]
+        return None if filetype == "" else filetype
+
+
 def _get_license(license_id, license_info=None):
     if license_info is None:
         license_info = LICENSE_INFO.copy()
@@ -329,7 +336,7 @@ def _get_license(license_id, license_info=None):
 
     license_, license_version = license_info.get(license_id, (None, None))
 
-    return license_, license_version
+    return get_license_info(license_=license_, license_version=license_version)
 
 
 def _create_meta_data_dict(image_data, max_description_length=MAX_DESCRIPTION_LENGTH):
@@ -364,6 +371,18 @@ def _create_tags_list(image_data, max_tag_string_length=MAX_TAG_STRING_LENGTH):
         raw_tags = sorted(list(set(raw_tag_string.split())))
 
     return raw_tags
+
+
+def _get_category(image_data):
+    """
+    Flickr has three types:
+        0 for photos
+        1 for screenshots
+        3 for other
+    We treat everything different from photos as unknown.
+    """
+    if "content_type" in image_data and image_data["content_type"] == "0":
+        return prov.FLICKR_DEFAULT_IMAGE_CATEGORY
 
 
 if __name__ == "__main__":
