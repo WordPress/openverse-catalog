@@ -126,6 +126,8 @@ def _extract_item_data(media_data):
         "foreign_identifier": foreign_id,
         "foreign_landing_url": foreign_landing_url,
         "image_url": image_url,
+        "filesize": _get_filesize(image_url),
+        "filetype": "jpg",
         "height": height,
         "width": width,
         "thumbnail_url": thumbnail,
@@ -171,6 +173,15 @@ def _get_title(item):
         tags.append("Photo")
         img_title = " ".join(tags)
         return img_title.title()
+
+
+def _get_filesize(image_url):
+    """
+    Get the size of the image in bytes.
+    """
+    resp = delayed_requester.get(image_url)
+    filesize = int(resp.headers.get("Content-Length", 0))
+    return filesize if filesize != 0 else None
 
 
 def _get_metadata(item):
