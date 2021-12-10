@@ -167,7 +167,7 @@ def _get_image_list(
             params=query_param_dict,
         )
 
-        logger.debug("response.status_code: {response.status_code}")
+        logger.debug(f"response.status_code: {response.status_code}")
         response_json = _extract_response_json(response)
         image_list, total_pages = _extract_image_list_from_json(response_json)
 
@@ -256,6 +256,7 @@ def _process_image_data(image_data, sub_providers=SUB_PROVIDERS, provider=PROVID
     foreign_landing_url = _build_foreign_landing_url(creator_url, foreign_id)
     owner = image_data.get("owner").strip()
     source = next((s for s in sub_providers if owner in sub_providers[s]), provider)
+    filesize, filetype = _get_file_properties(image_url)
     return image_store.add_item(
         foreign_landing_url=foreign_landing_url,
         image_url=image_url,
@@ -264,8 +265,8 @@ def _process_image_data(image_data, sub_providers=SUB_PROVIDERS, provider=PROVID
         foreign_identifier=foreign_id,
         width=width,
         height=height,
-        # filesize=,
-        filetype=_extract_file_type(image_url),
+        filesize=filesize,
+        filetype=filetype,
         creator=image_data.get("ownername"),
         creator_url=creator_url,
         title=image_data.get("title"),
@@ -320,10 +321,16 @@ def _get_image_url(image_data):
     return None, None, None
 
 
-def _extract_file_type(image_url):
+def _get_file_properties(image_url):
+    filesize, filetype = None, None
     if image_url:
         filetype = image_url.split(".")[-1]
-        return None if filetype == "" else filetype
+        resp = delayed_requester.get(image_url)
+        filesize = int(resp.headers.get("X-TTDB-L", 0))
+    return (
+        filesize if filesize != 0 else None,
+        filetype if filetype != "" else None,
+    )
 
 
 def _get_license(license_id, license_info=None):
@@ -379,7 +386,7 @@ def _get_category(image_data):
         0 for photos
         1 for screenshots
         3 for other
-    We treat everything different from photos as unknown.
+    Treating everything different from photos as unknown.
     """
     if "content_type" in image_data and image_data["content_type"] == "0":
         return prov.FLICKR_DEFAULT_IMAGE_CATEGORY
