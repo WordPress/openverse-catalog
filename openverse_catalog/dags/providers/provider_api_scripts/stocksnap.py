@@ -134,7 +134,7 @@ def _extract_item_data(media_data):
         "license_info": license_info,
         "meta_data": metadata,
         "raw_tags": tags,
-        "category": prov.STOCKSNAP_DEFAULT_IMAGE_CATEGORY,
+        "category": prov.DEFAULT_IMAGE_CATEGORY[PROVIDER],
     }
 
 

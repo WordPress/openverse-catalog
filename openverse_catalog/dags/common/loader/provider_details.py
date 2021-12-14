@@ -116,21 +116,24 @@ class ImageCategory(Enum):
 
 
 # Default image category by source
-ANIMALDIVERSITY_DEFAULT_IMAGE_CATEGORY = ImageCategory.PHOTOGRAPH.value
-BROOKLYNMUSEUM_DEFAULT_IMAGE_CATEGORY = ImageCategory.DIGITIZED_ARTWORK.value
-CAPL_DEFAULT_IMAGE_CATEGORY = ImageCategory.PHOTOGRAPH.value
-CLEVELANDMUSEUM_DEFAULT_IMAGE_CATEGORY = ImageCategory.DIGITIZED_ARTWORK.value
-DEVIANTART_DEFAULT_IMAGE_CATEGORY = ImageCategory.DIGITIZED_ARTWORK.value
-DIGITALTMUSEUM_DEFAULT_IMAGE_CATEGORY = ImageCategory.DIGITIZED_ARTWORK.value
-FLICKR_DEFAULT_IMAGE_CATEGORY = ImageCategory.PHOTOGRAPH.value
-FLORAON_DEFAULT_IMAGE_CATEGORY = ImageCategory.PHOTOGRAPH.value
-MCCORDMUSEUM_DEFAULT_IMAGE_CATEGORY = ImageCategory.DIGITIZED_ARTWORK.value
-MET_DEFAULT_IMAGE_CATEGORY = ImageCategory.DIGITIZED_ARTWORK.value
-MUSEUMSVICTORIA_DEFAULT_IMAGE_CATEGORY = ImageCategory.DIGITIZED_ARTWORK.value
-PHYLOPIC_DEFAULT_IMAGE_CATEGORY = ImageCategory.ILLUSTRATION.value
-RIJKSMUSEUM_DEFAULT_IMAGE_CATEGORY = ImageCategory.DIGITIZED_ARTWORK.value
-SCIENCEMUSEUM_DEFAULT_IMAGE_CATEGORY = ImageCategory.PHOTOGRAPH.value
-STOCKSNAP_DEFAULT_IMAGE_CATEGORY = ImageCategory.PHOTOGRAPH.value
-SVGSILH_DEFAULT_IMAGE_CATEGORY = ImageCategory.ILLUSTRATION.value
-THORVALDSENMUSEUM_DEFAULT_IMAGE_CATEGORY = ImageCategory.DIGITIZED_ARTWORK.value
-WORMS_DEFAULT_IMAGE_CATEGORY = ImageCategory.PHOTOGRAPH.value
+DEFAULT_IMAGE_CATEGORY = {
+    "flickr": ImageCategory.PHOTOGRAPH.value,
+    "stocksnap": ImageCategory.PHOTOGRAPH.value,
+    # Remains to be assigned
+    "animaldiversity": ImageCategory.PHOTOGRAPH.value,
+    "brooklynmuseum": ImageCategory.DIGITIZED_ARTWORK.value,
+    "capl": ImageCategory.PHOTOGRAPH.value,
+    "clevelandmuseum": ImageCategory.DIGITIZED_ARTWORK.value,
+    "deviantart": ImageCategory.DIGITIZED_ARTWORK.value,
+    "digitaltmuseum": ImageCategory.DIGITIZED_ARTWORK.value,
+    "floraon": ImageCategory.PHOTOGRAPH.value,
+    "mccordmuseum": ImageCategory.DIGITIZED_ARTWORK.value,
+    "met": ImageCategory.DIGITIZED_ARTWORK.value,
+    "museumsvictoria": ImageCategory.DIGITIZED_ARTWORK.value,
+    "phylopic": ImageCategory.ILLUSTRATION.value,
+    "rijksmuseum": ImageCategory.DIGITIZED_ARTWORK.value,
+    "sciencemuseum": ImageCategory.PHOTOGRAPH.value,
+    "svgsilh": ImageCategory.ILLUSTRATION.value,
+    "thorvaldsenmuseum": ImageCategory.DIGITIZED_ARTWORK.value,
+    "worms": ImageCategory.PHOTOGRAPH.value,
+}

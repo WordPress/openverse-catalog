@@ -389,7 +389,7 @@ def _get_category(image_data):
     Treating everything different from photos as unknown.
     """
     if "content_type" in image_data and image_data["content_type"] == "0":
-        return prov.FLICKR_DEFAULT_IMAGE_CATEGORY
+        return prov.DEFAULT_IMAGE_CATEGORY[PROVIDER]
 
 
 if __name__ == "__main__":
