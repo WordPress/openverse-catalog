@@ -248,7 +248,7 @@ def _process_image_list(image_list):
 def _process_image_data(image_data, sub_providers=SUB_PROVIDERS, provider=PROVIDER):
     logger.debug(f"Processing image data: {image_data}")
     image_url, height, width = _get_image_url(image_data)
-    license_info = _get_license(image_data.get("license"))
+    license_, license_version = _get_license(image_data.get("license"))
     creator_url = _build_creator_url(image_data)
     foreign_id = image_data.get("id")
     if foreign_id is None:
@@ -261,7 +261,9 @@ def _process_image_data(image_data, sub_providers=SUB_PROVIDERS, provider=PROVID
         foreign_landing_url=foreign_landing_url,
         image_url=image_url,
         thumbnail_url=image_data.get("url_s"),
-        license_info=license_info,
+        license_info=get_license_info(
+            license_=license_, license_version=license_version
+        ),
         foreign_identifier=foreign_id,
         width=width,
         height=height,
@@ -322,6 +324,9 @@ def _get_image_url(image_data):
 
 
 def _get_file_properties(image_url):
+    """
+    Get the size of the image in bytes and its filetype.
+    """
     filesize, filetype = None, None
     if image_url:
         filetype = image_url.split(".")[-1]
@@ -343,7 +348,7 @@ def _get_license(license_id, license_info=None):
 
     license_, license_version = license_info.get(license_id, (None, None))
 
-    return get_license_info(license_=license_, license_version=license_version)
+    return license_, license_version
 
 
 def _create_meta_data_dict(image_data, max_description_length=MAX_DESCRIPTION_LENGTH):
