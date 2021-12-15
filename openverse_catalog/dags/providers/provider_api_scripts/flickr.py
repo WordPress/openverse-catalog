@@ -330,7 +330,8 @@ def _get_file_properties(image_url):
     if image_url:
         filetype = image_url.split(".")[-1]
         resp = delayed_requester.get(image_url)
-        filesize = int(resp.headers.get("X-TTDB-L", 0))
+        if resp:
+            filesize = int(resp.headers.get("X-TTDB-L", 0))
     return (
         filesize if filesize != 0 else None,
         filetype if filetype != "" else None,

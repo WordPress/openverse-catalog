@@ -180,8 +180,9 @@ def _get_filesize(image_url):
     Get the size of the image in bytes.
     """
     resp = delayed_requester.get(image_url)
-    filesize = int(resp.headers.get("Content-Length", 0))
-    return filesize if filesize != 0 else None
+    if resp:
+        filesize = int(resp.headers.get("Content-Length", 0))
+        return filesize if filesize != 0 else None
 
 
 def _get_metadata(item):
