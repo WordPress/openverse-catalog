@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 from common.licenses import LicenseInfo
 from providers.provider_api_scripts import flickr
-from requests import Response
+from requests import Response, codes
 
 
 RESOURCES = os.path.join(os.path.abspath(os.path.dirname(__file__)), "resources/flickr")
@@ -160,7 +160,6 @@ def test_build_query_param_dict_default():
     expect_query_param_dict = {
         "method": "flickr.photos.search",
         "media": "photos",
-        "content_type": 1,
         "extras": (
             "description,license,date_upload,date_taken,owner_name,tags,"
             "o_dims,url_t,url_s,url_m,url_l,views,content_type"
@@ -545,9 +544,9 @@ def test_process_image_data_with_sub_provider():
     assert total_images == 100
 
 
-def test_get_file_properties_returns_no_filesize():
+def test_get_file_properties_returns_no_filesize_from_no_response():
     url = "https://flickr.com/image.jpg"
-    with patch.object(flickr.delayed_requester, "get", return_value=Response()):
+    with patch.object(flickr.delayed_requester, "get", return_value=None):
         actual_filesize, _ = flickr._get_file_properties(url)
     assert actual_filesize is None
 
@@ -560,6 +559,7 @@ def test_get_file_properties_returns_both_values():
         return headers[name]
 
     mock_response = Response()
+    mock_response.status_code = codes.ok
     mock_response.headers = MagicMock()
     mock_response.headers.get.side_effect = get_mock_headers
 
@@ -568,4 +568,5 @@ def test_get_file_properties_returns_both_values():
 
     with patch.object(flickr.delayed_requester, "get", return_value=mock_response):
         actual_props = flickr._get_file_properties(url)
+
     assert actual_props == expect_props
