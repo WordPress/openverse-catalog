@@ -60,7 +60,6 @@ LICENSE_INFO = {
 DEFAULT_QUERY_PARAMS = {
     "method": "flickr.photos.search",
     "media": "photos",
-    "content_type": 1,
     "extras": (
         "description,license,date_upload,date_taken,owner_name,tags,o_dims,"
         "url_t,url_s,url_m,url_l,views,content_type"

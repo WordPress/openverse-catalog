@@ -35,7 +35,6 @@ PROVIDER = prov.STOCKSNAP_DEFAULT_PROVIDER
 HEADERS = {
     "Accept": "application/json",
 }
-DEFAULT_QUERY_PARAMS = {}
 
 delayed_requester = DelayedRequester(DELAY)
 image_store = ImageStore(provider=PROVIDER)
