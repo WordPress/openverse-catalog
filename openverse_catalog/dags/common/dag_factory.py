@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime, timedelta
+from typing import Callable, Dict, Optional
 
 from airflow import DAG
 from airflow.models.baseoperator import cross_downstream
@@ -25,16 +26,17 @@ DATE_RANGE_ARG_TEMPLATE = "{{ macros.ds_add(ds, -%s) }}"
 
 
 def create_provider_api_workflow(
-    dag_id,
-    main_function,
-    default_args=None,
-    start_date=datetime(1970, 1, 1),
-    max_active_tasks=1,
-    schedule_string="@daily",
-    dated=True,
-    day_shift=0,
-    dagrun_timeout=timedelta(hours=12),
-    doc_md="",
+    dag_id: str,
+    main_function: Callable,
+    default_args: Optional[Dict] = None,
+    start_date: datetime = datetime(1970, 1, 1),
+    max_active_tasks: int = 1,
+    schedule_string: str = "@daily",
+    dated: bool = True,
+    day_shift: int = 0,
+    dagrun_timeout: timedelta = timedelta(hours=12),
+    doc_md: str = "",
+    media_type: str = "image",
 ):
     """
     This factory method instantiates a DAG that will run the given
@@ -71,6 +73,9 @@ def create_provider_api_workflow(
                       be run (if `dated=True`).
     dagrun_timeout:   datetime.timedelta giving the total amount of time
                       a given dagrun may take.
+    doc_md:           string which should be used for the DAG's documentation markdown
+    media_type:       string describing the media type that this provider handles
+                      (e.g. "image", "audio", "video", "mixed", etc)
     """
     default_args = default_args or DAG_DEFAULT_ARGS
     dag = DAG(
@@ -89,7 +94,7 @@ def create_provider_api_workflow(
     with dag:
         if dated:
             PythonOperator(
-                task_id="pull_image_data",
+                task_id=f"pull_{media_type}_data",
                 python_callable=main_function,
                 op_args=[DATE_RANGE_ARG_TEMPLATE % day_shift],
                 execution_timeout=dagrun_timeout,
@@ -97,7 +102,7 @@ def create_provider_api_workflow(
             )
         else:
             PythonOperator(
-                task_id="pull_image_data",
+                task_id=f"pull_{media_type}_data",
                 python_callable=main_function,
                 depends_on_past=False,
             )
