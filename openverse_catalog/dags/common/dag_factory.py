@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime, timedelta
-from typing import Callable, Dict, Optional
+from typing import Callable, Dict, List, Optional, Union
 
 from airflow import DAG
 from airflow.models.baseoperator import cross_downstream
@@ -36,7 +36,7 @@ def create_provider_api_workflow(
     day_shift: int = 0,
     dagrun_timeout: timedelta = timedelta(hours=12),
     doc_md: str = "",
-    media_type: str = "image",
+    media_types: Union[str, List[str]] = "image",
 ):
     """
     This factory method instantiates a DAG that will run the given
@@ -74,10 +74,11 @@ def create_provider_api_workflow(
     dagrun_timeout:   datetime.timedelta giving the total amount of time
                       a given dagrun may take.
     doc_md:           string which should be used for the DAG's documentation markdown
-    media_type:       string describing the media type that this provider handles
-                      (e.g. "image", "audio", "video", "mixed", etc)
+    media_types:      string or list describing the media type(s) that this provider
+                      handles (e.g. "image", "audio", ["image", "audio"], etc.)
     """
     default_args = default_args or DAG_DEFAULT_ARGS
+    media_type_name = "mixed" if isinstance(media_types, list) else media_types
     dag = DAG(
         dag_id=dag_id,
         default_args={**default_args, "start_date": start_date},
@@ -94,7 +95,7 @@ def create_provider_api_workflow(
     with dag:
         if dated:
             PythonOperator(
-                task_id=f"pull_{media_type}_data",
+                task_id=f"pull_{media_type_name}_data",
                 python_callable=main_function,
                 op_args=[DATE_RANGE_ARG_TEMPLATE % day_shift],
                 execution_timeout=dagrun_timeout,
@@ -102,7 +103,7 @@ def create_provider_api_workflow(
             )
         else:
             PythonOperator(
-                task_id=f"pull_{media_type}_data",
+                task_id=f"pull_{media_type_name}_data",
                 python_callable=main_function,
                 depends_on_past=False,
             )

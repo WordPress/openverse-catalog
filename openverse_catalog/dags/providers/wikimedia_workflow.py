@@ -22,5 +22,5 @@ globals()[DAG_ID] = create_provider_api_workflow(
     max_active_tasks=1,
     schedule_string="@monthly",
     dated=True,
-    media_type="mixed",
+    media_types=["image", "audio"],
 )
