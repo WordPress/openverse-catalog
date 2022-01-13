@@ -1,18 +1,25 @@
 import logging
+import os
 from datetime import datetime, timedelta
-from typing import Callable, Dict, List, Optional, Union
+from typing import Callable, Dict, List, Optional
 
 from airflow import DAG
 from airflow.models.baseoperator import cross_downstream
 from airflow.operators.dummy import DummyOperator
 from airflow.operators.python import PythonOperator
+from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
 from common import slack
+from common.loader import loader, s3, sql
 
 
 logger = logging.getLogger(__name__)
 
 
+DB_CONN_ID = os.getenv("OPENLEDGER_CONN_ID", "postgres_openledger_testing")
+AWS_CONN_ID = os.getenv("AWS_CONN_ID", "no_aws_conn_id")
+OPENVERSE_BUCKET = os.getenv("OPENVERSE_BUCKET")
+OUTPUT_DIR_PATH = os.path.realpath(os.getenv("OUTPUT_DIR", "/tmp/"))
 DAG_DEFAULT_ARGS = {
     "owner": "data-eng-admin",
     "depends_on_past": False,
@@ -23,6 +30,8 @@ DAG_DEFAULT_ARGS = {
     "on_failure_callback": slack.on_failure_callback,
 }
 DATE_RANGE_ARG_TEMPLATE = "{{ macros.ds_add(ds, -%s) }}"
+TIMESTAMP_TEMPLATE = "{{ ts_nodash }}"
+XCOM_PULL_TEMPLATE = "{{ ti.xcom_pull(task_ids='%s', key='%s') }}"
 
 
 def create_provider_api_workflow(
@@ -36,7 +45,7 @@ def create_provider_api_workflow(
     day_shift: int = 0,
     dagrun_timeout: timedelta = timedelta(hours=12),
     doc_md: str = "",
-    media_types: Union[str, List[str]] = "image",
+    media_types: List[str] = ("image",),
 ):
     """
     This factory method instantiates a DAG that will run the given
@@ -74,11 +83,13 @@ def create_provider_api_workflow(
     dagrun_timeout:   datetime.timedelta giving the total amount of time
                       a given dagrun may take.
     doc_md:           string which should be used for the DAG's documentation markdown
-    media_types:      string or list describing the media type(s) that this provider
-                      handles (e.g. "image", "audio", ["image", "audio"], etc.)
+    media_types:      list describing the media type(s) that this provider handles
+                      (e.g. ("image",), ["audio"], ["image", "audio"], etc.)
     """
     default_args = default_args or DAG_DEFAULT_ARGS
-    media_type_name = "mixed" if isinstance(media_types, list) else media_types
+    media_type_name = "mixed" if len(media_types) > 1 else media_types[0]
+    provider_name = dag_id.replace("_workflow", "")
+
     dag = DAG(
         dag_id=dag_id,
         default_args={**default_args, "start_date": start_date},
@@ -94,7 +105,7 @@ def create_provider_api_workflow(
 
     with dag:
         if dated:
-            PythonOperator(
+            pull_data = PythonOperator(
                 task_id=f"pull_{media_type_name}_data",
                 python_callable=main_function,
                 op_args=[DATE_RANGE_ARG_TEMPLATE % day_shift],
@@ -102,11 +113,65 @@ def create_provider_api_workflow(
                 depends_on_past=False,
             )
         else:
-            PythonOperator(
+            # Assumption - this will push an XCOM with the TSV location using a key
+            # based on the media type
+            pull_data = PythonOperator(
                 task_id=f"pull_{media_type_name}_data",
                 python_callable=main_function,
                 depends_on_past=False,
             )
+
+        for media_type in media_types:
+            with TaskGroup(group_id=f"load_{media_type}_data") as load_data:
+                create_loading_table = PythonOperator(
+                    task_id="create_loading_table",
+                    python_callable=sql.create_loading_table,
+                    op_kwargs={
+                        "postgres_conn_id": DB_CONN_ID,
+                        "identifier": TIMESTAMP_TEMPLATE,
+                        "media_type": media_type,
+                    },
+                    doc_md="Create a temporary loading table for "
+                    f"ingesting {media_type} data from a TSV",
+                )
+                copy_to_s3 = PythonOperator(
+                    task_id="copy_to_s3",
+                    python_callable=s3.copy_file_to_s3,
+                    op_kwargs={
+                        "tsv_file_path": XCOM_PULL_TEMPLATE
+                        % (pull_data.task_id, f"{media_type}_tsv"),
+                        "s3_bucket": OPENVERSE_BUCKET,
+                        "s3_prefix": f"{media_type}/{provider_name}",
+                        "aws_conn_id": AWS_CONN_ID,
+                    },
+                )
+                load_from_s3 = PythonOperator(
+                    task_id="load_from_s3",
+                    python_callable=loader.load_from_s3,
+                    op_kwargs={
+                        "bucket": OPENVERSE_BUCKET,
+                        "key": XCOM_PULL_TEMPLATE % (copy_to_s3.task_id, "s3_key"),
+                        "postgres_conn_id": DB_CONN_ID,
+                        "media_type": media_type,
+                        "tsv_version": XCOM_PULL_TEMPLATE
+                        % (copy_to_s3.task_id, "tsv_version"),
+                        "identifier": TIMESTAMP_TEMPLATE,
+                    },
+                )
+                drop_loading_table = PythonOperator(
+                    task_id="drop_loading_table",
+                    python_callable=sql.drop_load_table,
+                    op_kwargs={
+                        "postgres_conn_id": DB_CONN_ID,
+                        "identifier": TIMESTAMP_TEMPLATE,
+                        "media_type": media_type,
+                    },
+                    trigger_rule=TriggerRule.NONE_SKIPPED,
+                )
+                [create_loading_table, copy_to_s3] >> load_from_s3
+                [create_loading_table, load_from_s3] >> drop_loading_table
+
+            pull_data >> load_data
 
     return dag
 
