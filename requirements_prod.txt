@@ -3,4 +3,5 @@ lxml
 psycopg2-binary
 requests-file==1.5.1
 requests-oauthlib
+retry
 tldextract==3.1.0
