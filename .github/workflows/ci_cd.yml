@@ -74,14 +74,6 @@ jobs:
       - name: Change permissions for Docker steps
         run: chmod -R 777 openverse_catalog/ tests/
 
-      - name: Download image
-        uses: actions/download-artifact@v2
-        with:
-          path: /tmp
-
-      - name: Load all images
-        run: docker load --input /tmp/catalog/catalog.tar
-
       - name: Test
         # Randomize test order to suss out any unseen dependencies
         run: |
