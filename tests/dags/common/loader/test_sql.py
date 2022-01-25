@@ -219,7 +219,7 @@ def test_loaders_load_good_tsv(
     empty_s3_bucket,
     load_function,
     load_table,
-        identifier
+    identifier,
 ):
     load_function(tmpdir, empty_s3_bucket, "none_missing.tsv", identifier)
     check_query = f"SELECT COUNT (*) FROM {load_table};"
@@ -230,9 +230,16 @@ def test_loaders_load_good_tsv(
 
 @pytest.mark.parametrize("load_function", [_load_local_tsv])
 def test_delete_less_than_max_malformed_rows(
-    postgres_with_load_table, tmpdir, empty_s3_bucket, load_function, load_table, identifier
+    postgres_with_load_table,
+    tmpdir,
+    empty_s3_bucket,
+    load_function,
+    load_table,
+    identifier,
 ):
-    load_function(tmpdir, empty_s3_bucket, "malformed_less_than_max_rows.tsv", identifier)
+    load_function(
+        tmpdir, empty_s3_bucket, "malformed_less_than_max_rows.tsv", identifier
+    )
     check_query = f"SELECT COUNT (*) FROM {load_table};"
     postgres_with_load_table.cursor.execute(check_query)
     num_rows = postgres_with_load_table.cursor.fetchone()[0]
@@ -241,7 +248,12 @@ def test_delete_less_than_max_malformed_rows(
 
 @pytest.mark.parametrize("load_function", [_load_local_tsv])
 def test_delete_max_malformed_rows(
-    postgres_with_load_table, tmpdir, empty_s3_bucket, load_function, load_table, identifier
+    postgres_with_load_table,
+    tmpdir,
+    empty_s3_bucket,
+    load_function,
+    load_table,
+    identifier,
 ):
     load_function(tmpdir, empty_s3_bucket, "malformed_max_rows.tsv", identifier)
     check_query = f"SELECT COUNT (*) FROM {load_table};"
@@ -255,13 +267,20 @@ def test_delete_more_than_max_malformed_rows(
     postgres_with_load_table, tmpdir, empty_s3_bucket, load_function, identifier
 ):
     with pytest.raises(InvalidTextRepresentation):
-        load_function(tmpdir, empty_s3_bucket, "malformed_more_than_max_rows.tsv", identifier)
+        load_function(
+            tmpdir, empty_s3_bucket, "malformed_more_than_max_rows.tsv", identifier
+        )
 
 
 @pytest.mark.parametrize("load_function", [_load_local_tsv, _load_s3_tsv])
 @pytest.mark.allow_hosts([S3_HOST])
 def test_loaders_delete_null_url_rows(
-    postgres_with_load_table, tmpdir, empty_s3_bucket, load_function, load_table, identifier
+    postgres_with_load_table,
+    tmpdir,
+    empty_s3_bucket,
+    load_function,
+    load_table,
+    identifier,
 ):
     load_function(tmpdir, empty_s3_bucket, "url_missing.tsv", identifier)
     null_url_check = f"SELECT COUNT (*) FROM {load_table} WHERE url IS NULL;"
@@ -278,7 +297,12 @@ def test_loaders_delete_null_url_rows(
 @pytest.mark.parametrize("load_function", [_load_local_tsv, _load_s3_tsv])
 @pytest.mark.allow_hosts([S3_HOST])
 def test_loaders_delete_null_license_rows(
-    postgres_with_load_table, tmpdir, empty_s3_bucket, load_function, load_table, identifier
+    postgres_with_load_table,
+    tmpdir,
+    empty_s3_bucket,
+    load_function,
+    load_table,
+    identifier,
 ):
     load_function(tmpdir, empty_s3_bucket, "license_missing.tsv", identifier)
     license_check = f"SELECT COUNT (*) FROM {load_table} WHERE license IS NULL;"
@@ -295,9 +319,16 @@ def test_loaders_delete_null_license_rows(
 @pytest.mark.parametrize("load_function", [_load_local_tsv, _load_s3_tsv])
 @pytest.mark.allow_hosts([S3_HOST])
 def test_loaders_delete_null_foreign_landing_url_rows(
-    postgres_with_load_table, tmpdir, empty_s3_bucket, load_function, load_table, identifier
+    postgres_with_load_table,
+    tmpdir,
+    empty_s3_bucket,
+    load_function,
+    load_table,
+    identifier,
 ):
-    load_function(tmpdir, empty_s3_bucket, "foreign_landing_url_missing.tsv", identifier)
+    load_function(
+        tmpdir, empty_s3_bucket, "foreign_landing_url_missing.tsv", identifier
+    )
     foreign_landing_url_check = (
         f"SELECT COUNT (*) FROM {load_table} " f"WHERE foreign_landing_url IS NULL;"
     )
@@ -314,7 +345,12 @@ def test_loaders_delete_null_foreign_landing_url_rows(
 @pytest.mark.parametrize("load_function", [_load_local_tsv, _load_s3_tsv])
 @pytest.mark.allow_hosts([S3_HOST])
 def test_data_loaders_delete_null_foreign_identifier_rows(
-    postgres_with_load_table, tmpdir, empty_s3_bucket, load_function, load_table, identifier
+    postgres_with_load_table,
+    tmpdir,
+    empty_s3_bucket,
+    load_function,
+    load_table,
+    identifier,
 ):
     load_function(tmpdir, empty_s3_bucket, "foreign_identifier_missing.tsv", identifier)
     foreign_identifier_check = (
@@ -333,9 +369,16 @@ def test_data_loaders_delete_null_foreign_identifier_rows(
 @pytest.mark.parametrize("load_function", [_load_local_tsv, _load_s3_tsv])
 @pytest.mark.allow_hosts([S3_HOST])
 def test_import_data_deletes_duplicate_foreign_identifier_rows(
-    postgres_with_load_table, tmpdir, empty_s3_bucket, load_function, load_table, identifier
+    postgres_with_load_table,
+    tmpdir,
+    empty_s3_bucket,
+    load_function,
+    load_table,
+    identifier,
 ):
-    load_function(tmpdir, empty_s3_bucket, "foreign_identifier_duplicate.tsv", identifier)
+    load_function(
+        tmpdir, empty_s3_bucket, "foreign_identifier_duplicate.tsv", identifier
+    )
     foreign_id_duplicate_check = (
         f"SELECT COUNT (*) FROM {load_table} " f"WHERE foreign_identifier='135257';"
     )
@@ -1047,7 +1090,9 @@ def test_drop_load_table_drops_table(postgres_with_load_table, load_table, ident
     assert not check_result
 
 
-def test_image_expiration(postgres_with_load_and_image_table, load_table, image_table, identifier):
+def test_image_expiration(
+    postgres_with_load_and_image_table, load_table, image_table, identifier
+):
     postgres_conn_id = POSTGRES_CONN_ID
 
     FID_A = "a"

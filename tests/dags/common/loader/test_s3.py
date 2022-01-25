@@ -4,6 +4,7 @@ from unittest.mock import patch
 import pytest
 from common.loader import s3
 
+
 TEST_ID = "testing"
 TEST_MEDIA_PREFIX = "media"
 TEST_STAGING_PREFIX = "test_staging"

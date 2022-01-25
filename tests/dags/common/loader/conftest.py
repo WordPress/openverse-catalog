@@ -1,7 +1,7 @@
 import boto3
 import pytest
 
-from tests.dags.common.loader.test_s3 import ACCESS_KEY, SECRET_KEY, S3_LOCAL_ENDPOINT
+from tests.dags.common.loader.test_s3 import ACCESS_KEY, S3_LOCAL_ENDPOINT, SECRET_KEY
 
 
 @pytest.fixture
