@@ -84,7 +84,9 @@ jobs:
 
       - name: Test
         # Randomize test order to suss out any unseen dependencies
-        run: just test --random-order
+        run: |
+          just build
+          just test --random-order
 
   push:
     name: Publish Docker images
