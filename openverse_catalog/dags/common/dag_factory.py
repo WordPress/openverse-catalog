@@ -1,9 +1,11 @@
+import inspect
 import logging
 import os
 from datetime import datetime, timedelta
 from typing import Callable, Dict, List, Optional
 
 from airflow import DAG
+from airflow.models import TaskInstance
 from airflow.models.baseoperator import cross_downstream
 from airflow.operators.dummy import DummyOperator
 from airflow.operators.python import PythonOperator
@@ -32,6 +34,48 @@ DAG_DEFAULT_ARGS = {
 DATE_RANGE_ARG_TEMPLATE = "{{ macros.ds_add(ds, -%s) }}"
 TIMESTAMP_TEMPLATE = "{{ ts_nodash }}"
 XCOM_PULL_TEMPLATE = "{{ ti.xcom_pull(task_ids='%s', key='%s') }}"
+
+
+def _push_output_paths_wrapper(
+    func: Callable,
+    media_types: List[str],
+    ti: TaskInstance,
+    *args,
+):
+    """
+    Run the provided callable after pushing the calculated output directories
+    for each media store to XComs. Output locations are pushed under keys with
+    the format `<media-type>_tsv`. This is a temporary workaround due to the nature
+    of the current provider scripts. Once
+    https://github.com/WordPress/openverse-catalog/issues/229 is addressed and the
+    provider scripts are refactored into classes, this wrapper can either be updated
+    or the XCom pushing can be moved into the provider initialization.
+    """
+    logger.info("Pushing available store paths to XComs")
+    module = inspect.getmodule(func)
+    stores = {}
+
+    # Stores exist at the module level, so in order to retrieve the output values we
+    # must first pull the stores from the module.
+    for media_type in media_types:
+        if not (store := getattr(module, f"{media_type}_store", None)):
+            continue
+        stores[media_type] = store
+
+    if not stores:
+        raise ValueError(
+            f"Expected a store of the following types in {module.__name__} "
+            f"but none were found: {media_types}"
+        )
+
+    for media_type, store in stores.items():
+        logger.info(f"{media_type.capitalize()} store location: {store.output_path}")
+        ti.xcom_push(key=f"{media_type}_tsv", value=store.output_path)
+
+    logger.info("Running provider function")
+    # Not passing kwargs here because Airflow throws a bunch of stuff in there that none
+    # of our provider scripts are expecting.
+    return func(*args)
 
 
 def create_provider_api_workflow(
@@ -115,7 +159,8 @@ def create_provider_api_workflow(
         # based on the media type
         pull_data = PythonOperator(
             task_id=f"pull_{media_type_name}_data",
-            python_callable=main_function,
+            python_callable=_push_output_paths_wrapper,
+            op_kwargs={"func": main_function, "media_types": media_types},
             depends_on_past=False,
             **kwargs,
         )
