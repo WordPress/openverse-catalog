@@ -104,22 +104,21 @@ def create_provider_api_workflow(
     )
 
     with dag:
+        kwargs = {}
         if dated:
-            pull_data = PythonOperator(
-                task_id=f"pull_{media_type_name}_data",
-                python_callable=main_function,
-                op_args=[DATE_RANGE_ARG_TEMPLATE % day_shift],
-                execution_timeout=dagrun_timeout,
-                depends_on_past=False,
-            )
-        else:
-            # Assumption - this will push an XCOM with the TSV location using a key
-            # based on the media type
-            pull_data = PythonOperator(
-                task_id=f"pull_{media_type_name}_data",
-                python_callable=main_function,
-                depends_on_past=False,
-            )
+            kwargs = {
+                "op_args": [DATE_RANGE_ARG_TEMPLATE % day_shift],
+                "execution_timeout": dagrun_timeout,
+            }
+
+        # Assumption - this will push an XCOM with the TSV location using a key
+        # based on the media type
+        pull_data = PythonOperator(
+            task_id=f"pull_{media_type_name}_data",
+            python_callable=main_function,
+            depends_on_past=False,
+            **kwargs,
+        )
 
         for media_type in media_types:
             with TaskGroup(group_id=f"load_{media_type}_data") as load_data:
