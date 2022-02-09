@@ -62,7 +62,7 @@ def _push_output_paths_wrapper(
             continue
         stores[media_type] = store
 
-    if not stores:
+    if len(stores) != len(media_types):
         raise ValueError(
             f"Expected a store of the following types in {module.__name__} "
             f"but none were found: {media_types}"

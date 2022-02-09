@@ -1,8 +1,58 @@
-import common.dag_factory as df
+from unittest import mock
+
+import pytest
+import requests
+from airflow.models import TaskInstance
+from common import dag_factory
+
+from tests.dags.common.test_resources import fake_provider_module
+
+
+@pytest.mark.parametrize(
+    "func, media_types, stores",
+    [
+        # Happy path
+        (fake_provider_module.main, ["image"], [fake_provider_module.image_store]),
+        # Empty case, no media types provided
+        (fake_provider_module.main, [], []),
+        # Provided function doesn't have a store at the module level
+        pytest.param(
+            requests.get,
+            ["image"],
+            [None],
+            marks=pytest.mark.raises(
+                exception=ValueError, match="Expected a store of the following types.*"
+            ),
+        ),
+        # Provided function doesn't have all specified stores
+        pytest.param(
+            fake_provider_module.main,
+            ["image", "other"],
+            [None, None],
+            marks=pytest.mark.raises(
+                exception=ValueError, match="Expected a store of the following types.*"
+            ),
+        ),
+    ],
+)
+def test_push_output_paths_wrapper(func, media_types, stores):
+    ti_mock = mock.MagicMock(spec=TaskInstance)
+    # This mock, along with the value, get handed into the provided function.
+    # For fake_provider_module.main, the mock will be called with the provided value.
+    func_mock = mock.MagicMock()
+    value = 42
+    dag_factory._push_output_paths_wrapper(func, media_types, ti_mock, func_mock, value)
+    assert ti_mock.xcom_push.call_count == len(
+        media_types
+    ), "# of output paths didn't match # of stores expected"
+    for args, store in zip(ti_mock.xcom_push.calls, stores):
+        assert args.kwargs["value"] == store.output_path
+    # Check that the function itself was called with the provided args
+    func_mock.assert_called_once_with(value)
 
 
 def test_create_day_partitioned_ingestion_dag_with_single_layer_dependencies():
-    dag = df.create_day_partitioned_ingestion_dag(
+    dag = dag_factory.create_day_partitioned_ingestion_dag(
         "test_dag",
         print,
         [[1, 2]],
@@ -21,7 +71,7 @@ def test_create_day_partitioned_ingestion_dag_with_single_layer_dependencies():
 
 
 def test_create_day_partitioned_ingestion_dag_with_multi_layer_dependencies():
-    dag = df.create_day_partitioned_ingestion_dag(
+    dag = dag_factory.create_day_partitioned_ingestion_dag(
         "test_dag",
         print,
         [[1, 2], [3, 4, 5]],
