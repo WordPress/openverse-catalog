@@ -155,8 +155,6 @@ def create_provider_api_workflow(
                 "execution_timeout": dagrun_timeout,
             }
 
-        # Assumption - this will push an XCOM with the TSV location using a key
-        # based on the media type
         pull_data = PythonOperator(
             task_id=f"pull_{media_type_name}_data",
             python_callable=_push_output_paths_wrapper,
@@ -175,6 +173,7 @@ def create_provider_api_workflow(
                         "identifier": TIMESTAMP_TEMPLATE,
                         "media_type": media_type,
                     },
+                    trigger_rule=TriggerRule.NONE_SKIPPED,
                     doc_md="Create a temporary loading table for "
                     f"ingesting {media_type} data from a TSV",
                 )
@@ -188,6 +187,7 @@ def create_provider_api_workflow(
                         "s3_prefix": f"{media_type}/{provider_name}",
                         "aws_conn_id": AWS_CONN_ID,
                     },
+                    trigger_rule=TriggerRule.NONE_SKIPPED,
                 )
                 load_from_s3 = PythonOperator(
                     task_id="load_from_s3",
