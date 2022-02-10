@@ -12,6 +12,9 @@ DEFAULT_MEDIA_PREFIX = "image"
 STAGING_PREFIX = "db_loader_staging"
 
 
+# TODO: Re-arrange this module so the funcs are in dependency -> dependent order
+
+
 def copy_file_to_s3_staging(
     identifier,
     tsv_file_path,
@@ -20,6 +23,10 @@ def copy_file_to_s3_staging(
     media_prefix=DEFAULT_MEDIA_PREFIX,
     staging_prefix=STAGING_PREFIX,
 ):
+    """
+    Copy a media file from the staging directory, using a media, staging,
+    and identifiers to construct the S3 key.
+    """
     logger.info(f"Creating staging object in s3_bucket:  {s3_bucket}")
     s3 = S3Hook(aws_conn_id=aws_conn_id)
     file_name = os.path.split(tsv_file_path)[1]
@@ -37,6 +44,12 @@ def copy_file_to_s3(
     aws_conn_id,
     ti,
 ):
+    """
+    Copy a TSV file to S3 with the given prefix.
+    The TSV's version is pushed to the `tsv_version` XCom, and the constructed
+    S3 key is pushed to the `s3_key` XCom.
+    The TSV is removed after the upload is complete.
+    """
     if tsv_file_path is None:
         raise FileNotFoundError(f"Expected file {tsv_file_path} was not provided")
     tsv_file = Path(tsv_file_path)
