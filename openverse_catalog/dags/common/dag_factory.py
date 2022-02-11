@@ -2,7 +2,7 @@ import inspect
 import logging
 import os
 from datetime import datetime, timedelta
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Optional, Sequence
 
 from airflow import DAG
 from airflow.models import TaskInstance
@@ -40,7 +40,7 @@ def _push_output_paths_wrapper(
     func: Callable,
     media_types: List[str],
     ti: TaskInstance,
-    *args,
+    args: Sequence = None,
 ):
     """
     Run the provided callable after pushing the calculated output directories
@@ -51,6 +51,7 @@ def _push_output_paths_wrapper(
     provider scripts are refactored into classes, this wrapper can either be updated
     or the XCom pushing can be moved into the provider initialization.
     """
+    args = args or []
     logger.info("Pushing available store paths to XComs")
     module = inspect.getmodule(func)
     stores = {}
@@ -148,19 +149,16 @@ def create_provider_api_workflow(
     )
 
     with dag:
-        kwargs = {}
+        pull_kwargs = {"func": main_function, "media_types": media_types}
         if dated:
-            kwargs = {
-                "op_args": [DATE_RANGE_ARG_TEMPLATE % day_shift],
-                "execution_timeout": dagrun_timeout,
-            }
+            pull_kwargs["args"] = [DATE_RANGE_ARG_TEMPLATE % day_shift]
 
         pull_data = PythonOperator(
             task_id=f"pull_{media_type_name}_data",
             python_callable=_push_output_paths_wrapper,
-            op_kwargs={"func": main_function, "media_types": media_types},
+            op_kwargs=pull_kwargs,
             depends_on_past=False,
-            **kwargs,
+            execution_timeout=dagrun_timeout if dated else None,
         )
 
         for media_type in media_types:

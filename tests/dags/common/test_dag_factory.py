@@ -41,7 +41,12 @@ def test_push_output_paths_wrapper(func, media_types, stores):
     # For fake_provider_module.main, the mock will be called with the provided value.
     func_mock = mock.MagicMock()
     value = 42
-    dag_factory._push_output_paths_wrapper(func, media_types, ti_mock, func_mock, value)
+    dag_factory._push_output_paths_wrapper(
+        func,
+        media_types,
+        ti_mock,
+        args=[func_mock, value],
+    )
     assert ti_mock.xcom_push.call_count == len(
         media_types
     ), "# of output paths didn't match # of stores expected"
