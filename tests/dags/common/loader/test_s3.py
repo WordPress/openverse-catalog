@@ -2,6 +2,7 @@ import os
 from unittest import mock
 
 import pytest
+from airflow.exceptions import AirflowSkipException
 from airflow.models import TaskInstance
 from common.loader import s3
 
@@ -138,6 +139,11 @@ def test_get_staged_s3_object_complains_with_multiple_keys(empty_s3_bucket):
 def test_copy_file_to_s3_no_path():
     with pytest.raises(FileNotFoundError):
         s3.copy_file_to_s3(None, "foo", "bar", "baz", None)
+
+
+def test_copy_file_to_s3_no_actual_file():
+    with pytest.raises(AirflowSkipException):
+        s3.copy_file_to_s3("does_not_exist", "foo", "bar", "baz", None)
 
 
 def test_copy_file_to_s3(tmp_path, mock_s3_load_file, empty_s3_bucket):

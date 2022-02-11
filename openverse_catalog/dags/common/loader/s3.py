@@ -2,6 +2,7 @@ import logging
 import os
 from pathlib import Path
 
+from airflow.exceptions import AirflowSkipException
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 from common.loader import paths
 
@@ -53,6 +54,8 @@ def copy_file_to_s3(
     if tsv_file_path is None:
         raise FileNotFoundError(f"Expected file {tsv_file_path} was not provided")
     tsv_file = Path(tsv_file_path)
+    if not tsv_file.exists():
+        raise AirflowSkipException(f"TSV file {tsv_file} had no data.")
     tsv_version = paths.get_tsv_version(tsv_file_path)
     s3_key = f"{s3_prefix}/{tsv_file.name}"
     logger.info(f"Uploading {tsv_file_path} to {s3_bucket}:{s3_key}")
