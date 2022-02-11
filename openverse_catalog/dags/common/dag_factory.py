@@ -32,7 +32,6 @@ DAG_DEFAULT_ARGS = {
     "on_failure_callback": slack.on_failure_callback,
 }
 DATE_RANGE_ARG_TEMPLATE = "{{ macros.ds_add(ds, -%s) }}"
-TIMESTAMP_TEMPLATE = "{{ ts_nodash }}"
 XCOM_PULL_TEMPLATE = "{{ ti.xcom_pull(task_ids='%s', key='%s') }}"
 
 
@@ -134,6 +133,7 @@ def create_provider_api_workflow(
     default_args = default_args or DAG_DEFAULT_ARGS
     media_type_name = "mixed" if len(media_types) > 1 else media_types[0]
     provider_name = dag_id.replace("_workflow", "")
+    identifier = "%s_{{ ts_nodash }}" % provider_name
 
     dag = DAG(
         dag_id=dag_id,
@@ -168,7 +168,7 @@ def create_provider_api_workflow(
                     python_callable=sql.create_loading_table,
                     op_kwargs={
                         "postgres_conn_id": DB_CONN_ID,
-                        "identifier": TIMESTAMP_TEMPLATE,
+                        "identifier": identifier,
                         "media_type": media_type,
                     },
                     trigger_rule=TriggerRule.NONE_SKIPPED,
@@ -197,7 +197,7 @@ def create_provider_api_workflow(
                         "media_type": media_type,
                         "tsv_version": XCOM_PULL_TEMPLATE
                         % (copy_to_s3.task_id, "tsv_version"),
-                        "identifier": TIMESTAMP_TEMPLATE,
+                        "identifier": identifier,
                     },
                 )
                 drop_loading_table = PythonOperator(
@@ -205,10 +205,10 @@ def create_provider_api_workflow(
                     python_callable=sql.drop_load_table,
                     op_kwargs={
                         "postgres_conn_id": DB_CONN_ID,
-                        "identifier": TIMESTAMP_TEMPLATE,
+                        "identifier": identifier,
                         "media_type": media_type,
                     },
-                    trigger_rule=TriggerRule.NONE_SKIPPED,
+                    trigger_rule=TriggerRule.ALL_DONE,
                 )
                 [create_loading_table, copy_to_s3] >> load_from_s3
                 [create_loading_table, load_from_s3] >> drop_loading_table
