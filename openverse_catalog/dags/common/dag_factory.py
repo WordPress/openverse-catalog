@@ -80,8 +80,8 @@ DAG_DEFAULT_ARGS = {
     "depends_on_past": False,
     "start_date": datetime(2019, 1, 15),
     "email_on_retry": False,
-    "retries": 3,
-    "retry_delay": timedelta(minutes=15),
+    "retries": 2,
+    "retry_delay": timedelta(minutes=5),
     "on_failure_callback": slack.on_failure_callback,
 }
 DATE_RANGE_ARG_TEMPLATE = "{{{{ macros.ds_add(ds, -{}) }}}}"
@@ -212,6 +212,9 @@ def create_provider_api_workflow(
             op_kwargs=pull_kwargs,
             depends_on_past=False,
             execution_timeout=dagrun_timeout if dated else None,
+            # If the data pull fails, we want to load all data that's been retrieved
+            # thus far before we attempt again
+            retries=0,
         )
 
         for media_type in media_types:
