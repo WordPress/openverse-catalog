@@ -89,7 +89,7 @@ def create_provider_api_workflow(
     day_shift: int = 0,
     dagrun_timeout: timedelta = timedelta(hours=12),
     doc_md: str = "",
-    media_types: List[str] = ("image",),
+    media_types: Sequence[str] = ("image",),
 ):
     """
     This factory method instantiates a DAG that will run the given
@@ -128,7 +128,7 @@ def create_provider_api_workflow(
                       a given dagrun may take.
     doc_md:           string which should be used for the DAG's documentation markdown
     media_types:      list describing the media type(s) that this provider handles
-                      (e.g. ("image",), ["audio"], ["image", "audio"], etc.)
+                      (e.g. `["audio"]`, `["image", "audio"]`, etc.)
     """
     default_args = default_args or DAG_DEFAULT_ARGS
     media_type_name = "mixed" if len(media_types) > 1 else media_types[0]
