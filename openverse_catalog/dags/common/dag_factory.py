@@ -212,8 +212,7 @@ def create_provider_api_workflow(
                     },
                     trigger_rule=TriggerRule.ALL_DONE,
                 )
-                [create_loading_table, copy_to_s3] >> load_from_s3
-                [create_loading_table, load_from_s3] >> drop_loading_table
+                [create_loading_table, copy_to_s3] >> load_from_s3 >> drop_loading_table
 
             pull_data >> load_data
 
