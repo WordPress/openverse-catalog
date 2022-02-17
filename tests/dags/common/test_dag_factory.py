@@ -21,7 +21,7 @@ from tests.dags.common.test_resources import fake_provider_module
             ["image"],
             [None],
             marks=pytest.mark.raises(
-                exception=ValueError, match="Expected a store of the following types.*"
+                exception=ValueError, match="Expected stores in .*? were missing.*"
             ),
         ),
         # Provided function doesn't have all specified stores
@@ -30,7 +30,7 @@ from tests.dags.common.test_resources import fake_provider_module
             ["image", "other"],
             [None, None],
             marks=pytest.mark.raises(
-                exception=ValueError, match="Expected a store of the following types.*"
+                exception=ValueError, match="Expected stores in .*? were missing.*"
             ),
         ),
     ],
