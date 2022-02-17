@@ -49,7 +49,7 @@ def copy_file_to_s3(
     The TSV is removed after the upload is complete.
     """
     if tsv_file_path is None:
-        raise FileNotFoundError(f"Expected file {tsv_file_path} was not provided")
+        raise FileNotFoundError("No TSV file path was provided")
     tsv_file = Path(tsv_file_path)
     if not tsv_file.exists():
         raise AirflowSkipException(f"TSV file {tsv_file} does not exist.")
