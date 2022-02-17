@@ -31,8 +31,8 @@ DAG_DEFAULT_ARGS = {
     "retry_delay": timedelta(minutes=15),
     "on_failure_callback": slack.on_failure_callback,
 }
-DATE_RANGE_ARG_TEMPLATE = "{{ macros.ds_add(ds, -%s) }}"
-XCOM_PULL_TEMPLATE = "{{ ti.xcom_pull(task_ids='%s', key='%s') }}"
+DATE_RANGE_ARG_TEMPLATE = "{{{{ macros.ds_add(ds, -{}) }}}}"
+XCOM_PULL_TEMPLATE = "{{{{ ti.xcom_pull(task_ids='{}', key='{}') }}}}"
 
 
 def _push_output_paths_wrapper(
@@ -133,7 +133,7 @@ def create_provider_api_workflow(
     default_args = default_args or DAG_DEFAULT_ARGS
     media_type_name = "mixed" if len(media_types) > 1 else media_types[0]
     provider_name = dag_id.replace("_workflow", "")
-    identifier = "%s_{{ ts_nodash }}" % provider_name
+    identifier = f"{provider_name}_{{{{ ts_nodash }}}}"
 
     dag = DAG(
         dag_id=dag_id,
@@ -151,7 +151,7 @@ def create_provider_api_workflow(
     with dag:
         pull_kwargs = {"func": main_function, "media_types": media_types}
         if dated:
-            pull_kwargs["args"] = [DATE_RANGE_ARG_TEMPLATE % day_shift]
+            pull_kwargs["args"] = [DATE_RANGE_ARG_TEMPLATE.format(day_shift)]
 
         pull_data = PythonOperator(
             task_id=f"pull_{media_type_name}_data",
@@ -179,8 +179,9 @@ def create_provider_api_workflow(
                     task_id="copy_to_s3",
                     python_callable=s3.copy_file_to_s3,
                     op_kwargs={
-                        "tsv_file_path": XCOM_PULL_TEMPLATE
-                        % (pull_data.task_id, f"{media_type}_tsv"),
+                        "tsv_file_path": XCOM_PULL_TEMPLATE.format(
+                            pull_data.task_id, f"{media_type}_tsv"
+                        ),
                         "s3_bucket": OPENVERSE_BUCKET,
                         "s3_prefix": f"{media_type}/{provider_name}",
                         "aws_conn_id": AWS_CONN_ID,
@@ -192,11 +193,12 @@ def create_provider_api_workflow(
                     python_callable=loader.load_from_s3,
                     op_kwargs={
                         "bucket": OPENVERSE_BUCKET,
-                        "key": XCOM_PULL_TEMPLATE % (copy_to_s3.task_id, "s3_key"),
+                        "key": XCOM_PULL_TEMPLATE.format(copy_to_s3.task_id, "s3_key"),
                         "postgres_conn_id": DB_CONN_ID,
                         "media_type": media_type,
-                        "tsv_version": XCOM_PULL_TEMPLATE
-                        % (copy_to_s3.task_id, "tsv_version"),
+                        "tsv_version": XCOM_PULL_TEMPLATE.format(
+                            copy_to_s3.task_id, "tsv_version"
+                        ),
                         "identifier": identifier,
                     },
                 )
@@ -338,7 +340,7 @@ def _build_ingest_operator_list_list(
             PythonOperator(
                 task_id=f"ingest_{d}",
                 python_callable=main_function,
-                op_args=[DATE_RANGE_ARG_TEMPLATE % d],
+                op_args=[DATE_RANGE_ARG_TEMPLATE.format(d)],
                 execution_timeout=ingestion_task_timeout,
                 depends_on_past=False,
             )

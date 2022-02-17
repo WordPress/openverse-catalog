@@ -105,10 +105,7 @@ with dag:
         ),
     )
 
-    media_type_xcom = (
-        "{{ ti.xcom_pull(task_ids='%s', key='media_type') }}"
-        % stage_oldest_tsv_file.task_id
-    )
+    media_type_xcom = f"{{{{ ti.xcom_pull(task_ids='{stage_oldest_tsv_file.task_id}', key='media_type') }}}}"  # noqa: E501
 
     create_loading_table = PythonOperator(
         task_id="create_loading_table",
