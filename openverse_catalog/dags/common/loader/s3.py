@@ -13,9 +13,6 @@ DEFAULT_MEDIA_PREFIX = "image"
 STAGING_PREFIX = "db_loader_staging"
 
 
-# TODO: Re-arrange this module so the funcs are in dependency -> dependent order
-
-
 def copy_file_to_s3_staging(
     identifier,
     tsv_file_path,
