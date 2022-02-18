@@ -1,18 +1,16 @@
 import logging
 
-import common
 
-
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s", level=logging.INFO
-)
 logger = logging.getLogger(__name__)
-logging.getLogger(common.urls.__name__).setLevel(logging.WARNING)
 
 
 def report_completion(provider_name, media_type, duration, record_count):
-    logger.info("Load complete")
-    logger.info(provider_name)
-    logger.info(media_type)
-    logger.info(duration)
-    logger.info(record_count)
+    message = f"""
+*Provider*: `{provider_name}`
+*Media Type*: `{media_type}`
+*Number of Records Upserted*: {record_count}
+*Duration of data pull task**: {duration}
+
+* Duration includes time taken to pull data of all media types.
+"""
+    logger.info(message)
