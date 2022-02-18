@@ -268,7 +268,7 @@ def create_provider_api_workflow(
                     task_id="report_load_completion",
                     python_callable=reporting.report_completion,
                     op_kwargs={
-                        "provider_name": dag_id.replace("_workflow", ""),
+                        "provider_name": provider_name,
                         "media_type": media_type,
                         "duration": XCOM_PULL_TEMPLATE.format(
                             pull_data.task_id, "duration"
