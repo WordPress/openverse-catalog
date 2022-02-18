@@ -65,7 +65,7 @@ from airflow.operators.python import PythonOperator
 from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
 from common import slack
-from common.loader import loader, s3, sql
+from common.loader import loader, reporting, s3, sql
 
 
 logger = logging.getLogger(__name__)
@@ -255,6 +255,14 @@ def create_provider_api_workflow(
                         "identifier": identifier,
                     },
                 )
+                report_load_completion = PythonOperator(
+                    task_id="report_load_completion",
+                    python_callable=reporting.report_completion,
+                    op_kwargs={
+                        "provider_name": dag_id.replace("_workflow", ""),
+                        "media_type": media_type,
+                    },
+                )
                 drop_loading_table = PythonOperator(
                     task_id="drop_loading_table",
                     python_callable=sql.drop_load_table,
@@ -265,7 +273,8 @@ def create_provider_api_workflow(
                     },
                     trigger_rule=TriggerRule.ALL_DONE,
                 )
-                [create_loading_table, copy_to_s3] >> load_from_s3 >> drop_loading_table
+                [create_loading_table, copy_to_s3] >> load_from_s3
+                load_from_s3 >> report_load_completion >> drop_loading_table
 
             pull_data >> load_data
 
