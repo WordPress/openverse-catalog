@@ -54,6 +54,7 @@ https://github.com/creativecommons/cccatalog/issues/334)
 import inspect
 import logging
 import os
+import time
 from datetime import datetime, timedelta
 from typing import Callable, Dict, List, Optional, Sequence
 
@@ -126,9 +127,17 @@ def _push_output_paths_wrapper(
         ti.xcom_push(key=f"{media_type}_tsv", value=store.output_path)
 
     logger.info("Running provider function")
+
+    start_time = time.perf_counter()
     # Not passing kwargs here because Airflow throws a bunch of stuff in there that none
     # of our provider scripts are expecting.
-    return func(*args)
+    data = func(*args)
+    end_time = time.perf_counter()
+
+    duration = end_time - start_time
+    ti.xcom_push(key="duration", value=duration)
+
+    return data
 
 
 def create_provider_api_workflow(
@@ -261,6 +270,9 @@ def create_provider_api_workflow(
                     op_kwargs={
                         "provider_name": dag_id.replace("_workflow", ""),
                         "media_type": media_type,
+                        "duration": XCOM_PULL_TEMPLATE.format(
+                            pull_data.task_id, "duration"
+                        ),
                     },
                 )
                 drop_loading_table = PythonOperator(
