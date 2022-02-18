@@ -273,6 +273,9 @@ def create_provider_api_workflow(
                         "duration": XCOM_PULL_TEMPLATE.format(
                             pull_data.task_id, "duration"
                         ),
+                        "record_count": XCOM_PULL_TEMPLATE.format(
+                            load_from_s3.task_id, f"{media_type}_record_count"
+                        ),
                     },
                 )
                 drop_loading_table = PythonOperator(
