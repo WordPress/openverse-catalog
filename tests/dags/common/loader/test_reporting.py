@@ -7,17 +7,14 @@ from common.loader.reporting import report_completion
 @pytest.fixture(autouse=True)
 def send_message_mock() -> mock.MagicMock:
     with mock.patch("common.slack.send_message") as SendMessageMock:
-        yield SendMessageMock.return_value
+        yield SendMessageMock
 
 
 @pytest.mark.parametrize(
     "should_send_message",
-    [
-        (True,),
-        (False,),
-    ],
+    [True, False],
 )
-def test_report_completion(should_send_message, send_message_mock):
+def test_report_completion(should_send_message):
     with mock.patch(
         "common.slack.should_send_message", return_value=should_send_message
     ):
