@@ -1,6 +1,6 @@
 import logging
 
-from common.slack import send_message, should_send_message
+from common.slack import send_message
 
 
 logger = logging.getLogger(__name__)
@@ -20,7 +20,5 @@ def report_completion(provider_name, media_type, duration, record_count):
 
 * _Duration includes time taken to pull data of all media types._
 """
-    if should_send_message():
-        send_message(message, username="Airflow DAG Load Data Complete")
-
+    send_message(message, username="Airflow DAG Load Data Complete")
     logger.info(message)

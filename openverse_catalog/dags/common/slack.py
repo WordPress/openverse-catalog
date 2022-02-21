@@ -8,6 +8,14 @@ TODO:
 This class is intended to be used with a channel-specific slack webhook.
 More information can be found here: https://app.slack.com/block-kit-builder.
 
+## Messages are not configured to send in development
+
+Messages or alerts sent using `send_message` or `on_failure_callback` will only
+send if a Slack connection is defined and we are running in production. You can
+manually override this for testing purposes by setting the `slack_message_override`
+variable to `true` in the Airflow UI.
+
+
 ## Send multiple messages - payload is reset after sending
 
 >>> slack = SlackMessage(username="Multi-message Test")
@@ -215,6 +223,8 @@ def send_message(
     http_conn_id: str = SLACK_NOTIFICATIONS_CONN_ID,
 ) -> None:
     """Send a simple slack message, convenience message for short/simple messages."""
+    if not should_send_message(http_conn_id):
+        return
     s = SlackMessage(username, icon_emoji, http_conn_id=http_conn_id)
     s.add_text(text, plain_text=not markdown)
     s.send(text)
@@ -223,7 +233,7 @@ def send_message(
 def should_send_message(http_conn_id=SLACK_NOTIFICATIONS_CONN_ID):
     """
     Returns true if a Slack connection is defined and we are in production (or
-    the force alert is set).
+    the message override is set).
     """
     # Exit early if no slack connection exists
     hook = HttpHook(http_conn_id=http_conn_id)
@@ -245,9 +255,6 @@ def on_failure_callback(context: dict) -> None:
     Send an alert out regarding a failure to Slack.
     Errors are only sent out in production and if a Slack connection is defined.
     """
-    if not should_send_message(SLACK_ALERTS_CONN_ID):
-        return
-
     # Get relevant info
     ti = context["task_instance"]
     execution_date = context["execution_date"]
@@ -271,4 +278,6 @@ def on_failure_callback(context: dict) -> None:
 *Log*: {ti.log_url}
 {exception_message}
 """
-    send_message(message, username="Airflow DAG Failure")
+    send_message(
+        message, username="Airflow DAG Failure", http_conn_id=SLACK_ALERTS_CONN_ID
+    )

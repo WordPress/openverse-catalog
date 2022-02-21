@@ -284,16 +284,44 @@ def test_send_fails(http_hook_mock):
         s.send()
 
 
+@pytest.mark.parametrize(
+    "environment, slack_message_override, expected_result",
+    [
+        ("dev", False, False),
+        ("dev", True, True),
+        ("prod", False, True),
+        ("prod", True, True),
+    ],
+)
+def test_should_send_message(environment, slack_message_override, expected_result):
+    with mock.patch("common.slack.Variable") as MockVariable:
+        # Mock the calls to Variable.get, in order
+        MockVariable.get.side_effect = [environment, slack_message_override]
+        assert should_send_message() == expected_result
+
+
+def test_should_send_message_is_false_without_hook(http_hook_mock):
+    http_hook_mock.get_conn.side_effect = AirflowNotFoundException("nope")
+    assert not should_send_message()
+
+
 def test_send_message(http_hook_mock):
-    send_message("Sample text", username="DifferentUser")
-    http_hook_mock.run.assert_called_with(
-        endpoint=None,
-        data='{"username": "DifferentUser", "unfurl_links": true, "unfurl_media": true,'
-        ' "icon_emoji": ":airflow:", "blocks": [{"type": "section", "text": '
-        '{"type": "mrkdwn", "text": "Sample text"}}], "text": "Sample text"}',
-        headers={"Content-type": "application/json"},
-        extra_options={"verify": True},
-    )
+    with mock.patch("common.slack.should_send_message", return_value=True):
+        send_message("Sample text", username="DifferentUser")
+        http_hook_mock.run.assert_called_with(
+            endpoint=None,
+            data='{"username": "DifferentUser", "unfurl_links": true, "unfurl_media": true,'
+            ' "icon_emoji": ":airflow:", "blocks": [{"type": "section", "text": '
+            '{"type": "mrkdwn", "text": "Sample text"}}], "text": "Sample text"}',
+            headers={"Content-type": "application/json"},
+            extra_options={"verify": True},
+        )
+
+
+def test_send_message_does_not_send_if_checks_fail(http_hook_mock):
+    with mock.patch("common.slack.should_send_message", return_value=False):
+        send_message("Sample text", username="DifferentUser")
+        http_hook_mock.run.assert_not_called()
 
 
 @pytest.mark.parametrize(
@@ -335,25 +363,3 @@ def test_on_failure_callback(
             assert bool(exception) ^ (
                 "Exception" not in run_mock.call_args.kwargs["data"]
             )
-
-
-def test_on_failure_callback_does_nothing_without_hook(http_hook_mock):
-    http_hook_mock.get_conn.side_effect = AirflowNotFoundException("nope")
-    on_failure_callback({})
-    http_hook_mock.run.assert_not_called()
-
-
-@pytest.mark.parametrize(
-    "environment, slack_message_override, expected_result",
-    [
-        ("dev", False, False),
-        ("dev", True, True),
-        ("prod", False, True),
-        ("prod", True, True),
-    ],
-)
-def test_should_send_message(environment, slack_message_override, expected_result):
-    with mock.patch("common.slack.Variable") as MockVariable:
-        # Mock the calls to Variable.get, in order
-        MockVariable.get.side_effect = [environment, slack_message_override]
-        assert should_send_message() == expected_result
