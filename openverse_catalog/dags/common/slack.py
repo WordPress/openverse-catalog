@@ -234,10 +234,10 @@ def should_send_message(http_conn_id=SLACK_NOTIFICATIONS_CONN_ID):
 
     # Exit early if we aren't on production or if force alert is not set
     environment = Variable.get("environment", default_var="dev")
-    force_alert = Variable.get(
-        "force_slack_alert", default_var=False, deserialize_json=True
+    force_message = Variable.get(
+        "slack_message_override", default_var=False, deserialize_json=True
     )
-    return environment == "prod" or force_alert
+    return environment == "prod" or force_message
 
 
 def on_failure_callback(context: dict) -> None:

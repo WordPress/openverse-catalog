@@ -297,7 +297,7 @@ def test_send_message(http_hook_mock):
 
 
 @pytest.mark.parametrize(
-    "exception, environment, force_slack_alert, call_expected",
+    "exception, environment, slack_message_override, call_expected",
     [
         # Message with exception
         (ValueError("Whoops!"), "dev", False, False),
@@ -317,7 +317,7 @@ def test_send_message(http_hook_mock):
     ],
 )
 def test_on_failure_callback(
-    exception, environment, force_slack_alert, call_expected, http_hook_mock
+    exception, environment, slack_message_override, call_expected, http_hook_mock
 ):
     context = {
         "task_instance": mock.Mock(),
@@ -327,7 +327,7 @@ def test_on_failure_callback(
     with mock.patch("common.slack.Variable") as MockVariable:
         run_mock = http_hook_mock.run
         # Mock the calls to Variable.get, in order
-        MockVariable.get.side_effect = [environment, force_slack_alert]
+        MockVariable.get.side_effect = [environment, slack_message_override]
         on_failure_callback(context)
         assert run_mock.called == call_expected
         if call_expected:
@@ -344,7 +344,7 @@ def test_on_failure_callback_does_nothing_without_hook(http_hook_mock):
 
 
 @pytest.mark.parametrize(
-    "environment, force_slack_alert, expected_result",
+    "environment, slack_message_override, expected_result",
     [
         ("dev", False, False),
         ("dev", True, True),
@@ -352,8 +352,8 @@ def test_on_failure_callback_does_nothing_without_hook(http_hook_mock):
         ("prod", True, True),
     ],
 )
-def test_should_send_message(environment, force_slack_alert, expected_result):
+def test_should_send_message(environment, slack_message_override, expected_result):
     with mock.patch("common.slack.Variable") as MockVariable:
         # Mock the calls to Variable.get, in order
-        MockVariable.get.side_effect = [environment, force_slack_alert]
+        MockVariable.get.side_effect = [environment, slack_message_override]
         assert should_send_message() == expected_result
