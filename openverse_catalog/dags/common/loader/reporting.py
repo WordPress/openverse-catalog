@@ -16,7 +16,7 @@ def report_completion(provider_name, media_type, duration, record_count):
 *Provider*: `{provider_name}`
 *Media Type*: `{media_type}`
 *Number of Records Upserted*: {record_count}
-*Duration of data pull task**: {duration}
+*Duration of data pull task*: {duration}
 
 * Duration includes time taken to pull data of all media types.
 """
