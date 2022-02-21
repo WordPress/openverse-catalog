@@ -3,7 +3,12 @@ from unittest import mock
 
 import pytest
 from airflow.exceptions import AirflowNotFoundException
-from common.slack import SlackMessage, on_failure_callback, send_message
+from common.slack import (
+    SlackMessage,
+    on_failure_callback,
+    send_message,
+    should_send_message,
+)
 
 
 _FAKE_IMAGE = "http://image.com/img.jpg"
@@ -336,3 +341,19 @@ def test_on_failure_callback_does_nothing_without_hook(http_hook_mock):
     http_hook_mock.get_conn.side_effect = AirflowNotFoundException("nope")
     on_failure_callback({})
     http_hook_mock.run.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "environment, force_slack_alert, expected_result",
+    [
+        ("dev", False, False),
+        ("dev", True, True),
+        ("prod", False, True),
+        ("prod", True, True),
+    ],
+)
+def test_should_send_message(environment, force_slack_alert, expected_result):
+    with mock.patch("common.slack.Variable") as MockVariable:
+        # Mock the calls to Variable.get, in order
+        MockVariable.get.side_effect = [environment, force_slack_alert]
+        assert should_send_message() == expected_result

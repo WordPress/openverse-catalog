@@ -220,24 +220,32 @@ def send_message(
     s.send(text)
 
 
-def on_failure_callback(context: dict) -> None:
+def should_send_message(http_conn_id=SLACK_NOTIFICATIONS_CONN_ID):
     """
-    Send an alert out regarding a failure to Slack.
-    Errors are only sent out in production and if a Slack connection is defined.
+    Returns true if a Slack connection is defined and we are in production (or
+    the force alert is set).
     """
     # Exit early if no slack connection exists
-    hook = HttpHook(http_conn_id=SLACK_ALERTS_CONN_ID)
+    hook = HttpHook(http_conn_id=http_conn_id)
     try:
         hook.get_conn()
     except AirflowNotFoundException:
-        return
+        return False
 
     # Exit early if we aren't on production or if force alert is not set
     environment = Variable.get("environment", default_var="dev")
     force_alert = Variable.get(
         "force_slack_alert", default_var=False, deserialize_json=True
     )
-    if not (environment == "prod" or force_alert):
+    return environment == "prod" or force_alert
+
+
+def on_failure_callback(context: dict) -> None:
+    """
+    Send an alert out regarding a failure to Slack.
+    Errors are only sent out in production and if a Slack connection is defined.
+    """
+    if not should_send_message(SLACK_ALERTS_CONN_ID):
         return
 
     # Get relevant info
