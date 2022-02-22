@@ -15,7 +15,6 @@ send if a Slack connection is defined and we are running in production. You can
 manually override this for testing purposes by setting the `slack_message_override`
 variable to `true` in the Airflow UI.
 
-
 ## Send multiple messages - payload is reset after sending
 
 >>> slack = SlackMessage(username="Multi-message Test")

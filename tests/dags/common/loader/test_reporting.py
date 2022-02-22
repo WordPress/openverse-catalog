@@ -6,7 +6,7 @@ from common.loader.reporting import report_completion
 
 @pytest.fixture(autouse=True)
 def send_message_mock() -> mock.MagicMock:
-    with mock.patch("common.slack.send_message") as SendMessageMock:
+    with mock.patch("common.slack.SlackMessage.send") as SendMessageMock:
         yield SendMessageMock
 
 
