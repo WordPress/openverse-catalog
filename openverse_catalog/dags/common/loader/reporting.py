@@ -12,6 +12,11 @@ def report_completion(provider_name, media_type, duration, record_count):
     Messages are only sent out in production and if a Slack connection is defined.
     In all cases the data is logged.
     """
+
+    # This happens when the task is manually set to `success` in Airflow before
+    # completing.
+    duration = "_No data_" if duration == "None" else duration
+
     message = f"""
 *Provider*: `{provider_name}`
 *Media Type*: `{media_type}`
