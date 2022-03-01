@@ -246,12 +246,28 @@ def upsert_records_to_db_table(
     upsert_conflict_string = ",\n    ".join(column_conflict_values.values())
     upsert_query = dedent(
         f"""
-        INSERT INTO {db_table} AS old ({', '.join(column_inserts.keys())})
-        SELECT {', '.join(column_inserts.values())}
-        FROM {load_table}
-        ON CONFLICT ({col.PROVIDER.db_name}, md5({col.FOREIGN_ID.db_name}))
-        DO UPDATE SET
-          {upsert_conflict_string}
+        DO $$
+        DECLARE
+            n TEXT;
+            image_url_key TEXT := 'image_url_key';
+            audio_url_key TEXT := 'audio_url_key';
+        BEGIN
+            INSERT INTO {db_table} AS old ({', '.join(column_inserts.keys())})
+            SELECT {', '.join(column_inserts.values())}
+            FROM {load_table}
+            ON CONFLICT ({col.PROVIDER.db_name}, md5({col.FOREIGN_ID.db_name}))
+            DO UPDATE SET
+            {upsert_conflict_string};
+        EXCEPTION
+            WHEN UNIQUE_VIOLATION THEN
+                GET STACKED DIAGNOSTICS n:= CONSTRAINT_NAME;
+                IF n = image_url_key OR n = audio_url_key THEN
+                    -- A unique violation occurred on the `url` index. Do nothing!
+                ELSE
+                    RAISE;
+                END IF;
+        END
+        $$
         """
     )
     return postgres.run(upsert_query, handler=lambda c: c.rowcount)
