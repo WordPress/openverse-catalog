@@ -1141,6 +1141,90 @@ def test_upsert_records_handles_duplicate_url_and_does_not_merge(
     assert actual_row[fid_idx] == "a"
 
 
+def test_upsert_records_handles_duplicate_urls_in_a_single_batch_and_does_not_merge(
+    postgres_with_load_and_image_table, tmpdir, load_table, image_table, identifier
+):
+    postgres_conn_id = POSTGRES_CONN_ID
+
+    PROVIDER = "images_provider"
+    IMG_URL = "https://images.com/a/img.jpg"
+    LICENSE = "by"
+
+    FID_A = "a"
+    META_DATA_A = '{"description": "a cool picture", "test": "should stay"}'
+
+    FID_B = "b"
+    META_DATA_B = '{"description": "I updated my description"}'
+
+    # A and B have different foreign identifiers, but the same url
+    query_values_a = create_query_values(
+        {
+            col.FOREIGN_ID.db_name: FID_A,
+            col.DIRECT_URL.db_name: IMG_URL,
+            col.LICENSE.db_name: LICENSE,
+            col.META_DATA.db_name: META_DATA_A,
+            col.PROVIDER.db_name: PROVIDER,
+        }
+    )
+    load_data_query_a = f"""INSERT INTO {load_table} VALUES(
+        {query_values_a}
+    );"""
+
+    query_values_b = create_query_values(
+        {
+            col.FOREIGN_ID.db_name: FID_B,
+            col.DIRECT_URL.db_name: IMG_URL,
+            col.LICENSE.db_name: LICENSE,
+            col.META_DATA.db_name: META_DATA_B,
+            col.PROVIDER.db_name: PROVIDER,
+        }
+    )
+    load_data_query_b = f"""INSERT INTO {load_table} VALUES(
+        {query_values_b}
+        );"""
+
+    query_values_c = create_query_values(
+        {
+            col.FOREIGN_ID.db_name: "c",
+            col.DIRECT_URL.db_name: "https://images.com/c/img.jpg",
+            col.LICENSE.db_name: LICENSE,
+            col.META_DATA.db_name: META_DATA_B,
+            col.PROVIDER.db_name: PROVIDER,
+        }
+    )
+    load_data_query_c = f"""INSERT INTO {load_table} VALUES(
+        {query_values_c}
+        );"""
+
+    # Simulate a DAG run where A and B are BOTH ingested in a single batch from the
+    # provider script, and we attempt to upsert both into the image table.
+
+    postgres_with_load_and_image_table.cursor.execute(load_data_query_c)
+    postgres_with_load_and_image_table.cursor.execute(load_data_query_a)
+    postgres_with_load_and_image_table.cursor.execute(load_data_query_b)
+    postgres_with_load_and_image_table.connection.commit()
+
+    # Lets just check they were both added to the loading table
+    postgres_with_load_and_image_table.cursor.execute(f"SELECT * FROM {load_table};")
+    rows = postgres_with_load_and_image_table.cursor.fetchall()
+    assert len(rows) == 3
+
+    sql.upsert_records_to_db_table(postgres_conn_id, identifier, db_table=image_table)
+    postgres_with_load_and_image_table.connection.commit()
+
+    # Now check the final state of the image table. If we get here, the duplicate key
+    # violation was successfully caught.
+    postgres_with_load_and_image_table.cursor.execute(f"SELECT * FROM {image_table};")
+    actual_rows = postgres_with_load_and_image_table.cursor.fetchall()
+    actual_row = actual_rows[0]
+    # There should only be one row (only the first row should have been inserted)
+    assert len(actual_rows) == 1
+    # No data in A should have been updated or merged
+    expected_meta_data = json.loads(META_DATA_A)
+    assert actual_row[metadata_idx] == expected_meta_data
+    assert actual_row[fid_idx] == "a"
+
+
 def test_drop_load_table_drops_table(postgres_with_load_table, load_table, identifier):
     postgres_conn_id = POSTGRES_CONN_ID
     sql.drop_load_table(postgres_conn_id, identifier)
