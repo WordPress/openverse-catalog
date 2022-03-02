@@ -249,8 +249,7 @@ def upsert_records_to_db_table(
         DO $$
         DECLARE
             n TEXT;
-            image_url_key TEXT := 'image_url_key';
-            audio_url_key TEXT := 'audio_url_key';
+            url_key TEXT := '{db_table}_url_key';
         BEGIN
             INSERT INTO {db_table} AS old ({', '.join(column_inserts.keys())})
             SELECT {', '.join(column_inserts.values())}
@@ -261,7 +260,7 @@ def upsert_records_to_db_table(
         EXCEPTION
             WHEN UNIQUE_VIOLATION THEN
                 GET STACKED DIAGNOSTICS n:= CONSTRAINT_NAME;
-                IF n = image_url_key OR n = audio_url_key THEN
+                IF n = url_key THEN
                     -- A unique violation occurred on the `url` index. Do nothing!
                 ELSE
                     RAISE;
