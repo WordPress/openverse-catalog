@@ -246,27 +246,17 @@ def upsert_records_to_db_table(
     upsert_conflict_string = ",\n    ".join(column_conflict_values.values())
     upsert_query = dedent(
         f"""
-        DO $$
-        DECLARE
-            n TEXT;
-            url_key TEXT := '{db_table}_url_key';
-        BEGIN
-            INSERT INTO {db_table} AS old ({', '.join(column_inserts.keys())})
-            SELECT {', '.join(column_inserts.values())}
-            FROM {load_table}
-            ON CONFLICT ({col.PROVIDER.db_name}, md5({col.FOREIGN_ID.db_name}))
-            DO UPDATE SET
-            {upsert_conflict_string};
-        EXCEPTION
-            WHEN UNIQUE_VIOLATION THEN
-                GET STACKED DIAGNOSTICS n:= CONSTRAINT_NAME;
-                IF n = url_key THEN
-                    -- A unique violation occurred on the `url` index. Do nothing!
-                ELSE
-                    RAISE;
-                END IF;
-        END
-        $$
+        INSERT INTO {db_table} AS old ({', '.join(column_inserts.keys())})
+        SELECT {', '.join(column_inserts.values())}
+        FROM {load_table} as new
+        WHERE NOT EXISTS (
+            SELECT {col.DIRECT_URL.name} from {db_table}
+            WHERE {col.DIRECT_URL.name} = new.{col.DIRECT_URL.name} AND
+                {col.FOREIGN_ID.name} <> new.{col.FOREIGN_ID.name}
+        )
+        ON CONFLICT ({col.PROVIDER.db_name}, md5({col.FOREIGN_ID.db_name}))
+        DO UPDATE SET
+        {upsert_conflict_string}
         """
     )
     return postgres.run(upsert_query, handler=lambda c: c.rowcount)
