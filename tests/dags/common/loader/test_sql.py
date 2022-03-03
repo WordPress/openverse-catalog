@@ -1083,7 +1083,7 @@ def test_upsert_records_handles_duplicate_url_and_does_not_merge(
     META_DATA_A = '{"description": "a cool picture", "test": "should stay"}'
 
     FID_B = "b"
-    META_DATA_B = '{"description": "I updated my description"}'
+    META_DATA_B = '{"description": "the same cool picture"}'
 
     # A and B have different foreign identifiers, but the same url
     query_values_a = create_query_values(
@@ -1152,9 +1152,11 @@ def test_upsert_records_handles_duplicate_urls_in_a_single_batch_and_does_not_me
 
     FID_A = "a"
     META_DATA_A = '{"description": "a cool picture", "test": "should stay"}'
-
     FID_B = "b"
-    META_DATA_B = '{"description": "I updated my description"}'
+    META_DATA_B = '{"description": "the same cool picture"}'
+    FID_C = "c"
+    META_DATA_C = '{"description": "Definitely not a duplicate!"}'
+    IMG_URL_C = "https://images.com/c/img.jpg"
 
     # A and B have different foreign identifiers, but the same url
     query_values_a = create_query_values(
@@ -1183,12 +1185,13 @@ def test_upsert_records_handles_duplicate_urls_in_a_single_batch_and_does_not_me
         {query_values_b}
         );"""
 
+    # C is not a duplicate of anything, just a normal image
     query_values_c = create_query_values(
         {
-            col.FOREIGN_ID.db_name: "c",
-            col.DIRECT_URL.db_name: "https://images.com/c/img.jpg",
+            col.FOREIGN_ID.db_name: FID_C,
+            col.DIRECT_URL.db_name: IMG_URL_C,
             col.LICENSE.db_name: LICENSE,
-            col.META_DATA.db_name: META_DATA_B,
+            col.META_DATA.db_name: META_DATA_C,
             col.PROVIDER.db_name: PROVIDER,
         }
     )
@@ -1196,19 +1199,20 @@ def test_upsert_records_handles_duplicate_urls_in_a_single_batch_and_does_not_me
         {query_values_c}
         );"""
 
-    # Simulate a DAG run where A and B are BOTH ingested in a single batch from the
-    # provider script, and we attempt to upsert both into the image table.
-
+    # Simulate a DAG run where duplicates (A and B) and a non-duplicate (C) are all
+    # ingested in a single batch from the provider script, and we attempt to upsert
+    # all into the image table.
     postgres_with_load_and_image_table.cursor.execute(load_data_query_c)
     postgres_with_load_and_image_table.cursor.execute(load_data_query_a)
     postgres_with_load_and_image_table.cursor.execute(load_data_query_b)
     postgres_with_load_and_image_table.connection.commit()
 
-    # Lets just check they were both added to the loading table
+    # Confirm that all three made it to the loading table.
     postgres_with_load_and_image_table.cursor.execute(f"SELECT * FROM {load_table};")
     rows = postgres_with_load_and_image_table.cursor.fetchall()
     assert len(rows) == 3
 
+    # Now try upserting the records from the loading table to the final image table.
     sql.upsert_records_to_db_table(postgres_conn_id, identifier, db_table=image_table)
     postgres_with_load_and_image_table.connection.commit()
 
@@ -1216,13 +1220,13 @@ def test_upsert_records_handles_duplicate_urls_in_a_single_batch_and_does_not_me
     # violation was successfully caught.
     postgres_with_load_and_image_table.cursor.execute(f"SELECT * FROM {image_table};")
     actual_rows = postgres_with_load_and_image_table.cursor.fetchall()
-    actual_row = actual_rows[0]
-    # There should only be one row (only the first row should have been inserted)
-    assert len(actual_rows) == 1
+    # There should be two rows (only the first duplicate and the normal row should be inserted)
+    assert len(actual_rows) == 2
     # No data in A should have been updated or merged
     expected_meta_data = json.loads(META_DATA_A)
-    assert actual_row[metadata_idx] == expected_meta_data
-    assert actual_row[fid_idx] == "a"
+    assert actual_rows[0][metadata_idx] == expected_meta_data
+    assert actual_rows[0][fid_idx] == "a"
+    assert actual_rows[1][fid_idx] == "c"
 
 
 def test_drop_load_table_drops_table(postgres_with_load_table, load_table, identifier):

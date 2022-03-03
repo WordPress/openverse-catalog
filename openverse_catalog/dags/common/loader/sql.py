@@ -241,13 +241,18 @@ def upsert_records_to_db_table(
             column_inserts[column.db_name] = NULL
             column_conflict_values[column.db_name] = NULL
         else:
-            column_inserts[column.db_name] = column.upsert_name
+            # The direct_url is handled specially to ensure uniqueness and
+            # should not be added to the column_inserts.
+            if not column.db_name == col.DIRECT_URL.name:
+                column_inserts[column.db_name] = column.upsert_name
             column_conflict_values[column.db_name] = column.upsert_value
     upsert_conflict_string = ",\n    ".join(column_conflict_values.values())
     upsert_query = dedent(
         f"""
-        INSERT INTO {db_table} AS old ({', '.join(column_inserts.keys())})
-        SELECT {', '.join(column_inserts.values())}
+        INSERT INTO {db_table} AS old
+        ({col.DIRECT_URL.name}, {', '.join(column_inserts.keys())})
+        SELECT DISTINCT ON ({col.DIRECT_URL.name}) {col.DIRECT_URL.name},
+        {', '.join(column_inserts.values())}
         FROM {load_table} as new
         WHERE NOT EXISTS (
             SELECT {col.DIRECT_URL.name} from {db_table}
