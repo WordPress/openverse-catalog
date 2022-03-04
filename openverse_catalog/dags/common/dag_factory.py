@@ -440,6 +440,7 @@ def create_data_refresh_dag(
     dag_id: str,
     media_type: str,
     external_dag_ids: List[str],
+    start_date: datetime = datetime(1970, 1, 1),
     default_args: Optional[Dict] = None,
     schedule_string: Optional[str] = None,
     # TODO is this a good timeout?
@@ -469,6 +470,8 @@ def create_data_refresh_dag(
 
     default_args:      dictionary which is passed to the airflow.dag.DAG
                        __init__ method.
+    start_date:        datetime.datetime giving the
+                       first valid execution_date of the DAG.
     schedule_string:   string giving the schedule on which the DAG should
                        be run.  Passed to the airflow.dag.DAG __init__
                        method.
@@ -480,6 +483,7 @@ def create_data_refresh_dag(
     dag = DAG(
         dag_id=dag_id,
         default_args=default_args,
+        start_date=start_date,
         schedule_interval=schedule_string,
         catchup=False,
         doc_md=doc_md,
@@ -500,7 +504,13 @@ def create_data_refresh_dag(
             #
             # If the trigger was not successful we want to raise an AirflowException and
             # fail this task.
+            logger.info(response.json())
             return True
+
+        # Filter out just the status_check which is the URL to poll for the status of
+        # the data refresh task.
+        def response_filter_data_refresh(response):
+            return response.json()
 
         # Define the response check for the operator that waits for the refresh task
         # to complete
@@ -528,16 +538,20 @@ def create_data_refresh_dag(
             dag=dag,
         )
 
+        data_refresh_post_data = {"model": media_type, "action": "INGEST_UPSTREAM"}
+
         # Actually trigger the data refresh. We'll get the URL needed to check the task
         # status back in the response, and we can  send this over XCom to the next task,
         # which will poll that URL to check for the completion of the data refresh
         trigger_data_refresh = SimpleHttpOperator(
             task_id="trigger_data_refresh",
-            endpoint="",  # TODO
+            http_conn_id="api_endpoint",
+            endpoint="task",
             method="POST",
             headers={"Content-Type": "application/json"},
-            data=json.dumps({"model": {media_type}, "action": "INGEST_UPSTREAM"}),
+            data=json.dumps(data_refresh_post_data),
             response_check=response_check_trigger_refresh,
+            response_filter=response_filter_data_refresh,
             pool=DATA_REFRESH_POOL,
             dag=dag,
         )
