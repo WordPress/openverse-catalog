@@ -65,16 +65,19 @@ class ExternalDAGsSensorAsync(BaseSensorOperator):
             .scalar()
         )
 
+        self.log.info("%s DAGs are in the running state", count_running)
+        if count_running == 0:
+            return True
+
         # If there are running DAGs, trigger deferral of the Sensor so that
         # the worker slot will be freed and the pool does not become
         # deadlocked waiting on this task.
-        if count_running == 0:
-            self.defer(
-                trigger=TimeDeltaTrigger(
-                    timedelta(minutes=5)
-                ),  # TODO what's a good delta
-                method_name="execute",
-            )
+        self.defer(
+            trigger=TimeDeltaTrigger(
+                timedelta(seconds=5)
+            ),  # TODO what's a good delta. Using seconds for testing
+            method_name="execute",
+        )
 
     def _check_for_existence(self, session) -> None:
         for dag_id in self.external_dag_ids:
