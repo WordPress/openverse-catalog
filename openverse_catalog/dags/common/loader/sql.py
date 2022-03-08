@@ -241,12 +241,12 @@ def upsert_records_to_db_table(
             column_inserts[column.db_name] = NULL
             column_conflict_values[column.db_name] = NULL
         else:
+            column_conflict_values[column.db_name] = column.upsert_value
             # The direct_url is handled specially to ensure uniqueness and
             # should not be added to the column_inserts.
-            if column.db_name == col.DIRECT_URL.name:
-                continue
-            column_inserts[column.db_name] = column.upsert_name
-            column_conflict_values[column.db_name] = column.upsert_value
+            if not column.db_name == col.DIRECT_URL.name:
+                column_inserts[column.db_name] = column.upsert_name
+
     upsert_conflict_string = ",\n    ".join(column_conflict_values.values())
     upsert_query = dedent(
         f"""
