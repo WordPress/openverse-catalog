@@ -30,8 +30,8 @@ RETRIES = 3
 HOST = "freesound.org"
 ENDPOINT = f"https://{HOST}/apiv2/search/text"
 PROVIDER = prov.FREESOUND_DEFAULT_PROVIDER
-# Freesound only has 'sounds'
-FREESOUND_CATEGORY = "sound"
+# Freesound only has 'sound_effect's
+FREESOUND_CATEGORY = "sound_effect"
 API_KEY = Variable.get("API_KEY_FREESOUND", default_var="not_set")
 
 HEADERS = {
