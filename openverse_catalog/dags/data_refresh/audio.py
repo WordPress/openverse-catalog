@@ -5,7 +5,7 @@ the Audio media type.
 # airflow DAG (necessary for Airflow to find this file)
 from datetime import datetime, timedelta
 
-from common.provider_dag_factory import create_data_refresh_dag
+from data_refresh.dag_factory import create_data_refresh_dag
 
 
 DAG_ID = "audio_data_refresh"

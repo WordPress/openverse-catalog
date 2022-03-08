@@ -52,27 +52,21 @@ https://github.com/creativecommons/cccatalog/issues/333)
 https://github.com/creativecommons/cccatalog/issues/334)
 """
 import inspect
-import json
 import logging
 import os
 import time
 from datetime import datetime, timedelta
 from typing import Callable, Dict, List, Optional, Sequence
-from urllib.parse import urlparse
 
 from airflow import DAG
-from airflow.exceptions import AirflowException
 from airflow.models import TaskInstance
 from airflow.models.baseoperator import cross_downstream
 from airflow.operators.dummy import DummyOperator
 from airflow.operators.python import PythonOperator
-from airflow.providers.http.operators.http import SimpleHttpOperator
-from airflow.providers.http.sensors.http import HttpSensor
 from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
 from common import slack
 from common.loader import loader, reporting, s3, sql
-from common.sensors import ExternalDAGsSensor
 
 
 logger = logging.getLogger(__name__)
@@ -94,7 +88,6 @@ DAG_DEFAULT_ARGS = {
 }
 DATE_RANGE_ARG_TEMPLATE = "{{{{ macros.ds_add(ds, -{}) }}}}"
 XCOM_PULL_TEMPLATE = "{{{{ ti.xcom_pull(task_ids='{}', key='{}') }}}}"
-DATA_REFRESH_POOL = "data_refresh"
 
 
 def _push_output_paths_wrapper(
@@ -435,142 +428,3 @@ def _build_ingest_operator_list_list(
         ]
         for L in reingestion_day_list_list
     ]
-
-
-# Filter for the `trigger_data_refresh` task, used to grab the endpoint needed
-# to poll for the status of the triggered data refresh. This information will
-# then be available via XCom in the downstream tasks.
-def response_filter_data_refresh(response):
-    status_check_url = response.json()["status_check"]
-    return urlparse(status_check_url).path
-
-
-# Response check to the `wait_for_completion` Sensor. Processes the response to
-# determine whether the task can complete.
-def response_check_wait_for_completion(response):
-    data = response.json()
-
-    if data["active"]:
-        # The data refresh is still running. Poll again later.
-        return False
-
-    if data["error"]:
-        raise AirflowException("Error triggering data refresh.")
-
-    logger.info(
-        f"Data refresh done with {data['percent_completed']}% \
-        completed."
-    )
-    return True
-
-
-def create_data_refresh_dag(
-    dag_id: str,
-    media_type: str,
-    external_dag_ids: List[str],
-    start_date: datetime = datetime(1970, 1, 1),
-    default_args: Optional[Dict] = None,
-    schedule_string: Optional[str] = None,
-    execution_timeout: timedelta = timedelta(hours=12),
-    # TODO: update
-    poke_interval: timedelta = timedelta(seconds=5),
-    doc_md: str = "",
-):
-    """
-    This factory method instantiates a DAG that will run the data refresh for
-    the given `media_type`.
-
-    A data refresh runs for a given media type in the API DB. It imports the
-    data for that type from the upstream DB in the Catalog, reindexes the data,
-    and updates and reindex Elasticsearch.
-
-    A data refresh can only be performed for one media type at a time, so the DAG
-    must also use a Sensor to make sure that no two data refresh tasks run
-    concurrently.
-
-    It is intended that the data_refresh tasks, or at least the initial
-    `wait_for_data_refresh` tasks, should be run in a custom pool with 1 worker
-    slot. This enforces that no two `wait_for_data_refresh` tasks can start
-    concurrently and enter a race condition.
-
-    Required Arguments:
-
-    dag_id:           string giving a unique id of the DAG to be created.
-    media_type:       string describing the media type to be refreshed.
-    external_dag_ids: list of ids of DAG dependencies. This DAG will not run
-                      concurrently with any dependent DAGs.
-
-    Optional Arguments:
-
-    default_args:      dictionary which is passed to the airflow.dag.DAG
-                       __init__ method.
-    start_date:        datetime.datetime giving the
-                       first valid execution_date of the DAG.
-    schedule_string:   string giving the schedule on which the DAG should
-                       be run.  Passed to the airflow.dag.DAG __init__
-                       method.
-    execution_timeout: datetime.timedelta giving the amount of time a given data
-                       pull may take.
-    doc_md:            string which should be used for the DAG's documentation markdown
-    """
-    dag = DAG(
-        dag_id=dag_id,
-        default_args=default_args,
-        start_date=start_date,
-        schedule_interval=schedule_string,
-        catchup=False,
-        doc_md=doc_md,
-        tags=[f"data_refresh: {media_type}"],
-    )
-
-    with dag:
-        # The ExternalDAGsSensorAsync is a custom Sensor that will wait until
-        # none of the `external_dag_ids` are RUNNING. It suspends itself and frees
-        # the worker slot if another data_refresh DAG is running.
-        wait_for_data_refresh = ExternalDAGsSensor(
-            task_id="wait_for_data_refresh",
-            external_dag_ids=external_dag_ids,
-            check_existence=True,
-            pool=DATA_REFRESH_POOL,
-            dag=dag,
-            poke_interval=poke_interval,
-            mode="reschedule",
-        )
-
-        data_refresh_post_data = {"model": media_type, "action": "INGEST_UPSTREAM"}
-
-        # Trigger the data refresh by hitting the `/task` endpoint on the data
-        # refresh server. A successful response will include the `status_check`
-        # url used to check on the status of the refresh, which we should pass
-        # to the next task via XCom.
-        trigger_data_refresh = SimpleHttpOperator(
-            task_id="trigger_data_refresh",
-            http_conn_id="data_refresh",
-            endpoint="task",
-            method="POST",
-            headers={"Content-Type": "application/json"},
-            data=json.dumps(data_refresh_post_data),
-            response_check=lambda response: response.status_code == 202,
-            response_filter=response_filter_data_refresh,
-            pool=DATA_REFRESH_POOL,
-            dag=dag,
-        )
-
-        # Wait for data refresh to complete. Note this task does not need to be able
-        # to suspend itself and free the pool's single worker slot, because we want
-        # to lock the entire pool on waiting for a particular data refresh to run.
-        wait_for_completion = HttpSensor(
-            task_id="wait_for_completion",
-            http_conn_id="data_refresh",
-            endpoint=XCOM_PULL_TEMPLATE.format(
-                trigger_data_refresh.task_id, "return_value"
-            ),
-            method="GET",
-            response_check=response_check_wait_for_completion,
-            pool=DATA_REFRESH_POOL,
-            dag=dag,
-        )
-
-        wait_for_data_refresh >> trigger_data_refresh >> wait_for_completion
-
-    return dag
