@@ -471,8 +471,9 @@ def create_data_refresh_dag(
     start_date: datetime = datetime(1970, 1, 1),
     default_args: Optional[Dict] = None,
     schedule_string: Optional[str] = None,
-    # TODO is this a good timeout?
     execution_timeout: timedelta = timedelta(hours=12),
+    # TODO: update
+    poke_interval: timedelta = timedelta(seconds=5),
     doc_md: str = "",
 ):
     """
@@ -512,7 +513,6 @@ def create_data_refresh_dag(
                        pull may take.
     doc_md:            string which should be used for the DAG's documentation markdown
     """
-    # TODO verify if schedule_interval is None, DAG only runs when triggered manually
     dag = DAG(
         dag_id=dag_id,
         default_args=default_args,
@@ -533,6 +533,7 @@ def create_data_refresh_dag(
             check_existence=True,
             pool=DATA_REFRESH_POOL,
             dag=dag,
+            poke_interval=poke_interval,
             mode="reschedule",
         )
 
