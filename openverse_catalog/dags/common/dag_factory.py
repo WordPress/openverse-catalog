@@ -72,7 +72,7 @@ from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
 from common import slack
 from common.loader import loader, reporting, s3, sql
-from common.sensors import ExternalDAGsSensorAsync
+from common.sensors import ExternalDAGsSensor
 
 
 logger = logging.getLogger(__name__)
@@ -527,12 +527,13 @@ def create_data_refresh_dag(
         # The ExternalDAGsSensorAsync is a custom Sensor that will wait until
         # none of the `external_dag_ids` are RUNNING. It suspends itself and frees
         # the worker slot if another data_refresh DAG is running.
-        wait_for_data_refresh = ExternalDAGsSensorAsync(
+        wait_for_data_refresh = ExternalDAGsSensor(
             task_id="wait_for_data_refresh",
             external_dag_ids=external_dag_ids,
             check_existence=True,
             pool=DATA_REFRESH_POOL,
             dag=dag,
+            mode="reschedule",
         )
 
         data_refresh_post_data = {"model": media_type, "action": "INGEST_UPSTREAM"}

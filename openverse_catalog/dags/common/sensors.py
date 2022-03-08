@@ -1,37 +1,25 @@
 import os
-from datetime import timedelta
 from typing import Iterable
 
 from airflow.exceptions import AirflowException
-from airflow.models import DagModel, DagRun
+from airflow.models import DagBag, DagModel, DagRun, TaskInstance
 from airflow.sensors.base import BaseSensorOperator
-from airflow.triggers.temporal import TimeDeltaTrigger
 from airflow.utils.session import provide_session
 from airflow.utils.state import State
-from sqlalchemy import func
 
 
-class ExternalDAGsSensorAsync(BaseSensorOperator):
+class ExternalDAGsSensor(BaseSensorOperator):
     """
-    Waits for a list of different DAGs to not be running, freeing up
-    a worker slot while it's waiting.
+    Waits for a list of related DAGs, each assumed to have a similar Sensor,
+    to not be running. A related DAG is considered to be 'running' if it is
+    itself in the running state, and its corresponding wait task completed
+    successfully. It looks for a task with the same `task_id` in each of the
+    provided external DAGs.
 
-    external_dag_ids: A list of dag_ids that you want to wait for
-    :param check_existence: Set to `True` to check if the external task exists (when
-        external_task_id is not None) or check if the DAG to wait for exists (when
-        external_task_id is None), and immediately cease waiting if the external task
-        or DAG does not exist (default value: False).
+    :param external_dag_ids: A list of dag_ids that you want to wait for
+    :param check_existence: Set to `True` to check if the external DAGs exist,
+    and immediately cease waiting if not (default value: False).
     """
-
-    # TODO: Not sure if this is necessary
-    template_fields = ["external_dag_ids"]
-
-    # TODO: I don't understand what operator extra links are, and whether it's
-    # necessary to implement this.
-    # @property
-    # def operator_extra_links(self):
-    #     """Return operator extra links"""
-    #     return [ExternalDAGsSensorLink()]
 
     def __init__(
         self,
@@ -46,7 +34,7 @@ class ExternalDAGsSensorAsync(BaseSensorOperator):
         self._has_checked_existence = False
 
     @provide_session
-    def execute(self, context, event=None, session=None):
+    def poke(self, context, session=None):
         self.log.info(
             "Poking for DAGS %s ... ",
             self.external_dag_ids,
@@ -56,28 +44,10 @@ class ExternalDAGsSensorAsync(BaseSensorOperator):
         if self.check_existence and not self._has_checked_existence:
             self._check_for_existence(session=session)
 
-        count_running = (
-            session.query(func.count())
-            .filter(
-                DagRun.dag_id.in_(self.external_dag_ids),
-                DagRun.state == State.RUNNING,
-            )
-            .scalar()
-        )
+        count_running = self.get_count(session)
 
         self.log.info("%s DAGs are in the running state", count_running)
-        if count_running == 0:
-            return True
-
-        # If there are running DAGs, trigger deferral of the Sensor so that
-        # the worker slot will be freed and the pool does not become
-        # deadlocked waiting on this task.
-        self.defer(
-            trigger=TimeDeltaTrigger(
-                timedelta(seconds=5)
-            ),  # TODO what's a good delta. Using seconds for testing
-            method_name="execute",
-        )
+        return count_running == 0
 
     def _check_for_existence(self, session) -> None:
         for dag_id in self.external_dag_ids:
@@ -90,4 +60,29 @@ class ExternalDAGsSensorAsync(BaseSensorOperator):
 
             if not os.path.exists(dag_to_wait.fileloc):
                 raise AirflowException(f"The external DAG {dag_id} was deleted.")
+
+            refreshed_dag_info = DagBag(dag_to_wait.fileloc).get_dag(dag_id)
+            if not refreshed_dag_info.has_task(self.task_id):
+                raise AirflowException(
+                    f"The external DAG {dag_id} does not have a task "
+                    f" with id {self.task_id}."
+                )
         self._has_checked_existence = True
+
+    def get_count(self, session) -> int:
+        # Get the count of running DAGs. A DAG is considered 'running' if
+        # the DAG itself is in the running state, and if its instance of
+        # the Sensor task has completed successfully.
+        return (
+            session.query(DagRun)
+            .filter(
+                DagRun.dag_id.in_(self.external_dag_ids),
+                DagRun.state == State.RUNNING,
+            )
+            .join(TaskInstance, TaskInstance.run_id == DagRun.run_id)
+            .filter(
+                TaskInstance.task_id == self.task_id,
+                TaskInstance.state == State.SUCCESS,
+            )
+            .count()
+        )
