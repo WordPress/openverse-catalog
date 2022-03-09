@@ -30,8 +30,6 @@ class DataRefresh:
                        method.
     execution_timeout: datetime.timedelta giving the amount of time a given data
                        pull may take.
-    poke_interval:     interval in seconds, giving the time to wait between pokes
-                       by the ExternalDAGsSensor to check if the DAG can continue
     doc_md:            string which should be used for the DAG's documentation markdown
     """
 
@@ -39,7 +37,6 @@ class DataRefresh:
     media_type: str
     start_date: datetime = datetime(2020, 1, 1)
     execution_timeout: timedelta = timedelta(hours=24)
-    poke_interval: int = 5
     schedule_string: Optional[str] = None
     default_args: Optional[Dict] = None
     doc_md: Optional[str] = ""

@@ -133,7 +133,7 @@ def create_data_refresh_dag(data_refresh: DataRefresh, external_dag_ids: Sequenc
             check_existence=True,
             pool=DATA_REFRESH_POOL,
             dag=dag,
-            poke_interval=data_refresh.poke_interval,
+            poke_interval=5,
             mode="reschedule",
         )
 
