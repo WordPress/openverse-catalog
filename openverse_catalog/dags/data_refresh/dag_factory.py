@@ -1,6 +1,6 @@
 """
 # Data Refresh DAG Factory
-This file contains the factory function which generates our data refresh DAGs.
+This file generates our data refresh DAGs using a factory function.
 These DAGs initiate a data refresh for a given media type and awaits the
 success or failure of the refresh. Importantly, they are also configured to
 ensure that no two data refresh DAGs can run concurrently, as required by
@@ -42,17 +42,18 @@ issues and related PRs:
 - [[Feature] Data refresh orchestration DAG](
 https://github.com/WordPress/openverse-catalog/issues/353)
 """
+# airflow DAG (necessary for Airflow to find this file)
 import json
 import logging
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional
+from typing import Sequence
 from urllib.parse import urlparse
 
 from airflow import DAG
 from airflow.exceptions import AirflowException
 from airflow.providers.http.operators.http import SimpleHttpOperator
 from airflow.providers.http.sensors.http import HttpSensor
-from data_refresh.sensors import ExternalDAGsSensor
+from common.sensors import ExternalDAGsSensor
+from data_refresh.data_refresh_types import DATA_REFRESH_CONFIGS, DataRefresh
 
 
 logger = logging.getLogger(__name__)
@@ -89,18 +90,7 @@ def response_check_wait_for_completion(response):
     return True
 
 
-def create_data_refresh_dag(
-    dag_id: str,
-    media_type: str,
-    external_dag_ids: List[str],
-    start_date: datetime = datetime(1970, 1, 1),
-    default_args: Optional[Dict] = None,
-    schedule_string: Optional[str] = None,
-    execution_timeout: timedelta = timedelta(hours=12),
-    # TODO: update
-    poke_interval: int = 5,
-    doc_md: str = "",
-):
+def create_data_refresh_dag(data_refresh: DataRefresh, external_dag_ids: Sequence[str]):
     """
     This factory method instantiates a DAG that will run the data refresh for
     the given `media_type`.
@@ -120,34 +110,19 @@ def create_data_refresh_dag(
 
     Required Arguments:
 
-    dag_id:           string giving a unique id of the DAG to be created.
-    media_type:       string describing the media type to be refreshed.
-    external_dag_ids: list of ids of DAG dependencies. This DAG will not run
-                      concurrently with any dependent DAGs.
-
-    Optional Arguments:
-
-    default_args:      dictionary which is passed to the airflow.dag.DAG
-                       __init__ method.
-    start_date:        datetime.datetime giving the
-                       first valid execution_date of the DAG.
-    schedule_string:   string giving the schedule on which the DAG should
-                       be run.  Passed to the airflow.dag.DAG __init__
-                       method.
-    execution_timeout: datetime.timedelta giving the amount of time a given data
-                       pull may take.
-    poke_interval:     interval in seconds, giving the time to wait between pokes
-                       by the ExternalDAGsSensor to check if the DAG can continue
-    doc_md:            string which should be used for the DAG's documentation markdown
+    data_refresh:     dataclass containing configuration information for the
+                      DAG
+    external_dag_ids: list of ids of the other data refresh DAGs. This DAG
+                      will not run concurrently with any dependent DAG.
     """
     dag = DAG(
-        dag_id=dag_id,
-        default_args=default_args,
-        start_date=start_date,
-        schedule_interval=schedule_string,
+        dag_id=data_refresh.dag_id,
+        default_args=data_refresh.default_args,
+        start_date=data_refresh.start_date,
+        schedule_interval=data_refresh.schedule_string,
         catchup=False,
-        doc_md=doc_md,
-        tags=[f"data_refresh: {media_type}"],
+        doc_md=data_refresh.doc_md,
+        tags=[f"data_refresh: {data_refresh.media_type}"],
     )
 
     with dag:
@@ -158,11 +133,14 @@ def create_data_refresh_dag(
             check_existence=True,
             pool=DATA_REFRESH_POOL,
             dag=dag,
-            poke_interval=poke_interval,
+            poke_interval=data_refresh.poke_interval,
             mode="reschedule",
         )
 
-        data_refresh_post_data = {"model": media_type, "action": "INGEST_UPSTREAM"}
+        data_refresh_post_data = {
+            "model": data_refresh.media_type,
+            "action": "INGEST_UPSTREAM",
+        }
 
         # Trigger the refresh on the data refresh server.
         trigger_data_refresh = SimpleHttpOperator(
@@ -194,3 +172,15 @@ def create_data_refresh_dag(
         wait_for_data_refresh >> trigger_data_refresh >> wait_for_completion
 
     return dag
+
+
+all_data_refresh_dag_ids = {refresh.dag_id for refresh in DATA_REFRESH_CONFIGS}
+
+for data_refresh in DATA_REFRESH_CONFIGS:
+    # Construct a set of all data refresh DAG ids other than the current DAG
+    other_dag_ids = all_data_refresh_dag_ids - {data_refresh.dag_id}
+
+    # Generate the DAG for this config, dependent on all the others
+    globals()[data_refresh.dag_id] = create_data_refresh_dag(
+        data_refresh, other_dag_ids
+    )
