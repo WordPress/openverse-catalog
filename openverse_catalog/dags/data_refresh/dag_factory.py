@@ -134,8 +134,8 @@ def create_data_refresh_dag(data_refresh: DataRefresh, external_dag_ids: Sequenc
         start_date=data_refresh.start_date,
         schedule_interval=data_refresh.schedule_string,
         catchup=False,
-        doc_md=data_refresh.doc_md,
-        tags=[f"data_refresh: {data_refresh.media_type}"],
+        doc_md=__doc__,
+        tags=["data_refresh"],
     )
 
     with dag:
