@@ -38,7 +38,7 @@ class DataRefresh:
     start_date: datetime = datetime(2020, 1, 1)
     execution_timeout: timedelta = timedelta(hours=24)
     schedule_string: Optional[str] = None
-    default_args: Optional[Dict] = None
+    default_args: Optional[Dict] = field(default_factory=dict)
     doc_md: Optional[str] = ""
 
     def __post_init__(self):

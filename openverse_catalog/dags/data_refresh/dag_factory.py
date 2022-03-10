@@ -53,6 +53,7 @@ from airflow import DAG
 from airflow.exceptions import AirflowException
 from airflow.providers.http.operators.http import SimpleHttpOperator
 from airflow.providers.http.sensors.http import HttpSensor
+from common.constants import DAG_DEFAULT_ARGS, XCOM_PULL_TEMPLATE
 from common.sensors import ExternalDAGsSensor
 from data_refresh.data_refresh_types import DATA_REFRESH_CONFIGS, DataRefresh
 from requests import Response
@@ -61,7 +62,6 @@ from requests import Response
 logger = logging.getLogger(__name__)
 
 
-XCOM_PULL_TEMPLATE = "{{{{ ti.xcom_pull(task_ids='{}', key='{}') }}}}"
 DATA_REFRESH_POOL = "data_refresh"
 
 
@@ -123,9 +123,14 @@ def create_data_refresh_dag(data_refresh: DataRefresh, external_dag_ids: Sequenc
     external_dag_ids: list of ids of the other data refresh DAGs. This DAG
                       will not run concurrently with any dependent DAG.
     """
+    default_args = {
+        **DAG_DEFAULT_ARGS,
+        **data_refresh.default_args,
+        "pool": DATA_REFRESH_POOL,
+    }
     dag = DAG(
         dag_id=data_refresh.dag_id,
-        default_args=data_refresh.default_args,
+        default_args=default_args,
         start_date=data_refresh.start_date,
         schedule_interval=data_refresh.schedule_string,
         catchup=False,
@@ -139,7 +144,6 @@ def create_data_refresh_dag(data_refresh: DataRefresh, external_dag_ids: Sequenc
             task_id="wait_for_data_refresh",
             external_dag_ids=external_dag_ids,
             check_existence=True,
-            pool=DATA_REFRESH_POOL,
             dag=dag,
             poke_interval=5,
             mode="reschedule",
@@ -160,7 +164,6 @@ def create_data_refresh_dag(data_refresh: DataRefresh, external_dag_ids: Sequenc
             data=json.dumps(data_refresh_post_data),
             response_check=lambda response: response.status_code == 202,
             response_filter=response_filter_data_refresh,
-            pool=DATA_REFRESH_POOL,
             dag=dag,
         )
 
@@ -173,7 +176,6 @@ def create_data_refresh_dag(data_refresh: DataRefresh, external_dag_ids: Sequenc
             ),
             method="GET",
             response_check=response_check_wait_for_completion,
-            pool=DATA_REFRESH_POOL,
             dag=dag,
         )
 
