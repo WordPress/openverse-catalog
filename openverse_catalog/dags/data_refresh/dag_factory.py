@@ -55,7 +55,7 @@ from airflow.exceptions import AirflowException
 from airflow.providers.http.operators.http import SimpleHttpOperator
 from airflow.providers.http.sensors.http import HttpSensor
 from common.constants import DAG_DEFAULT_ARGS, XCOM_PULL_TEMPLATE
-from common.sensors import ExternalDAGsSensor
+from common.sensors import SingleRunExternalDAGsSensor
 from data_refresh.data_refresh_types import DATA_REFRESH_CONFIGS, DataRefresh
 from requests import Response
 
@@ -141,7 +141,7 @@ def create_data_refresh_dag(data_refresh: DataRefresh, external_dag_ids: Sequenc
 
     with dag:
         # Wait to ensure that no other Data Refresh DAGs are running.
-        wait_for_data_refresh = ExternalDAGsSensor(
+        wait_for_data_refresh = SingleRunExternalDAGsSensor(
             task_id="wait_for_data_refresh",
             external_dag_ids=external_dag_ids,
             check_existence=True,

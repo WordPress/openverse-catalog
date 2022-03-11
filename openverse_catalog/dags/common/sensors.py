@@ -8,7 +8,7 @@ from airflow.utils.session import provide_session
 from airflow.utils.state import State
 
 
-class ExternalDAGsSensor(BaseSensorOperator):
+class SingleRunExternalDAGsSensor(BaseSensorOperator):
     """
     Waits for a list of related DAGs, each assumed to have a similar Sensor,
     to not be running. A related DAG is considered to be 'running' if it is
@@ -36,7 +36,7 @@ class ExternalDAGsSensor(BaseSensorOperator):
     @provide_session
     def poke(self, context, session=None):
         self.log.info(
-            "Poking for DAGS %s ... ",
+            "Poking for DAGs %s ...",
             self.external_dag_ids,
         )
 
