@@ -146,7 +146,7 @@ def create_data_refresh_dag(data_refresh: DataRefresh, external_dag_ids: Sequenc
             external_dag_ids=external_dag_ids,
             check_existence=True,
             dag=dag,
-            poke_interval=os.getenv("DATA_REFRESH_POKE_INTERVAL", 60 * 15),
+            poke_interval=int(os.getenv("DATA_REFRESH_POKE_INTERVAL", 60 * 15)),
             mode="reschedule",
         )
 
