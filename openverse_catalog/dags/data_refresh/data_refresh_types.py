@@ -25,7 +25,7 @@ class DataRefresh:
                        __init__ method.
     start_date:        datetime.datetime giving the
                        first valid execution_date of the DAG.
-    schedule_string:   string giving the schedule on which the DAG should
+    schedule_interval: string giving the schedule on which the DAG should
                        be run.  Passed to the airflow.dag.DAG __init__
                        method.
     execution_timeout: datetime.timedelta giving the amount of time a given data
@@ -37,7 +37,7 @@ class DataRefresh:
     media_type: str
     start_date: datetime = datetime(2020, 1, 1)
     execution_timeout: timedelta = timedelta(hours=24)
-    schedule_string: Optional[str] = None
+    schedule_interval: Optional[str] = None
     default_args: Optional[Dict] = field(default_factory=dict)
 
     def __post_init__(self):

@@ -46,6 +46,7 @@ https://github.com/WordPress/openverse-catalog/issues/353)
 """
 import json
 import logging
+import os
 from typing import Sequence
 from urllib.parse import urlparse
 
@@ -132,7 +133,7 @@ def create_data_refresh_dag(data_refresh: DataRefresh, external_dag_ids: Sequenc
         dag_id=data_refresh.dag_id,
         default_args=default_args,
         start_date=data_refresh.start_date,
-        schedule_interval=data_refresh.schedule_string,
+        schedule_interval=data_refresh.schedule_interval,
         catchup=False,
         doc_md=__doc__,
         tags=["data_refresh"],
@@ -145,7 +146,7 @@ def create_data_refresh_dag(data_refresh: DataRefresh, external_dag_ids: Sequenc
             external_dag_ids=external_dag_ids,
             check_existence=True,
             dag=dag,
-            poke_interval=5,
+            poke_interval=os.getenv("DATA_REFRESH_POKE_INTERVAL", 60 * 15),
             mode="reschedule",
         )
 
