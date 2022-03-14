@@ -9,7 +9,7 @@ from airflow.utils.session import create_session
 from airflow.utils.state import State
 from airflow.utils.timezone import datetime
 from airflow.utils.types import DagRunType
-from common.sensors import SingleRunExternalDAGsSensor
+from common.sensors.single_run_external_dags_sensor import SingleRunExternalDAGsSensor
 
 
 DEFAULT_DATE = datetime(2022, 1, 1)

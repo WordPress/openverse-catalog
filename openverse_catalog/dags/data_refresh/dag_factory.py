@@ -55,7 +55,7 @@ from airflow.exceptions import AirflowException
 from airflow.providers.http.operators.http import SimpleHttpOperator
 from airflow.providers.http.sensors.http import HttpSensor
 from common.constants import DAG_DEFAULT_ARGS, XCOM_PULL_TEMPLATE
-from common.sensors import SingleRunExternalDAGsSensor
+from common.sensors.single_run_external_dags_sensor import SingleRunExternalDAGsSensor
 from data_refresh.data_refresh_types import DATA_REFRESH_CONFIGS, DataRefresh
 from requests import Response
 
