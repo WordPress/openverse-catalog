@@ -66,7 +66,7 @@ logger = logging.getLogger(__name__)
 DATA_REFRESH_POOL = "data_refresh"
 
 
-def response_filter_data_refresh(response: Response):
+def response_filter_data_refresh(response: Response) -> str:
     """
     Filter for the `trigger_data_refresh` task, used to grab the endpoint needed
     to poll for the status of the triggered data refresh. This information will
@@ -78,7 +78,7 @@ def response_filter_data_refresh(response: Response):
 
 # Response check to the `wait_for_completion` Sensor. Processes the response to
 # determine whether the task can complete.
-def response_check_wait_for_completion(response: Response):
+def response_check_wait_for_completion(response: Response) -> bool:
     """
     Response check to the `wait_for_completion` Sensor. Processes the response to
     determine whether the task can complete.
