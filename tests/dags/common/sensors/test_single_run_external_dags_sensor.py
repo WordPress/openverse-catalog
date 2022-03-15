@@ -14,6 +14,7 @@ from common.sensors.single_run_external_dags_sensor import SingleRunExternalDAGs
 
 DEFAULT_DATE = datetime(2022, 1, 1)
 TEST_TASK_ID = "wait_task"
+TEST_POOL = "test_pool"
 
 
 @pytest.fixture(autouse=True)
@@ -27,19 +28,19 @@ def run_sensor(sensor):
     sensor.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE, ignore_ti_state=True)
 
 
-def create_task(dag, external_dag_ids):
+def create_task(dag, task_id, external_dag_ids):
     return SingleRunExternalDAGsSensor(
-        task_id=TEST_TASK_ID,
+        task_id=task_id,
         external_dag_ids=[],
         check_existence=True,
         dag=dag,
-        pool="test_pool",
+        pool=TEST_POOL,
         poke_interval=5,
         mode="reschedule",
     )
 
 
-def create_dag(dag_id):
+def create_dag(dag_id, task_id=TEST_TASK_ID):
     with DAG(
         dag_id,
         default_args={
@@ -48,7 +49,7 @@ def create_dag(dag_id):
         },
     ) as dag:
         # Create a sensor task inside the DAG
-        create_task(dag, [])
+        create_task(dag, task_id, [])
 
     return dag
 
@@ -66,45 +67,63 @@ def create_dagrun(dag, dag_state):
 class TestExternalDAGsSensor(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        Pool.create_or_update_pool("test_pool", slots=1, description="test pool")
-
-    def tearDown(self):
-        with create_session() as session:
-            session.query(DagRun).delete()
-            session.query(TaskInstance).delete()
+        Pool.create_or_update_pool(TEST_POOL, slots=1, description="test pool")
 
     def test_fails_if_external_dag_does_not_exist(self):
-        with pytest.raises(AirflowException):
+        with pytest.raises(
+            AirflowException,
+            match="The external DAG nonexistent_dag_id does not exist.",
+        ):
+            dag = DAG(
+                "test_missing_dag_error",
+                default_args={
+                    "owner": "airflow",
+                    "start_date": DEFAULT_DATE,
+                },
+            )
             sensor = SingleRunExternalDAGsSensor(
                 task_id=TEST_TASK_ID,
                 external_dag_ids=[
                     "nonexistent_dag_id",
                 ],
+                check_existence=True,
                 poke_interval=5,
                 mode="reschedule",
+                dag=dag,
             )
 
             run_sensor(sensor)
 
     def test_fails_if_external_dag_missing_sensor_task(self):
-        # Create DAG with missing sensor
-        DAG(
-            "unit_test_dag_without_sensor",
-            default_args={
-                "owner": "airflow",
-                "start_date": DEFAULT_DATE,
-            },
+        # Create DAG with a sensor with a different task_id
+        dag_without_sensor = create_dag(
+            "unit_test_dag_without_sensor", "some_other_task_id"
         )
-        with pytest.raises(AirflowException):
+        create_dagrun(dag_without_sensor, State.SUCCESS)
+
+        error_msg = (
+            "The external DAG unit_test_dag_without_sensor does not have a task"
+            f" with id {TEST_TASK_ID}"
+        )
+
+        with pytest.raises(AirflowException, match=error_msg):
+            dag = DAG(
+                "test_missing_task_error",
+                default_args={
+                    "owner": "airflow",
+                    "start_date": DEFAULT_DATE,
+                },
+            )
             sensor = SingleRunExternalDAGsSensor(
                 task_id=TEST_TASK_ID,
                 external_dag_ids=[
                     "unit_test_dag_without_sensor",
                 ],
+                check_existence=True,
                 poke_interval=5,
                 mode="reschedule",
+                dag=dag,
             )
-
             run_sensor(sensor)
 
     def test_succeeds_if_no_running_dags(self):
@@ -132,7 +151,7 @@ class TestExternalDAGsSensor(unittest.TestCase):
             poke_interval=5,
             mode="reschedule",
             dag=dag,
-            pool="test_pool",
+            pool=TEST_POOL,
         )
 
         with self.assertLogs(sensor.log, level=logging.INFO) as sensor_logs:
@@ -151,7 +170,7 @@ class TestExternalDAGsSensor(unittest.TestCase):
         running_dag = create_dag("running_dag")
         running_dagrun = create_dagrun(running_dag, State.RUNNING)
 
-        pool = Pool.get_pool("test_pool")
+        pool = Pool.get_pool(TEST_POOL)
         assert pool.open_slots() == 1
 
         # Run its sensor task and ensure that it succeeds
@@ -181,7 +200,7 @@ class TestExternalDAGsSensor(unittest.TestCase):
             poke_interval=5,
             mode="reschedule",
             dag=dag,
-            pool="test_pool",
+            pool=TEST_POOL,
         )
 
         with self.assertLogs(sensor.log, level=logging.INFO) as sensor_logs:
