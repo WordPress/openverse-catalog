@@ -5,6 +5,7 @@ import pytest
 from airflow.exceptions import AirflowException
 from airflow.models import DagBag, DagRun, Pool, TaskInstance
 from airflow.models.dag import DAG
+from airflow.utils.db import add_default_pool_if_not_exists
 from airflow.utils.session import create_session
 from airflow.utils.state import State
 from airflow.utils.timezone import datetime
@@ -14,7 +15,7 @@ from common.sensors.single_run_external_dags_sensor import SingleRunExternalDAGs
 
 DEFAULT_DATE = datetime(2022, 1, 1)
 TEST_TASK_ID = "wait_task"
-TEST_POOL = "test_pool"
+TEST_POOL = "single_run_external_dags_sensor_test_pool"
 DEV_NULL = "/dev/null"
 
 
@@ -23,6 +24,8 @@ def clean_db():
     with create_session() as session:
         session.query(DagRun).delete()
         session.query(TaskInstance).delete()
+        session.query(Pool).delete()
+        add_default_pool_if_not_exists(session)
 
 
 def run_sensor(sensor):
@@ -67,8 +70,7 @@ def create_dagrun(dag, dag_state):
 
 
 class TestExternalDAGsSensor(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
+    def setUp(self):
         Pool.create_or_update_pool(TEST_POOL, slots=1, description="test pool")
 
     def test_fails_if_external_dag_does_not_exist(self):
