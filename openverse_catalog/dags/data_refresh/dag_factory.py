@@ -134,6 +134,7 @@ def create_data_refresh_dag(data_refresh: DataRefresh, external_dag_ids: Sequenc
         default_args=default_args,
         start_date=data_refresh.start_date,
         schedule_interval=data_refresh.schedule_interval,
+        max_active_runs=1,
         catchup=False,
         doc_md=__doc__,
         tags=["data_refresh"],
