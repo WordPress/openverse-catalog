@@ -37,7 +37,7 @@ class DataRefresh:
     media_type: str
     start_date: datetime = datetime(2020, 1, 1)
     execution_timeout: timedelta = timedelta(hours=24)
-    schedule_interval: Optional[str] = None
+    schedule_interval: Optional[str] = "@weekly"
     default_args: Optional[Dict] = field(default_factory=dict)
 
     def __post_init__(self):
