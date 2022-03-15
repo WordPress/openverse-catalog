@@ -3,7 +3,7 @@ import unittest
 
 import pytest
 from airflow.exceptions import AirflowException
-from airflow.models import DagRun, Pool, TaskInstance
+from airflow.models import DagBag, DagRun, Pool, TaskInstance
 from airflow.models.dag import DAG
 from airflow.utils.session import create_session
 from airflow.utils.state import State
@@ -15,6 +15,7 @@ from common.sensors.single_run_external_dags_sensor import SingleRunExternalDAGs
 DEFAULT_DATE = datetime(2022, 1, 1)
 TEST_TASK_ID = "wait_task"
 TEST_POOL = "test_pool"
+DEV_NULL = "/dev/null"
 
 
 @pytest.fixture(autouse=True)
@@ -59,6 +60,7 @@ def create_dagrun(dag, dag_state):
         run_id=f"{dag.dag_id}_test",
         start_date=DEFAULT_DATE,
         execution_date=DEFAULT_DATE,
+        data_interval=(DEFAULT_DATE, DEFAULT_DATE),
         state=dag_state,
         run_type=DagRunType.MANUAL,
     )
@@ -95,17 +97,15 @@ class TestExternalDAGsSensor(unittest.TestCase):
             run_sensor(sensor)
 
     def test_fails_if_external_dag_missing_sensor_task(self):
-        # Create DAG with a sensor with a different task_id
-        dag_without_sensor = create_dag(
-            "unit_test_dag_without_sensor", "some_other_task_id"
-        )
-        create_dagrun(dag_without_sensor, State.SUCCESS)
+        # Loads an example DAG which does not have a Sensor task.
+        dagbag = DagBag(dag_folder=DEV_NULL, include_examples=True)
+        bash_dag = dagbag.dags["example_bash_operator"]
+        bash_dag.sync_to_db()
 
         error_msg = (
-            "The external DAG unit_test_dag_without_sensor does not have a task"
+            "The external DAG example_bash_operator does not have a task"
             f" with id {TEST_TASK_ID}"
         )
-
         with pytest.raises(AirflowException, match=error_msg):
             dag = DAG(
                 "test_missing_task_error",
@@ -117,13 +117,14 @@ class TestExternalDAGsSensor(unittest.TestCase):
             sensor = SingleRunExternalDAGsSensor(
                 task_id=TEST_TASK_ID,
                 external_dag_ids=[
-                    "unit_test_dag_without_sensor",
+                    "example_bash_operator",
                 ],
                 check_existence=True,
                 poke_interval=5,
                 mode="reschedule",
                 dag=dag,
             )
+
             run_sensor(sensor)
 
     def test_succeeds_if_no_running_dags(self):

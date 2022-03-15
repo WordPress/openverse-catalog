@@ -65,7 +65,7 @@ class SingleRunExternalDAGsSensor(BaseSensorOperator):
             if not refreshed_dag_info.has_task(self.task_id):
                 raise AirflowException(
                     f"The external DAG {dag_id} does not have a task "
-                    f" with id {self.task_id}."
+                    f"with id {self.task_id}."
                 )
         self._has_checked_existence = True
 
