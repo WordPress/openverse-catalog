@@ -24,7 +24,7 @@ image_store = ImageStore(provider=PROVIDER)
 HEADERS = {"Accept": "application/json"}
 
 DEFAULT_QUERY_PARAMS = {
-    "has_image": "yes",
+    "hasimages": "yes",
     "perpage": LIMIT,
     "imagelicence": "cc by",
     "page": 0,
