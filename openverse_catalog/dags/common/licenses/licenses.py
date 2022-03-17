@@ -232,9 +232,6 @@ def is_valid_license_info(license_info: LicenseInfo) -> bool:
         license_path = license_info.url.replace(base_path, "")
         if license_path[-1] == "/":
             license_path = license_path[:-1]
-        # Truncate the path after the version. This allows license_urls like
-        # `licenses/by/2.0/legalcode` or `licenses/by/4.0/deed` to be valid.
-        license_path = "/".join(license_path.split("/")[0:3])
         license_pair = LICENSE_PATH_MAP.get(license_path)
         return license_pair is not None
     except AttributeError:
