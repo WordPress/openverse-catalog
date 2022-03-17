@@ -136,7 +136,7 @@ def get_license_url(obj):
     # The API returns urls linking to the Finnish version of the license deed,
     # (eg `licenses/by/4.0/deed.fi`), but the license validation logic expects
     # links to the license page (eg `license/by/4.0`).
-    return license_url.removesuffix("/deed.fi")
+    return license_url.removesuffix("deed.fi")
 
 
 def _get_raw_tags(obj):

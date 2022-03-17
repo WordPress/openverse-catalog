@@ -96,8 +96,8 @@ def test_process_object_with_real_example():
             LicenseInfo(
                 "by",
                 "4.0",
-                "https://creativecommons.org/licenses/by/4.0/deed.fi",
-                "http://creativecommons.org/licenses/by/4.0/deed.fi",
+                "https://creativecommons.org/licenses/by/4.0/",
+                "http://creativecommons.org/licenses/by/4.0/",
             )
         ),
         foreign_identifier=("museovirasto.CC0641BB5337F541CBD19169838BAC1F"),
