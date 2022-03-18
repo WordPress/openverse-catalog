@@ -12,6 +12,9 @@ def report_completion(provider_name, media_type, duration, record_count):
     Messages are only sent out in production and if a Slack connection is defined.
     In all cases the data is logged.
     """
+    # Truncate the duration value if it's provided
+    if isinstance(duration, float):
+        duration = round(duration, 2)
 
     message = f"""
 *Provider*: `{provider_name}`
