@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+from functools import partial
 from unittest.mock import patch
 
 import pytest
@@ -32,21 +33,24 @@ def test_get_total_images_correct():
         assert img_count == 10
 
 
+invalid_endpoint = partial(pytest.param, marks=pytest.mark.raises(exception=ValueError))
+
+
 @pytest.mark.parametrize(
     "data, expected",
     [
+        # Happy paths
         (
-            {"date_start": "2020-02-10"},
-            "http://phylopic.org/api/a/image/list/modified/2020-02-10",
+            {"date_start": "2020-02-10", "date_end": "2020-02-11"},
+            "http://phylopic.org/api/a/image/list/modified/2020-02-10/2020-02-11",
         ),
         ({"offset": 0}, "http://phylopic.org/api/a/image/list/0/5"),
-        pytest.param({}, None, marks=pytest.mark.raises(exception=ValueError)),
-        pytest.param(
-            {"date_start": None}, None, marks=pytest.mark.raises(exception=ValueError)
-        ),
-        pytest.param(
-            {"offset": None}, None, marks=pytest.mark.raises(exception=ValueError)
-        ),
+        # Missing/None parameters
+        invalid_endpoint({}, None),
+        invalid_endpoint({"offset": None}, None),
+        invalid_endpoint({"date_start": None}, None),
+        invalid_endpoint({"date_start": None, "date_end": None}, None),
+        invalid_endpoint({"date_start": "2020-02-10", "date_end": None}, None),
     ],
 )
 def test_create_endpoint_for_IDs(data, expected):
@@ -263,3 +267,16 @@ def test_create_args():
     }
     assert actual_args == expect_args
     assert len(actual_args) == 10
+
+
+@pytest.mark.parametrize(
+    "date_start, days, expected",
+    [
+        ("2022-01-10", 10, "2022-01-20"),
+        ("2022-02-28", 7, "2022-03-07"),
+        ("2022-02-28", -7, "2022-02-21"),
+    ],
+)
+def test_compute_date_range(date_start, days, expected):
+    actual = pp._compute_date_range(date_start, days)
+    assert actual == expected
