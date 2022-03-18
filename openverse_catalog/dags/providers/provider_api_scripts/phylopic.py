@@ -33,7 +33,7 @@ delayed_requester = DelayedRequester(DELAY)
 image_store = ImageStore(provider=PROVIDER)
 
 
-def main(date="all"):
+def main(date_start: str = "all", date_end: str = None):
     """
     This script pulls the data for a given date from the PhyloPic
     API, and writes it into a .TSV file to be eventually read
@@ -49,7 +49,7 @@ def main(date="all"):
 
     logger.info("Begin: PhyloPic API requests")
 
-    if date == "all":
+    if date_start == "all":
         logger.info("Processing all images")
         param = {"offset": offset}
 
@@ -62,8 +62,8 @@ def main(date="all"):
             param = {"offset": offset}
 
     else:
-        param = {"date": date}
-        logger.info(f"Processing date: {date}")
+        param = {"date_start": date_start}
+        logger.info(f"Processing from date: {date_start}")
         _add_data_to_buffer(**param)
 
     image_store.commit()
@@ -114,9 +114,9 @@ def _get_total_images():
 def _create_endpoint_for_IDs(**kwargs):
     limit = LIMIT
 
-    if (date := kwargs.get("date")) is not None:
+    if (date_start := kwargs.get("date_start")) is not None:
         # Get a list of objects uploaded/updated on a given date.
-        endpoint = f"http://phylopic.org/api/a/image/list/modified/{date}"
+        endpoint = f"http://phylopic.org/api/a/image/list/modified/{date_start}"
 
     elif (offset := kwargs.get("offset")) is not None:
         # Get all images and limit the results for each request.
@@ -259,11 +259,11 @@ def _get_image_info(result, _uuid):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="PhyloPic API Job", add_help=True)
     parser.add_argument(
-        "--date",
+        "--date-start",
         default="all",
-        help="Identify all images" " from a particular date (YYYY-MM-DD).",
+        help="Identify all images from a particular date (YYYY-MM-DD).",
     )
 
-    date = parser.parse_args().date
+    args = parser.parse_args()
 
-    main(date)
+    main(args.date_start)

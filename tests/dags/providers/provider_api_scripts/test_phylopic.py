@@ -36,13 +36,13 @@ def test_get_total_images_correct():
     "data, expected",
     [
         (
-            {"date": "2020-02-10"},
+            {"date_start": "2020-02-10"},
             "http://phylopic.org/api/a/image/list/modified/2020-02-10",
         ),
         ({"offset": 0}, "http://phylopic.org/api/a/image/list/0/5"),
         pytest.param({}, None, marks=pytest.mark.raises(exception=ValueError)),
         pytest.param(
-            {"date": None}, None, marks=pytest.mark.raises(exception=ValueError)
+            {"date_start": None}, None, marks=pytest.mark.raises(exception=ValueError)
         ),
         pytest.param(
             {"offset": None}, None, marks=pytest.mark.raises(exception=ValueError)
