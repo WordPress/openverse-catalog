@@ -44,8 +44,11 @@ def main(date_start: str = "all", date_end: str = None):
 
     Required Arguments:
 
-    date:  Date String in the form YYYY-MM-DD.  This is the date for
-           which running the script will pull data.
+    date_start:  Date String in the form YYYY-MM-DD. This date defines the beginning
+                 of the range that the script will pull data from.
+    date_end:    Date String in the form YYYY-MM-DD. Similar to `date_start`, this
+                 defines the end of the range of data pulled. Defaults to
+                 DEFAULT_PROCESS_DAYS (7) if undefined.
     """
 
     offset = 0
@@ -268,6 +271,10 @@ def _get_image_info(result, _uuid):
 
 
 def _compute_date_range(date_start: str, days: int = DEFAULT_PROCESS_DAYS) -> str:
+    """
+    Given an ISO formatted date string and a number of days, compute the
+    ISO string that represents the start date plus the days provided.
+    """
     date_end = date.fromisoformat(date_start) + timedelta(days=days)
     return date_end.isoformat()
 
