@@ -26,6 +26,7 @@ def test_report_completion(should_send_message):
 @pytest.mark.parametrize(
     "seconds, expected",
     [
+        (1, "1 sec"),
         (10, "10 secs"),
         (100, "1 min, 40 secs"),
         (1000, "16 mins, 40 secs"),
