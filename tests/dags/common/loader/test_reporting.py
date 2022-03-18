@@ -1,7 +1,7 @@
 from unittest import mock
 
 import pytest
-from common.loader.reporting import report_completion
+from common.loader.reporting import humanize_time_duration, report_completion
 
 
 @pytest.fixture(autouse=True)
@@ -24,16 +24,17 @@ def test_report_completion(should_send_message):
 
 
 @pytest.mark.parametrize(
-    "duration, expected",
+    "seconds, expected",
     [
-        (None, "_No data_"),
-        (100.5, "100.5"),
-        (1234567.9999, "1234568.0"),  # Gets rounded up
-        (0.123456, "0.12"),
+        (10, "10 secs"),
+        (100, "1 min, 40 secs"),
+        (1000, "16 mins, 40 secs"),
+        (10000, "2 hours, 46 mins, 40 secs"),
+        (100000, "1 day, 3 hours, 46 mins, 40 secs"),
+        (1000000, "1 week, 4 days, 13 hours, 46 mins, 40 secs"),
+        (10000000, "16 weeks, 3 days, 17 hours, 46 mins, 40 secs"),
     ],
 )
-def test_duration_truncated(duration, expected):
-    with mock.patch("common.loader.reporting.send_message") as send_message:
-        report_completion("Jamendo", "Audio", duration, 100)
-        message = send_message.call_args.args[0]
-        assert expected in message
+def test_humanize_time_duration(seconds, expected):
+    actual = humanize_time_duration(seconds)
+    assert actual == expected

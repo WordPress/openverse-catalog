@@ -6,6 +6,28 @@ from common.slack import send_message
 logger = logging.getLogger(__name__)
 
 
+# Shamelessly lifted from:
+# https://gist.github.com/borgstrom/936ca741e885a1438c374824efb038b3
+TIME_DURATION_UNITS = (
+    ("week", 60 * 60 * 24 * 7),
+    ("day", 60 * 60 * 24),
+    ("hour", 60 * 60),
+    ("min", 60),
+    ("sec", 1),
+)
+
+
+def humanize_time_duration(seconds):
+    if seconds == 0:
+        return "inf"
+    parts = []
+    for unit, div in TIME_DURATION_UNITS:
+        amount, seconds = divmod(int(seconds), div)
+        if amount > 0:
+            parts.append("{} {}{}".format(amount, unit, "" if amount == 1 else "s"))
+    return ", ".join(parts)
+
+
 def report_completion(provider_name, media_type, duration, record_count):
     """
     Send a Slack notification when the load_data task has completed.
@@ -14,7 +36,7 @@ def report_completion(provider_name, media_type, duration, record_count):
     """
     # Truncate the duration value if it's provided
     if isinstance(duration, float):
-        duration = round(duration, 2)
+        duration = humanize_time_duration(duration)
 
     message = f"""
 *Provider*: `{provider_name}`
