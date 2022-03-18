@@ -3,6 +3,7 @@ import logging
 import os
 from unittest.mock import patch
 
+import pytest
 from common.licenses import LicenseInfo
 from providers.provider_api_scripts import phylopic as pp
 
@@ -31,16 +32,26 @@ def test_get_total_images_correct():
         assert img_count == 10
 
 
-def test_create_endpoint_for_IDs_by_date():
-    actual_endpoint = pp._create_endpoint_for_IDs(**{"date": "2020-02-10"})
-    expect_endpoint = str("http://phylopic.org/api" "/a/image/list/modified/2020-02-10")
-    assert actual_endpoint == expect_endpoint
-
-
-def test_create_endpoint_for_IDs_all():
-    actual_endpoint = pp._create_endpoint_for_IDs(**{"offset": 0})
-    expect_endpoint = "http://phylopic.org/api/a/image/list/0/5"
-    assert actual_endpoint == expect_endpoint
+@pytest.mark.parametrize(
+    "data, expected",
+    [
+        (
+            {"date": "2020-02-10"},
+            "http://phylopic.org/api/a/image/list/modified/2020-02-10",
+        ),
+        ({"offset": 0}, "http://phylopic.org/api/a/image/list/0/5"),
+        pytest.param({}, None, marks=pytest.mark.raises(exception=ValueError)),
+        pytest.param(
+            {"date": None}, None, marks=pytest.mark.raises(exception=ValueError)
+        ),
+        pytest.param(
+            {"offset": None}, None, marks=pytest.mark.raises(exception=ValueError)
+        ),
+    ],
+)
+def test_create_endpoint_for_IDs(data, expected):
+    actual = pp._create_endpoint_for_IDs(**data)
+    assert actual == expected
 
 
 def test_get_image_IDs_for_no_content():

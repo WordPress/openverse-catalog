@@ -71,16 +71,16 @@ def main(date="all"):
     logger.info("Terminated!")
 
 
-def _add_data_to_buffer(**args):
-    endpoint = _create_endpoint_for_IDs(**args)
+def _add_data_to_buffer(**kwargs):
+    endpoint = _create_endpoint_for_IDs(**kwargs)
     IDs = _get_image_IDs(endpoint)
 
     for id_ in IDs:
         if id_ is not None:
             details = _get_meta_data(id_)
             if details is not None:
-                args = _create_args(details, id_)
-                image_store.add_item(**args)
+                kwargs = _create_args(details, id_)
+                image_store.add_item(**kwargs)
 
 
 def _create_args(details, id_):
@@ -111,18 +111,19 @@ def _get_total_images():
     return total
 
 
-def _create_endpoint_for_IDs(**args):
+def _create_endpoint_for_IDs(**kwargs):
     limit = LIMIT
 
-    if args.get("date"):
+    if (date := kwargs.get("date")) is not None:
         # Get a list of objects uploaded/updated on a given date.
-        date = args["date"]
         endpoint = f"http://phylopic.org/api/a/image/list/modified/{date}"
 
-    else:
+    elif (offset := kwargs.get("offset")) is not None:
         # Get all images and limit the results for each request.
-        offset = args["offset"]
         endpoint = f"http://phylopic.org/api/a/image/list/{offset}/{limit}"
+
+    else:
+        raise ValueError("No valid selection criteria found!")
     return endpoint
 
 
