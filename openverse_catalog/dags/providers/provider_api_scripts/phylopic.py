@@ -284,12 +284,14 @@ if __name__ == "__main__":
     parser.add_argument(
         "--date-start",
         default="all",
-        help="Identify all images from a particular date (YYYY-MM-DD).",
+        help="Identify all images starting from a particular date (YYYY-MM-DD).",
     )
     parser.add_argument(
         "--date-end",
         default=None,
-        help="Identify all images to a particular date (YYYY-MM-DD).",
+        help="Used in conjunction with --date-start, identify all images ending on "
+        f"a particular date (YYYY-MM-DD), defaults to {DEFAULT_PROCESS_DAYS} "
+        "if not defined.",
     )
 
     args = parser.parse_args()
