@@ -40,8 +40,7 @@ class SingleRunExternalDAGsSensor(BaseSensorOperator):
             self.external_dag_ids,
         )
 
-        # Check DAG existence only once, on the first execution.
-        if self.check_existence and not self._has_checked_existence:
+        if self.check_existence:
             self._check_for_existence(session=session)
 
         count_running = self.get_count(session)
@@ -50,6 +49,10 @@ class SingleRunExternalDAGsSensor(BaseSensorOperator):
         return count_running == 0
 
     def _check_for_existence(self, session) -> None:
+        # Check DAG existence only once, on the first execution.
+        if self._has_checked_existence:
+            return
+
         for dag_id in self.external_dag_ids:
             dag_to_wait = (
                 session.query(DagModel).filter(DagModel.dag_id == dag_id).first()
