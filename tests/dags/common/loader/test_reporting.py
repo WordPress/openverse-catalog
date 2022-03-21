@@ -18,8 +18,7 @@ def test_report_completion(should_send_message):
     with mock.patch(
         "common.slack.should_send_message", return_value=should_send_message
     ):
-        data = {"audio": {"duration": None, "record_count": 100}}
-        report_completion("Jamendo", data)
+        report_completion("Jamendo", None, {"audio": 100})
         # Send message is only called if `should_send_message` is True.
         send_message_mock.called = should_send_message
 

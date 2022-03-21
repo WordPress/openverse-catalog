@@ -217,7 +217,7 @@ def create_provider_api_workflow(
         )
 
         load_tasks = []
-        load_data_stats_by_media_type = {}
+        record_counts_by_media_type = {}
         for media_type in media_types:
             with TaskGroup(group_id=f"load_{media_type}_data") as load_data:
                 create_loading_table = PythonOperator(
@@ -272,14 +272,9 @@ def create_provider_api_workflow(
                 [create_loading_table, copy_to_s3] >> load_from_s3
                 load_from_s3 >> drop_loading_table
 
-                load_data_stats_by_media_type[media_type] = {
-                    "record_count": XCOM_PULL_TEMPLATE.format(
-                        load_from_s3.task_id, "return_value"
-                    ),
-                    "duration": XCOM_PULL_TEMPLATE.format(
-                        pull_data.task_id, "duration"
-                    ),
-                }
+                record_counts_by_media_type[media_type] = XCOM_PULL_TEMPLATE.format(
+                    load_from_s3.task_id, "return_value"
+                )
                 load_tasks.append(load_data)
 
         report_load_completion = PythonOperator(
@@ -287,7 +282,8 @@ def create_provider_api_workflow(
             python_callable=reporting.report_completion,
             op_kwargs={
                 "provider_name": provider_name,
-                "load_data_stats_by_media_type": load_data_stats_by_media_type,
+                "duration": XCOM_PULL_TEMPLATE.format(pull_data.task_id, "duration"),
+                "record_counts_by_media_type": record_counts_by_media_type,
             },
             trigger_rule=TriggerRule.ALL_DONE,
         )
