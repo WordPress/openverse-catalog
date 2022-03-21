@@ -123,9 +123,9 @@ def _get_total_images():
 def _create_endpoint_for_IDs(**kwargs):
     limit = LIMIT
 
-    if (date_start := kwargs.get("date_start")) is not None and (
-        date_end := kwargs.get("date_end")
-    ) is not None:
+    if ((date_start := kwargs.get("date_start")) is not None) and (
+        (date_end := kwargs.get("date_end")) is not None
+    ):
         # Get a list of objects uploaded/updated from a given date to another date
         # http://phylopic.org/api/#method-image-time-range
         endpoint = (
