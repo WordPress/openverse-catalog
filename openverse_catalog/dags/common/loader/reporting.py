@@ -4,7 +4,7 @@ from common.slack import send_message
 
 
 logger = logging.getLogger(__name__)
-XCOM_PULL_TEMPLATE = "{{{{ ti.xcom_pull(task_ids='{}', key='{}') }}}}"
+
 
 # Shamelessly lifted from:
 # https://gist.github.com/borgstrom/936ca741e885a1438c374824efb038b3
