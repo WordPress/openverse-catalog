@@ -289,7 +289,7 @@ def create_provider_api_workflow(
                 "provider_name": provider_name,
                 "load_data_stats_by_media_type": load_data_stats_by_media_type,
             },
-            trigger_rule=TriggerRule.ONE_SUCCESS,
+            trigger_rule=TriggerRule.ALL_DONE,
         )
 
         pull_data >> load_tasks >> report_load_completion
