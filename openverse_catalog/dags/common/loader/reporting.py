@@ -40,7 +40,7 @@ def report_completion(provider_name, duration, record_counts_by_media_type):
 
     # List record count per media type
     media_type_reports = "\n".join(
-        f"  - `{media_type}`: {record_count}"
+        f"  - `{media_type}`: {record_count or '_No data_'}"
         for media_type, record_count in record_counts_by_media_type.items()
     )
 
