@@ -217,7 +217,7 @@ def create_provider_api_workflow(
         )
 
         load_tasks = []
-        record_counts_by_media_type = {}
+        record_counts_by_media_type: reporting.RecordCounts = {}
         for media_type in media_types:
             with TaskGroup(group_id=f"load_{media_type}_data") as load_data:
                 create_loading_table = PythonOperator(

@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import logging
+from typing import Optional
 
 from common.slack import send_message
 
@@ -15,9 +18,10 @@ TIME_DURATION_UNITS = (
     ("min", 60),
     ("sec", 1),
 )
+RecordCounts = dict[str, tuple[Optional[int], Optional[int]]]
 
 
-def humanize_time_duration(seconds):
+def humanize_time_duration(seconds: float) -> str:
     if seconds == 0:
         return "inf"
     parts = []
@@ -28,7 +32,11 @@ def humanize_time_duration(seconds):
     return ", ".join(parts)
 
 
-def report_completion(provider_name, duration, record_counts_by_media_type):
+def report_completion(
+    provider_name: str,
+    duration: float | str | None,
+    record_counts_by_media_type: RecordCounts,
+) -> None:
     """
     Send a Slack notification when the load_data task has completed.
     Messages are only sent out in production and if a Slack connection is defined.
