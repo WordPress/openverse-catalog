@@ -49,8 +49,11 @@ def report_completion(
     # List record count per media type
     media_type_reports = ""
     for media_type, (loaded, upserted) in record_counts_by_media_type.items():
-        duplicates = loaded - upserted
         media_type_reports += f"  - `{media_type}`: {upserted or '_No data_'}"
+        if upserted is None or loaded is None:
+            # Can't make calculation without data
+            continue
+        duplicates = loaded - upserted
         if duplicates:
             media_type_reports += f" _({duplicates} duplicates)_"
         media_type_reports += "\n"
