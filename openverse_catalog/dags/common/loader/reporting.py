@@ -39,10 +39,13 @@ def report_completion(provider_name, duration, record_counts_by_media_type):
         duration = humanize_time_duration(duration)
 
     # List record count per media type
-    media_type_reports = "\n".join(
-        f"  - `{media_type}`: {record_count or '_No data_'}"
-        for media_type, record_count in record_counts_by_media_type.items()
-    )
+    media_type_reports = ""
+    for media_type, (loaded, upserted) in record_counts_by_media_type.items():
+        duplicates = loaded - upserted
+        media_type_reports += f"  - `{media_type}`: {upserted or '_No data_'}"
+        if duplicates:
+            media_type_reports += f" _({duplicates} duplicates)_"
+        media_type_reports += "\n"
 
     # Collect data into a single message
     message = f"""
