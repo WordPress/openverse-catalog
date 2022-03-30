@@ -8,7 +8,7 @@ ENV PIPNOCACHEDIR=1
 ENV PYTHONUNBUFFERED=1
 ENV PIP_NO_COLOR=1
 
-RUN apt-get update && apt-get -yqq upgrade && apt-get -yqq install \
+RUN apt-get update && apt-get -yqq install \
     python3-boto3 \
     postgresql-plpython3-13 \
     python3-pip \
