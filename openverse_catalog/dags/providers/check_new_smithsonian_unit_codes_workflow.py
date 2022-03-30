@@ -48,7 +48,6 @@ def create_dag(
         PythonOperator(
             task_id="check_new_smithsonian_unit_codes",
             python_callable=smithsonian_unit_codes.alert_unit_codes_from_api,
-            op_args=[postgres_conn_id],
         )
 
     return dag

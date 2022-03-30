@@ -2,41 +2,14 @@ import os
 from collections import namedtuple
 from unittest.mock import Mock, patch
 
-import psycopg2
 import pytest
 from common.loader import smithsonian_unit_codes as si
 
 
-POSTGRES_TEST_URI = os.getenv("AIRFLOW_CONN_POSTGRES_OPENLEDGER_TESTING")
-POSTGRES_CONN_ID = os.getenv("TEST_CONN_ID")
-SI_UNIT_CODE_TABLE = "test_unit_code_table"
-
-
-CREATE_TABLE_QUERY = (
-    f"CREATE TABLE IF NOT EXISTS public.{SI_UNIT_CODE_TABLE} ("
-    f"new_unit_code character varying(80),"
-    f"action character varying(40));"
-)
-
-
-@pytest.fixture
-def postgres_with_test_unit_code_table():
-    Postgres = namedtuple("Postgres", ["cursor", "connection"])
-    conn = psycopg2.connect(POSTGRES_TEST_URI)
-    cur = conn.cursor()
-    drop_command = f"DROP TABLE IF EXISTS {SI_UNIT_CODE_TABLE}"
-    cur.execute(drop_command)
-    conn.commit()
-    create_command = CREATE_TABLE_QUERY
-    cur.execute(create_command)
-    conn.commit()
-
-    yield Postgres(cursor=cur, connection=conn)
-
-    cur.execute(drop_command)
-    cur.close()
-    conn.commit()
-    conn.close()
+@pytest.fixture(autouse=True)
+def http_hook_mock() -> mock.MagicMock:
+    with mock.patch("common.slack.HttpHook") as HttpHookMock:
+        yield HttpHookMock.return_value
 
 
 def test_alert_new_unit_codes():
