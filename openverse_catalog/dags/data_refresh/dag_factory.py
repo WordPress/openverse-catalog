@@ -179,6 +179,7 @@ def create_data_refresh_dag(data_refresh: DataRefresh, external_dag_ids: Sequenc
             method="GET",
             response_check=response_check_wait_for_completion,
             dag=dag,
+            mode="reschedule",
         )
 
         wait_for_data_refresh >> trigger_data_refresh >> wait_for_completion
