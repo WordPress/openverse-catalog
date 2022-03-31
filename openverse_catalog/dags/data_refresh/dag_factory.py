@@ -180,6 +180,7 @@ def create_data_refresh_dag(data_refresh: DataRefresh, external_dag_ids: Sequenc
             response_check=response_check_wait_for_completion,
             dag=dag,
             mode="reschedule",
+            timeout=(60 * 60 * 24 * 3),  # 3 days
         )
 
         wait_for_data_refresh >> trigger_data_refresh >> wait_for_completion
