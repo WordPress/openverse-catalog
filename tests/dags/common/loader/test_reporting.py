@@ -36,6 +36,11 @@ def _make_report_completion_contents_data(media_type: str):
             {media_type: (100, 90, 75)},
             f"  - `{media_type}`: 75 _(10 cleaned, 15 duplicates)_",
         ),
+        # Cleaned and duplicates, large numbers
+        (
+            {media_type: (100_000, 90_000, 75_000)},
+            f"  - `{media_type}`: 75,000 _(10,000 cleaned, 15,000 duplicates)_",
+        ),
         # Cases with missing data
         ({media_type: (None, None, None)}, f"  - `{media_type}`: _No data_"),
         ({media_type: (100, None, None)}, f"  - `{media_type}`: _No data_"),

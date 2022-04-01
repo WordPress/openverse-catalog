@@ -50,7 +50,11 @@ def report_completion(
     media_type_reports = ""
     for media_type, counts in record_counts_by_media_type.items():
         loaded, cleaned, upserted = counts
-        media_type_reports += f"  - `{media_type}`: {upserted or '_No data_'}"
+        if not upserted:
+            upserted_human_readable = "_No data_"
+        else:
+            upserted_human_readable = f"{upserted:,}"
+        media_type_reports += f"  - `{media_type}`: {upserted_human_readable}"
         if any([count is None for count in counts]):
             # Can't make calculation without data
             continue
@@ -59,9 +63,9 @@ def report_completion(
         if duplicates or removed:
             extras = []
             if removed:
-                extras.append(f"{removed} cleaned")
+                extras.append(f"{removed:,} cleaned")
             if duplicates:
-                extras.append(f"{duplicates} duplicates")
+                extras.append(f"{duplicates:,} duplicates")
             if joined := ", ".join(extras):
                 media_type_reports += f" _({joined})_"
         media_type_reports += "\n"
