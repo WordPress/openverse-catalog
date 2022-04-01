@@ -18,7 +18,7 @@ def test_report_completion(should_send_message):
     with mock.patch(
         "common.slack.should_send_message", return_value=should_send_message
     ):
-        report_completion("Jamendo", None, {"audio": (100, 100)})
+        report_completion("Jamendo", None, {"audio": (100, 100, 100)})
         # Send message is only called if `should_send_message` is True.
         send_message_mock.called = should_send_message
 
@@ -26,13 +26,21 @@ def test_report_completion(should_send_message):
 def _make_report_completion_contents_data(media_type: str):
     return [
         # Happy path
-        ({media_type: (100, 100)}, f"  - `{media_type}`: 100"),
+        ({media_type: (100, 100, 100)}, f"  - `{media_type}`: 100"),
+        # Cleaned detected
+        ({media_type: (100, 90, 90)}, f"  - `{media_type}`: 90 _(10 cleaned)_"),
         # Duplicates detected
-        ({media_type: (100, 90)}, f"  - `{media_type}`: 90 _(10 duplicates)_"),
+        ({media_type: (100, 100, 90)}, f"  - `{media_type}`: 90 _(10 duplicates)_"),
+        # Cleaned and duplicates detected
+        (
+            {media_type: (100, 90, 75)},
+            f"  - `{media_type}`: 75 _(10 cleaned, 15 duplicates)_",
+        ),
         # Cases with missing data
-        ({media_type: (None, None)}, f"  - `{media_type}`: _No data_"),
-        ({media_type: (100, None)}, f"  - `{media_type}`: _No data_"),
-        ({media_type: (None, 100)}, f"  - `{media_type}`: 100"),
+        ({media_type: (None, None, None)}, f"  - `{media_type}`: _No data_"),
+        ({media_type: (100, None, None)}, f"  - `{media_type}`: _No data_"),
+        ({media_type: (None, 100, None)}, f"  - `{media_type}`: _No data_"),
+        ({media_type: (None, None, 100)}, f"  - `{media_type}`: 100"),
     ]
 
 

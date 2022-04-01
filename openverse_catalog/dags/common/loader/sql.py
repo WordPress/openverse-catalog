@@ -135,7 +135,7 @@ def load_s3_data_to_intermediate_table(
     s3_key,
     identifier,
     media_type=IMAGE,
-) -> int:
+) -> tuple[int, int]:
     load_table = _get_load_table_name(identifier, media_type=media_type)
     logger.info(f"Loading {s3_key} from S3 Bucket {bucket} into {load_table}")
 
@@ -157,7 +157,7 @@ def load_s3_data_to_intermediate_table(
     )
     logger.info(f"Succesfully loaded {loaded_count} records from S3")
     cleaned_count = _clean_intermediate_table_data(postgres, load_table)
-    return loaded_count - cleaned_count
+    return loaded_count, cleaned_count
 
 
 def _clean_intermediate_table_data(postgres_hook, load_table) -> int:

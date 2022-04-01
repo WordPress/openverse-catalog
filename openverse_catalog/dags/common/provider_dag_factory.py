@@ -274,6 +274,7 @@ def create_provider_api_workflow(
 
                 record_counts_by_media_type[media_type] = (
                     XCOM_PULL_TEMPLATE.format(load_from_s3.task_id, "loaded_count"),
+                    XCOM_PULL_TEMPLATE.format(load_from_s3.task_id, "cleaned_count"),
                     XCOM_PULL_TEMPLATE.format(load_from_s3.task_id, "upserted_count"),
                 )
                 load_tasks.append(load_data)

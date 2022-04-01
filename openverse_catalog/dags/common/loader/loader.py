@@ -42,11 +42,12 @@ def load_from_s3(
     identifier,
     ti,
 ):
-    loaded_count = sql.load_s3_data_to_intermediate_table(
+    loaded_count, cleaned_count = sql.load_s3_data_to_intermediate_table(
         postgres_conn_id, bucket, key, identifier, media_type
     )
     upserted_count = sql.upsert_records_to_db_table(
         postgres_conn_id, identifier, media_type=media_type, tsv_version=tsv_version
     )
     ti.xcom_push(key="loaded_count", value=loaded_count)
+    ti.xcom_push(key="cleaned_count", value=loaded_count)
     ti.xcom_push(key="upserted_count", value=upserted_count)
