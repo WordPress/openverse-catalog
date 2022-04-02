@@ -26,19 +26,19 @@ def test_report_completion(should_send_message):
 def _make_report_completion_contents_data(media_type: str):
     return [
         # Happy path
-        ({media_type: (100, 100, 100)}, f"  - `{media_type}`: 100"),
+        ({media_type: (100, 0, 100)}, f"  - `{media_type}`: 100"),
         # Cleaned detected
-        ({media_type: (100, 90, 90)}, f"  - `{media_type}`: 90 _(10 cleaned)_"),
+        ({media_type: (100, 10, 90)}, f"  - `{media_type}`: 90 _(10 cleaned)_"),
         # Duplicates detected
-        ({media_type: (100, 100, 90)}, f"  - `{media_type}`: 90 _(10 duplicates)_"),
+        ({media_type: (100, 0, 90)}, f"  - `{media_type}`: 90 _(10 duplicates)_"),
         # Cleaned and duplicates detected
         (
-            {media_type: (100, 90, 75)},
+            {media_type: (100, 10, 75)},
             f"  - `{media_type}`: 75 _(10 cleaned, 15 duplicates)_",
         ),
         # Cleaned and duplicates, large numbers
         (
-            {media_type: (100_000, 90_000, 75_000)},
+            {media_type: (100_000, 10_000, 75_000)},
             f"  - `{media_type}`: 75,000 _(10,000 cleaned, 15,000 duplicates)_",
         ),
         # Cases with missing data

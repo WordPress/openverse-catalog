@@ -58,12 +58,11 @@ def report_completion(
         if any([count is None for count in counts]):
             # Can't make calculation without data
             continue
-        removed = loaded - cleaned
-        duplicates = cleaned - upserted
-        if duplicates or removed:
+        duplicates = loaded - cleaned - upserted
+        if duplicates or cleaned:
             extras = []
-            if removed:
-                extras.append(f"{removed:,} cleaned")
+            if cleaned:
+                extras.append(f"{cleaned:,} cleaned")
             if duplicates:
                 extras.append(f"{duplicates:,} duplicates")
             if joined := ", ".join(extras):

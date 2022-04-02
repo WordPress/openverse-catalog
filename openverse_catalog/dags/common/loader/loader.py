@@ -49,5 +49,5 @@ def load_from_s3(
         postgres_conn_id, identifier, media_type=media_type, tsv_version=tsv_version
     )
     ti.xcom_push(key="loaded_count", value=loaded_count)
-    ti.xcom_push(key="cleaned_count", value=loaded_count)
+    ti.xcom_push(key="cleaned_count", value=cleaned_count)
     ti.xcom_push(key="upserted_count", value=upserted_count)
