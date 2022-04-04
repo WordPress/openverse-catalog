@@ -13,6 +13,7 @@ import logging
 import os
 from datetime import datetime
 
+from airflow.exceptions import AirflowException
 from airflow.models import Variable
 from common.licenses import LicenseInfo
 from common.loader import provider_details as prov
@@ -124,7 +125,10 @@ def main():
     defined as a search query that finds all objects whose hash ID
     starts with some string of hexits of a specified length (e.g.,
     '0a2*' is a hash prefix of length 3).
+
+    It fails early if the unit codes are not configured correctly.
     """
+    validate_unit_codes_from_api()
     for hash_prefix in _get_hash_prefixes(HASH_PREFIX_LENGTH):
         total_rows = _process_hash_prefix(hash_prefix)
         logger.info(f"Total rows for {hash_prefix}:  {total_rows}")
@@ -184,6 +188,48 @@ def _gather_unit_sample(unit, sample_dir, retries=RETRIES, endpoint=SEARCH_ENDPO
             with open(os.path.join(sample_dir, f"{unit}.json"), "w") as f:
                 f.write(json.dumps(response_json, indent=2))
             break
+
+
+def get_new_and_outdated_unit_codes(unit_code_set, sub_prov_dict=SUB_PROVIDERS):
+    sub_provider_unit_code_set = set()
+
+    for sub_prov, unit_code_sub_set in sub_prov_dict.items():
+        sub_provider_unit_code_set = sub_provider_unit_code_set.union(unit_code_sub_set)
+
+    new_unit_codes = unit_code_set - sub_provider_unit_code_set
+    outdated_unit_codes = sub_provider_unit_code_set - unit_code_set
+
+    return new_unit_codes, outdated_unit_codes
+
+
+def validate_unit_codes_from_api(units_endpoint=UNITS_ENDPOINT):
+    """
+    Validates the SMITHSONIAN_SUB_PROVIDERS dictionary, and raises an exception if
+    human intervention is needed to add or remove unit codes.
+    """
+    query_params = {"api_key": API_KEY, "q": "online_media_type:Images"}
+    response_json = delayed_requester.get_response_json(
+        units_endpoint, query_params=query_params
+    )
+    unit_code_set = set(response_json.get("response", {}).get("terms", []))
+    new_unit_codes, outdated_unit_codes = get_new_and_outdated_unit_codes(unit_code_set)
+
+    if bool(new_unit_codes) or bool(outdated_unit_codes):
+        message = "\n*Updates needed to the SMITHSONIAN_SUB_PROVIDERS dictionary*:\n\n"
+
+        if bool(new_unit_codes):
+            codes_string = "\n".join(f"  - `{code}`" for code in new_unit_codes)
+            message += "New unit codes must be added:\n"
+            message += codes_string
+            message += "\n"
+
+        if bool(outdated_unit_codes):
+            codes_string = "\n".join(f"  - `{code}`" for code in outdated_unit_codes)
+            message += "Outdated unit codes must be deleted:\n"
+            message += codes_string
+
+        logger.info(message)
+        raise AirflowException(message)
 
 
 def _get_hash_prefixes(prefix_length):
