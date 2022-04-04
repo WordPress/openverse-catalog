@@ -62,9 +62,9 @@ def test_alert_new_unit_codes():
 @pytest.mark.parametrize(
     "new_unit_codes, outdated_unit_codes",
     [
-        ({"d", }, {"e", }),
-        ({"d", }, set()),
-        (set(), {"e", }),
+        ({"d"}, {"e"}),
+        ({"d"}, set()),
+        (set(), {"e"}),
     ],
 )
 def test_validate_unit_codes_from_api_raises_exception(
