@@ -12,6 +12,7 @@ import json
 import logging
 import os
 from datetime import datetime
+from typing import Tuple
 
 from airflow.exceptions import AirflowException
 from airflow.models import Variable
@@ -190,19 +191,18 @@ def _gather_unit_sample(unit, sample_dir, retries=RETRIES, endpoint=SEARCH_ENDPO
             break
 
 
-def get_new_and_outdated_unit_codes(unit_code_set, sub_prov_dict=SUB_PROVIDERS):
-    sub_provider_unit_code_set = set()
+def get_new_and_outdated_unit_codes(
+    unit_codes_from_api: set, sub_providers: dict = SUB_PROVIDERS
+) -> Tuple[set, set]:
+    current_unit_codes = set().union(*sub_providers.values())
 
-    for sub_prov, unit_code_sub_set in sub_prov_dict.items():
-        sub_provider_unit_code_set = sub_provider_unit_code_set.union(unit_code_sub_set)
-
-    new_unit_codes = unit_code_set - sub_provider_unit_code_set
-    outdated_unit_codes = sub_provider_unit_code_set - unit_code_set
+    new_unit_codes = unit_codes_from_api - current_unit_codes
+    outdated_unit_codes = current_unit_codes - unit_codes_from_api
 
     return new_unit_codes, outdated_unit_codes
 
 
-def validate_unit_codes_from_api(units_endpoint=UNITS_ENDPOINT):
+def validate_unit_codes_from_api(units_endpoint: str = UNITS_ENDPOINT) -> None:
     """
     Validates the SMITHSONIAN_SUB_PROVIDERS dictionary, and raises an exception if
     human intervention is needed to add or remove unit codes.
@@ -211,8 +211,10 @@ def validate_unit_codes_from_api(units_endpoint=UNITS_ENDPOINT):
     response_json = delayed_requester.get_response_json(
         units_endpoint, query_params=query_params
     )
-    unit_code_set = set(response_json.get("response", {}).get("terms", []))
-    new_unit_codes, outdated_unit_codes = get_new_and_outdated_unit_codes(unit_code_set)
+    unit_codes_from_api = set(response_json.get("response", {}).get("terms", []))
+    new_unit_codes, outdated_unit_codes = get_new_and_outdated_unit_codes(
+        unit_codes_from_api
+    )
 
     if bool(new_unit_codes) or bool(outdated_unit_codes):
         message = "\n*Updates needed to the SMITHSONIAN_SUB_PROVIDERS dictionary*:\n\n"
