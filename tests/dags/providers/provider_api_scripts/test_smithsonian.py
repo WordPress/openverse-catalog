@@ -62,9 +62,9 @@ def test_alert_new_unit_codes():
 @pytest.mark.parametrize(
     "new_unit_codes, outdated_unit_codes",
     [
-        (("d",), ("e",)),
-        (("d",), ()),
-        ((), ("e",)),
+        ({"d", }, {"e", }),
+        ({"d", }, set()),
+        (set(), {"e", }),
     ],
 )
 def test_validate_unit_codes_from_api_raises_exception(
@@ -73,11 +73,11 @@ def test_validate_unit_codes_from_api_raises_exception(
     with patch.object(
         si,
         "get_new_and_outdated_unit_codes",
-        return_value=(set(new_unit_codes), set(outdated_unit_codes)),
+        return_value=(new_unit_codes, outdated_unit_codes),
     ):
         with pytest.raises(
             AirflowException,
-            match="^\n\*Updates needed to the SMITHSONIAN_SUB_PROVIDERS dictionary\**",
+            match="^\n\\*Updates needed to the SMITHSONIAN_SUB_PROVIDERS dictionary\\**",
         ):
             si.validate_unit_codes_from_api()
 
