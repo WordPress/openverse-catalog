@@ -77,8 +77,8 @@ def report_completion(
                 extras.append(f"{cleaned:,} cleaned")
             if duplicates:
                 extras.append(f"{duplicates:,} duplicates")
-            if joined := ", ".join(extras):
-                media_type_reports += f" _({joined})_"
+            if extras:
+                media_type_reports += f" _({', '.join(extras)})_"
         media_type_reports += "\n"
 
     # Collect data into a single message
