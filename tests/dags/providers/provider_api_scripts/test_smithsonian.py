@@ -70,7 +70,7 @@ def test_alert_new_unit_codes():
 def test_validate_unit_codes_from_api_raises_exception(
     new_unit_codes, outdated_unit_codes
 ):
-    with patch.object(
+    with patch.object(si.delayed_requester, "get_response_json"), patch.object(
         si,
         "get_new_and_outdated_unit_codes",
         return_value=(new_unit_codes, outdated_unit_codes),
@@ -83,7 +83,7 @@ def test_validate_unit_codes_from_api_raises_exception(
 
 
 def test_validate_unit_codes_from_api():
-    with patch.object(
+    with patch.object(si.delayed_requester, "get_response_json"), patch.object(
         si, "get_new_and_outdated_unit_codes", return_value=(set(), set())
     ):
         # Validation should run without raising an exception
