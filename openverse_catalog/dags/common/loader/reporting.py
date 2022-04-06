@@ -27,7 +27,7 @@ class RecordMetrics(NamedTuple):
     url_dup: Optional[int]
 
 
-RecordCounts = dict[str, RecordMetrics]
+MediaTypeRecordMetrics = dict[str, RecordMetrics]
 
 
 def humanize_time_duration(seconds: float) -> str:
@@ -44,7 +44,7 @@ def humanize_time_duration(seconds: float) -> str:
 def report_completion(
     provider_name: str,
     duration: float | str | None,
-    record_counts_by_media_type: RecordCounts,
+    record_counts_by_media_type: MediaTypeRecordMetrics,
 ) -> None:
     """
     Send a Slack notification when the load_data task has completed.

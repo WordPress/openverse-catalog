@@ -217,7 +217,7 @@ def create_provider_api_workflow(
         )
 
         load_tasks = []
-        record_counts_by_media_type: reporting.RecordCounts = {}
+        record_counts_by_media_type: reporting.MediaTypeRecordMetrics = {}
         for media_type in media_types:
             with TaskGroup(group_id=f"load_{media_type}_data") as load_data:
                 create_loading_table = PythonOperator(
@@ -272,11 +272,8 @@ def create_provider_api_workflow(
                 [create_loading_table, copy_to_s3] >> load_from_s3
                 load_from_s3 >> drop_loading_table
 
-                record_counts_by_media_type[media_type] = reporting.RecordMetrics(
-                    XCOM_PULL_TEMPLATE.format(load_from_s3.task_id, "upserted"),
-                    XCOM_PULL_TEMPLATE.format(load_from_s3.task_id, "missing_columns"),
-                    XCOM_PULL_TEMPLATE.format(load_from_s3.task_id, "foreign_id_dup"),
-                    XCOM_PULL_TEMPLATE.format(load_from_s3.task_id, "url_dup"),
+                record_counts_by_media_type[media_type] = XCOM_PULL_TEMPLATE.format(
+                    load_from_s3.task_id, "return_value"
                 )
                 load_tasks.append(load_data)
 
