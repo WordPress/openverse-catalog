@@ -54,10 +54,13 @@ def report_completion(
     The following data is reported:
         - `duration`: The time the pull data task took to complete. This value is
           "No data" in cases where the pull data task failed.
-        - `cleaned`: The number of records that were removed after the data was loaded
-          into a temporary table. This could be the result of missing columns, or
+        - `missing_columns`: The number of records that were removed after the data was
+          loaded into a temporary table due to missing data in required columns.
           due to multiple records that have the same provider & foreign ID.
-        - `duplicates`: The number of records that have unique provider & foreign IDs,
+        - `foreign_id_dup`: The number of records that were removed after the data was
+          loaded into a temporary table due to multiple records having the same
+          provider & foreign ID.
+        - `url_dup`: The number of records that have unique provider & foreign IDs,
           but are duplicated across URL. This can occur when a provider makes multiple,
           discrete references to the same source media within their API.
         - `upserted`: The final number of records that made it into the media table
