@@ -129,6 +129,19 @@ def load_local_data_to_intermediate_table(
     _clean_intermediate_table_data(postgres, load_table)
 
 
+def _handle_s3_load_result(cursor) -> int:
+    """
+    Handle the results of the aws_s3.table_import_from_s3 function. Locally this will
+    return an integer, but on AWS infrastructure it will return a string similar to:
+
+    500 rows imported into relation "..." from file ... of ... bytes
+    """
+    result = cursor.fetchone()[0]
+    if isinstance(result, str):
+        result = int(result.split(" ", maxsplit=1)[0])
+    return result
+
+
 def load_s3_data_to_intermediate_table(
     postgres_conn_id,
     bucket,
@@ -153,7 +166,7 @@ def load_s3_data_to_intermediate_table(
             );
             """
         ),
-        handler=lambda c: c.fetchone()[0],
+        handler=_handle_s3_load_result,
     )
     logger.info(f"Successfully loaded {loaded} records from S3")
     missing_columns, foreign_id_dup = _clean_intermediate_table_data(
