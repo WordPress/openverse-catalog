@@ -48,5 +48,5 @@ def load_from_s3(
     upserted = sql.upsert_records_to_db_table(
         postgres_conn_id, identifier, media_type=media_type, tsv_version=tsv_version
     )
-    url_dup = loaded - upserted
+    url_dup = loaded - missing_columns - foreign_id_dup - upserted
     return RecordMetrics(upserted, missing_columns, foreign_id_dup, url_dup)
