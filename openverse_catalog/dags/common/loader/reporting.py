@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
+from typing import NamedTuple, Optional
 
 from common.slack import send_message
 
@@ -18,7 +18,16 @@ TIME_DURATION_UNITS = (
     ("min", 60),
     ("sec", 1),
 )
-RecordCounts = dict[str, tuple[Optional[int], Optional[int], Optional[int]]]
+
+
+class RecordMetrics(NamedTuple):
+    upserted: Optional[int]
+    missing_columns: Optional[int]
+    foreign_id_dup: Optional[int]
+    url_dup: Optional[int]
+
+
+RecordCounts = dict[str, RecordMetrics]
 
 
 def humanize_time_duration(seconds: float) -> str:
@@ -61,24 +70,23 @@ def report_completion(
     # List record count per media type
     media_type_reports = ""
     for media_type, counts in record_counts_by_media_type.items():
-        loaded, cleaned, upserted = counts
-        if not upserted:
+        if not counts.upserted:
             upserted_human_readable = "_No data_"
         else:
-            upserted_human_readable = f"{upserted:,}"
+            upserted_human_readable = f"{counts.upserted:,}"
         media_type_reports += f"  - `{media_type}`: {upserted_human_readable}"
         if any([count is None for count in counts]):
             # Can't make calculation without data
             continue
-        duplicates = loaded - cleaned - upserted
-        if duplicates or cleaned:
-            extras = []
-            if cleaned:
-                extras.append(f"{cleaned:,} cleaned")
-            if duplicates:
-                extras.append(f"{duplicates:,} duplicates")
-            if extras:
-                media_type_reports += f" _({', '.join(extras)})_"
+        extras = []
+        if counts.missing_columns:
+            extras.append(f"{counts.missing_columns:,} missing columns")
+        if counts.foreign_id_dup:
+            extras.append(f"{counts.foreign_id_dup:,} duplicate foreign IDs")
+        if counts.url_dup:
+            extras.append(f"{counts.url_dup:,} duplicate URLs")
+        if extras:
+            media_type_reports += f" _({', '.join(extras)})_"
         media_type_reports += "\n"
 
     # Collect data into a single message

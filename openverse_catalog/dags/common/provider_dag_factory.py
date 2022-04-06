@@ -272,10 +272,11 @@ def create_provider_api_workflow(
                 [create_loading_table, copy_to_s3] >> load_from_s3
                 load_from_s3 >> drop_loading_table
 
-                record_counts_by_media_type[media_type] = (
-                    XCOM_PULL_TEMPLATE.format(load_from_s3.task_id, "loaded_count"),
-                    XCOM_PULL_TEMPLATE.format(load_from_s3.task_id, "cleaned_count"),
-                    XCOM_PULL_TEMPLATE.format(load_from_s3.task_id, "upserted_count"),
+                record_counts_by_media_type[media_type] = reporting.RecordMetrics(
+                    XCOM_PULL_TEMPLATE.format(load_from_s3.task_id, "upserted"),
+                    XCOM_PULL_TEMPLATE.format(load_from_s3.task_id, "missing_columns"),
+                    XCOM_PULL_TEMPLATE.format(load_from_s3.task_id, "foreign_id_dup"),
+                    XCOM_PULL_TEMPLATE.format(load_from_s3.task_id, "url_dup"),
                 )
                 load_tasks.append(load_data)
 
