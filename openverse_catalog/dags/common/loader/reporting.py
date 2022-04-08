@@ -97,9 +97,6 @@ def report_completion(
 *Provider*: `{provider_name}`
 *Duration of data pull task*: {duration or '_No data_'}
 *Number of records upserted per media type*:
-{media_type_reports}
-
-* _Duration includes time taken to pull data of all media types._
-"""
+{media_type_reports}"""
     send_message(message, username="Airflow DAG Load Data Complete")
     logger.info(message)
