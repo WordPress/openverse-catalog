@@ -56,7 +56,6 @@ def report_completion(
           "No data" in cases where the pull data task failed.
         - `missing_columns`: The number of records that were removed after the data was
           loaded into a temporary table due to missing data in required columns.
-          due to multiple records that have the same provider & foreign ID.
         - `foreign_id_dup`: The number of records that were removed after the data was
           loaded into a temporary table due to multiple records having the same
           provider & foreign ID.
