@@ -34,6 +34,21 @@ function header() {
 if [ "$1" == help ] || [ "$1" == --help ]; then help_text && exit 0; fi
 sleep 0.1;  # The $COLUMNS variable takes a moment to populate
 
+# Reformat Airflow connections that use https
+header "MODIFYING ENVIRONMENT"
+# Loop through environment variables, relying on naming conventions
+while IFS="="; read var_name var_value; do
+    echo "Variable Name : $var_name"
+    echo "Original Value: $var_value"
+    # call python to get the new value
+    url_encoded=`python -c"from urllib.parse import quote_plus; import sys; print(quote_plus(sys.argv[1]))" $var_value`
+    new_value='https://'$url_encoded
+    echo "New Value:      $new_value"
+    # set the environment variable
+    export $var_name=$new_value
+done < <(env | grep "AIRFLOW_CONN.*https.*")
+env | sort | grep AIRFLOW_CONN
+
 # Wait for postgres
 header "WAITING FOR POSTGRES"
 python /opt/airflow/wait_for_db.py
