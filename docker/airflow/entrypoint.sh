@@ -36,7 +36,11 @@ sleep 0.1;  # The $COLUMNS variable takes a moment to populate
 
 # Reformat Airflow connections that use https
 header "MODIFYING ENVIRONMENT"
-# Loop through environment variables, relying on naming conventions
+# Loop through environment variables, relying on naming conventions.
+# Bash loops with pipes occur in a subprocess, so we need to do some special
+# subprocess manipulation via <(...) syntax in order to allow the `export` calls
+# to propagate to the outer shell.
+# See: https://unix.stackexchange.com/a/402752
 while IFS="="; read var_name var_value; do
     echo "Variable Name : $var_name"
     echo "    Original Value: $var_value"
