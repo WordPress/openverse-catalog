@@ -38,20 +38,31 @@ sleep 0.1;  # The $COLUMNS variable takes a moment to populate
 header "MODIFYING ENVIRONMENT"
 # Loop through environment variables, relying on naming conventions.
 # Bash loops with pipes occur in a subprocess, so we need to do some special
-# subprocess manipulation via <(...) syntax in order to allow the `export` calls
+# subprocess manipulation via <(...) syntax to allow the `export` calls
 # to propagate to the outer shell.
 # See: https://unix.stackexchange.com/a/402752
-while IFS="="; read var_name var_value; do
-    echo "Variable Name : $var_name"
-    echo "    Original Value: $var_value"
-    # call python to get the new value
-    url_encoded=`python -c"from urllib.parse import quote_plus; import sys; print(quote_plus(sys.argv[1]))" $var_value`
-    new_value='https://'$url_encoded
-    echo "    New Value:      $new_value"
+while read var_string; do
+    # get the variable name
+    var_name=`expr "$var_string" : '^\([A-Z_]*\)'`
+    echo "Variable Name: $var_name"
+    # get the old value
+    old_value=`expr "$var_string" : '^[A-Z_]*=\(.*\)$'`
+    echo "    Old Value: $old_value"
+    # get the http clause, with http or https included (assume that http only appears once)
+    http_clause=`expr "$old_value" : '.*\(http.*\)'`
+    # if http_clause starts with http, then replace http with https
+    url_encoded="${http_clause/"http:"/"https:"}"
+    # call python to url encode the http clause
+    url_encoded=`python -c"from urllib.parse import quote_plus; import sys; print(quote_plus(sys.argv[1]))" $url_encoded`
+    # prepend https://
+    url_encoded='https://'$url_encoded
+    # replace the original http_clause with the url_encoded version
+    new_value=${old_value/"$http_clause"/"$url_encoded"}
+    echo "    New Value: $new_value"
     # set the environment variable
     export $var_name=$new_value
-done < <(env | grep "AIRFLOW_CONN.*https.*")
-env | sort | grep AIRFLOW_CONN
+# only include airflow connections with http somewhere in the string
+done < <(env | grep "^AIRFLOW_CONN[A-Z_]\+=.*http.*$")
 
 # Wait for postgres
 header "WAITING FOR POSTGRES"
