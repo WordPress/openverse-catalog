@@ -51,7 +51,7 @@ while read var_string; do
     # if http_clause starts with http, then replace http with https
     url_encoded="${old_value/"http:"/"https:"}"
     # call python to url encode the http clause
-    url_encoded=`python -c"from urllib.parse import quote_plus; import sys; print(quote_plus(sys.argv[1]))" $url_encoded`
+    url_encoded=`python -c "from urllib.parse import quote_plus; import sys; print(quote_plus(sys.argv[1]))" $url_encoded`
     # prepend https://
     new_value='https://'$url_encoded
     echo "    New Value: $new_value"
