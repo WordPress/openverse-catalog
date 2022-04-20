@@ -46,23 +46,19 @@ while read var_string; do
     var_name=`expr "$var_string" : '^\([A-Z_]*\)'`
     echo "Variable Name: $var_name"
     # get the old value
-    old_value=`expr "$var_string" : '^[A-Z_]*=\(.*\)$'`
+    old_value=`expr "$var_string" : '^[A-Z_]*=\(http.*\)$'`
     echo "    Old Value: $old_value"
-    # get the http clause, with http or https included (assume that http only appears once)
-    http_clause=`expr "$old_value" : '.*\(http.*\)'`
     # if http_clause starts with http, then replace http with https
-    url_encoded="${http_clause/"http:"/"https:"}"
+    url_encoded="${old_value/"http:"/"https:"}"
     # call python to url encode the http clause
     url_encoded=`python -c"from urllib.parse import quote_plus; import sys; print(quote_plus(sys.argv[1]))" $url_encoded`
     # prepend https://
-    url_encoded='https://'$url_encoded
-    # replace the original http_clause with the url_encoded version
-    new_value=${old_value/"$http_clause"/"$url_encoded"}
+    new_value='https://'$url_encoded
     echo "    New Value: $new_value"
     # set the environment variable
     export $var_name=$new_value
 # only include airflow connections with http somewhere in the string
-done < <(env | grep "^AIRFLOW_CONN[A-Z_]\+=.*http.*$")
+done < <(env | grep "^AIRFLOW_CONN[A-Z_]\+=http.*$")
 
 # Wait for postgres
 header "WAITING FOR POSTGRES"
