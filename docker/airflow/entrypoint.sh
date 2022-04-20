@@ -49,7 +49,7 @@ while read var_string; do
     old_value=`expr "$var_string" : '^[A-Z_]*=\(http.*\)$'`
     echo "    Old Value: $old_value"
     # call python to url encode the http clause
-    url_encoded=`python -c"from urllib.parse import quote_plus; import sys; print(quote_plus(sys.argv[1]))" $url_encoded`
+    url_encoded=`python -c "from urllib.parse import quote_plus; import sys; print(quote_plus(sys.argv[1]))" $url_encoded`
     # prepend https://
     new_value='https://'$url_encoded
     echo "    New Value: $new_value"
