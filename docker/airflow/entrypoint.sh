@@ -48,8 +48,6 @@ while read var_string; do
     # get the old value
     old_value=`expr "$var_string" : '^[A-Z_]*=\(http.*\)$'`
     echo "    Old Value: $old_value"
-    # if http_clause starts with http, then replace http with https
-    url_encoded="${old_value/"http:"/"https:"}"
     # call python to url encode the http clause
     url_encoded=`python -c"from urllib.parse import quote_plus; import sys; print(quote_plus(sys.argv[1]))" $url_encoded`
     # prepend https://
