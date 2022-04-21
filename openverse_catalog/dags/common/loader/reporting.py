@@ -70,26 +70,29 @@ def report_completion(
         duration = humanize_time_duration(duration)
 
     # List record count per media type
-    media_type_reports = ""
-    for media_type, counts in record_counts_by_media_type.items():
-        if not counts.upserted:
-            upserted_human_readable = "_No data_"
-        else:
-            upserted_human_readable = f"{counts.upserted:,}"
-        media_type_reports += f"  - `{media_type}`: {upserted_human_readable}"
-        if any([count is None for count in counts]):
-            # Can't make calculation without data
-            continue
-        extras = []
-        if counts.missing_columns:
-            extras.append(f"{counts.missing_columns:,} missing columns")
-        if counts.foreign_id_dup:
-            extras.append(f"{counts.foreign_id_dup:,} duplicate foreign IDs")
-        if counts.url_dup:
-            extras.append(f"{counts.url_dup:,} duplicate URLs")
-        if extras:
-            media_type_reports += f" _({', '.join(extras)})_"
-        media_type_reports += "\n"
+    if record_counts_by_media_type is None:
+        media_type_reports = "_No data_"
+    else:
+        media_type_reports = ""
+        for media_type, counts in record_counts_by_media_type.items():
+            if not counts.upserted:
+                upserted_human_readable = "_No data_"
+            else:
+                upserted_human_readable = f"{counts.upserted:,}"
+            media_type_reports += f"  - `{media_type}`: {upserted_human_readable}"
+            if any([count is None for count in counts]):
+                # Can't make calculation without data
+                continue
+            extras = []
+            if counts.missing_columns:
+                extras.append(f"{counts.missing_columns:,} missing columns")
+            if counts.foreign_id_dup:
+                extras.append(f"{counts.foreign_id_dup:,} duplicate foreign IDs")
+            if counts.url_dup:
+                extras.append(f"{counts.url_dup:,} duplicate URLs")
+            if extras:
+                media_type_reports += f" _({', '.join(extras)})_"
+            media_type_reports += "\n"
 
     # Collect data into a single message
     message = f"""
