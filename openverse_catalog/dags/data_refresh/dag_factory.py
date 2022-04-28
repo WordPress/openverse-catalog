@@ -255,7 +255,7 @@ def create_data_refresh_dag(data_refresh: DataRefresh, external_dag_ids: Sequenc
                 dag=dag,
                 mode="reschedule",
                 poke_interval=poke_interval,
-                timeout=(60 * 60 * 24 * 3),  # 3 days
+                timeout=data_refresh.data_refresh_timeout,
             )
 
             wait_for_data_refresh >> trigger_data_refresh >> wait_for_completion
