@@ -78,6 +78,10 @@ def _make_report_completion_contents_data(media_type: str):
             {media_type: RecordMetrics(None, None, None, 100)},
             f"  - `{media_type}`: _No data_",
         ),
+        (
+            {media_type: None},
+            f"  - `{media_type}`: _No data_",
+        ),
     ]
 
 
