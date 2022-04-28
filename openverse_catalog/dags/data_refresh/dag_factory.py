@@ -47,14 +47,21 @@ https://github.com/WordPress/openverse-catalog/issues/353)
 import json
 import logging
 import os
+from datetime import datetime
 from typing import Sequence
 from urllib.parse import urlparse
 
 from airflow import DAG
 from airflow.exceptions import AirflowException
+from airflow.models.dagrun import DagRun
+from airflow.operators.python import BranchPythonOperator
 from airflow.providers.http.operators.http import SimpleHttpOperator
 from airflow.providers.http.sensors.http import HttpSensor
+from airflow.utils.session import provide_session
+from airflow.utils.state import State
+from airflow.utils.task_group import TaskGroup
 from common.constants import DAG_DEFAULT_ARGS, XCOM_PULL_TEMPLATE
+from common.popularity import operators
 from common.sensors.single_run_external_dags_sensor import SingleRunExternalDAGsSensor
 from data_refresh.data_refresh_types import DATA_REFRESH_CONFIGS, DataRefresh
 from requests import Response
@@ -76,8 +83,6 @@ def response_filter_data_refresh(response: Response) -> str:
     return urlparse(status_check_url).path
 
 
-# Response check to the `wait_for_completion` Sensor. Processes the response to
-# determine whether the task can complete.
 def response_check_wait_for_completion(response: Response) -> bool:
     """
     Response check to the `wait_for_completion` Sensor. Processes the response to
@@ -97,6 +102,40 @@ def response_check_wait_for_completion(response: Response) -> bool:
         completed."
     )
     return True
+
+
+@provide_session
+def _month_check(dag_id: str, media_type: str, session=None) -> str:
+    """
+    Checks whether there has been a previous DagRun this month. If so,
+    returns the task_id for the matview refresh task; else, returns the
+    task_id for the full popularity data refresh.
+    """
+    refresh_all_popularity_data_group_id = f"refresh_all_{media_type}_popularity_data.update_{media_type}_popularity_metrics_table"  # noqa: E501
+    refresh_view_id = f"update_{media_type}_view"
+
+    # Get the most recent dagrun for this Dag, excluding the currently
+    # running dagrun
+    DR = DagRun
+    query = session.query(DR).filter(DR.dag_id == dag_id)
+    query = query.filter(DR.state != State.RUNNING)
+    query = query.order_by(DR.start_date.desc())
+    latest_dagrun = query.first()
+
+    today_date = datetime.now()
+    last_dagrun_date = latest_dagrun.start_date
+
+    # Check if the last dagrun was in the same month as the current run
+    is_last_dagrun_in_current_month = (
+        today_date.month == last_dagrun_date.month
+        and today_date.year == last_dagrun_date.year
+    )
+
+    return (
+        refresh_all_popularity_data_group_id
+        if not is_last_dagrun_in_current_month
+        else refresh_view_id
+    )
 
 
 def create_data_refresh_dag(data_refresh: DataRefresh, external_dag_ids: Sequence[str]):
@@ -129,6 +168,9 @@ def create_data_refresh_dag(data_refresh: DataRefresh, external_dag_ids: Sequenc
         **data_refresh.default_args,
         "pool": DATA_REFRESH_POOL,
     }
+
+    media_type = data_refresh.media_type
+
     poke_interval = int(os.getenv("DATA_REFRESH_POKE_INTERVAL", 60 * 15))
     dag = DAG(
         dag_id=data_refresh.dag_id,
@@ -142,50 +184,84 @@ def create_data_refresh_dag(data_refresh: DataRefresh, external_dag_ids: Sequenc
     )
 
     with dag:
-        # Wait to ensure that no other Data Refresh DAGs are running.
-        wait_for_data_refresh = SingleRunExternalDAGsSensor(
-            task_id="wait_for_data_refresh",
-            external_dag_ids=external_dag_ids,
-            check_existence=True,
-            dag=dag,
-            poke_interval=poke_interval,
-            mode="reschedule",
+        month_check = BranchPythonOperator(
+            task_id="month_check",
+            python_callable=_month_check,
+            op_kwargs={"dag_id": data_refresh.dag_id, "media_type": media_type},
+            retries=0,
         )
 
-        data_refresh_post_data = {
-            "model": data_refresh.media_type,
-            "action": "INGEST_UPSTREAM",
-        }
+        with TaskGroup(
+            group_id=f"refresh_all_{media_type}_popularity_data"
+        ) as refresh_all_popularity_data:
+            postgres_conn_id = os.getenv(
+                "OPENLEDGER_CONN_ID", "postgres_openledger_testing"
+            )
 
-        # Trigger the refresh on the data refresh server.
-        trigger_data_refresh = SimpleHttpOperator(
-            task_id="trigger_data_refresh",
-            http_conn_id="data_refresh",
-            endpoint="task",
-            method="POST",
-            headers={"Content-Type": "application/json"},
-            data=json.dumps(data_refresh_post_data),
-            response_check=lambda response: response.status_code == 202,
-            response_filter=response_filter_data_refresh,
-            dag=dag,
+            update_metrics = operators.update_media_popularity_metrics(
+                postgres_conn_id,
+                media_type=data_refresh.media_type,
+            )
+            update_constants = operators.update_media_popularity_constants(
+                postgres_conn_id,
+                media_type=data_refresh.media_type,
+            )
+
+            (update_metrics >> update_constants)
+
+        update_matview = operators.update_db_view(
+            postgres_conn_id, media_type=data_refresh.media_type
         )
 
-        # Wait for the data refresh to complete.
-        wait_for_completion = HttpSensor(
-            task_id="wait_for_completion",
-            http_conn_id="data_refresh",
-            endpoint=XCOM_PULL_TEMPLATE.format(
-                trigger_data_refresh.task_id, "return_value"
-            ),
-            method="GET",
-            response_check=response_check_wait_for_completion,
-            dag=dag,
-            mode="reschedule",
-            poke_interval=poke_interval,
-            timeout=(60 * 60 * 24 * 3),  # 3 days
-        )
+        with TaskGroup(group_id="data_refresh") as data_refresh_group:
+            # Wait to ensure that no other Data Refresh DAGs are running.
+            wait_for_data_refresh = SingleRunExternalDAGsSensor(
+                task_id="wait_for_data_refresh",
+                external_dag_ids=external_dag_ids,
+                check_existence=True,
+                dag=dag,
+                poke_interval=poke_interval,
+                mode="reschedule",
+                trigger_rule="none_failed_min_one_success",
+            )
 
-        wait_for_data_refresh >> trigger_data_refresh >> wait_for_completion
+            data_refresh_post_data = {
+                "model": data_refresh.media_type,
+                "action": "INGEST_UPSTREAM",
+            }
+
+            # Trigger the refresh on the data refresh server.
+            trigger_data_refresh = SimpleHttpOperator(
+                task_id="trigger_data_refresh",
+                http_conn_id="data_refresh",
+                endpoint="task",
+                method="POST",
+                headers={"Content-Type": "application/json"},
+                data=json.dumps(data_refresh_post_data),
+                response_check=lambda response: response.status_code == 202,
+                response_filter=response_filter_data_refresh,
+                dag=dag,
+            )
+
+            # Wait for the data refresh to complete.
+            wait_for_completion = HttpSensor(
+                task_id="wait_for_completion",
+                http_conn_id="data_refresh",
+                endpoint=XCOM_PULL_TEMPLATE.format(
+                    trigger_data_refresh.task_id, "return_value"
+                ),
+                method="GET",
+                response_check=response_check_wait_for_completion,
+                dag=dag,
+                mode="reschedule",
+                poke_interval=poke_interval,
+                timeout=(60 * 60 * 24 * 3),  # 3 days
+            )
+
+            wait_for_data_refresh >> trigger_data_refresh >> wait_for_completion
+
+        month_check >> [refresh_all_popularity_data, update_matview]
+        refresh_all_popularity_data >> update_matview >> data_refresh_group
 
     return dag
 
