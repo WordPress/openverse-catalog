@@ -143,9 +143,9 @@ def create_data_refresh_dag(data_refresh: DataRefresh, external_dag_ids: Sequenc
     This factory method instantiates a DAG that will run the data refresh for
     the given `media_type`.
 
-    A data refresh runs for a given media type in the API DB. It imports the
-    data for that type from the upstream DB in the Catalog, reindexes the data,
-    and updates and reindex Elasticsearch.
+    A data refresh runs for a given media type in the API DB. It refreshes popularity
+    data for that type, imports the data from the upstream DB in the Catalog, reindexes
+    the data, and updates and reindex Elasticsearch.
 
     A data refresh can only be performed for one media type at a time, so the DAG
     must also use a Sensor to make sure that no two data refresh tasks run
@@ -166,7 +166,6 @@ def create_data_refresh_dag(data_refresh: DataRefresh, external_dag_ids: Sequenc
     default_args = {
         **DAG_DEFAULT_ARGS,
         **data_refresh.default_args,
-        "pool": DATA_REFRESH_POOL,
     }
 
     media_type = data_refresh.media_type
@@ -223,6 +222,7 @@ def create_data_refresh_dag(data_refresh: DataRefresh, external_dag_ids: Sequenc
                 poke_interval=poke_interval,
                 mode="reschedule",
                 trigger_rule="none_failed_min_one_success",
+                pool=DATA_REFRESH_POOL,
             )
 
             data_refresh_post_data = {
