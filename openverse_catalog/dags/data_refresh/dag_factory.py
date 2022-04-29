@@ -1,16 +1,23 @@
 """
 # Data Refresh DAG Factory
 This file generates our data refresh DAGs using a factory function.
-These DAGs initiate a data refresh for a given media type and awaits the
-success or failure of the refresh. Importantly, they are also configured to
-ensure that no two data refresh DAGs can run concurrently, as required by
-the server.
+For the given media type these DAGs will first refresh the popularity data,
+then initiate a data refresh on the data refresh server and await the
+success or failure of that task. Importantly, they are also configured to
+handle concurrency requirements of the data refresh server (read more below).
 
-A data refresh occurs on the data refresh server in the openverse-api project.
-This is a task which imports data from the upstream Catalog database into the
-API, copies contents to a new Elasticsearch index, and makes the index "live".
-This process is necessary to make new content added to the Catalog by our
-provider DAGs available on the frontend. You can read more in the [README](
+Popularity data for each media type is collated in a materialized view. Before
+initiating a data refresh, the DAG will first refresh the view in order to
+update popularity data for records that have been ingested since the last refresh.
+On the first run of the the month, the DAG will also refresh the underlying tables,
+including the percentile values and any new popularity metrics.
+
+Once this step is complete, the data refresh can be initiated. A data refresh
+occurs on the data refresh server in the openverse-api project. This is a task
+which imports data from the upstream Catalog database into the API, copies contents
+to a new Elasticsearch index, and finally makes the index "live". This process is
+necessary to make new content added to the Catalog by our provider DAGs available
+on the frontend. You can read more in the [README](
 https://github.com/WordPress/openverse-api/blob/main/ingestion_server/README.md
 )
 
@@ -44,82 +51,53 @@ issues and related PRs:
 - [[Feature] Data refresh orchestration DAG](
 https://github.com/WordPress/openverse-catalog/issues/353)
 """
-import json
 import logging
-import os
 from datetime import datetime
 from typing import Sequence
-from urllib.parse import urlparse
 
 from airflow import DAG
-from airflow.exceptions import AirflowException
 from airflow.models.dagrun import DagRun
 from airflow.operators.python import BranchPythonOperator
-from airflow.providers.http.operators.http import SimpleHttpOperator
-from airflow.providers.http.sensors.http import HttpSensor
+from airflow.settings import SASession
 from airflow.utils.session import provide_session
 from airflow.utils.state import State
-from airflow.utils.task_group import TaskGroup
-from common.constants import DAG_DEFAULT_ARGS, XCOM_PULL_TEMPLATE
+from common.constants import DAG_DEFAULT_ARGS
 from common.popularity import operators
-from common.sensors.single_run_external_dags_sensor import SingleRunExternalDAGsSensor
+from data_refresh.data_refresh_task_factory import create_data_refresh_task_group
 from data_refresh.data_refresh_types import DATA_REFRESH_CONFIGS, DataRefresh
-from requests import Response
+from data_refresh.refresh_popularity_metrics_task_factory import (
+    GROUP_ID as REFRESH_POPULARITY_METRICS_GROUP_ID,
+)
+from data_refresh.refresh_popularity_metrics_task_factory import (
+    create_refresh_popularity_metrics_task_group,
+)
+from data_refresh.refresh_view_data_task_factory import create_refresh_view_data_task
 
 
 logger = logging.getLogger(__name__)
 
 
-DATA_REFRESH_POOL = "data_refresh"
-
-
-def response_filter_data_refresh(response: Response) -> str:
-    """
-    Filter for the `trigger_data_refresh` task, used to grab the endpoint needed
-    to poll for the status of the triggered data refresh. This information will
-    then be available via XCom in the downstream tasks.
-    """
-    status_check_url = response.json()["status_check"]
-    return urlparse(status_check_url).path
-
-
-def response_check_wait_for_completion(response: Response) -> bool:
-    """
-    Response check to the `wait_for_completion` Sensor. Processes the response to
-    determine whether the task can complete.
-    """
-    data = response.json()
-
-    if data["active"]:
-        # The data refresh is still running. Poll again later.
-        return False
-
-    if data["error"]:
-        raise AirflowException("Error triggering data refresh.")
-
-    logger.info(
-        f"Data refresh done with {data['percent_completed']}% \
-        completed."
-    )
-    return True
-
-
 @provide_session
-def _month_check(dag_id: str, media_type: str, session=None) -> str:
+def _month_check(dag_id: str, media_type: str, session: SASession = None) -> str:
     """
     Checks whether there has been a previous DagRun this month. If so,
     returns the task_id for the matview refresh task; else, returns the
-    task_id for the full popularity data refresh.
+    task_id for refresh popularity metrics task.
+
+    Required Arguments:
+
+    dag_id:     id of the currently running Dag
+    media_type: string describing the media type being handled
     """
-    refresh_all_popularity_data_group_id = f"refresh_all_{media_type}_popularity_data.update_{media_type}_popularity_metrics_table"  # noqa: E501
-    refresh_view_id = f"update_{media_type}_view"
 
     # Get the most recent dagrun for this Dag, excluding the currently
     # running dagrun
     DR = DagRun
-    query = session.query(DR).filter(DR.dag_id == dag_id)
-    query = query.filter(DR.state != State.RUNNING)
-    query = query.order_by(DR.start_date.desc())
+    query = (
+        session.query(DR)
+        .filter(DR.dag_id == dag_id, DR.state != State.RUNNING)
+        .order_by(DR.start_date.desc())
+    )
     latest_dagrun = query.first()
 
     today_date = datetime.now()
@@ -131,46 +109,35 @@ def _month_check(dag_id: str, media_type: str, session=None) -> str:
         and today_date.year == last_dagrun_date.year
     )
 
+    # The first task in the refresh_popularity_metrics TaskGroup
+    refresh_popularity_metrics_task_id = f"{REFRESH_POPULARITY_METRICS_GROUP_ID}.{operators.UPDATE_MEDIA_POPULARITY_METRICS_TASK_ID}"  # noqa E501
+    refresh_materialized_view_task_id = operators.UPDATE_DB_VIEW_TASK_ID
+
     return (
-        refresh_all_popularity_data_group_id
-        if not is_last_dagrun_in_current_month
-        else refresh_view_id
+        refresh_popularity_metrics_task_id
+        if is_last_dagrun_in_current_month
+        else refresh_materialized_view_task_id
     )
 
 
 def create_data_refresh_dag(data_refresh: DataRefresh, external_dag_ids: Sequence[str]):
     """
-    This factory method instantiates a DAG that will run the data refresh for
-    the given `media_type`.
-
-    A data refresh runs for a given media type in the API DB. It refreshes popularity
-    data for that type, imports the data from the upstream DB in the Catalog, reindexes
-    the data, and updates and reindex Elasticsearch.
-
-    A data refresh can only be performed for one media type at a time, so the DAG
-    must also use a Sensor to make sure that no two data refresh tasks run
-    concurrently.
-
-    It is intended that the data_refresh tasks, or at least the initial
-    `wait_for_data_refresh` tasks, should be run in a custom pool with 1 worker
-    slot. This enforces that no two `wait_for_data_refresh` tasks can start
-    concurrently and enter a race condition.
+    This factory method instantiates a DAG that will run the popularity calculation and
+    subsequent data refresh for the given `media_type`.
 
     Required Arguments:
 
     data_refresh:     dataclass containing configuration information for the
                       DAG
-    external_dag_ids: list of ids of the other data refresh DAGs. This DAG
-                      will not run concurrently with any dependent DAG.
+    external_dag_ids: list of ids of the other data refresh DAGs. The data refresh step
+                      of this DAG will not run concurrently with the corresponding step
+                      of any dependent DAG.
     """
     default_args = {
         **DAG_DEFAULT_ARGS,
         **data_refresh.default_args,
     }
 
-    media_type = data_refresh.media_type
-
-    poke_interval = int(os.getenv("DATA_REFRESH_POKE_INTERVAL", 60 * 15))
     dag = DAG(
         dag_id=data_refresh.dag_id,
         default_args=default_args,
@@ -183,89 +150,41 @@ def create_data_refresh_dag(data_refresh: DataRefresh, external_dag_ids: Sequenc
     )
 
     with dag:
+        # Check if this is the first DagRun of the month for this DAG.
         month_check = BranchPythonOperator(
             task_id="month_check",
             python_callable=_month_check,
-            op_kwargs={"dag_id": data_refresh.dag_id, "media_type": media_type},
-            retries=0,
+            op_kwargs={
+                "dag_id": data_refresh.dag_id,
+                "media_type": data_refresh.media_type,
+            },
         )
 
-        with TaskGroup(
-            group_id=f"refresh_all_{media_type}_popularity_data"
-        ) as refresh_all_popularity_data:
-            postgres_conn_id = os.getenv(
-                "OPENLEDGER_CONN_ID", "postgres_openledger_testing"
-            )
-
-            update_metrics = operators.update_media_popularity_metrics(
-                postgres_conn_id,
-                media_type=data_refresh.media_type,
-            )
-            update_constants = operators.update_media_popularity_constants(
-                postgres_conn_id,
-                media_type=data_refresh.media_type,
-            )
-
-            (update_metrics >> update_constants)
-
-        update_matview = operators.update_db_view(
-            postgres_conn_id, media_type=data_refresh.media_type
+        # Refresh underlying popularity tables. This is required infrequently in order
+        # to update new popularity metrics and constants, so this branch is only taken
+        # if it is the first run of the month.
+        refresh_popularity_metrics = create_refresh_popularity_metrics_task_group(
+            data_refresh.media_type
         )
 
-        with TaskGroup(group_id="data_refresh") as data_refresh_group:
-            # Wait to ensure that no other Data Refresh DAGs are running.
-            wait_for_data_refresh = SingleRunExternalDAGsSensor(
-                task_id="wait_for_data_refresh",
-                external_dag_ids=external_dag_ids,
-                check_existence=True,
-                dag=dag,
-                poke_interval=poke_interval,
-                mode="reschedule",
-                trigger_rule="none_failed_min_one_success",
-                pool=DATA_REFRESH_POOL,
-            )
+        # Refresh the materialized view. This occurs on all DagRuns and updates
+        # popularity data for newly ingested records.
+        refresh_matview = create_refresh_view_data_task(data_refresh.media_type)
 
-            data_refresh_post_data = {
-                "model": data_refresh.media_type,
-                "action": "INGEST_UPSTREAM",
-            }
+        # Trigger the actual data refresh on the remote data refresh server, and wait
+        # for it to complete.
+        data_refresh_group = create_data_refresh_task_group(
+            data_refresh, external_dag_ids
+        )
 
-            # Trigger the refresh on the data refresh server.
-            trigger_data_refresh = SimpleHttpOperator(
-                task_id="trigger_data_refresh",
-                http_conn_id="data_refresh",
-                endpoint="task",
-                method="POST",
-                headers={"Content-Type": "application/json"},
-                data=json.dumps(data_refresh_post_data),
-                response_check=lambda response: response.status_code == 202,
-                response_filter=response_filter_data_refresh,
-                dag=dag,
-            )
-
-            # Wait for the data refresh to complete.
-            wait_for_completion = HttpSensor(
-                task_id="wait_for_completion",
-                http_conn_id="data_refresh",
-                endpoint=XCOM_PULL_TEMPLATE.format(
-                    trigger_data_refresh.task_id, "return_value"
-                ),
-                method="GET",
-                response_check=response_check_wait_for_completion,
-                dag=dag,
-                mode="reschedule",
-                poke_interval=poke_interval,
-                timeout=data_refresh.data_refresh_timeout,
-            )
-
-            wait_for_data_refresh >> trigger_data_refresh >> wait_for_completion
-
-        month_check >> [refresh_all_popularity_data, update_matview]
-        refresh_all_popularity_data >> update_matview >> data_refresh_group
+        # Set up task dependencies
+        month_check >> [refresh_popularity_metrics, refresh_matview]
+        refresh_popularity_metrics >> refresh_matview >> data_refresh_group
 
     return dag
 
 
+# Generate a data refresh DAG for each DATA_REFRESH_CONFIG.
 all_data_refresh_dag_ids = {refresh.dag_id for refresh in DATA_REFRESH_CONFIGS}
 
 for data_refresh in DATA_REFRESH_CONFIGS:
