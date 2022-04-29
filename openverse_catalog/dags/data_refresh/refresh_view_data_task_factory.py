@@ -23,8 +23,8 @@ def create_refresh_view_data_task(media_type: str):
     """
     This factory method generates a task that will refresh the materialized view for
     the given media type. The view collates popularity data for each record. Refreshing
-    it will add and update data for any records that were ingested since the last
-    view refresh.
+    it will add and update popularity data for any records that were ingested since the
+    last view refresh.
 
     Required Arguments:
 
@@ -32,7 +32,7 @@ def create_refresh_view_data_task(media_type: str):
     """
     refresh_matview = operators.update_db_view(DB_CONN_ID, media_type=media_type)
 
-    # The preceding refresh_popularity_metrics task is conditional and may be skipped.
+    # The upstream `refresh_popularity_metrics` task is conditional and may be skipped.
     # The matview refresh should run regardless, as long as no upstream task failed.
     refresh_matview.trigger_rule = TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS
 
