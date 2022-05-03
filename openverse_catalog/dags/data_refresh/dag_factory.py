@@ -53,6 +53,18 @@ from data_refresh.refresh_view_data_task_factory import create_refresh_view_data
 logger = logging.getLogger(__name__)
 
 
+def get_dagrun_config(dag_id: str, session: SASession):
+    """
+    Gets the config for the currently running DagRun with the given id.
+    """
+    DR = DagRun
+    dagrun = (
+        session.query(DR).filter(DR.dag_id == dag_id, DR.state == State.RUNNING)
+    ).first()
+
+    return dagrun.conf
+
+
 @provide_session
 def _month_check(dag_id: str, media_type: str, session: SASession = None) -> str:
     """
@@ -65,9 +77,20 @@ def _month_check(dag_id: str, media_type: str, session: SASession = None) -> str
     dag_id:     id of the currently running Dag
     media_type: string describing the media type being handled
     """
+    # The first task in the refresh_popularity_metrics TaskGroup
+    refresh_popularity_metrics_task_id = f"{REFRESH_POPULARITY_METRICS_GROUP_ID}.{operators.UPDATE_MEDIA_POPULARITY_METRICS_TASK_ID}"  # noqa E501
+    refresh_materialized_view_task_id = operators.UPDATE_DB_VIEW_TASK_ID
+
+    # If `force_refresh_metrics` has been passed in the dagrun config, then
+    # immediately return the task_id to refresh popularity metrics without
+    # doing the month check.
+    config = get_dagrun_config(dag_id, session)
+    if config["force_refresh_metrics"]:
+        logger.info("returning early")
+        return refresh_popularity_metrics_task_id
 
     # Get the most recent dagrun for this Dag, excluding the currently
-    # running dagrun
+    # running DagRun
     DR = DagRun
     query = (
         session.query(DR)
@@ -84,10 +107,6 @@ def _month_check(dag_id: str, media_type: str, session: SASession = None) -> str
         today_date.month == last_dagrun_date.month
         and today_date.year == last_dagrun_date.year
     )
-
-    # The first task in the refresh_popularity_metrics TaskGroup
-    refresh_popularity_metrics_task_id = f"{REFRESH_POPULARITY_METRICS_GROUP_ID}.{operators.UPDATE_MEDIA_POPULARITY_METRICS_TASK_ID}"  # noqa E501
-    refresh_materialized_view_task_id = operators.UPDATE_DB_VIEW_TASK_ID
 
     return (
         refresh_popularity_metrics_task_id
