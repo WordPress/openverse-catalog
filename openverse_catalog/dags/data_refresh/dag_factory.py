@@ -86,7 +86,7 @@ def _month_check(dag_id: str, media_type: str, session: SASession = None) -> str
     # doing the month check.
     config = get_dagrun_config(dag_id, session)
     if config["force_refresh_metrics"]:
-        logger.info("returning early")
+        logger.info("`force_refresh_metrics` is turned on. Skipping month check")
         return refresh_popularity_metrics_task_id
 
     # Get the most recent dagrun for this Dag, excluding the currently
