@@ -166,7 +166,7 @@ def create_data_refresh_task_group(
             response_check=response_check_wait_for_completion,
             mode="reschedule",
             poke_interval=poke_interval,
-            timeout=3 * 24 * 60 * 60,  # 3 days
+            timeout=data_refresh.data_refresh_timeout,
         )
 
         wait_for_data_refresh >> trigger_data_refresh >> wait_for_completion

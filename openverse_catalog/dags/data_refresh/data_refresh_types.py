@@ -38,7 +38,7 @@ class DataRefresh:
     start_date: datetime = datetime(2020, 1, 1)
     schedule_interval: Optional[str] = "@weekly"
     default_args: Optional[Dict] = field(default_factory=dict)
-    data_refresh_timeout: timedelta = timedelta(hours=24)
+    data_refresh_timeout: timedelta = (24 * 60 * 60,)  # 1 day
 
     def __post_init__(self):
         self.dag_id = f"{self.media_type}_data_refresh"
@@ -47,7 +47,7 @@ class DataRefresh:
 DATA_REFRESH_CONFIGS = [
     DataRefresh(
         media_type="image",
-        data_refresh_timeout=timedelta(days=3),
+        data_refresh_timeout=3 * 24 * 60 * 60,  # 3 days,
     ),
     DataRefresh(media_type="audio"),
 ]
