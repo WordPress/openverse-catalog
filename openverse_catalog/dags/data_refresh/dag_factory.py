@@ -81,7 +81,7 @@ def _month_check(dag_id: str, media_type: str, session: SASession = None) -> str
     # If `force_refresh_metrics` has been passed in the dagrun config, then
     # immediately return the task_id to refresh popularity metrics without
     # doing the month check.
-    force_refresh_metrics = current_dagrun.config.get("force_refresh_metrics")
+    force_refresh_metrics = current_dagrun.conf.get("force_refresh_metrics")
     if force_refresh_metrics is not None:
         logger.info(f"`force_refresh_metrics` is set to {force_refresh_metrics}.")
         return (
