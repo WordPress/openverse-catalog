@@ -93,12 +93,11 @@ def _month_check(dag_id: str, media_type: str, session: SASession = None) -> str
         logger.info("`force_refresh_metrics` is turned on. Skipping month check")
         return REFRESH_POPULARITY_METRICS_TASK_ID
 
-    # Get the most recent dagrun for this Dag, excluding the currently
-    # running DagRun
+    # Get the most recent successful dagrun for this Dag
     DR = DagRun
     query = (
         session.query(DR)
-        .filter(DR.dag_id == dag_id, DR.state != State.RUNNING)
+        .filter(DR.dag_id == dag_id, DR.state == State.SUCCESS)
         .order_by(DR.start_date.desc())
     )
     latest_dagrun = query.first()
