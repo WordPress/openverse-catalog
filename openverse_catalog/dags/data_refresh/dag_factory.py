@@ -56,6 +56,10 @@ from data_refresh.refresh_view_data_task_factory import create_refresh_view_data
 
 logger = logging.getLogger(__name__)
 
+REFRESH_MATERIALIZED_VIEW_TASK_ID = operators.UPDATE_DB_VIEW_TASK_ID
+# The first task in the refresh_popularity_metrics TaskGroup
+REFRESH_POPULARITY_METRICS_TASK_ID = f"{REFRESH_POPULARITY_METRICS_GROUP_ID}.{operators.UPDATE_MEDIA_POPULARITY_METRICS_TASK_ID}"  # noqa E501
+
 
 def get_dagrun_config(dag_id: str, session: SASession):
     """
@@ -81,17 +85,13 @@ def _month_check(dag_id: str, media_type: str, session: SASession = None) -> str
     dag_id:     id of the currently running Dag
     media_type: string describing the media type being handled
     """
-    # The first task in the refresh_popularity_metrics TaskGroup
-    refresh_popularity_metrics_task_id = f"{REFRESH_POPULARITY_METRICS_GROUP_ID}.{operators.UPDATE_MEDIA_POPULARITY_METRICS_TASK_ID}"  # noqa E501
-    refresh_materialized_view_task_id = operators.UPDATE_DB_VIEW_TASK_ID
-
     # If `force_refresh_metrics` has been passed in the dagrun config, then
     # immediately return the task_id to refresh popularity metrics without
     # doing the month check.
     config = get_dagrun_config(dag_id, session)
-    if config["force_refresh_metrics"]:
+    if config.get("force_refresh_metrics"):
         logger.info("`force_refresh_metrics` is turned on. Skipping month check")
-        return refresh_popularity_metrics_task_id
+        return REFRESH_POPULARITY_METRICS_TASK_ID
 
     # Get the most recent dagrun for this Dag, excluding the currently
     # running DagRun
@@ -113,9 +113,9 @@ def _month_check(dag_id: str, media_type: str, session: SASession = None) -> str
     )
 
     return (
-        refresh_popularity_metrics_task_id
+        REFRESH_POPULARITY_METRICS_TASK_ID
         if not is_last_dagrun_in_current_month
-        else refresh_materialized_view_task_id
+        else REFRESH_MATERIALIZED_VIEW_TASK_ID
     )
 
 
@@ -161,7 +161,7 @@ def create_data_refresh_dag(data_refresh: DataRefresh, external_dag_ids: Sequenc
 
         # Refresh underlying popularity tables. This is required infrequently in order
         # to update new popularity metrics and constants, so this branch is only taken
-        # if it is the first run of the month.
+        # if it is the first run of the month (or when forced).
         refresh_popularity_metrics = create_refresh_popularity_metrics_task_group(
             data_refresh.media_type
         )
