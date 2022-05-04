@@ -9,7 +9,9 @@ Popularity data for each media type is collated in a materialized view. Before
 initiating a data refresh, the DAG will first refresh the view in order to
 update popularity data for records that have been ingested since the last refresh.
 On the first run of the the month, the DAG will also refresh the underlying tables,
-including the percentile values and any new popularity metrics.
+including the percentile values and any new popularity metrics. The DAG can also
+be run with the `force_refresh_metrics` option to run this refresh after the first
+of the month.
 
 Once this step is complete, the data refresh can be initiated. A data refresh
 occurs on the data refresh server in the openverse-api project. This is a task
