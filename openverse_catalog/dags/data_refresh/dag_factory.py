@@ -32,7 +32,6 @@ https://github.com/WordPress/openverse-catalog/issues/353)
 https://github.com/WordPress/openverse-catalog/issues/453)
 """
 import logging
-from datetime import datetime
 from typing import Sequence
 
 from airflow import DAG
@@ -61,18 +60,6 @@ REFRESH_MATERIALIZED_VIEW_TASK_ID = operators.UPDATE_DB_VIEW_TASK_ID
 REFRESH_POPULARITY_METRICS_TASK_ID = f"{REFRESH_POPULARITY_METRICS_GROUP_ID}.{operators.UPDATE_MEDIA_POPULARITY_METRICS_TASK_ID}"  # noqa E501
 
 
-def get_dagrun_config(dag_id: str, session: SASession):
-    """
-    Gets the config for the currently running DagRun with the given id.
-    """
-    DR = DagRun
-    dagrun = (
-        session.query(DR).filter(DR.dag_id == dag_id, DR.state == State.RUNNING)
-    ).first()
-
-    return dagrun.conf
-
-
 @provide_session
 def _month_check(dag_id: str, media_type: str, session: SASession = None) -> str:
     """
@@ -85,11 +72,16 @@ def _month_check(dag_id: str, media_type: str, session: SASession = None) -> str
     dag_id:     id of the currently running Dag
     media_type: string describing the media type being handled
     """
+    # Get the current DagRun
+    DR = DagRun
+    current_dagrun = (
+        session.query(DR).filter(DR.dag_id == dag_id, DR.state == State.RUNNING)
+    ).first()
+
     # If `force_refresh_metrics` has been passed in the dagrun config, then
     # immediately return the task_id to refresh popularity metrics without
     # doing the month check.
-    config = get_dagrun_config(dag_id, session)
-    force_refresh_metrics = config.get("force_refresh_metrics")
+    force_refresh_metrics = current_dagrun.config.get("force_refresh_metrics")
     if force_refresh_metrics is not None:
         logger.info(f"`force_refresh_metrics` is set to {force_refresh_metrics}.")
         return (
@@ -107,13 +99,13 @@ def _month_check(dag_id: str, media_type: str, session: SASession = None) -> str
     )
     latest_dagrun = query.first()
 
-    today_date = datetime.now()
+    current_date = current_dagrun.start_date
     last_dagrun_date = latest_dagrun.start_date
 
     # Check if the last dagrun was in the same month as the current run
     is_last_dagrun_in_current_month = (
-        today_date.month == last_dagrun_date.month
-        and today_date.year == last_dagrun_date.year
+        current_date.month == last_dagrun_date.month
+        and current_date.year == last_dagrun_date.year
     )
 
     return (
