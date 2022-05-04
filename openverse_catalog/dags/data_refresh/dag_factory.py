@@ -89,9 +89,14 @@ def _month_check(dag_id: str, media_type: str, session: SASession = None) -> str
     # immediately return the task_id to refresh popularity metrics without
     # doing the month check.
     config = get_dagrun_config(dag_id, session)
-    if config.get("force_refresh_metrics"):
-        logger.info("`force_refresh_metrics` is turned on. Skipping month check")
-        return REFRESH_POPULARITY_METRICS_TASK_ID
+    force_refresh_metrics = config.get("force_refresh_metrics")
+    if force_refresh_metrics is not None:
+        logger.info(f"`force_refresh_metrics` is set to {force_refresh_metrics}.")
+        return (
+            REFRESH_POPULARITY_METRICS_TASK_ID
+            if force_refresh_metrics
+            else REFRESH_MATERIALIZED_VIEW_TASK_ID
+        )
 
     # Get the most recent successful dagrun for this Dag
     DR = DagRun
