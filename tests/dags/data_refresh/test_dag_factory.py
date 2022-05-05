@@ -1,10 +1,9 @@
-from datetime import datetime
-
 import pytest
 from airflow.models import DagRun
 from airflow.models.dag import DAG
 from airflow.utils.session import create_session
 from airflow.utils.state import State
+from airflow.utils.timezone import datetime
 from airflow.utils.types import DagRunType
 from data_refresh import dag_factory
 from data_refresh.dag_factory import (
@@ -13,13 +12,14 @@ from data_refresh.dag_factory import (
 )
 
 
+TEST_DAG_ID = "data_refresh_dag_factory_test_dag"
+TEST_DAG = DAG(TEST_DAG_ID, default_args={"owner": "airflow"})
+
+
 @pytest.fixture(autouse=True)
 def clean_db():
     with create_session() as session:
-        session.query(DagRun).delete()
-
-
-TEST_DAG = DAG("test_dag", default_args={"owner": "airflow"})
+        session.query(DagRun).filter(DagRun.dag_id == TEST_DAG_ID).delete()
 
 
 def _create_dagrun(start_date, dag_state, conf={}):
@@ -105,7 +105,7 @@ def test_month_check_returns_correct_task_id(
 
 def test_month_check_ignores_failed_dagruns():
     # Create running dagrun
-    _create_dagrun(datetime(2022, 3, 2, 0, 0, 0).State.RUNNING)
+    _create_dagrun(datetime(2022, 3, 2, 0, 0, 0), State.RUNNING)
 
     # Create previous dagrun in same month, but with failed state
     _create_dagrun(datetime(2022, 3, 1, 0, 0, 0), State.FAILED)
