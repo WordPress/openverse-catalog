@@ -15,7 +15,7 @@ from common.popularity import operators
 
 
 DB_CONN_ID = os.getenv("OPENLEDGER_CONN_ID", "postgres_openledger_testing")
-GROUP_ID = "refresh_all_popularity_data"
+GROUP_ID = "refresh_popularity_metrics_and_constants"
 
 
 def create_refresh_popularity_metrics_task_group(media_type: str):

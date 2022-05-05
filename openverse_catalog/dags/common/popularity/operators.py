@@ -15,8 +15,8 @@ CREATE_MEDIA_POPULARITY_PERCENTILE_TASK_ID = "create_media_popularity_percentile
 CREATE_MEDIA_POPULARITY_CONSTANTS_TASK_ID = "create_media_popularity_constants_view"
 UPDATE_MEDIA_POPULARITY_CONSTANTS_TASK_ID = "update_media_popularity_constants_view"
 CREATE_MEDIA_STANDARDIZED_POPULARITY_TASK_ID = "create_media_standardized_popularity"
-CREATE_DB_VIEW_TASK_ID = "create_materialized_view"
-UPDATE_DB_VIEW_TASK_ID = "update_materialized_view"
+CREATE_DB_VIEW_TASK_ID = "create_materialized_popularity_view"
+UPDATE_DB_VIEW_TASK_ID = "update_materialized_popularity_view"
 
 
 def drop_media_popularity_relations(
