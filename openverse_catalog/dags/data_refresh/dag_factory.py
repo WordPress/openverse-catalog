@@ -99,10 +99,13 @@ def _month_check(dag_id: str, media_type: str, session: SASession = None) -> str
     )
     latest_dagrun = query.first()
 
-    current_date = current_dagrun.start_date
-    last_dagrun_date = latest_dagrun.start_date
+    # No previous successful dagrun, refresh all popularity data.
+    if latest_dagrun is None:
+        return REFRESH_POPULARITY_METRICS_TASK_ID
 
     # Check if the last dagrun was in the same month as the current run
+    current_date = current_dagrun.start_date
+    last_dagrun_date = latest_dagrun.start_date
     is_last_dagrun_in_current_month = (
         current_date.month == last_dagrun_date.month
         and current_date.year == last_dagrun_date.year
