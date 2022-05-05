@@ -99,7 +99,7 @@ def test_month_check_returns_correct_task_id(
         today_date, State.RUNNING, {"force_refresh_metrics": force_refresh_metrics}
     )
 
-    next_task_id = dag_factory._month_check(TEST_DAG.dag_id, "image")
+    next_task_id = dag_factory._month_check(TEST_DAG.dag_id)
     assert next_task_id == expected_task_id
 
 
@@ -115,5 +115,5 @@ def test_month_check_ignores_failed_dagruns():
 
     # Even though there was a previous run this month, it failed. The last
     # successful run was last month, so we should refresh metrics.
-    next_task_id = dag_factory._month_check(TEST_DAG.dag_id, "image")
+    next_task_id = dag_factory._month_check(TEST_DAG.dag_id)
     assert next_task_id == REFRESH_POPULARITY_METRICS_TASK_ID
