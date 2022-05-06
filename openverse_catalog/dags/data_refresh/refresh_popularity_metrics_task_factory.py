@@ -30,20 +30,26 @@ def create_refresh_popularity_metrics_task_group(media_type: str):
     media_type:  the type of record to refresh
     """
     with TaskGroup(group_id=GROUP_ID) as refresh_all_popularity_data:
-        # Update the popularity metrics table, adding any new popularity metrics
-        # and updating the configured percentile.
+        metrics_doc = (
+            "Updates the popularity metrics table, adding any new "
+            "popularity metrics and updating the configured percentile."
+        )
         update_metrics = PythonOperator(
             task_id=UPDATE_MEDIA_POPULARITY_METRICS_TASK_ID,
             python_callable=sql.update_media_popularity_metrics,
             op_args=[POSTGRES_CONN_ID, media_type],
+            doc=metrics_doc,
         )
 
-        # Update the popularity constants view. This completely recalculates the
-        # popularity constant for each provider.
+        constants_doc = (
+            "Updates the popularity constants view. This completely "
+            "recalculates the popularity constants for each provider."
+        )
         update_constants = PythonOperator(
             task_id=UPDATE_MEDIA_POPULARITY_CONSTANTS_TASK_ID,
             python_callable=sql.update_media_popularity_constants,
             op_args=[POSTGRES_CONN_ID, media_type],
+            doc=constants_doc,
         )
 
         update_metrics >> update_constants

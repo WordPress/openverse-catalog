@@ -21,10 +21,10 @@ UPDATE_DB_VIEW_TASK_ID = "update_materialized_popularity_view"
 
 def create_refresh_view_data_task(media_type: str):
     """
-    This factory method generates a task that will refresh the materialized view for
-    the given media type. The view collates popularity data for each record. Refreshing
-    it will add and update popularity data for any records that were ingested since the
-    last view refresh.
+    The task refreshes the materialized view for the given media type. The view collates
+    popularity data for each record. Refreshing has the effect of adding popularity data
+    for records that were ingested since the last time the view was refreshed, and
+    updating popularity data for existing records.
 
     Required Arguments:
 
@@ -35,6 +35,7 @@ def create_refresh_view_data_task(media_type: str):
         python_callable=sql.update_db_view,
         op_args=[POSTGRES_CONN_ID, media_type],
         trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
+        doc_md=create_refresh_view_data_task.__doc__,
     )
 
     return refresh_matview
