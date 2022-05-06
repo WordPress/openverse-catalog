@@ -10,9 +10,13 @@ refreshed.
 
 This should be run every time before a data refresh is triggered.
 """
+from airflow.operators.python import PythonOperator
 from airflow.utils.trigger_rule import TriggerRule
 from common.constants import POSTGRES_CONN_ID
-from common.popularity import operators
+from common.popularity import sql
+
+
+UPDATE_DB_VIEW_TASK_ID = "update_materialized_popularity_view"
 
 
 def create_refresh_view_data_task(media_type: str):
@@ -26,10 +30,11 @@ def create_refresh_view_data_task(media_type: str):
 
     media_type: the type of record to refresh
     """
-    refresh_matview = operators.update_db_view(POSTGRES_CONN_ID, media_type=media_type)
-
-    # The upstream `refresh_popularity_metrics` task is conditional and may be skipped.
-    # The matview refresh should run regardless, as long as no upstream task failed.
-    refresh_matview.trigger_rule = TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS
+    refresh_matview = PythonOperator(
+        task_id=UPDATE_DB_VIEW_TASK_ID,
+        python_callable=sql.update_db_view,
+        op_args=[POSTGRES_CONN_ID, media_type],
+        trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
+    )
 
     return refresh_matview

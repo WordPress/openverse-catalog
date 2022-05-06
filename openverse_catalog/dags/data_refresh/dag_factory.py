@@ -41,25 +41,28 @@ from airflow.settings import SASession
 from airflow.utils.session import provide_session
 from airflow.utils.state import State
 from common.constants import DAG_DEFAULT_ARGS
-from common.popularity import operators
 from data_refresh.data_refresh_task_factory import create_data_refresh_task_group
 from data_refresh.data_refresh_types import DATA_REFRESH_CONFIGS, DataRefresh
 from data_refresh.refresh_popularity_metrics_task_factory import (
     GROUP_ID as REFRESH_POPULARITY_METRICS_GROUP_ID,
 )
 from data_refresh.refresh_popularity_metrics_task_factory import (
+    UPDATE_MEDIA_POPULARITY_METRICS_TASK_ID,
     create_refresh_popularity_metrics_task_group,
 )
-from data_refresh.refresh_view_data_task_factory import create_refresh_view_data_task
+from data_refresh.refresh_view_data_task_factory import (
+    UPDATE_DB_VIEW_TASK_ID,
+    create_refresh_view_data_task,
+)
 
 
 logger = logging.getLogger(__name__)
 
-REFRESH_MATERIALIZED_VIEW_TASK_ID = operators.UPDATE_DB_VIEW_TASK_ID
+REFRESH_MATERIALIZED_VIEW_TASK_ID = UPDATE_DB_VIEW_TASK_ID
 # The first task in the refresh_popularity_metrics TaskGroup
 REFRESH_POPULARITY_METRICS_TASK_ID = (
     f"{REFRESH_POPULARITY_METRICS_GROUP_ID}"
-    f".{operators.UPDATE_MEDIA_POPULARITY_METRICS_TASK_ID}"
+    f".{UPDATE_MEDIA_POPULARITY_METRICS_TASK_ID}"
 )
 
 
@@ -93,13 +96,11 @@ def _month_check(dag_id: str, session: SASession = None) -> str:
         )
 
     # Get the most recent successful dagrun for this Dag
-    DR = DagRun
-    query = (
+    latest_dagrun = (
         session.query(DR)
         .filter(DR.dag_id == dag_id, DR.state == State.SUCCESS)
         .order_by(DR.start_date.desc())
-    )
-    latest_dagrun = query.first()
+    ).first()
 
     # No previous successful dagrun, refresh all popularity data.
     if latest_dagrun is None:

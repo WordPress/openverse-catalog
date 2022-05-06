@@ -8,12 +8,15 @@ popularity constants. It should be run at least once every month, or whenever
 a new popularity metric is added. Scheduling is handled in the parent data
 refresh DAG.
 """
+from airflow.operators.python import PythonOperator
 from airflow.utils.task_group import TaskGroup
 from common.constants import POSTGRES_CONN_ID
-from common.popularity import operators
+from common.popularity import sql
 
 
 GROUP_ID = "refresh_popularity_metrics_and_constants"
+UPDATE_MEDIA_POPULARITY_METRICS_TASK_ID = "update_media_popularity_metrics_table"
+UPDATE_MEDIA_POPULARITY_CONSTANTS_TASK_ID = "update_media_popularity_constants_view"
 
 
 def create_refresh_popularity_metrics_task_group(media_type: str):
@@ -29,16 +32,18 @@ def create_refresh_popularity_metrics_task_group(media_type: str):
     with TaskGroup(group_id=GROUP_ID) as refresh_all_popularity_data:
         # Update the popularity metrics table, adding any new popularity metrics
         # and updating the configured percentile.
-        update_metrics = operators.update_media_popularity_metrics(
-            POSTGRES_CONN_ID,
-            media_type=media_type,
+        update_metrics = PythonOperator(
+            task_id=UPDATE_MEDIA_POPULARITY_METRICS_TASK_ID,
+            python_callable=sql.update_media_popularity_metrics,
+            op_args=[POSTGRES_CONN_ID, media_type],
         )
 
         # Update the popularity constants view. This completely recalculates the
         # popularity constant for each provider.
-        update_constants = operators.update_media_popularity_constants(
-            POSTGRES_CONN_ID,
-            media_type=media_type,
+        update_constants = PythonOperator(
+            task_id=UPDATE_MEDIA_POPULARITY_CONSTANTS_TASK_ID,
+            python_callable=sql.update_media_popularity_constants,
+            op_args=[POSTGRES_CONN_ID, media_type],
         )
 
         update_metrics >> update_constants
