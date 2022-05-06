@@ -10,13 +10,9 @@ refreshed.
 
 This should be run every time before a data refresh is triggered.
 """
-import os
-
 from airflow.utils.trigger_rule import TriggerRule
+from common.constants import POSTGRES_CONN_ID
 from common.popularity import operators
-
-
-DB_CONN_ID = os.getenv("OPENLEDGER_CONN_ID", "postgres_openledger_testing")
 
 
 def create_refresh_view_data_task(media_type: str):
@@ -30,7 +26,7 @@ def create_refresh_view_data_task(media_type: str):
 
     media_type: the type of record to refresh
     """
-    refresh_matview = operators.update_db_view(DB_CONN_ID, media_type=media_type)
+    refresh_matview = operators.update_db_view(POSTGRES_CONN_ID, media_type=media_type)
 
     # The upstream `refresh_popularity_metrics` task is conditional and may be skipped.
     # The matview refresh should run regardless, as long as no upstream task failed.

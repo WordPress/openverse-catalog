@@ -6,7 +6,7 @@ for each of our media types. This configuration information is used to generate
 the dynamic Data Refresh dags.
 """
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Dict, Optional
 
 
@@ -28,8 +28,8 @@ class DataRefresh:
     schedule_interval:    string giving the schedule on which the DAG should
                           be run.  Passed to the airflow.dag.DAG __init__
                           method.
-    data_refresh_timeout: datetime.timedelta giving the amount of time a given data
-                          pull may take.
+    data_refresh_timeout: int giving the amount of time a given data pull
+                          may take.
     doc_md:               string used for the DAG's documentation markdown
     """
 
@@ -38,7 +38,7 @@ class DataRefresh:
     start_date: datetime = datetime(2020, 1, 1)
     schedule_interval: Optional[str] = "@weekly"
     default_args: Optional[Dict] = field(default_factory=dict)
-    data_refresh_timeout: timedelta = 24 * 60 * 60  # 1 day
+    data_refresh_timeout: int = 24 * 60 * 60  # 1 day
 
     def __post_init__(self):
         self.dag_id = f"{self.media_type}_data_refresh"
