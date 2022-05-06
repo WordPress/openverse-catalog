@@ -12,14 +12,14 @@ This should be run every time before a data refresh is triggered.
 """
 from airflow.operators.python import PythonOperator
 from airflow.utils.trigger_rule import TriggerRule
-from common.constants import POSTGRES_CONN_ID
+from common.constants import MEDIA_TYPES_TYPE, POSTGRES_CONN_ID
 from common.popularity import sql
 
 
 UPDATE_DB_VIEW_TASK_ID = "update_materialized_popularity_view"
 
 
-def create_refresh_view_data_task(media_type: str):
+def create_refresh_view_data_task(media_type: MEDIA_TYPES_TYPE):
     """
     The task refreshes the materialized view for the given media type. The view collates
     popularity data for each record. Refreshing has the effect of adding popularity data

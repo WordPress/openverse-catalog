@@ -10,7 +10,7 @@ refresh DAG.
 """
 from airflow.operators.python import PythonOperator
 from airflow.utils.task_group import TaskGroup
-from common.constants import POSTGRES_CONN_ID
+from common.constants import MEDIA_TYPES_TYPE, POSTGRES_CONN_ID
 from common.popularity import sql
 
 
@@ -19,7 +19,7 @@ UPDATE_MEDIA_POPULARITY_METRICS_TASK_ID = "update_media_popularity_metrics_table
 UPDATE_MEDIA_POPULARITY_CONSTANTS_TASK_ID = "update_media_popularity_constants_view"
 
 
-def create_refresh_popularity_metrics_task_group(media_type: str):
+def create_refresh_popularity_metrics_task_group(media_type: MEDIA_TYPES_TYPE):
     """
     This factory method instantiates a TaskGroup that will update the popularity
     DB tables for the given media type, including percentiles and popularity
