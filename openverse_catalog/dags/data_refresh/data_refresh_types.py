@@ -9,8 +9,6 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Dict, Optional
 
-from common.constants import MediaType
-
 
 @dataclass
 class DataRefresh:
@@ -19,7 +17,7 @@ class DataRefresh:
 
     Required Constructor Arguments:
 
-    media_type: MediaType describing the media type to be refreshed.
+    media_type: str describing the media type to be refreshed.
 
     Optional Constructor Arguments:
 
@@ -36,7 +34,7 @@ class DataRefresh:
     """
 
     dag_id: str = field(init=False)
-    media_type: MediaType
+    media_type: str
     start_date: datetime = datetime(2020, 1, 1)
     schedule_interval: Optional[str] = "@weekly"
     default_args: Optional[Dict] = field(default_factory=dict)

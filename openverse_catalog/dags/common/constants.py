@@ -1,6 +1,5 @@
 import os
 from datetime import datetime, timedelta
-from typing import Literal
 
 from common import slack
 
@@ -8,8 +7,6 @@ from common import slack
 AUDIO = "audio"
 IMAGE = "image"
 MEDIA_TYPES = [AUDIO, IMAGE]
-
-MediaType = Literal[AUDIO, IMAGE]
 
 DAG_DEFAULT_ARGS = {
     "owner": "data-eng-admin",
