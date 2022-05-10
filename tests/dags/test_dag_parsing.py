@@ -20,6 +20,7 @@ PROVIDER_WORKFLOWS = [
         "finnish_museums_workflow.py",
         "flickr_ingestion_workflow.py",
         "flickr_workflow.py",
+        "inaturalist_workflow.py",
         "metropolitan_museum_workflow.py",
         "museum_victoria_workflow.py",
         "nypl_workflow.py",
