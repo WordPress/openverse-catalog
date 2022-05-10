@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Dict, Optional
 
-from common.constants import MEDIA_TYPES_TYPE
+from common.constants import MediaType
 
 
 @dataclass
@@ -19,7 +19,7 @@ class DataRefresh:
 
     Required Constructor Arguments:
 
-    media_type: MEDIA_TYPES_TYPE describing the media type to be refreshed.
+    media_type: MediaType describing the media type to be refreshed.
 
     Optional Constructor Arguments:
 
@@ -30,13 +30,13 @@ class DataRefresh:
     schedule_interval:    string giving the schedule on which the DAG should
                           be run.  Passed to the airflow.dag.DAG __init__
                           method.
-    data_refresh_timeout: int giving the amount of time a given data pull
-                          may take.
+    data_refresh_timeout: int giving the amount of time in seconds a given
+                          data pull may take.
     doc_md:               string used for the DAG's documentation markdown
     """
 
     dag_id: str = field(init=False)
-    media_type: MEDIA_TYPES_TYPE
+    media_type: MediaType
     start_date: datetime = datetime(2020, 1, 1)
     schedule_interval: Optional[str] = "@weekly"
     default_args: Optional[Dict] = field(default_factory=dict)

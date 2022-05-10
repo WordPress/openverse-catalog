@@ -9,7 +9,7 @@ AUDIO = "audio"
 IMAGE = "image"
 MEDIA_TYPES = [AUDIO, IMAGE]
 
-MEDIA_TYPES_TYPE = Literal[AUDIO, IMAGE]
+MediaType = Literal[AUDIO, IMAGE]
 
 DAG_DEFAULT_ARGS = {
     "owner": "data-eng-admin",
