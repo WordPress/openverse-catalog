@@ -17,7 +17,7 @@ RETRIES = 3
 PROVIDER = prov.SMK_DEFAULT_PROVIDER
 ENDPOINT = "https://api.smk.dk/api/v1/art/search/"
 LANDING_PAGE_BASE_URL = "https://open.smk.dk/en/artwork/image/"
-IMAGE_SIZE = "max"
+IMAGE_SIZE = 2048
 THUMBNAIL_SIZE = 400
 
 delay_request = DelayedRequester(delay=DELAY)
@@ -156,7 +156,7 @@ def _get_images(item):
 
 
 def _get_image_url(image_iiif_id, image_size=IMAGE_SIZE, thumbnail_size=THUMBNAIL_SIZE):
-    image_url = image_iiif_id + f"/full/{image_size}/0/default.jpg"
+    image_url = image_iiif_id + f"/full/!{image_size},/0/default.jpg"
     thumbnail_url = image_iiif_id + f"/full/!{thumbnail_size},/0/default.jpg"
 
     return image_url, thumbnail_url
