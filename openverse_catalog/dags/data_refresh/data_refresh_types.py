@@ -30,7 +30,7 @@ class DataRefresh:
                           method.
     data_refresh_timeout: int giving the amount of time in seconds a given
                           data pull may take.
-    doc_md:               string used for the DAG's documentation markdown
+    doc_md:               str used for the DAG's documentation markdown
     """
 
     dag_id: str = field(init=False)
