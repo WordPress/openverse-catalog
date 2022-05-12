@@ -18,7 +18,7 @@ occurs on the data refresh server in the openverse-api project. This is a task
 which imports data from the upstream Catalog database into the API, copies contents
 to a new Elasticsearch index, and finally makes the index "live". This process is
 necessary to make new content added to the Catalog by our provider DAGs available
-on the frontend. You can read more in the [README](
+to the API. You can read more in the [README](
 https://github.com/WordPress/openverse-api/blob/main/ingestion_server/README.md
 ) Importantly, the data refresh TaskGroup is also configured to handle concurrency
 requirements of the data refresh server.
