@@ -217,6 +217,7 @@ def get_unit_codes_from_api(
         # The API is flaky and sometimes returns an empty list of unit codes.
         # Retry a few times if this happens.
         if len(unit_codes_from_api) == 0:
+            logger.info("No unit codes received. Retrying.")
             unit_codes_from_api = get_unit_codes_from_api(units_endpoint, retries - 1)
 
     return unit_codes_from_api
