@@ -33,69 +33,86 @@ def create_recreate_popularity_calculation_dag(data_refresh: DataRefresh):
         tags=["database", "data_refresh"],
     )
     with dag:
-        # Drop the existing popularity views and tables.
         drop_relations = PythonOperator(
-            task_id="drop_media_popularity_relations",
+            task_id="drop_popularity_relations",
             python_callable=sql.drop_media_popularity_relations,
             op_args=[POSTGRES_CONN_ID, media_type],
+            doc="Drop the existing popularity views and tables.",
         )
-        # Drop the popularity functions.
+
         drop_functions = PythonOperator(
-            task_id="drop_media_popularity_functions",
+            task_id="drop_popularity_functions",
             python_callable=sql.drop_media_popularity_functions,
             op_args=[POSTGRES_CONN_ID, media_type],
+            doc="Drop the existing popularity functions.",
         )
-        # Create the popularity metrics table, which maps popularity
-        # metrics and percentiles to providers.
-        create_metrics = PythonOperator(
-            task_id="create_media_popularity_metrics_table",
+
+        create_metrics_table = PythonOperator(
+            task_id="create_popularity_metrics_table",
             python_callable=sql.create_media_popularity_metrics,
             op_args=[POSTGRES_CONN_ID, media_type],
+            doc=(
+                "Create the popularity metrics table, which stores popularity "
+                "metrics and target percentiles per provider."
+            ),
         )
 
-        # Inserts values into the popularity metrics table.
-        update_metrics = PythonOperator(
-            task_id="update_media_popularity_metrics_table",
+        update_metrics_table = PythonOperator(
+            task_id="update_popularity_metrics_table",
             python_callable=sql.update_media_popularity_metrics,
             op_args=[POSTGRES_CONN_ID, media_type],
+            doc="Update the popularity metrics table with values for each provider.",
         )
 
-        # Create the function for calculating percentile.
-        create_percentile = PythonOperator(
-            task_id="create_media_popularity_percentile",
+        create_percentile_function = PythonOperator(
+            task_id="create_popularity_percentile_function",
             python_callable=sql.create_media_popularity_percentile_function,
             op_args=[POSTGRES_CONN_ID, media_type],
+            doc=(
+                "Create the function for calculating popularity percentile values, "
+                "used for calculating the popularity constants for each provider."
+            ),
         )
 
-        # Create a materialized view for popularity constants per provider.
-        create_constants = PythonOperator(
-            task_id="create_media_popularity_constants_view",
+        create_constants_view = PythonOperator(
+            task_id="create_popularity_constants_view",
             python_callable=sql.create_media_popularity_constants_view,
             op_args=[POSTGRES_CONN_ID, media_type],
             execution_timeout=data_refresh.create_pop_constants_view_timeout,
+            doc=(
+                "Create the materialized view with popularity constants for each "
+                "provider, using the percentile function."
+            ),
         )
 
-        # Create a function to calculate standardized media popularity.
-        create_popularity = PythonOperator(
-            task_id="create_media_standardized_popularity",
+        create_popularity_function = PythonOperator(
+            task_id="create_standardized_popularity_function",
             python_callable=sql.create_standardized_media_popularity_function,
             op_args=[POSTGRES_CONN_ID, media_type],
+            doc=(
+                "Create the function that calculates popularity data for a given "
+                "record, standardizing across providers with the generated popularity "
+                "constants."
+            ),
         )
 
-        # Create the materialized popularity view.
         create_matview = PythonOperator(
             task_id="create_materialized_popularity_view",
             python_callable=sql.create_media_view,
             op_args=[POSTGRES_CONN_ID, media_type],
             execution_timeout=data_refresh.create_materialized_view_timeout,
+            doc=(
+                "Create the materialized view containing standardized popularity data "
+                "for all records."
+            ),
         )
 
         (
             [drop_relations, drop_functions]
-            >> create_metrics
-            >> [update_metrics, create_percentile]
-            >> create_constants
-            >> create_popularity
+            >> create_metrics_table
+            >> [update_metrics_table, create_percentile_function]
+            >> create_constants_view
+            >> create_popularity_function
             >> create_matview
         )
 
