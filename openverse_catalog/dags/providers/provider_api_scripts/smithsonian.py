@@ -202,16 +202,32 @@ def get_new_and_outdated_unit_codes(
     return new_unit_codes, outdated_unit_codes
 
 
+def get_unit_codes_from_api(
+    units_endpoint: str = UNITS_ENDPOINT, retries: int = 3
+) -> set:
+    query_params = {"api_key": API_KEY, "q": "online_media_type:Images"}
+    unit_codes_from_api = set()
+
+    if retries > 0:
+        response_json = delayed_requester.get_response_json(
+            units_endpoint, query_params=query_params
+        )
+        unit_codes_from_api = set(response_json.get("response", {}).get("terms", []))
+
+        # The API is flaky and sometimes returns an empty list of unit codes.
+        # Retry a few times if this happens.
+        if len(unit_codes_from_api) == 0 and retries > 0:
+            unit_codes_from_api = get_unit_codes_from_api(units_endpoint, retries - 1)
+
+    return unit_codes_from_api
+
+
 def validate_unit_codes_from_api(units_endpoint: str = UNITS_ENDPOINT) -> None:
     """
     Validates the SMITHSONIAN_SUB_PROVIDERS dictionary, and raises an exception if
     human intervention is needed to add or remove unit codes.
     """
-    query_params = {"api_key": API_KEY, "q": "online_media_type:Images"}
-    response_json = delayed_requester.get_response_json(
-        units_endpoint, query_params=query_params
-    )
-    unit_codes_from_api = set(response_json.get("response", {}).get("terms", []))
+    unit_codes_from_api = get_unit_codes_from_api(units_endpoint)
     new_unit_codes, outdated_unit_codes = get_new_and_outdated_unit_codes(
         unit_codes_from_api
     )
