@@ -164,12 +164,12 @@ def create_data_refresh_dag(data_refresh: DataRefresh, external_dag_ids: Sequenc
         # to update new popularity metrics and constants, so this branch is only taken
         # if it is the first run of the month (or when forced).
         refresh_popularity_metrics = create_refresh_popularity_metrics_task_group(
-            data_refresh.media_type
+            data_refresh
         )
 
         # Refresh the materialized view. This occurs on all DagRuns and updates
         # popularity data for newly ingested records.
-        refresh_matview = create_refresh_view_data_task(data_refresh.media_type)
+        refresh_matview = create_refresh_view_data_task(data_refresh)
 
         # Trigger the actual data refresh on the remote data refresh server, and wait
         # for it to complete.
