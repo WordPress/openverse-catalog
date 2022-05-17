@@ -20,6 +20,7 @@ from common.licenses import LicenseInfo
 from common.loader import provider_details as prov
 from common.requester import DelayedRequester
 from common.storage.image import ImageStore
+from retry import retry
 
 
 logger = logging.getLogger(__name__)
@@ -202,23 +203,18 @@ def get_new_and_outdated_unit_codes(
     return new_unit_codes, outdated_unit_codes
 
 
+@retry(ValueError, tries=3, delay=1, backoff=2)
 def get_unit_codes_from_api(
     units_endpoint: str = UNITS_ENDPOINT, retries: int = 3
 ) -> set:
     query_params = {"api_key": API_KEY, "q": "online_media_type:Images"}
-    unit_codes_from_api = set()
+    response_json = delayed_requester.get_response_json(
+        units_endpoint, query_params=query_params
+    )
+    unit_codes_from_api = set(response_json.get("response", {}).get("terms", []))
 
-    if retries > 0:
-        response_json = delayed_requester.get_response_json(
-            units_endpoint, query_params=query_params
-        )
-        unit_codes_from_api = set(response_json.get("response", {}).get("terms", []))
-
-        # The API is flaky and sometimes returns an empty list of unit codes.
-        # Retry a few times if this happens.
-        if len(unit_codes_from_api) == 0:
-            logger.info("No unit codes received. Retrying.")
-            unit_codes_from_api = get_unit_codes_from_api(units_endpoint, retries - 1)
+    if len(unit_codes_from_api) == 0:
+        raise ValueError("No unit codes received.")
 
     return unit_codes_from_api
 
