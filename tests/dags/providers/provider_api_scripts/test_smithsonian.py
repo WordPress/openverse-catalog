@@ -67,7 +67,7 @@ def test_get_unit_codes_from_api_retries():
     ) as request_patch, patch("time.sleep"):
         with pytest.raises(ValueError, match="No unit codes received."):
             si.get_unit_codes_from_api()
-            assert request_patch.call_count == 3
+        assert request_patch.call_count == 3
 
 
 @pytest.mark.parametrize(
