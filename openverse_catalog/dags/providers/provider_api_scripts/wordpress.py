@@ -172,12 +172,21 @@ def _extract_image_data(media_data):
     except (TypeError, KeyError, AttributeError):
         return None
 
-    image_url, height, width, filetype = _get_file_info(media_data)
+    try:
+        media_details = (
+            media_data.get("_embedded", {})
+            .get("wp:featuredmedia", {})[0]
+            .get("media_details", {})
+        )
+    except IndexError:
+        return None
+
+    image_url, height, width, filetype = _get_file_info(media_details)
     if image_url is None:
         return None
 
     title = _get_title(media_data)
-    thumbnail = _get_thumbnail_url(media_data)
+    thumbnail = _get_thumbnail_url(media_details)
     metadata = _get_metadata(media_data, media_data)
     author, author_url = _get_author_data(media_data)
     tags = _get_related_data("tags", media_data)
@@ -199,17 +208,8 @@ def _extract_image_data(media_data):
     }
 
 
-def _get_file_info(image):
-    try:
-        file_details = (
-            image.get("_embedded", {})
-            .get("wp:featuredmedia", {})[0]
-            .get("media_details", {})
-            .get("sizes", {})
-            .get("full", {})
-        )
-    except IndexError:
-        return None
+def _get_file_info(media_details):
+    file_details = media_details.get("sizes", {}).get("full", {})
 
     image_url = file_details.get("source_url")
     height = file_details.get("height")
@@ -220,13 +220,8 @@ def _get_file_info(image):
     return image_url, height, width, filetype
 
 
-def _get_thumbnail_url(image_details):
-    return (
-        image_details.get("media_details", {})
-        .get("sizes", {})
-        .get("thumbnail", {})
-        .get("source_url")
-    )
+def _get_thumbnail_url(media_details):
+    return media_details.get("sizes", {}).get("thumbnail", {}).get("source_url")
 
 
 def _get_author_data(image):
