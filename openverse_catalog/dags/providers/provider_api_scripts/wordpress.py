@@ -46,14 +46,6 @@ image_store = ImageStore(provider=PROVIDER)
 license_url = "https://creativecommons.org/publicdomain/zero/1.0/"
 license_info = get_license_info(license_url=license_url)
 
-IMAGE_RELATED_RESOURCES = {
-    "users": {},  # authors
-    "photo-categories": {},
-    "photo-colors": {},
-    "photo-orientations": {},
-    "photo-tags": {},
-}
-
 
 def main():
     """
@@ -186,10 +178,7 @@ def _extract_image_data(media_data):
     title = _get_title(media_data)
     author, author_url = _get_author_data(media_data)
     thumbnail = _get_thumbnail_url(media_details)
-    # metadata, tags = _get_metadata(media_data)
-    metadata, tags = None, None
-
-    logger.info(f"Saving image {title} by {author}.")
+    metadata, tags = _get_metadata(media_data, media_details)
 
     return {
         "title": title,
@@ -245,9 +234,9 @@ def _get_title(image):
     return title
 
 
-def _get_metadata(image, image_details):
-    raw_metadata = image_details.get("media_details", {}).get("image_meta", {})
-    metadata = {}
+def _get_metadata(media_data, media_details):
+    raw_metadata = media_details.get("image_meta", {})
+    metadata, tags = {}, []
     extras = [
         "aperture",
         "camera",
@@ -261,25 +250,26 @@ def _get_metadata(image, image_details):
         if value not in [None, ""]:
             metadata[key] = value
 
-    if published_date := image_details.get("date"):
-        metadata["published_date"] = published_date
-
-    # these fields require looking up additional queried data
-    resource_extras = ["categories", "colors", "orientations"]
-    for resource in resource_extras:
-        metadata[resource] = sorted(_get_related_data(resource, image))
-    return metadata
-
-
-def _get_related_data(resource_type, image):
-    resource_type = f"photo-{resource_type}"
-    ids = image.get(resource_type)
-    resource_names = set()
-    resources_ids = IMAGE_RELATED_RESOURCES[resource_type].keys()
-    for rid in ids:
-        if rid in resources_ids:
-            resource_names.add(IMAGE_RELATED_RESOURCES[resource_type][rid])
-    return list(resource_names)
+    raw_related_resources = media_data.get("_embedded", {}).get("wp:term", [])
+    resource_mapping = {
+        "photo_category": "categories",
+        "photo_color": "colors",
+        "photo_orientation": "orientation",
+        "photo_tag": "tags",
+    }
+    for resource_arr in raw_related_resources:
+        for resource in resource_arr:
+            if (txy := resource.get("taxonomy")) in resource_mapping.keys():
+                resource_key = resource_mapping[txy]
+                resource_val = resource.get("name")
+                if txy == "photo_tag":
+                    tags.append(resource_val)
+                if txy == "photo_orientation":
+                    metadata["orientation"] = resource_val
+                else:
+                    metadata.setdefault(resource_key, [])
+                    metadata[resource_key].append(resource_val)
+    return metadata, tags
 
 
 if __name__ == "__main__":
