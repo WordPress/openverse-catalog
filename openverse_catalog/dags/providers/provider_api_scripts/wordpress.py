@@ -166,19 +166,17 @@ def _extract_image_data(media_data):
     """
     Extract data for individual item.
     """
-    try:
-        foreign_identifier = media_data["slug"]
-        foreign_landing_url = media_data["link"]
-    except (TypeError, KeyError, AttributeError):
+    foreign_identifier = media_data.get("slug")
+    foreign_landing_url = media_data.get("link")
+    if foreign_landing_url is None:
         return None
-
     try:
         media_details = (
             media_data.get("_embedded", {})
             .get("wp:featuredmedia", {})[0]
             .get("media_details", {})
         )
-    except IndexError:
+    except (KeyError, IndexError):
         return None
 
     image_url, height, width, filetype = _get_file_info(media_details)
