@@ -179,13 +179,13 @@ def _extract_image_data(media_data):
     title = _get_title(media_data)
     thumbnail = _get_thumbnail_url(media_data)
     metadata = _get_metadata(media_data, media_data)
-    creator, creator_url = _get_creator_data(media_data)
+    author, author_url = _get_author_data(media_data)
     tags = _get_related_data("tags", media_data)
 
     return {
         "title": title,
-        "creator": creator,
-        "creator_url": creator_url,
+        "creator": author,
+        "creator_url": author_url,
         "foreign_identifier": foreign_identifier,
         "foreign_landing_url": foreign_landing_url,
         "image_url": image_url,
@@ -221,12 +221,15 @@ def _get_thumbnail_url(image_details):
     )
 
 
-def _get_creator_data(image):
-    creator, creator_url = None, None
-    if author_id := image.get("author"):
-        creator = IMAGE_RELATED_RESOURCES.get("users").get(author_id, {}).get("name")
-        creator_url = IMAGE_RELATED_RESOURCES.get("users").get(author_id, {}).get("url")
-    return creator, creator_url
+def _get_author_data(image):
+    try:
+        author = image.get("_embedded", {}).get("author", [])[0]
+    except IndexError:
+        author = {}
+    author_url = author.get("url")
+    if author_url == "":
+        author_url = author.get("link")
+    return author.get("name"), author_url
 
 
 def _get_title(image):
