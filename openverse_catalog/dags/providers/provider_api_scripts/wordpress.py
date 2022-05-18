@@ -186,10 +186,12 @@ def _extract_image_data(media_data):
         return None
 
     title = _get_title(media_data)
-    thumbnail = _get_thumbnail_url(media_details)
-    metadata = _get_metadata(media_data, media_data)
     author, author_url = _get_author_data(media_data)
-    tags = _get_related_data("tags", media_data)
+    thumbnail = _get_thumbnail_url(media_details)
+    # metadata, tags = _get_metadata(media_data)
+    metadata, tags = None, None
+
+    logger.info(f"Saving image {title} by {author}.")
 
     return {
         "title": title,
@@ -237,7 +239,11 @@ def _get_author_data(image):
 
 def _get_title(image):
     if title := image.get("content", {}).get("rendered"):
-        title = html.fromstring(title).text_content()
+        try:
+            title = html.fromstring(title).text_content()
+        except UnicodeDecodeError as e:
+            logger.warning(f"Can't save the image's title ('{title}') due to {e}")
+            return None
     return title
 
 
