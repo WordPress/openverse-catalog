@@ -62,53 +62,10 @@ def main():
     """
 
     logger.info("Begin: WordPress Photo Directory script")
-    _prefetch_image_related_data()
     image_count = _get_images()
     image_store.commit()
     logger.info(f"Total images pulled: {image_count}")
     logger.info("Terminated!")
-
-
-def _prefetch_image_related_data():
-    for resource in IMAGE_RELATED_RESOURCES.keys():
-        collection = _get_resources(resource)
-        IMAGE_RELATED_RESOURCES[resource] = collection
-    logger.info("Prefetch of image-related data completed.")
-
-
-def _get_resources(resource_type):
-    total_pages = page = 1
-    endpoint = f"{ENDPOINT}/{resource_type}"
-    collection = {}
-    while total_pages >= page:
-        query_params = _get_query_params(page=page)
-        batch_data, total_pages = _get_item_page(endpoint, query_params=query_params)
-        if isinstance(batch_data, list) and len(batch_data) > 0:
-            collection_page = _process_resource_batch(resource_type, batch_data)
-            collection = collection | collection_page
-            page += 1
-    return collection
-
-
-def _process_resource_batch(resource_type, batch_data):
-    collected_page = {}
-    for item in batch_data:
-        item_id, name, url = None, None, None
-        try:
-            item_id = item["id"]
-            name = item["name"]
-            if resource_type == "users":
-                # 'url' is the website of the author and 'link' would be their wp.org
-                # profile, so at least the last must always be present
-                url = item["url"] or item["link"]
-        except Exception as e:
-            logger.error(f"Couldn't save resource({resource_type}) info due to {e}")
-            continue
-        if resource_type == "users":
-            collected_page[item_id] = {"name": name, "url": url}
-        else:
-            collected_page[item_id] = name
-    return collected_page
 
 
 def _get_query_params(page=1, default_query_params=None):
@@ -169,15 +126,6 @@ def _process_image_batch(image_batch):
     return image_store.total_items
 
 
-def _get_image_details(media_data):
-    try:
-        url = media_data.get("_links").get("wp:featuredmedia")[0].get("href")
-        response_json = _get_response_json(url, RETRIES, allow_redirects=False)
-        return response_json
-    except (KeyError, AttributeError):
-        return None
-
-
 def _get_response_json(endpoint, retries=0, query_params=None, **kwargs):
     """
     Function copied from common.requester.DelayedRequester class to allow responses
@@ -223,15 +171,14 @@ def _extract_image_data(media_data):
         foreign_landing_url = media_data["link"]
     except (TypeError, KeyError, AttributeError):
         return None
-    title = _get_title(media_data)
-    image_details = _get_image_details(media_data)
-    if image_details is None:
-        return None
-    image_url, height, width, filetype = _get_file_info(image_details)
+
+    image_url, height, width, filetype = _get_file_info(media_data)
     if image_url is None:
         return None
-    thumbnail = _get_thumbnail_url(image_details)
-    metadata = _get_metadata(media_data, image_details)
+
+    title = _get_title(media_data)
+    thumbnail = _get_thumbnail_url(media_data)
+    metadata = _get_metadata(media_data, media_data)
     creator, creator_url = _get_creator_data(media_data)
     tags = _get_related_data("tags", media_data)
 
