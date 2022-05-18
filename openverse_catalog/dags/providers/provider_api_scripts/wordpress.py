@@ -199,10 +199,18 @@ def _extract_image_data(media_data):
     }
 
 
-def _get_file_info(image_details):
-    file_details = (
-        image_details.get("media_details", {}).get("sizes", {}).get("full", {})
-    )
+def _get_file_info(image):
+    try:
+        file_details = (
+            image.get("_embedded", {})
+            .get("wp:featuredmedia", {})[0]
+            .get("media_details", {})
+            .get("sizes", {})
+            .get("full", {})
+        )
+    except IndexError:
+        return None
+
     image_url = file_details.get("source_url")
     height = file_details.get("height")
     width = file_details.get("width")
