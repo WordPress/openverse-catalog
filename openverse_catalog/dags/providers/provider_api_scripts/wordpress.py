@@ -37,6 +37,7 @@ DEFAULT_QUERY_PARAMS = {
     "format": "json",
     "page": 1,
     "per_page": LIMIT,
+    "_embed": "true",
 }
 
 delayed_requester = DelayedRequester(DELAY)
