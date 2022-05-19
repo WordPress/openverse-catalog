@@ -217,7 +217,7 @@ def _get_author_data(image):
     try:
         author = image.get("_embedded", {}).get("author", [])[0]
     except IndexError:
-        author = {}
+        return None, None
     author_url = author.get("url")
     if author_url == "":
         author_url = author.get("link")
