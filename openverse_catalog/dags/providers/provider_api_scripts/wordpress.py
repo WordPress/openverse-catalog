@@ -216,13 +216,16 @@ def _get_thumbnail_url(media_details):
 
 def _get_author_data(image):
     try:
-        author = image.get("_embedded", {}).get("author", [])[0]
+        raw_author = image.get("_embedded", {}).get("author", [])[0]
     except IndexError:
         return None, None
-    author_url = author.get("url")
+    author = raw_author.get("name")
+    if author is None or author == "":
+        author = raw_author.get("slug")
+    author_url = raw_author.get("url")
     if author_url == "":
-        author_url = author.get("link")
-    return author.get("name"), author_url
+        author_url = raw_author.get("link")
+    return author, author_url
 
 
 def _get_title(image):

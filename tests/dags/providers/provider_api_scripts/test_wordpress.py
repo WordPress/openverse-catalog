@@ -89,13 +89,12 @@ def test_get_file_info():
     assert actual_result == expected_result
 
 
-def test_get_author_data():
+def test_get_author_data_when_is_non_empty():
     with open(SAMPLE_MEDIA_DATA) as f:
         image_data = json.load(f)
     actual_author, actual_author_url = wp._get_author_data(image_data)
     expected_author = "Shusei Toda"
     expected_author_url = "https://shuseitoda.com"
-
     assert actual_author == expected_author
     assert actual_author_url == expected_author_url
 
@@ -107,6 +106,15 @@ def test_get_author_data_handle_no_author():
     actual_author, actual_author_url = wp._get_author_data(image_data)
     assert actual_author is None
     assert actual_author_url is None
+
+
+def test_get_author_data_use_slug_when_name_is_empty():
+    with open(SAMPLE_MEDIA_DATA) as f:
+        image_data = json.load(f)
+    image_data["_embedded"]["author"][0].pop("name")
+    actual_author, _ = wp._get_author_data(image_data)
+    expected_author = "st810amaze"
+    assert actual_author == expected_author
 
 
 def test_get_metadata():
