@@ -159,9 +159,10 @@ def _extract_image_data(media_data):
     Extract data for individual item.
     """
     foreign_identifier = media_data.get("slug")
-    foreign_landing_url = media_data.get("link")
-    if foreign_landing_url is None:
+    if foreign_identifier is None:
         return None
+    foreign_landing_url = media_data.get("link")
+
     try:
         media_details = (
             media_data.get("_embedded", {})
