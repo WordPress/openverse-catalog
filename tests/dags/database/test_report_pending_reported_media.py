@@ -4,16 +4,57 @@ import pytest
 from database.report_pending_reported_media import report_actionable_records
 
 
+def _make_reported_records_data(media_type: str):
+    return [
+        (
+            {"dcma": 1, "mature": 2, "other": 3},
+            [
+                f"{media_type}: 6",
+                "_(1 dcma, 2 mature, 3 other)_",
+            ],
+        ),
+        (
+            {"dcma": 1, "mature": 2},
+            [
+                f"{media_type}: 3",
+                "_(1 dcma, 2 mature)_",
+            ],
+        ),
+        (
+            {"other": 7},
+            [
+                f"{media_type}: 7",
+                "_(7 other)_",
+            ],
+        ),
+    ]
+
+
 @pytest.mark.parametrize(
-    "distinct_image_reports, expected_message",
-    [
-        (0, "No images require review at this time"),
-        (10, "10 reported images pending review"),
-    ],
+    "audio_counts, audio_expected_messages", _make_reported_records_data("audio")
 )
-def test_reports_reported_images(distinct_image_reports, expected_message):
+@pytest.mark.parametrize(
+    "image_counts, image_expected_messages", _make_reported_records_data("image")
+)
+def test_report_actionable_records(
+    audio_counts, audio_expected_messages, image_counts, image_expected_messages
+):
     with mock.patch("common.slack.send_message") as send_message_mock:
-        report_actionable_records(distinct_image_reports)
+        report_counts_by_media_type = {"audio": audio_counts, "image": image_counts}
+        report_actionable_records(report_counts_by_media_type)
+
+        for message in audio_expected_messages + image_expected_messages:
+            assert (
+                message in send_message_mock.call_args.args[0]
+            ), "Completion message doesn't contain expected text"
+
+
+def test_report_actionable_records_no_data_message():
+    with mock.patch("common.slack.send_message") as send_message_mock:
+        report_counts_by_media_type = {"audio": {}, "image": {}}
+        report_actionable_records(report_counts_by_media_type)
+
         assert (
-            expected_message in send_message_mock.call_args.args[0]
-        ), "Completion message doesn't contain expected text"
+            "No records require review at this time"
+            in send_message_mock.call_args.args[0]
+        )

@@ -39,28 +39,32 @@ AUDIO_REPORTS_TABLE = "nsfw_reports_audio"
 # Column name constants
 URL = "identifier"
 STATUS = "status"
+REASON = "reason"
 
 
-def get_distinct_pending_reports(db_conn_id, media_type, ti):
+def get_pending_report_counts(db_conn_id, media_type, ti):
     postgres = PostgresHook(postgres_conn_id=db_conn_id)
+    report_counts_by_reason = {}
 
-    nsfw_reports = dedent(
+    query = dedent(
         f"""
-        SELECT COUNT(*) FROM (
-            SELECT DISTINCT {URL}
-            FROM {REPORTS_TABLES[media_type]}
-            WHERE {STATUS}='pending_review'
-        ) AS distinct_reports;
+        SELECT
+        COUNT(DISTINCT {URL}), {REASON}
+        FROM {REPORTS_TABLES[media_type]}
+        WHERE {STATUS}='pending_review'
+        GROUP BY {REASON}
         """
     )
-    distinct_report_count = postgres.get_records(nsfw_reports)[0][0]
-    logger.info(f"{distinct_report_count} distinct records require manual review")
+    for count, reason in postgres.get_records(query):
+        report_counts_by_reason[reason] = count
 
-    return distinct_report_count
+    logger.info(f"{report_counts_by_reason} records require manual review")
+
+    return report_counts_by_reason
 
 
 def report_actionable_records(report_counts_by_media_type):
-    if all(value == 0 for value in report_counts_by_media_type.values()):
+    if all(len(reports) == 0 for reports in report_counts_by_media_type.values()):
         slack.send_message(
             "No records require review at this time :tada:",
             username="Reported Media Check-In",
@@ -70,25 +74,31 @@ def report_actionable_records(report_counts_by_media_type):
     admin_url = os.getenv("DJANGO_ADMIN_URL", "http://localhost:8000/admin")
     media_type_reports = ""
 
-    for media_type, distinct_report_count in report_counts_by_media_type.items():
-        if distinct_report_count == 0:
+    for media_type, distinct_report_counts in report_counts_by_media_type.items():
+        if not distinct_report_counts:
             continue
 
         admin_review_link = urljoin(
             admin_url, f"api/{media_type}report/?status__exact=pending_review"
         )
+        total_report_count = 0
+        counts_by_reason = []
+
+        for reason, count in distinct_report_counts.items():
+            total_report_count += count
+            counts_by_reason.append(f"{count} {reason}")
 
         media_type_reports += (
-            f"  - <{admin_review_link}|{media_type}>: {distinct_report_count}"
+            f"  - *<{admin_review_link}|{media_type}: {total_report_count}>*"
         )
+        media_type_reports += f" _({', '.join(counts_by_reason)})_"
         media_type_reports += "\n"
 
-    message = dedent(
-        f"""
-        The following media have been reported and require manual review:
-        {media_type_reports}
-        """
-    )
+    message = f"""
+The following media have been reported and require manual review:
+{media_type_reports}
+"""
+
     logger.info(message)
     slack.send_message(message, username="Reported Media Requires Review")
 
@@ -101,6 +111,7 @@ def create_dag():
         catchup=False,
         tags=["database"],
         doc_md=__doc__,
+        render_template_as_native_obj=True,
     )
 
     with dag:
@@ -110,7 +121,7 @@ def create_dag():
         for media_type in MEDIA_TYPES:
             get_reports = PythonOperator(
                 task_id=f"get_pending_{media_type}_reports",
-                python_callable=get_distinct_pending_reports,
+                python_callable=get_pending_report_counts,
                 op_kwargs={"db_conn_id": DB_CONN_ID, "media_type": media_type},
             )
 
