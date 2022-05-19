@@ -265,7 +265,7 @@ def _get_metadata(media_data, media_details):
                 resource_val = resource.get("name")
                 if txy == "photo_tag":
                     tags.append(resource_val)
-                if txy == "photo_orientation":
+                elif txy == "photo_orientation":
                     metadata["orientation"] = resource_val
                 else:
                     metadata.setdefault(resource_key, [])
