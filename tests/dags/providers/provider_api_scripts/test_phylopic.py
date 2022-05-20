@@ -107,12 +107,11 @@ def test_get_meta_data_correct():
                 "http://phylopic.org/assets/images/submissions/e9df48fe-68ea-"
                 "419e-b9df-441e0b208335.1024.png"
             ),
-            "",
             "847",
             "1024",
             "http://creativecommons.org/publicdomain/zero/1.0/",
             "Jonathan Wells",
-            ("Chondrus crispus NODC Taxonomic Code, database " "(version 8.0) 1996"),
+            "Chondrus crispus NODC Taxonomic Code, database (version 8.0) 1996",
             {
                 "taxa": [
                     (
@@ -148,7 +147,7 @@ def test_get_taxa_details():
         result = r["result"]
         actual_taxa = pp._get_taxa_details(result)
         expect_taxa = (
-            [("Chondrus crispus NODC Taxonomic Code, database " "(version 8.0) 1996")],
+            ["Chondrus crispus NODC Taxonomic Code, database (version 8.0) 1996"],
             "Chondrus crispus NODC Taxonomic Code, database (version 8.0) 1996",
         )
         assert actual_taxa == expect_taxa
@@ -169,7 +168,6 @@ def test_get_image_info():
             ),
             847,
             1024,
-            "",
         )
         assert actual_img_info == expect_img_info
 
@@ -182,7 +180,7 @@ def test_get_image_info_with_no_img_url():
         actual_img_info = list(
             pp._get_image_info(result, "7f7431c6-8f78-498b-92e2-ebf8882a8923")
         )
-        expect_img_info = [None, None, None, None]
+        expect_img_info = [None, None, None]
         assert actual_img_info == expect_img_info
 
 
@@ -231,10 +229,6 @@ def test_create_args():
             "http://phylopic.org/assets/images/submissions/e6014244"
             "-4dd5-4785-bf2e-c67dc4d05ca8.1024.png"
         ),
-        "thumbnail_url": (
-            "http://phylopic.org/assets/images/submissions/"
-            "e6014244-4dd5-4785-bf2e-c67dc4d05ca8.256.png"
-        ),
         "license_info": (
             LicenseInfo(
                 license="cc0",
@@ -257,7 +251,7 @@ def test_create_args():
                     "Plasmodium falciparum",
                     "Plasmodium (Laverania)",
                     "Haemospororida Danilewsky",
-                    ("Aconoidasida Mehlhorn, " "Peters & Haberkorn 1980"),
+                    "Aconoidasida Mehlhorn, Peters & Haberkorn 1980",
                 ]
             ),
             "credit_line": "Jonathan Wells",
@@ -266,7 +260,7 @@ def test_create_args():
         "foreign_identifier": "e6014244-4dd5-4785-bf2e-c67dc4d05ca8",
     }
     assert actual_args == expect_args
-    assert len(actual_args) == 10
+    assert len(actual_args) == 9
 
 
 @pytest.mark.parametrize(

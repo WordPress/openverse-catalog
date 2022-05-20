@@ -106,7 +106,6 @@ def _get_data_for_image(object_id):
         image_store.add_item(
             foreign_landing_url=object_json.get("objectURL"),
             image_url=img,
-            thumbnail_url=thumb,
             license_info=DEFAULT_LICENSE_INFO,
             foreign_identifier=foreign_id,
             creator=object_json.get("artistDisplayName"),

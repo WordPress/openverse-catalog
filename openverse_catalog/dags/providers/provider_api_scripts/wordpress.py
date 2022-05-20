@@ -229,7 +229,6 @@ def _extract_image_data(media_data):
     image_url, height, width, filetype = _get_file_info(image_details)
     if image_url is None:
         return None
-    thumbnail = _get_thumbnail_url(image_details)
     metadata = _get_metadata(media_data, image_details)
     creator, creator_url = _get_creator_data(media_data)
     tags = _get_related_data("tags", media_data)
@@ -243,7 +242,6 @@ def _extract_image_data(media_data):
         "image_url": image_url,
         "height": height,
         "width": width,
-        "thumbnail_url": thumbnail,
         "filetype": filetype,
         "license_info": license_info,
         "meta_data": metadata,

@@ -42,7 +42,6 @@ class ImageStore(MediaStore):
         foreign_landing_url: str,
         image_url: str,
         license_info: LicenseInfo,
-        thumbnail_url: Optional[str] = None,
         filesize: Optional[int] = None,
         filetype: Optional[str] = None,
         foreign_identifier: Optional[str] = None,
@@ -117,7 +116,7 @@ class ImageStore(MediaStore):
         image_data = {
             "foreign_landing_url": foreign_landing_url,
             "image_url": image_url,
-            "thumbnail_url": thumbnail_url,
+            "thumbnail_url": None,
             "filesize": filesize,
             "filetype": filetype,
             "license_info": license_info,
