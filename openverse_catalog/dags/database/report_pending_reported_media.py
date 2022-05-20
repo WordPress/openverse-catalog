@@ -17,6 +17,7 @@ from textwrap import dedent
 from urllib.parse import urljoin
 
 from airflow import DAG
+from airflow.models import TaskInstance
 from airflow.operators.python import PythonOperator
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from common import slack
@@ -41,8 +42,23 @@ URL = "identifier"
 STATUS = "status"
 REASON = "reason"
 
+ReportCountsByReason = dict[str, int]
+MediaTypeReportCounts = dict[str, ReportCountsByReason]
 
-def get_pending_report_counts(db_conn_id, media_type, ti):
+
+def get_pending_report_counts(
+    db_conn_id: str, media_type: str, ti: TaskInstance
+) -> ReportCountsByReason:
+    """
+    For the given media type, builds a dict of pending report counts grouped by
+    report reason.
+
+    Required Arguments:
+
+    db_conn_id: Connection ID for the API database
+    media_type: Media type for which to look up reports
+    ti:         Running task instance
+    """
     postgres = PostgresHook(postgres_conn_id=db_conn_id)
     report_counts_by_reason = {}
 
@@ -63,7 +79,17 @@ def get_pending_report_counts(db_conn_id, media_type, ti):
     return report_counts_by_reason
 
 
-def report_actionable_records(report_counts_by_media_type):
+def report_actionable_records(
+    report_counts_by_media_type: MediaTypeReportCounts,
+) -> None:
+    """
+    Build a report detailing pending reports for all media types, and alert to Slack.
+
+    Required Arguments:
+
+    report_counts_by_media_type: dict containing report counts per media type, per
+                                 report reason
+    """
     if all(len(reports) == 0 for reports in report_counts_by_media_type.values()):
         slack.send_message(
             "No records require review at this time :tada:",
