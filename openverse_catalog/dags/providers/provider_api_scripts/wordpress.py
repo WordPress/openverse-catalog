@@ -178,7 +178,6 @@ def _extract_image_data(media_data):
 
     title = _get_title(media_data)
     author, author_url = _get_author_data(media_data)
-    thumbnail = _get_thumbnail_url(media_details)
     metadata, tags = _get_metadata(media_data, media_details)
 
     return {
@@ -190,7 +189,6 @@ def _extract_image_data(media_data):
         "image_url": image_url,
         "height": height,
         "width": width,
-        "thumbnail_url": thumbnail,
         "filetype": filetype,
         "filesize": filesize,
         "license_info": license_info,
@@ -230,10 +228,6 @@ def _get_filesize(image_url):
     if resp:
         filesize = int(resp.headers.get("Content-Length", 0))
         return filesize if filesize != 0 else None
-
-
-def _get_thumbnail_url(media_details):
-    return media_details.get("sizes", {}).get("thumbnail", {}).get("source_url")
 
 
 def _get_author_data(image):
