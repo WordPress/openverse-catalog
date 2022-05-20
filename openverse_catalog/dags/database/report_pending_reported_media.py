@@ -17,6 +17,7 @@ from textwrap import dedent
 from urllib.parse import urljoin
 
 from airflow import DAG
+from airflow.exceptions import AirflowException
 from airflow.models import TaskInstance
 from airflow.operators.python import PythonOperator
 from airflow.providers.postgres.hooks.postgres import PostgresHook
@@ -33,9 +34,6 @@ REPORTS_TABLES = {
     "image": "nsfw_reports",
     "audio": "nsfw_reports_audio",
 }
-
-IMAGE_REPORTS_TABLE = "nsfw_reports"
-AUDIO_REPORTS_TABLE = "nsfw_reports_audio"
 
 # Column name constants
 URL = "identifier"
@@ -61,6 +59,9 @@ def get_pending_report_counts(
     """
     postgres = PostgresHook(postgres_conn_id=db_conn_id)
     report_counts_by_reason = {}
+
+    if media_type not in REPORTS_TABLES:
+        raise AirflowException(f"{media_type} has no Reports table configured.")
 
     query = dedent(
         f"""
