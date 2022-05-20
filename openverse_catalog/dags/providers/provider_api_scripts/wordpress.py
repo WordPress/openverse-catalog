@@ -172,7 +172,7 @@ def _extract_image_data(media_data):
     except (KeyError, IndexError):
         return None
 
-    image_url, height, width, filetype = _get_file_info(media_details)
+    image_url, height, width, filetype, filesize = _get_file_info(media_details)
     if image_url is None:
         return None
 
@@ -192,6 +192,7 @@ def _extract_image_data(media_data):
         "width": width,
         "thumbnail_url": thumbnail,
         "filetype": filetype,
+        "filesize": filesize,
         "license_info": license_info,
         "meta_data": metadata,
         "raw_tags": tags,
@@ -199,15 +200,36 @@ def _extract_image_data(media_data):
 
 
 def _get_file_info(media_details):
-    file_details = media_details.get("sizes", {}).get("full", {})
+    preferred_sizes = ["2048x2048", "1536x1536", "medium_large", "large", "full"]
+    for size in preferred_sizes:
+        file_details = media_details.get("sizes", {}).get(size, {})
+        image_url = file_details.get("source_url")
+        if not image_url or image_url == "":
+            continue
 
-    image_url = file_details.get("source_url")
-    height = file_details.get("height")
-    width = file_details.get("width")
-    filetype = None
-    if filename := file_details.get("file"):
-        filetype = Path(filename).suffix.replace(".", "")
-    return image_url, height, width, filetype
+        height = file_details.get("height")
+        width = file_details.get("width")
+        filetype = None
+        if filename := file_details.get("file"):
+            filetype = Path(filename).suffix.replace(".", "")
+
+        filesize = (
+            media_details.get("filesize", 0)
+            if size == "full"
+            else file_details.get("filesize", 0)
+        )
+        if not filesize or int(filesize) == 0:
+            filesize = _get_filesize(image_url)
+
+        return image_url, height, width, filetype, filesize
+    return None, None, None, None, None
+
+
+def _get_filesize(image_url):
+    resp = delayed_requester.get(image_url)
+    if resp:
+        filesize = int(resp.headers.get("Content-Length", 0))
+        return filesize if filesize != 0 else None
 
 
 def _get_thumbnail_url(media_details):

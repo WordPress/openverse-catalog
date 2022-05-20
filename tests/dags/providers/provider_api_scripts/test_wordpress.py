@@ -56,9 +56,7 @@ def test_extract_image_data_returns_none_when_no_foreign_id():
 def test_extract_image_data_returns_none_when_no_image_url():
     with open(SAMPLE_MEDIA_DATA) as f:
         image_data = json.load(f)
-        image_data["_embedded"]["wp:featuredmedia"][0]["media_details"]["sizes"][
-            "full"
-        ].pop("source_url", None)
+        image_data["_embedded"]["wp:featuredmedia"][0]["media_details"].pop("sizes")
     actual_image_info = wp._extract_image_data(image_data)
     assert actual_image_info is None
 
@@ -81,10 +79,11 @@ def test_get_file_info():
         )
     actual_result = wp._get_file_info(image_details)
     expected_result = (
-        "https://pd.w.org/2022/05/203627f31f8770f03.61535278.jpg",  # image_url
-        2667,  # height
-        4000,  # width
+        "https://pd.w.org/2022/05/203627f31f8770f03.61535278-2048x1366.jpg",  # image_url
+        1366,  # height
+        2048,  # width
         "jpg",  # filetype
+        544284,  # filesize
     )
     assert actual_result == expected_result
 
