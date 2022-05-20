@@ -39,13 +39,13 @@ def _make_reported_records_data(media_type: str):
 def test_report_actionable_records(
     audio_counts, audio_expected_messages, image_counts, image_expected_messages
 ):
-    with mock.patch("common.slack.send_message") as send_message_mock:
+    with mock.patch("common.slack.send_alert") as send_alert_mock:
         report_counts_by_media_type = {"audio": audio_counts, "image": image_counts}
         report_actionable_records(report_counts_by_media_type)
 
         for message in audio_expected_messages + image_expected_messages:
             assert (
-                message in send_message_mock.call_args.args[0]
+                message in send_alert_mock.call_args.args[0]
             ), "Completion message doesn't contain expected text"
 
 

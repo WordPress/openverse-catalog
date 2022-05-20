@@ -127,7 +127,7 @@ The following media have been reported and require manual review:
 """
 
     logger.info(message)
-    slack.send_message(message, username="Reported Media Requires Review")
+    slack.send_alert(message, username="Reported Media Requires Review")
 
 
 def create_dag():
