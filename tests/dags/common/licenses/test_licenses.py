@@ -145,18 +145,14 @@ def test_get_license_info_from_url_with_license_url_path_mismatch(
     mock_cc_url_validator, monkeypatch
 ):
     license_url = "https://not.in/path/map"
-    path_map = {"publicdomain/zero/1.0": ("cc0", "1.0")}
-    license_info = licenses._get_license_info_from_url(license_url, path_map=path_map)
+    license_info = licenses._get_license_info_from_url(license_url)
     assert all([i is None for i in license_info])
 
 
 def test_get_license_info_from_url_with_good_license_url(mock_cc_url_validator):
     expected_license, expected_version = "cc0", "1.0"
     license_url = "https://creativecommons.org/publicdomain/zero/1.0/"
-    path_map = {"publicdomain/zero/1.0": ("cc0", "1.0")}
-    actual_license_info = licenses._get_license_info_from_url(
-        license_url, path_map=path_map
-    )
+    actual_license_info = licenses._get_license_info_from_url(license_url)
     expected_license_info = (
         expected_license,
         expected_version,
@@ -167,26 +163,17 @@ def test_get_license_info_from_url_with_good_license_url(mock_cc_url_validator):
 
 
 def test_get_license_info_from_license_pair_nones_when_missing_license(mock_rewriter):
-    pair_map = {("by", "1.0"): "licenses/by/1.0"}
-    license_info = licenses.get_license_info_from_license_pair(
-        None, "1.0", pair_map=pair_map
-    )
+    license_info = licenses.get_license_info_from_license_pair(None, "1.0")
     assert all([i is None for i in license_info])
 
 
 def test_get_license_info_from_license_pair_nones_missing_version(mock_rewriter):
-    pair_map = {("by", "1.0"): "licenses/by/1.0"}
-    license_info = licenses.get_license_info_from_license_pair(
-        "by", None, pair_map=pair_map
-    )
+    license_info = licenses.get_license_info_from_license_pair("by", None)
     assert all([i is None for i in license_info])
 
 
 def test_validate_license_pair_handles_float_version(mock_rewriter):
-    pair_map = {("by", "1.0"): "licenses/by/1.0"}
-    actual_license_info = licenses.get_license_info_from_license_pair(
-        "by", 1.0, pair_map=pair_map
-    )
+    actual_license_info = licenses.get_license_info_from_license_pair("by", 1.0)
     expected_license_info = (
         "by",
         "1.0",
@@ -196,10 +183,7 @@ def test_validate_license_pair_handles_float_version(mock_rewriter):
 
 
 def test_validate_license_pair_handles_int_version(mock_rewriter):
-    pair_map = {("by", "1.0"): "licenses/by/1.0"}
-    actual_license_info = licenses.get_license_info_from_license_pair(
-        "by", 1, pair_map=pair_map
-    )
+    actual_license_info = licenses.get_license_info_from_license_pair("by", 1)
     expected_license_info = (
         "by",
         "1.0",
@@ -209,9 +193,8 @@ def test_validate_license_pair_handles_int_version(mock_rewriter):
 
 
 def test_validate_license_pair_handles_na_version(mock_rewriter):
-    pair_map = {("publicdomain", "N/A"): "licenses/publicdomain"}
     actual_license_info = licenses.get_license_info_from_license_pair(
-        "publicdomain", "N/A", pair_map=pair_map
+        "publicdomain", "N/A"
     )
     expected_license_info = (
         "publicdomain",
@@ -226,3 +209,29 @@ def test_build_license_url_raises_exception_when_derived_url_unrewritable(monkey
 
     with pytest.raises(licenses.InvalidLicenseURLException):
         licenses._build_license_url("abcdefg")
+
+
+def test_does_not_fallback_on_ported_version(mock_rewriter):
+    # `by-nc-nd, 2.0` was incorrectly put into _SPECIAL_CASE_LICENSE_PATHS,
+    # and was returning a ported version instead of non-ported.
+    expected_license_url = "https://creativecommons.org/licenses/by-nc-nd/2.0/"
+    license_info = licenses.get_license_info_from_license_pair("by-nc-nd", "2.0")
+
+    assert license_info[2] == expected_license_url
+
+
+def test_falls_back_on_non_ported_version(mock_rewriter):
+    # 2.1 licenses should have a jurisdiction-specific version. If they don't, we
+    # should fall back to the non-ported version.
+    expected_license_url = "https://creativecommons.org/licenses/by-nc-nd/2.0/"
+    license_info = licenses.get_license_info_from_license_pair("by-nc-nd", "2.1")
+
+    assert license_info[2] == expected_license_url
+
+
+def test_returns_ported_version(mock_rewriter):
+    # This is a special case where license only has a ported version.
+    expected_license_url = "https://creativecommons.org/licenses/nc-sa/2.0/jp/"
+    license_info = licenses.get_license_info_from_license_pair("nc-sa", "2.0")
+
+    assert license_info[2] == expected_license_url
