@@ -114,23 +114,7 @@ def _get_batch_json(
     if response_json is None:
         return None
     else:
-        results = response_json.get("results")
-        return force_duplicates(results)
-
-
-# Takes some results and forcibly adds some duplicates to them
-def force_duplicates(results):
-    if results is not None and len(results) > 2:
-        try:
-            # Forces the second result in the list to be a duplicate of
-            # the first (all fields except foreign_id are identical)
-            foreign_identifier = _get_foreign_identifier(results[1])
-            results[1] = results[0].copy()
-            results[1]["id"] = foreign_identifier
-        except (TypeError, KeyError, AttributeError):
-            logger.info("Unable to manually add duplicates")
-
-    return results
+        return response_json.get("results")
 
 
 def _process_item_batch(items_batch):
