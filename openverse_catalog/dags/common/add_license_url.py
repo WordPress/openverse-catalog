@@ -3,6 +3,7 @@ from textwrap import dedent
 
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from common.licenses.constants import get_reverse_license_path_map
+from common.slack import send_message
 
 
 RETURN_ROW_COUNT = lambda c: c.rowcount  # noqa: E731
@@ -50,7 +51,7 @@ def make_sample_data(postgres_conn_id: str):
     logger.info(f"{result} image records added to sample data.")
 
 
-def get_statistics(postgres_conn_id: str, **kwargs):
+def get_statistics(postgres_conn_id: str, dag_run):
     logger.info("Getting image records without license_url.")
     postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
     no_metadata_query = dedent(
@@ -71,7 +72,7 @@ def get_statistics(postgres_conn_id: str, **kwargs):
         f"There are {no_metadata_count} records without metadata, and "
         f"{no_license_url_count} records without license_url."
     )
-    is_test = kwargs["dag_run"].conf.get("isTest")
+    is_test = dag_run.conf.get("isTest")
     if is_test:
         return "make_sample_data"
     return "update_license_url"
@@ -106,6 +107,7 @@ def update_license_url_batch_query(postgres_conn_id: str):
             if result:
                 total_count += result
     logger.info(f"{total_count} image records with missing license_url updated.")
+    return total_count
 
 
 def update_license_url(postgres_conn_id: str):
@@ -131,10 +133,8 @@ def update_license_url(postgres_conn_id: str):
         )
     )
 
-    logger.info(
-        f"Will process {len(records_without_license_url)} records without license_url."
-    )
-
+    total_count = len(records_without_license_url)
+    logger.info(f"Will process {total_count} records without license_url.")
     for record in records_without_license_url:
         identifier = record[0]
         license_pair = (record[1], record[2])
@@ -150,9 +150,10 @@ def update_license_url(postgres_conn_id: str):
             END
         WHERE identifier = '{identifier}'"""
         )
+    return total_count
 
 
-def final_report(postgres_conn_id: str):
+def final_report(postgres_conn_id: str, item_count):
     logger.info(
         "Added license_url to all items. Checking for any records "
         "that still don't have license_url."
@@ -167,6 +168,14 @@ def final_report(postgres_conn_id: str):
         no_license_url_query, handler=RETURN_ROW_COUNT
     )
     logger.info(f"There are {no_license_url_records} records without license_url.")
+
+    message = f"""
+Added license_url to *{item_count}* items`
+Now, there are {no_license_url_records} records without license_url.
+"""
+    send_message(message, username="Airflow DAG Data Normalization - license_url")
+
+    logger.info(message)
     # This should not run!!!
     if no_license_url_records:
         records_without_license_url = postgres.get_records(no_license_url_query)
