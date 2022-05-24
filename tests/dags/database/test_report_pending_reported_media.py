@@ -7,17 +7,17 @@ from database.report_pending_reported_media import report_actionable_records
 def _make_reported_records_data(media_type: str):
     return [
         (
-            {"dcma": 1, "mature": 2, "other": 3},
+            {"dmca": 1, "mature": 2, "other": 3},
             [
                 f"{media_type}: 6",
-                "_(1 dcma, 2 mature, 3 other)_",
+                "_(1 dmca, 2 mature, 3 other)_",
             ],
         ),
         (
-            {"dcma": 1, "mature": 2},
+            {"dmca": 1, "mature": 2},
             [
                 f"{media_type}: 3",
-                "_(1 dcma, 2 mature)_",
+                "_(1 dmca, 2 mature)_",
             ],
         ),
         (
