@@ -88,23 +88,7 @@ def _add_data_to_buffer(**kwargs):
         if id_ is not None:
             details = _get_meta_data(id_)
             if details is not None:
-                kwargs = _create_args(details, id_)
-                image_store.add_item(**kwargs)
-
-
-def _create_args(details, id_):
-    args = {
-        "foreign_landing_url": details[1],
-        "image_url": details[2],
-        "license_info": get_license_info(license_url=details[6]),
-        "width": details[4],
-        "height": details[5],
-        "creator": details[7],
-        "title": details[8],
-        "meta_data": details[9],
-        "foreign_identifier": id_,
-    }
-    return args
+                image_store.add_item(**details)
 
 
 def _get_total_images():
@@ -185,21 +169,22 @@ def _get_meta_data(_uuid):
     )
 
     img_url, width, height = _get_image_info(result, _uuid)
-    foreign_id = img_url
+
     if img_url is None:
         return None
 
-    return [
-        foreign_id,
-        foreign_url,
-        img_url,
-        str(width),
-        str(height),
-        license_url,
-        creator,
-        title,
-        meta_data,
-    ]
+    details = {
+        "foreign_identifier": _uuid,
+        "foreign_landing_url": foreign_url,
+        "image_url": img_url,
+        "license_info": get_license_info(license_url=license_url),
+        "width": str(width),
+        "height": str(height),
+        "creator": creator,
+        "title": title,
+        "meta_data": meta_data,
+    }
+    return details
 
 
 def _get_creator_details(result):
