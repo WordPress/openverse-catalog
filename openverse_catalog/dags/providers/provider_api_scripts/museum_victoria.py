@@ -1,5 +1,6 @@
 import logging
 
+from common.extensions import extract_filetype
 from common.licenses import get_license_info
 from common.loader import provider_details as prov
 from common.requester import DelayedRequester
@@ -126,7 +127,7 @@ def _get_media_info(media_data):
         media_type = media.get("type")
         if media_type == "image":
             image_id = media.get("id")
-            image_url, height, width = _get_image_data(media)
+            image_url, height, width, filesize, filetype = _get_image_data(media)
             license_url = _get_license_url(media)
             if image_url is None or image_id is None or license_url is None:
                 continue
@@ -145,24 +146,22 @@ def _get_media_info(media_data):
 
 
 def _get_image_data(media):
-    image_url = None
-    height, width = None, None
+    media_data = {}
+    filetype = None
     if "large" in media.keys():
-        image_url = media.get("large").get("uri")
-        height = media.get("large").get("height")
-        width = media.get("large").get("width")
-
+        media_data = media.get("large")
     elif "medium" in media.keys():
-        image_url = media.get("medium").get("uri")
-        height = media.get("medium").get("height")
-        width = media.get("medium").get("width")
-
+        media_data = media.get("medium")
     elif "small" in media.keys():
-        image_url = media.get("small").get("uri")
-        height = media.get("small").get("height")
-        width = media.get("small").get("width")
+        media_data = media.get("small")
 
-    return image_url, height, width
+    image_url = media_data.get("uri")
+    height = media_data.get("height")
+    width = media_data.get("width")
+    filesize = media_data.get("size")
+    if image_url:
+        filetype = extract_filetype(image_url, "image")
+    return image_url, height, width, filesize, filetype
 
 
 def _get_license_url(media):
