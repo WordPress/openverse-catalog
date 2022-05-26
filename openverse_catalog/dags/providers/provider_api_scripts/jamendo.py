@@ -94,7 +94,6 @@ def _get_items():
     while should_continue:
         query_params = _get_query_params(offset=offset)
         batch_data = _get_batch_json(query_params=query_params)
-        logger.info(f"batch_data: {batch_data}, query_params: {query_params}")
         if isinstance(batch_data, list) and len(batch_data) > 0 and item_count < LIMIT:
             item_count = _process_item_batch(batch_data)
             offset += LIMIT
