@@ -172,7 +172,7 @@ def _get_creators(data):
 
 def _get_image_url(image):
     image_url = image.get("largest_derivative_url")
-    if image_url and "http" not in image_url:
+    if image_url and not image_url.startswith("http"):
         image_url = "https://" + image_url
     return image_url
 
