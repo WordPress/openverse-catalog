@@ -2,6 +2,7 @@ from pathlib import Path
 
 import pytest
 from airflow.models import DagBag
+from common.constants import MEDIA_TYPES
 
 
 # The path to DAGs *within the container*, though that should mirror the current
@@ -28,7 +29,7 @@ PROVIDER_WORKFLOWS = [
         "rawpixel_workflow.py",
         "science_museum_workflow.py",
         "smithsonian_workflow.py",
-        "statens_museum_workflow.py",
+        "smk_workflow.py",
         "walters_workflow.py",
         "wikimedia_ingestion_workflow.py",
         "wikimedia_workflow.py",
@@ -41,14 +42,18 @@ ADDITIONAL_DAGS = [
     "commoncrawl/sync_commoncrawl_workflow.py",
     "commoncrawl/commoncrawl_etl.py",
     "database/loader_workflow.py",
-    "database/recreate_image_popularity_calculation.py",
+    "database/recreate_popularity_calculation_dag_factory.py",
+    "data_refresh/dag_factory.py",
     "oauth2/authorize_dag.py",
     "oauth2/token_refresh_dag.py",
 ]
 
 # Expected count from the DagBag once a file has been parsed
 # (this will likely not need to be edited for new providers)
-EXPECTED_COUNT = {}
+EXPECTED_COUNT = {
+    "database/recreate_popularity_calculation_dag_factory.py": len(MEDIA_TYPES),
+    "data_refresh/dag_factory.py": len(MEDIA_TYPES),
+}
 
 
 # relative_path represents the path from the DAG folder to the file

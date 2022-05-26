@@ -1,10 +1,12 @@
-FROM python:3.9-slim
+FROM python:3.10-slim
 
 # Build-time arguments, with sensible defaults
 ARG REQUIREMENTS_FILE=requirements_prod.txt
 
 # Path configurations
 ENV AIRFLOW_HOME=/usr/local/airflow
+ENV DAGS_FOLDER=${AIRFLOW_HOME}/openverse_catalog/dags
+ENV PYTHONPATH=${DAGS_FOLDER}
 ENV PATH=/usr/local/airflow/.local/bin:$PATH
 
 # Container optimizations
@@ -15,7 +17,7 @@ ENV PIP_NO_COLOR=1
 
 # Airflow/workflow configuration
 ENV OUTPUT_DIR=/var/workflow_output/
-ENV AIRFLOW__CORE__DAGS_FOLDER=${AIRFLOW_HOME}/openverse_catalog/dags
+ENV AIRFLOW__CORE__DAGS_FOLDER=${DAGS_FOLDER}
 ENV AIRFLOW__CORE__LOAD_EXAMPLES=False
 ENV AIRFLOW__CORE__LOAD_DEFAULT_CONNECTIONS=False
 ENV AIRFLOW__CORE__ENABLE_XCOM_PICKLING=True
@@ -37,7 +39,7 @@ RUN useradd -m -d ${AIRFLOW_HOME} airflow && \
     chown airflow:airflow ${OUTPUT_DIR}
 USER airflow
 
-ARG AIRFLOW_VERSION=2.2.4
+ARG AIRFLOW_VERSION=2.3.0
 WORKDIR  ${AIRFLOW_HOME}
 # Always add the prod req because the dev reqs depend on it for deduplication
 COPY ${REQUIREMENTS_FILE} requirements_prod.txt ${AIRFLOW_HOME}/
