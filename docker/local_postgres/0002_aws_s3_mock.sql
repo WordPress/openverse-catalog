@@ -22,13 +22,17 @@ AS $$
     ).Object(bucket, file_path)
     temp_location = '/tmp/postgres_loading.tsv'
     s3_obj.download_file(temp_location)
+    if file_path[-3:]=='.gz':
+        copy_from = "PROGRAM 'gzip -dc "+temp_location+"'"
+    else:
+        copy_from = plpy.quote_literal(temp_location)
     with open(temp_location) as f:
         columns = '({})'.format(column_list) if column_list else ''
         res = plpy.execute(
             'COPY {} {} FROM {} {};'.format(
                 table_name,
                 columns,
-                plpy.quote_literal(temp_location),
+                copy_from,
                 options
             )
         )
