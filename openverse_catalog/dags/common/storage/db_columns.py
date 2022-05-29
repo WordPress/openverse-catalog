@@ -32,6 +32,7 @@ IMAGE_TABLE_COLUMNS = [
     col.FILESIZE,
     col.LICENSE,
     col.LICENSE_VERSION,
+    col.LICENSE_URL,
     col.CREATOR,
     col.CREATOR_URL,
     col.TITLE,

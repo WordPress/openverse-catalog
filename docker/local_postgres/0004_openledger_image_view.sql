@@ -66,6 +66,7 @@ CREATE MATERIALIZED VIEW image_view AS
     filesize,
     license,
     license_version,
+    license_url,
     creator,
     creator_url,
     title,

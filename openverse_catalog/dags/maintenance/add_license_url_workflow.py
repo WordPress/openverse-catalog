@@ -58,6 +58,12 @@ def create_dag(dag_id=DAG_ID):
             trigger_rule=TriggerRule.ALL_DONE,
             op_kwargs={"postgres_conn_id": DB_CONN_ID},
         )
+        remove_license_url_from_meta_data = PythonOperator(
+            # OR update_license_url_batch_query
+            task_id="remove_license_url_from_meta_data",
+            python_callable=add_license_url.remove_license_url_from_meta_data,
+            op_kwargs={"postgres_conn_id": DB_CONN_ID},
+        )
         final_report = PythonOperator(
             task_id="final_report",
             python_callable=add_license_url.final_report,
@@ -71,7 +77,7 @@ def create_dag(dag_id=DAG_ID):
 
         get_statistics >> [make_sample_data, update_license_url]
         make_sample_data >> update_license_url
-        update_license_url >> final_report
+        update_license_url >> remove_license_url_from_meta_data >> final_report
 
     return dag
 

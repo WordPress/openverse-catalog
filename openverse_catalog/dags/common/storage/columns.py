@@ -589,6 +589,9 @@ LICENSE = StringColumn(
 LICENSE_VERSION = StringColumn(
     name="license_version", required=True, size=25, truncate=False
 )
+LICENSE_URL = StringColumn(
+    name="license_url", required=True, size=200, truncate=False, db_name="license_url"
+)
 CREATOR = StringColumn(name="creator", required=False, size=2000, truncate=True)
 CREATOR_URL = URLColumn(name="creator_url", required=False, size=2000)
 TITLE = StringColumn(name="title", required=False, size=5000, truncate=True)
@@ -596,9 +599,11 @@ META_DATA = JSONColumn(name="meta_data", required=False)
 TAGS = JSONColumn(
     name="tags", required=False, upsert_strategy=UpsertStrategy.merge_jsonb_arrays
 )
+# Moved to `META_DATA` in version 002
 WATERMARKED = BooleanColumn(name="watermarked", required=False)
 PROVIDER = StringColumn(name="provider", required=False, size=80, truncate=False)
 SOURCE = StringColumn(name="source", required=False, size=80, truncate=False)
+# Moved to `META_DATA` in version 002
 INGESTION_TYPE = StringColumn(
     name="ingestion_type", required=False, size=80, truncate=False
 )

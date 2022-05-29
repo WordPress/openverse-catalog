@@ -94,7 +94,7 @@ def update_license_url_batch_query(postgres_conn_id: str):
             update_license_url_query = dedent(
                 f"""
                 UPDATE image
-                SET meta_data = '{{"license_url": "{license_url}"}}'
+                SET license_url = '{license_url}'
                 WHERE ((
                 image.meta_data is NULL OR
                   (image.meta_data is NOT NULL
@@ -139,18 +139,36 @@ def update_license_url(postgres_conn_id: str):
         identifier = record[0]
         license_pair = (record[1], record[2])
 
-        new_value = f"""'{{"license_url": "{base_url}{license_map[license_pair]}/"}}'"""
+        license_url = f"{base_url}{license_map[license_pair]}/"
 
         postgres.run(
             f"""
         UPDATE image
-        SET meta_data = CASE WHEN meta_data IS NULL
-            THEN {new_value}
-            ELSE meta_data || {new_value}
-            END
+        SET license_url = '{license_url}'
         WHERE identifier = '{identifier}'"""
         )
     return total_count
+
+
+def remove_license_url_from_meta_data(postgres_conn_id: str):
+    """
+    Removes license_url from meta_data. Iterates over the query result.
+    :param postgres_conn_id: Postgres connection id
+    :return:
+    """
+
+    logger.info("Removing license_url from meta_data.")
+
+    postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
+    postgres.run(
+        dedent(
+            """
+        UPDATE image
+        SET meta_data = meta_data - 'license_url'
+        WHERE meta_data ? 'license_url' AND license_url IS NOT NULL;
+            """
+        )
+    )
 
 
 def final_report(postgres_conn_id: str, item_count):
@@ -161,8 +179,9 @@ def final_report(postgres_conn_id: str, item_count):
     postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
     no_license_url_query = dedent(
         """
-            SELECT * from image WHERE NOT meta_data ? 'license_url'
-            """
+        SELECT * from image WHERE (
+        NOT meta_data ? 'license_url' OR license_url IS NULL)
+        """
     )
     no_license_url_records = postgres.run(
         no_license_url_query, handler=RETURN_ROW_COUNT

@@ -107,6 +107,7 @@ class MediaStore(metaclass=abc.ABCMeta):
         - replace `raw_tags` with enriched `tags`,
         - validate `source`,
         - add `provider`,
+        - move `watermarked` and `ingestion_type` to `metadata`,
 
         Returns None if license is invalid
         """
@@ -118,22 +119,24 @@ class MediaStore(metaclass=abc.ABCMeta):
         media_data["source"] = util.get_source(media_data.get("source"), self.provider)
         # Add ingestion_type column value based on `source`.
         # The implementation is based on `ingestion_column`
-        if media_data.get("ingestion_type") is None:
-            if media_data["source"] == "commoncrawl":
-                media_data["ingestion_type"] = "commoncrawl"
-            else:
-                media_data["ingestion_type"] = "provider_api"
+        ingestion_type = media_data.get("ingestion_type")
+        if ingestion_type is None:
+            ingestion_type = (
+                COMMON_CRAWL if media_data["source"] == COMMON_CRAWL else PROVIDER_API
+            )
 
         media_data["tags"] = self._enrich_tags(media_data.pop("raw_tags", None))
         media_data["meta_data"] = self._enrich_meta_data(
             media_data.pop("meta_data", None),
-            media_data["license_info"].url,
             media_data["license_info"].raw_url,
+            ingestion_type,
+            media_data.pop("watermarked", "f"),
         )
         media_data["license_"] = media_data["license_info"].license
         media_data["license_version"] = media_data["license_info"].version
-
+        media_data["license_url"] = media_data["license_info"].url
         media_data.pop("license_info", None)
+
         media_data["provider"] = self.provider
         return media_data
 
@@ -231,22 +234,22 @@ class MediaStore(metaclass=abc.ABCMeta):
         return False
 
     @staticmethod
-    def _enrich_meta_data(meta_data, license_url, raw_license_url) -> dict:
+    def _enrich_meta_data(meta_data, raw_license_url, ingestion_type, watermarked):
         """
         Makes sure that meta_data is a dictionary, and contains
         license_url and raw_license_url
         """
+        additional_meta_data = {
+            "ingestion_type": ingestion_type,
+            "watermarked": watermarked,
+            "raw_license_url": raw_license_url,
+        }
         if type(meta_data) != dict:
             logger.debug(f"`meta_data` is not a dictionary: {meta_data}")
-            enriched_meta_data = {
-                "license_url": license_url,
-                "raw_license_url": raw_license_url,
-            }
+            enriched_meta_data = {}
         else:
             enriched_meta_data = meta_data
-            enriched_meta_data.update(
-                license_url=license_url, raw_license_url=raw_license_url
-            )
+        enriched_meta_data.update(additional_meta_data)
         return enriched_meta_data
 
     def _enrich_tags(self, raw_tags) -> Optional[list]:
