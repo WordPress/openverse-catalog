@@ -42,7 +42,7 @@ def test_clean_tsv_cleans_tsv_rows(tmpdir):
                 "pub_date": "1557512425",
                 "description": "Airport",
                 "ingestion_type": "provider_api",
-                "watermarked": "f",
+                "watermarked": "False",
             },
             raw_tags=[
                 {"name": "travel", "provider": "test_provider"},
@@ -66,7 +66,7 @@ def test_clean_tsv_cleans_tsv_rows(tmpdir):
                 "description": "Train",
                 "raw_license_url": "https://creativecommons.org/licenses/by-nc/4.0/",
                 "ingestion_type": "provider_api",
-                "watermarked": "f",
+                "watermarked": "False",
             },
             raw_tags=[
                 {"name": "travel", "provider": "next_provider"},
@@ -85,4 +85,5 @@ def test_clean_tsv_cleans_tsv_rows(tmpdir):
     ) as mock_image_store:
         tsv_cleaner.clean_tsv(tsv_file_path)
     for i, expected_call in enumerate(expected_calls):
+
         assert mock_image_store.mock_calls[i] == expected_call

@@ -58,14 +58,18 @@ def create_dag(dag_id=DAG_ID):
             op_kwargs={"postgres_conn_id": DB_CONN_ID},
         )
         update_license_url = PythonOperator(
-            task_id="update_license_url",  # OR update_license_url_batch_query
+            task_id="update_license_url",
             python_callable=add_license_url.update_license_url,
             op_kwargs={"postgres_conn_id": DB_CONN_ID},
         )
         remove_license_url_from_meta_data = PythonOperator(
-            # OR update_license_url_batch_query
             task_id="remove_license_url_from_meta_data",
             python_callable=add_license_url.remove_license_url_from_meta_data,
+            op_kwargs={"postgres_conn_id": DB_CONN_ID},
+        )
+        move_columns_to_metadata = PythonOperator(
+            task_id="move_columns_to_metadata",
+            python_callable=add_license_url.move_columns_to_metadata,
             op_kwargs={"postgres_conn_id": DB_CONN_ID},
         )
         final_report = PythonOperator(
@@ -81,10 +85,12 @@ def create_dag(dag_id=DAG_ID):
 
         get_statistics >> [make_sample_data, add_blank_metadata]
         make_sample_data >> add_blank_metadata
+
         (
             add_blank_metadata
             >> update_license_url
             >> remove_license_url_from_meta_data
+            >> move_columns_to_metadata
             >> final_report
         )
 

@@ -126,7 +126,7 @@ class MediaStore(metaclass=abc.ABCMeta):
             )
 
         media_data["tags"] = self._enrich_tags(media_data.pop("raw_tags", None))
-        watermarked = media_data.pop("watermarked", "f")
+        watermarked = media_data.pop("watermarked", False)
         license_info = media_data.pop("license_info")
         media_data["meta_data"] = self._enrich_meta_data(
             media_data.pop("meta_data", None),
