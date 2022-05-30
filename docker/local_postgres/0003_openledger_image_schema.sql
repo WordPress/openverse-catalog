@@ -28,7 +28,6 @@ CREATE TABLE public.image (
     filesize integer,
     license character varying(50) NOT NULL,
     license_version character varying(25) NOT NULL,
-    license_url character varying(200) NOT NULL,
     creator character varying(2000),
     creator_url character varying(2000),
     title character varying(5000),
@@ -37,7 +36,8 @@ CREATE TABLE public.image (
     last_synced_with_source timestamp with time zone,
     removed_from_source boolean NOT NULL,
     filetype character varying(5),
-    category character varying(80)
+    category character varying(80),
+    license_url character varying(200) NOT NULL,
 );
 
 

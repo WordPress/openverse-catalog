@@ -36,14 +36,14 @@ CREATE TABLE public.audio (
     filesize integer,
     license character varying(50) NOT NULL,
     license_version character varying(25),
-    license_url character varying(200) NOT NULL,
     creator character varying(2000),
     creator_url character varying(2000),
     title character varying(5000),
     meta_data jsonb,
     tags jsonb,
     last_synced_with_source timestamp with time zone,
-    removed_from_source boolean NOT NULL
+    removed_from_source boolean NOT NULL,
+    license_url character varying(200) NOT NULL
 );
 
 
