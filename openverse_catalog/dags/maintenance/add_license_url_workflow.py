@@ -41,21 +41,25 @@ def create_dag(dag_id=DAG_ID):
     )
 
     with dag:
-        make_sample_data = PythonOperator(
-            task_id="make_sample_data",
-            python_callable=add_license_url.make_sample_data,
-            op_kwargs={"postgres_conn_id": DB_CONN_ID},
-        )
         get_statistics = BranchPythonOperator(
             task_id="get_stats",
             python_callable=add_license_url.get_statistics,
             op_kwargs={"postgres_conn_id": DB_CONN_ID},
         )
-
+        make_sample_data = PythonOperator(
+            task_id="make_sample_data",
+            python_callable=add_license_url.make_sample_data,
+            op_kwargs={"postgres_conn_id": DB_CONN_ID},
+        )
+        add_blank_metadata = PythonOperator(
+            task_id="add_blank_metadata",
+            python_callable=add_license_url.add_blank_metadata,
+            trigger_rule=TriggerRule.ALL_DONE,
+            op_kwargs={"postgres_conn_id": DB_CONN_ID},
+        )
         update_license_url = PythonOperator(
             task_id="update_license_url",  # OR update_license_url_batch_query
             python_callable=add_license_url.update_license_url,
-            trigger_rule=TriggerRule.ALL_DONE,
             op_kwargs={"postgres_conn_id": DB_CONN_ID},
         )
         remove_license_url_from_meta_data = PythonOperator(
@@ -75,9 +79,14 @@ def create_dag(dag_id=DAG_ID):
             },
         )
 
-        get_statistics >> [make_sample_data, update_license_url]
-        make_sample_data >> update_license_url
-        update_license_url >> remove_license_url_from_meta_data >> final_report
+        get_statistics >> [make_sample_data, add_blank_metadata]
+        make_sample_data >> add_blank_metadata
+        (
+            add_blank_metadata
+            >> update_license_url
+            >> remove_license_url_from_meta_data
+            >> final_report
+        )
 
     return dag
 
