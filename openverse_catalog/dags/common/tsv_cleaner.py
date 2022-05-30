@@ -37,6 +37,10 @@ def clean_tsv(tsv_filename):
 def _process_row(tsv_row):
     row_image = _get_image_from_row(tsv_row)
     row_meta_data = _get_json_from_string(row_image.meta_data)
+    if "watermarked" in row_image:
+        row_meta_data["watermarked"] = row_image.watermarked
+    if "ingestion_type" in row_image:
+        row_meta_data = row_image.ingestion_type
     image_store = _image_store_dict[row_image.provider]
     image_store.add_item(
         foreign_landing_url=row_image.foreign_landing_url,
@@ -55,9 +59,7 @@ def _process_row(tsv_row):
         title=row_image.title,
         meta_data=row_meta_data,
         raw_tags=_get_json_from_string(row_image.tags),
-        watermarked=row_image.watermarked,
         source=row_image.source,
-        ingestion_type=row_image.ingestion_type,
     )
 
 

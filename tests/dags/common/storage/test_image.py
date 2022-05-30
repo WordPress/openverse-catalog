@@ -85,12 +85,10 @@ def test_ImageStore_get_image_places_given_args(
         "creator": "tyler",
         "creator_url": "https://creatorurl.com",
         "title": "agreatpicture",
-        "meta_data": {"description": "cat picture"},
+        "meta_data": {"description": "cat picture", "ingestion_type": "provider_api"},
         "raw_tags": [{"name": "tag1", "provider": "testing"}],
         "category": "photograph",
-        "watermarked": "f",
         "source": "testing_source",
-        "ingestion_type": "provider_api",
     }
 
     def mock_get_source(source, provider):
@@ -107,8 +105,11 @@ def test_ImageStore_get_image_places_given_args(
     args_dict["tags"] = args_dict.pop("raw_tags")
     args_dict["provider"] = "testing_provider"
     args_dict["filesize"] = 1000
-    args_dict["license_"] = args_dict.get("license_info").license
-    args_dict["license_version"] = args_dict.pop("license_info").version
+    license_info = args_dict.pop("license_info")
+    args_dict["license_"] = license_info.license
+    args_dict["license_version"] = license_info.version
+    args_dict["license_url"] = license_info.url
+    args_dict["raw_license_url"] = license_info.raw_url
     args_dict["url"] = args_dict.pop("image_url")
 
     assert actual_image == image.Image(**args_dict)
@@ -129,16 +130,15 @@ def default_image_args(
         filesize=None,
         license_="cc0",
         license_version="1.0",
+        license_url="https://creativecommons.org/publicdomain/zero/1.0/",
         creator=None,
         creator_url=None,
         title=None,
         meta_data=None,
         tags=None,
         category=None,
-        watermarked=None,
         provider=None,
         source=None,
-        ingestion_type="provider_api",
     )
 
 
@@ -200,7 +200,6 @@ def test_create_tsv_row_turns_empty_into_nullchar(
 ):
     image_store = image.ImageStore()
     image_args = default_image_args
-    image_args["ingestion_type"] = None
     test_image = image.Image(**image_args)
 
     actual_row = image_store._create_tsv_row(test_image).split("\t")
@@ -229,6 +228,7 @@ def test_create_tsv_row_properly_places_entries(setup_env, monkeypatch):
         "url": "http://imageurl.com",
         "license_": "testlicense",
         "license_version": "1.0",
+        "license_url": "https://creativecommons.org/testlicense/1.0/",
     }
     args_dict = {
         "thumbnail_url": "http://thumbnail.com",
@@ -242,10 +242,8 @@ def test_create_tsv_row_properly_places_entries(setup_env, monkeypatch):
         "meta_data": {"description": "cat picture"},
         "tags": [{"name": "tag1", "provider": "testing"}],
         "category": "digitized_artwork",
-        "watermarked": "f",
         "provider": "testing_provider",
         "source": "testing_source",
-        "ingestion_type": "provider_api",
     }
     args_dict.update(req_args_dict)
 
@@ -262,16 +260,15 @@ def test_create_tsv_row_properly_places_entries(setup_env, monkeypatch):
                 "\\N",
                 "testlicense",
                 "1.0",
+                "https://creativecommons.org/testlicense/1.0/",
                 "tyler",
                 "https://creatorurl.com",
                 "agreatpicture",
                 '{"description": "cat picture"}',
                 '[{"name": "tag1", "provider": "testing"}]',
                 "digitized_artwork",
-                "f",
                 "testing_provider",
                 "testing_source",
-                "provider_api",
                 "200",
                 "500",
             ]

@@ -60,7 +60,6 @@ COLUMN_NAMES = [column.db_name for column in IMAGE_TABLE_COLUMNS]
 
 # ids for main database columns
 updated_idx = COLUMN_NAMES.index(col.UPDATED_ON.db_name)
-ingestion_idx = COLUMN_NAMES.index(col.INGESTION_TYPE.db_name)
 provider_idx = COLUMN_NAMES.index(col.PROVIDER.db_name)
 source_idx = COLUMN_NAMES.index(col.SOURCE.db_name)
 fid_idx = COLUMN_NAMES.index(col.FOREIGN_ID.db_name)
@@ -70,6 +69,7 @@ thm_idx = COLUMN_NAMES.index(col.THUMBNAIL.db_name)
 filesize_idx = COLUMN_NAMES.index(col.FILESIZE.db_name)
 license_idx = COLUMN_NAMES.index(col.LICENSE.db_name)
 version_idx = COLUMN_NAMES.index(col.LICENSE_VERSION.db_name)
+license_url_idx = COLUMN_NAMES.index(col.LICENSE_URL.db_name)
 creator_idx = COLUMN_NAMES.index(col.CREATOR.db_name)
 creator_url_idx = COLUMN_NAMES.index(col.CREATOR_URL.db_name)
 title_idx = COLUMN_NAMES.index(col.TITLE.db_name)
@@ -77,7 +77,6 @@ metadata_idx = COLUMN_NAMES.index(col.META_DATA.db_name)
 tags_idx = COLUMN_NAMES.index(col.TAGS.db_name)
 synced_idx = COLUMN_NAMES.index(col.LAST_SYNCED.db_name)
 removed_idx = COLUMN_NAMES.index(col.REMOVED.db_name)
-watermarked_idx = COLUMN_NAMES.index(col.WATERMARKED.db_name)
 width_idx = COLUMN_NAMES.index(col.WIDTH.db_name)
 height_idx = COLUMN_NAMES.index(col.HEIGHT.db_name)
 
@@ -397,15 +396,17 @@ def test_upsert_records_inserts_one_record_to_empty_image_table(
     FILESIZE = 2000
     LICENSE = "cc0"
     VERSION = "1.0"
+    LICENSE_URL = "https://creativecommons.org/publicdomain/zero/1.0/"
     CREATOR = "Alice"
     CREATOR_URL = "https://alice.com"
     TITLE = "My Great Pic"
-    META_DATA = '{"description": "what a cool picture"}'
+    META_DATA = (
+        '{"description": "what a cool picture", "watermarked": "f",'
+        ' "ingestion_type": "test_ingestion"}'
+    )
     TAGS = '["fun", "great"]'
-    WATERMARKED = "f"
     PROVIDER = "images_provider"
     SOURCE = "images_source"
-    INGESTION_TYPE = "test_ingestion"
 
     query_values = create_query_values(
         {
@@ -416,15 +417,14 @@ def test_upsert_records_inserts_one_record_to_empty_image_table(
             col.FILESIZE.db_name: FILESIZE,
             col.LICENSE.db_name: LICENSE,
             col.LICENSE_VERSION.db_name: VERSION,
+            col.LICENSE_URL.db_name: LICENSE_URL,
             col.CREATOR.db_name: CREATOR,
             col.CREATOR_URL.db_name: CREATOR_URL,
             col.TITLE.db_name: TITLE,
             col.META_DATA.db_name: META_DATA,
             col.TAGS.db_name: TAGS,
-            col.WATERMARKED.db_name: WATERMARKED,
             col.PROVIDER.db_name: PROVIDER,
             col.SOURCE.db_name: SOURCE,
-            col.INGESTION_TYPE.db_name: INGESTION_TYPE,
             col.WIDTH.db_name: WIDTH,
             col.HEIGHT.db_name: HEIGHT,
         }
@@ -439,7 +439,6 @@ def test_upsert_records_inserts_one_record_to_empty_image_table(
     actual_rows = postgres_with_load_and_image_table.cursor.fetchall()
     actual_row = actual_rows[0]
     assert len(actual_rows) == 1
-    assert actual_row[ingestion_idx] == INGESTION_TYPE
     assert actual_row[provider_idx] == PROVIDER
     assert actual_row[source_idx] == SOURCE
     assert actual_row[fid_idx] == FID
@@ -449,12 +448,12 @@ def test_upsert_records_inserts_one_record_to_empty_image_table(
     assert actual_row[filesize_idx] == FILESIZE
     assert actual_row[license_idx] == LICENSE
     assert actual_row[version_idx] == VERSION
+    assert actual_row[license_url_idx] == LICENSE_URL
     assert actual_row[creator_idx] == CREATOR
     assert actual_row[creator_url_idx] == CREATOR_URL
     assert actual_row[title_idx] == TITLE
     assert actual_row[metadata_idx] == json.loads(META_DATA)
     assert actual_row[tags_idx] == json.loads(TAGS)
-    assert actual_row[watermarked_idx] is False
     assert actual_row[width_idx] == WIDTH
     assert actual_row[height_idx] == HEIGHT
 
@@ -472,20 +471,21 @@ def test_upsert_records_inserts_two_records_to_image_table(
     IMG_URL_B = "images.com/b/img.jpg"
     LICENSE = "cc0"
     VERSION = "1.0"
+    LICENSE_URL = "https://creativecommons.org/publicdomain/zero/1.0/"
     PROVIDER = "images"
 
     test_rows = [
-        (FID_A, LAND_URL_A, IMG_URL_A, LICENSE, VERSION, PROVIDER),
-        (FID_B, LAND_URL_B, IMG_URL_B, LICENSE, VERSION, PROVIDER),
+        (FID_A, LAND_URL_A, IMG_URL_A, LICENSE, VERSION, LICENSE_URL, PROVIDER),
+        (FID_B, LAND_URL_B, IMG_URL_B, LICENSE, VERSION, LICENSE_URL, PROVIDER),
     ]
 
     for r in test_rows:
         load_data_query = f"""INSERT INTO {load_table} (
             foreign_identifier, foreign_landing_url, url,
-             license, license_version, provider, source
+             license, license_version, license_url, provider, source
             ) VALUES (
-            '{r[0]}', '{r[1]}', '{r[2]}',
-            '{r[3]}', '{r[4]}', '{r[5]}', '{r[5]}'
+            '{r[0]}', '{r[1]}', '{r[2]}', '{r[3]}',
+            '{r[4]}', '{r[5]}', '{r[6]}', '{r[6]}'
             );"""
         postgres_with_load_and_image_table.cursor.execute(load_data_query)
         postgres_with_load_and_image_table.connection.commit()
@@ -506,14 +506,15 @@ def test_upsert_records_replaces_updated_on_and_last_synced_with_source(
     IMG_URL = "images.com/a/img.jpg"
     LICENSE = "cc0"
     VERSION = "1.0"
+    LICENSE_URL = "https://creativecommons.org/publicdomain/zero/1.0/"
     PROVIDER = "images"
 
     load_data_query = f"""INSERT INTO {load_table} (
         foreign_identifier, foreign_landing_url, url,
-         license, license_version, provider, source
+         license, license_version, license_url, provider, source
         ) VALUES (
         '{FID}','{LAND_URL}','{IMG_URL}','{LICENSE}','{VERSION}',
-        '{PROVIDER}','{PROVIDER}'
+        '{LICENSE_URL}', '{PROVIDER}','{PROVIDER}'
         );"""
     postgres_with_load_and_image_table.cursor.execute(load_data_query)
     postgres_with_load_and_image_table.connection.commit()
@@ -553,7 +554,6 @@ def test_upsert_records_replaces_data(
     FID = "a"
     PROVIDER = "images_provider"
     SOURCE = "images_source"
-    WATERMARKED = "f"
     FILESIZE = 2000
     TAGS = '["fun", "great"]'
 
@@ -564,11 +564,11 @@ def test_upsert_records_replaces_data(
     HEIGHT_A = 500
     LICENSE_A = "by"
     VERSION_A = "4.0"
+    LICENSE_URL_A = "https://creativecommons.org/licenses/by/4.0/"
     CREATOR_A = "Alice"
     CREATOR_URL_A = "https://alice.com"
     TITLE_A = "My Great Pic"
     META_DATA_A = '{"description": "what a cool picture"}'
-    INGESTION_TYPE = "provider_api"
 
     IMG_URL_B = "https://images.com/b/img.jpg"
     LAND_URL_B = "https://images.com/b"
@@ -577,10 +577,15 @@ def test_upsert_records_replaces_data(
     HEIGHT_B = 1000
     LICENSE_B = "cc0"
     VERSION_B = "1.0"
+    LICENSE_URL_B = "https://creativecommons.org/publicdomain/zero/1.0/"
     CREATOR_B = "Bob"
     CREATOR_URL_B = "https://bob.com"
     TITLE_B = "Bobs Great Pic"
-    META_DATA_B = '{"description": "Bobs cool picture"}'
+    META_DATA_B = (
+        '{"description": "Bobs cool picture", '
+        '"ingestion_type": "provider_api",'
+        ' "watermarked": "f"}'
+    )
 
     query_values = create_query_values(
         {
@@ -591,15 +596,14 @@ def test_upsert_records_replaces_data(
             col.FILESIZE.db_name: FILESIZE,
             col.LICENSE.db_name: LICENSE_A,
             col.LICENSE_VERSION.db_name: VERSION_A,
+            col.LICENSE_URL.db_name: LICENSE_URL_A,
             col.CREATOR.db_name: CREATOR_A,
             col.CREATOR_URL.db_name: CREATOR_URL_A,
             col.TITLE.db_name: TITLE_A,
             col.META_DATA.db_name: META_DATA_A,
             col.TAGS.db_name: TAGS,
-            col.WATERMARKED.db_name: WATERMARKED,
             col.PROVIDER.db_name: PROVIDER,
             col.SOURCE.db_name: SOURCE,
-            col.INGESTION_TYPE.db_name: INGESTION_TYPE,
             col.WIDTH.db_name: WIDTH_A,
             col.HEIGHT.db_name: HEIGHT_A,
         }
@@ -621,15 +625,14 @@ def test_upsert_records_replaces_data(
             col.FILESIZE.db_name: FILESIZE,
             col.LICENSE.db_name: LICENSE_B,
             col.LICENSE_VERSION.db_name: VERSION_B,
+            col.LICENSE_URL.db_name: LICENSE_URL_B,
             col.CREATOR.db_name: CREATOR_B,
             col.CREATOR_URL.db_name: CREATOR_URL_B,
             col.TITLE.db_name: TITLE_B,
             col.META_DATA.db_name: META_DATA_B,
             col.TAGS.db_name: TAGS,
-            col.WATERMARKED.db_name: WATERMARKED,
             col.PROVIDER.db_name: PROVIDER,
             col.SOURCE.db_name: SOURCE,
-            col.INGESTION_TYPE.db_name: INGESTION_TYPE,
             col.WIDTH.db_name: WIDTH_B,
             col.HEIGHT.db_name: HEIGHT_B,
         }
@@ -651,6 +654,7 @@ def test_upsert_records_replaces_data(
     assert actual_row[url_idx] == IMG_URL_B
     assert actual_row[thm_idx] == THM_URL_B
     assert actual_row[license_idx] == LICENSE_B
+    assert actual_row[license_url_idx] == LICENSE_URL_B
     assert actual_row[version_idx] == VERSION_B
     assert actual_row[creator_idx] == CREATOR_B
     assert actual_row[creator_url_idx] == CREATOR_URL_B
@@ -668,11 +672,9 @@ def test_upsert_records_does_not_replace_with_nulls(
     FID = "a"
     PROVIDER = "images_provider"
     SOURCE = "images_source"
-    WATERMARKED = "f"
     IMG_URL = "https://images.com/a/img.jpg"
     FILESIZE = 2000
     TAGS = '["fun", "great"]'
-    INGESTION_TYPE = "provider_api"
 
     LAND_URL_A = "https://images.com/a"
     THM_URL_A = "https://images.com/a/img_small.jpg"
@@ -683,7 +685,7 @@ def test_upsert_records_does_not_replace_with_nulls(
     CREATOR_A = "Alice"
     CREATOR_URL_A = "https://alice.com"
     TITLE_A = "My Great Pic"
-    META_DATA_A = '{"description": "what a cool picture"}'
+    META_DATA_A = '{"description": "what a cool picture", "ingestion_type": "provider_api", "watermarked": "f"}'
 
     LAND_URL_B = "https://images.com/b"
     LICENSE_B = "cc0"
@@ -703,10 +705,8 @@ def test_upsert_records_does_not_replace_with_nulls(
             col.TITLE.db_name: TITLE_A,
             col.META_DATA.db_name: META_DATA_A,
             col.TAGS.db_name: TAGS,
-            col.WATERMARKED.db_name: WATERMARKED,
             col.PROVIDER.db_name: PROVIDER,
             col.SOURCE.db_name: SOURCE,
-            col.INGESTION_TYPE.db_name: INGESTION_TYPE,
             col.WIDTH.db_name: WIDTH_A,
             col.HEIGHT.db_name: HEIGHT_A,
         }
@@ -824,6 +824,8 @@ def test_upsert_records_does_not_replace_with_null_values_in_meta_data(
     PROVIDER = "images_provider"
     IMG_URL = "https://images.com/a/img.jpg"
     LICENSE = "by"
+    LICENSE_VERSION = "4.0"
+    LICENSE_URL = "https://creativecommons.org/licenses/by/4.0/"
 
     META_DATA_A = '{"description": "a cool picture", "test": "should stay"}'
     META_DATA_B = '{"description": "I updated my description", "test": null}'
@@ -833,6 +835,8 @@ def test_upsert_records_does_not_replace_with_null_values_in_meta_data(
             col.FOREIGN_ID.db_name: FID,
             col.DIRECT_URL.db_name: IMG_URL,
             col.LICENSE.db_name: LICENSE,
+            col.LICENSE_VERSION.db_name: LICENSE_VERSION,
+            col.LICENSE_URL.db_name: LICENSE_URL,
             col.META_DATA.db_name: META_DATA_A,
             col.PROVIDER.db_name: PROVIDER,
         }
@@ -846,6 +850,8 @@ def test_upsert_records_does_not_replace_with_null_values_in_meta_data(
             col.FOREIGN_ID.db_name: FID,
             col.DIRECT_URL.db_name: IMG_URL,
             col.LICENSE.db_name: LICENSE,
+            col.LICENSE_VERSION.db_name: LICENSE_VERSION,
+            col.LICENSE_URL.db_name: LICENSE_URL,
             col.META_DATA.db_name: META_DATA_B,
             col.PROVIDER.db_name: PROVIDER,
         }
@@ -1016,6 +1022,8 @@ def test_upsert_records_replaces_null_tags(
     PROVIDER = "images_provider"
     IMG_URL = "https://images.com/a/img.jpg"
     LICENSE = "by"
+    LICENSE_VERSION = "4.0"
+    LICENSE_URL = "https://creativecommons.org/licenses/by/4.0/"
     TAGS = [
         {"name": "tagone", "provider": "test"},
         {"name": "tagtwo", "provider": "test"},
@@ -1025,6 +1033,8 @@ def test_upsert_records_replaces_null_tags(
             col.FOREIGN_ID.db_name: FID,
             col.DIRECT_URL.db_name: IMG_URL,
             col.LICENSE.db_name: LICENSE,
+            col.LICENSE_VERSION.db_name: LICENSE_VERSION,
+            col.LICENSE_URL.db_name: LICENSE_URL,
             col.PROVIDER.db_name: PROVIDER,
         }
     )
@@ -1037,6 +1047,8 @@ def test_upsert_records_replaces_null_tags(
             col.FOREIGN_ID.db_name: FID,
             col.DIRECT_URL.db_name: IMG_URL,
             col.LICENSE.db_name: LICENSE,
+            col.LICENSE_VERSION.db_name: LICENSE_VERSION,
+            col.LICENSE_URL.db_name: LICENSE_URL,
             col.TAGS.db_name: json.dumps(TAGS),
             col.PROVIDER.db_name: PROVIDER,
         }
@@ -1078,6 +1090,8 @@ def test_upsert_records_handles_duplicate_url_and_does_not_merge(
     PROVIDER = "images_provider"
     IMG_URL = "https://images.com/a/img.jpg"
     LICENSE = "by"
+    LICENSE_VERSION = "4.0"
+    LICENSE_URL = "https://creativecommons.org/licenses/by/4.0/"
 
     FID_A = "a"
     META_DATA_A = '{"description": "a cool picture", "test": "should stay"}'
@@ -1091,6 +1105,8 @@ def test_upsert_records_handles_duplicate_url_and_does_not_merge(
             col.FOREIGN_ID.db_name: FID_A,
             col.DIRECT_URL.db_name: IMG_URL,
             col.LICENSE.db_name: LICENSE,
+            col.LICENSE_VERSION.db_name: LICENSE_VERSION,
+            col.LICENSE_URL.db_name: LICENSE_URL,
             col.META_DATA.db_name: META_DATA_A,
             col.PROVIDER.db_name: PROVIDER,
         }
@@ -1104,6 +1120,8 @@ def test_upsert_records_handles_duplicate_url_and_does_not_merge(
             col.FOREIGN_ID.db_name: FID_B,
             col.DIRECT_URL.db_name: IMG_URL,
             col.LICENSE.db_name: LICENSE,
+            col.LICENSE_VERSION.db_name: LICENSE_VERSION,
+            col.LICENSE_URL.db_name: LICENSE_URL,
             col.META_DATA.db_name: META_DATA_B,
             col.PROVIDER.db_name: PROVIDER,
         }
@@ -1149,6 +1167,8 @@ def test_upsert_records_handles_duplicate_urls_in_a_single_batch_and_does_not_me
     PROVIDER = "images_provider"
     IMG_URL = "https://images.com/a/img.jpg"
     LICENSE = "by"
+    LICENSE_VERSION = "4.0"
+    LICENSE_URL = "https://creativecommons.org/licenses/by/4.0/"
 
     FID_A = "a"
     META_DATA_A = '{"description": "a cool picture", "test": "should stay"}'
@@ -1164,6 +1184,8 @@ def test_upsert_records_handles_duplicate_urls_in_a_single_batch_and_does_not_me
             col.FOREIGN_ID.db_name: FID_A,
             col.DIRECT_URL.db_name: IMG_URL,
             col.LICENSE.db_name: LICENSE,
+            col.LICENSE_VERSION.db_name: LICENSE_VERSION,
+            col.LICENSE_URL.db_name: LICENSE_URL,
             col.META_DATA.db_name: META_DATA_A,
             col.PROVIDER.db_name: PROVIDER,
         }
@@ -1177,6 +1199,8 @@ def test_upsert_records_handles_duplicate_urls_in_a_single_batch_and_does_not_me
             col.FOREIGN_ID.db_name: FID_B,
             col.DIRECT_URL.db_name: IMG_URL,
             col.LICENSE.db_name: LICENSE,
+            col.LICENSE_VERSION.db_name: LICENSE_VERSION,
+            col.LICENSE_URL.db_name: LICENSE_URL,
             col.META_DATA.db_name: META_DATA_B,
             col.PROVIDER.db_name: PROVIDER,
         }
@@ -1191,6 +1215,8 @@ def test_upsert_records_handles_duplicate_urls_in_a_single_batch_and_does_not_me
             col.FOREIGN_ID.db_name: FID_C,
             col.DIRECT_URL.db_name: IMG_URL_C,
             col.LICENSE.db_name: LICENSE,
+            col.LICENSE_VERSION.db_name: LICENSE_VERSION,
+            col.LICENSE_URL.db_name: LICENSE_URL,
             col.META_DATA.db_name: META_DATA_C,
             col.PROVIDER.db_name: PROVIDER,
         }
@@ -1252,6 +1278,8 @@ def test_image_expiration(
     PROVIDER_A = "smithsonian"
     PROVIDER_B = "flickr"
     LICENSE = "by-nc-nd"
+    LICENSE_VERSION = "4.0"
+    LICENSE_URL = "https://creativecommons.org/licenses/by-nc-nd/4.0/"
 
     query_values = [
         create_query_values(
@@ -1259,6 +1287,8 @@ def test_image_expiration(
                 col.FOREIGN_ID.db_name: FID_A,
                 col.DIRECT_URL.db_name: IMG_URL_A,
                 col.LICENSE.db_name: LICENSE,
+                col.LICENSE_VERSION.db_name: LICENSE_VERSION,
+                col.LICENSE_URL.db_name: LICENSE_URL,
                 col.PROVIDER.db_name: PROVIDER_A,
                 col.SOURCE.db_name: PROVIDER_A,
             }
@@ -1268,6 +1298,8 @@ def test_image_expiration(
                 col.FOREIGN_ID.db_name: FID_B,
                 col.DIRECT_URL.db_name: IMG_URL_B,
                 col.LICENSE.db_name: LICENSE,
+                col.LICENSE_VERSION.db_name: LICENSE_VERSION,
+                col.LICENSE_URL.db_name: LICENSE_URL,
                 col.PROVIDER.db_name: PROVIDER_B,
                 col.SOURCE.db_name: PROVIDER_B,
             }

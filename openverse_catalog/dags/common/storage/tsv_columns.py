@@ -8,8 +8,8 @@ from common.storage.columns import Column
 # Image has 'legacy' 000 version
 # Audio versions start at 001
 CURRENT_VERSION = {
-    AUDIO: "001",
-    IMAGE: "001",
+    AUDIO: "002",
+    IMAGE: "002",
 }
 
 COLUMNS = {
@@ -52,6 +52,7 @@ COLUMNS = {
             col.FILESIZE,
             col.LICENSE,
             col.LICENSE_VERSION,
+            # Added in 002
             col.LICENSE_URL,
             col.CREATOR,
             col.CREATOR_URL,
@@ -59,8 +60,10 @@ COLUMNS = {
             col.META_DATA,
             col.TAGS,
             col.CATEGORY,
+            # Removed col.WATERMARKED
             col.PROVIDER,
             col.SOURCE,
+            # Removed col.INGESTION_TYPE
             col.DURATION,
             col.BIT_RATE,
             col.SAMPLE_RATE,
@@ -123,6 +126,7 @@ COLUMNS = {
             col.FILESIZE,
             col.LICENSE,
             col.LICENSE_VERSION,
+            # Added in 002
             col.LICENSE_URL,
             col.CREATOR,
             col.CREATOR_URL,
@@ -130,8 +134,10 @@ COLUMNS = {
             col.META_DATA,
             col.TAGS,
             col.CATEGORY,
+            # Removed col.WATERMARKED
             col.PROVIDER,
             col.SOURCE,
+            # Removed col.INGESTION_TYPE
             col.WIDTH,
             col.HEIGHT,
         ],

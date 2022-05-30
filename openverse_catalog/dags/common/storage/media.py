@@ -119,23 +119,24 @@ class MediaStore(metaclass=abc.ABCMeta):
         media_data["source"] = util.get_source(media_data.get("source"), self.provider)
         # Add ingestion_type column value based on `source`.
         # The implementation is based on `ingestion_column`
-        ingestion_type = media_data.get("ingestion_type")
+        ingestion_type = media_data.pop("ingestion_type", None)
         if ingestion_type is None:
             ingestion_type = (
                 COMMON_CRAWL if media_data["source"] == COMMON_CRAWL else PROVIDER_API
             )
 
         media_data["tags"] = self._enrich_tags(media_data.pop("raw_tags", None))
+        watermarked = media_data.pop("watermarked", "f")
+        license_info = media_data.pop("license_info")
         media_data["meta_data"] = self._enrich_meta_data(
             media_data.pop("meta_data", None),
-            media_data["license_info"].raw_url,
+            license_info.raw_url,
             ingestion_type,
-            media_data.pop("watermarked", "f"),
+            watermarked,
         )
-        media_data["license_"] = media_data["license_info"].license
-        media_data["license_version"] = media_data["license_info"].version
-        media_data["license_url"] = media_data["license_info"].url
-        media_data.pop("license_info", None)
+        media_data["license_"] = license_info.license
+        media_data["license_version"] = license_info.version
+        media_data["license_url"] = license_info.url
 
         media_data["provider"] = self.provider
         return media_data

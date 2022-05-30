@@ -179,24 +179,7 @@ def test_MediaStore_clean_media_metadata_removes_license_urls(
     }
     cleaned_data = image_store.clean_media_metadata(**image_data)
 
-    assert "license_url" not in cleaned_data
     assert "raw_license_url" not in cleaned_data
-
-
-def test_MediaStore_clean_media_metadata_replaces_license_url_with_license_info(
-    monkeypatch,
-):
-    image_store = image.ImageStore()
-    image_data = {
-        "license_info": BY_LICENSE_INFO,
-    }
-    cleaned_data = image_store.clean_media_metadata(**image_data)
-
-    expected_license = "by"
-    expected_version = "4.0"
-    assert cleaned_data["license_"] == expected_license
-    assert cleaned_data["license_version"] == expected_version
-    assert "license_url" not in cleaned_data
 
 
 def test_MediaStore_clean_media_metadata_adds_license_urls_to_meta_data(
@@ -220,7 +203,7 @@ def test_MediaStore_clean_media_metadata_adds_license_urls_to_meta_data(
     }
     cleaned_data = image_store.clean_media_metadata(**image_data)
 
-    assert cleaned_data["meta_data"]["license_url"] == license_url
+    assert cleaned_data["license_url"] == license_url
     assert cleaned_data["meta_data"]["raw_license_url"] == raw_license_url
 
 
@@ -305,15 +288,15 @@ def test_MediaStore_add_image_replaces_non_dict_meta_data_with_no_license_url():
             ingestion_type=None,
         )
     actual_image = mock_save.call_args[0][0]
+    assert actual_image.license_url == "https://creativecommons.org/licenses/by/4.0/"
     assert actual_image.meta_data == {
-        "license_url": "https://creativecommons.org/licenses/by/4.0/",
         "raw_license_url": None,
+        "ingestion_type": "provider_api",
+        "watermarked": None,
     }
 
 
-def test_MediaStore_add_item_creates_meta_data_with_valid_license_url(
-    monkeypatch, setup_env
-):
+def test_MediaStore_add_item_with_valid_license_url(monkeypatch, setup_env):
     image_store = image.ImageStore()
 
     license_url = "https://my.license.url"
@@ -324,7 +307,9 @@ def test_MediaStore_add_item_creates_meta_data_with_valid_license_url(
 
     with patch.object(image_store, "save_item", side_effect=item_saver) as mock_save:
         image_store.add_item(
-            license_info=LicenseInfo("by", "4.0", valid_license_url, license_url),
+            license_info=get_license_info(
+                license_url=license_url, license_="by", license_version="4.0"
+            ),
             foreign_landing_url="",
             image_url="",
             thumbnail_url=None,
@@ -336,15 +321,15 @@ def test_MediaStore_add_item_creates_meta_data_with_valid_license_url(
             title=None,
             meta_data=None,
             raw_tags=None,
-            watermarked=None,
             source=None,
-            ingestion_type=None,
         )
         actual_image = mock_save.call_args[0][0]
 
+        assert actual_image.license_url == valid_license_url
         assert actual_image.meta_data == {
-            "license_url": valid_license_url,
             "raw_license_url": license_url,
+            "ingestion_type": "provider_api",
+            "watermarked": "f",
         }
 
 
@@ -373,16 +358,17 @@ def test_MediaStore_add_item_adds_valid_license_url_to_dict_meta_data(
             title=None,
             meta_data={"key1": "val1"},
             raw_tags=None,
-            watermarked=None,
             source=None,
             ingestion_type=None,
         )
         actual_image = mock_save.call_args[0][0]
 
+        assert actual_image.license_url == valid_license_url
         assert actual_image.meta_data == {
             "key1": "val1",
-            "license_url": valid_license_url,
             "raw_license_url": license_url,
+            "ingestion_type": "provider_api",
+            "watermarked": "f",
         }
 
 
@@ -397,16 +383,20 @@ def test_ImageStore_add_item_fixes_invalid_license_url():
 
     with patch.object(image_store, "save_item", side_effect=item_saver) as mock_save:
         image_store.add_item(
-            license_info=LicenseInfo("by-nc-sa", "2.0", updated_url, original_url),
+            license_info=get_license_info(
+                license_="by-nc-sa", license_version="2.0", license_url=original_url
+            ),
             foreign_landing_url="",
             image_url="",
             meta_data={},
         )
     actual_image = mock_save.call_args[0][0]
 
+    assert actual_image.license_url == updated_url
     assert actual_image.meta_data == {
-        "license_url": updated_url,
         "raw_license_url": original_url,
+        "ingestion_type": "provider_api",
+        "watermarked": "f",
     }
 
 
