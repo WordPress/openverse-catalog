@@ -1,15 +1,13 @@
 """
-# Report Pending Reported Images DAG
-This DAG checks for any user-reported images pending manual review, and alerts
+# Report Pending Reported Media DAG
+This DAG checks for any user-reported media pending manual review, and alerts
 via Slack.
 
-An image may be reported for mature content or copyright infringement, for
+Media may be reported for mature content or copyright infringement, for
 example. Once reported, these require manual review through the Django Admin to
 determine whether further action (such as deindexing the record) needs to be
-taken. If an image has been reported multiple times, it only needs to be
+taken. If a record has been reported multiple times, it only needs to be
 reviewed once and so is only counted once in the reporting by this DAG.
-
-The DAG should be run weekly.
 """
 import logging
 import os
