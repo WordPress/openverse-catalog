@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 
 DAG_ID = "report_pending_reported_media"
 DB_CONN_ID = os.getenv("OPENLEDGER_API_CONN_ID", "postgres_openledger_api")
+ADMIN_URL = os.getenv("DJANGO_ADMIN_URL", "http://localhost:8000/admin")
 
 REPORTS_TABLES = {
     "image": "nsfw_reports",
@@ -96,15 +97,13 @@ def report_actionable_records(
         )
         return
 
-    admin_url = os.getenv("DJANGO_ADMIN_URL", "http://localhost:8000/admin")
     media_type_reports = ""
-
     for media_type, distinct_report_counts in report_counts_by_media_type.items():
         if not distinct_report_counts:
             continue
 
         admin_review_link = urljoin(
-            admin_url, f"api/{media_type}report/?status__exact=pending_review"
+            ADMIN_URL, f"api/{media_type}report/?status__exact=pending_review"
         )
         total_report_count = 0
         counts_by_reason = []
