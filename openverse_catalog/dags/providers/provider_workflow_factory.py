@@ -48,7 +48,7 @@ class ProviderWorkflow:
     default_args: Optional[Dict] = None
     start_date: datetime = datetime(1970, 1, 1)
     max_active_tasks: int = 1
-    schedule_string: str = "@daily"
+    schedule_string: str = "@monthly"
     dated: bool = False
     day_shift: int = 0
     execution_timeout: timedelta = timedelta(hours=12)
@@ -61,14 +61,12 @@ PROVIDER_WORKFLOWS = [
         dag_id="brooklyn_museum_workflow",
         provider_script="brooklyn_museum",
         start_date=datetime(2020, 1, 1),
-        schedule_string="@monthly",
         execution_timeout=timedelta(hours=24),
     ),
     ProviderWorkflow(
         dag_id="cleveland_museum_workflow",
         provider_script="cleveland_museum_of_art",
         start_date=datetime(2020, 1, 15),
-        schedule_string="@monthly",
     ),
     ProviderWorkflow(
         dag_id="europeana_workflow",
@@ -80,7 +78,6 @@ PROVIDER_WORKFLOWS = [
         dag_id="finnish_museums_workflow",
         provider_script="finnish_museums",
         start_date=datetime(2020, 9, 1),
-        schedule_string="@monthly",
         execution_timeout=timedelta(days=3),
     ),
     ProviderWorkflow(
@@ -92,14 +89,12 @@ PROVIDER_WORKFLOWS = [
     ProviderWorkflow(
         dag_id="freesound_workflow",
         provider_script="freesound",
-        schedule_string="@monthly",
         # doc_md = freesound.__doc__,
         media_types=["audio,"],
     ),
     ProviderWorkflow(
         dag_id="jamendo_workflow",
         provider_script="jamendo",
-        schedule_string="@monthly",
         execution_timeout=timedelta(hours=24),
         media_types=[
             "audio",
@@ -115,14 +110,12 @@ PROVIDER_WORKFLOWS = [
         dag_id="museum_victoria_workflow",
         provider_script="museum_victoria",
         start_date=datetime(2020, 1, 1),
-        schedule_string="@monthly",
         execution_timeout=timedelta(hours=24),
     ),
     ProviderWorkflow(
         dag_id="nypl_workflow",
         provider_script="nypl",
         start_date=datetime(2020, 1, 1),
-        schedule_string="@monthly",
         execution_timeout=timedelta(hours=24),
     ),
     ProviderWorkflow(
@@ -134,13 +127,11 @@ PROVIDER_WORKFLOWS = [
     ProviderWorkflow(
         dag_id="rawpixel_workflow",
         provider_script="raw_pixel",
-        schedule_string="@monthly",
     ),
     ProviderWorkflow(
         dag_id="science_museum_workflow",
         provider_script="science_museum",
         start_date=datetime(2020, 1, 1),
-        schedule_string="@monthly",
         execution_timeout=timedelta(hours=24),
     ),
     ProviderWorkflow(
@@ -154,19 +145,16 @@ PROVIDER_WORKFLOWS = [
         dag_id="smk_workflow",
         provider_script="smk",
         start_date=datetime(2020, 1, 1),
-        schedule_string="@monthly",
         execution_timeout=timedelta(hours=24),
     ),
     ProviderWorkflow(
         dag_id="stocksnap_workflow",
         provider_script="stocksnap",
-        schedule_string="@monthly",
     ),
     ProviderWorkflow(
         dag_id="walters_workflow",
         provider_script="walters_art_museum",
         start_date=datetime(2020, 9, 27),
-        schedule_string="@monthly",
         execution_timeout=timedelta(hours=24),
     ),
     ProviderWorkflow(
@@ -179,6 +167,5 @@ PROVIDER_WORKFLOWS = [
     ProviderWorkflow(
         dag_id="wordpress_workflow",
         provider_script="wordpress",
-        schedule_string="@monthly",
     ),
 ]
