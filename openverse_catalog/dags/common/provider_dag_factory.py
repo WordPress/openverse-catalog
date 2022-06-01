@@ -140,7 +140,7 @@ def create_provider_api_workflow(
     dated: bool = True,
     day_shift: int = 0,
     execution_timeout: timedelta = timedelta(hours=12),
-    doc_md: str = "",
+    doc_md: Optional[str] = "",
     media_types: Sequence[str] = ("image",),
 ):
     """
