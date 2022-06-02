@@ -107,7 +107,7 @@ def _handle_items_data(
                 image_url=img.get("image_url"),
                 height=img.get("height"),
                 width=img.get("width"),
-                filesize=img.get("image_size"),
+                filesize=img.get("filesize"),
                 filetype=extract_filetype(img.get("image_url", ""), "image"),
                 license_info=license_info,
                 creator=creator,
@@ -134,13 +134,14 @@ def _get_images(item):
 
         height = item.get("image_height")
         width = item.get("image_width")
-
+        filesize = item.get("image_size") or item.get("size")
         images.append(
             {
                 "id": id,
                 "image_url": image_url,
                 "height": height,
                 "width": width,
+                "filesize": filesize,
             }
         )
 
@@ -156,12 +157,15 @@ def _get_images(item):
                 image_url = _get_image_url(iiif_id)
                 height = alt_img.get("height")
                 width = alt_img.get("width")
+                filesize = alt_img.get("image_size") or alt_img.get("size")
+
                 images.append(
                     {
                         "id": iiif_id,
                         "image_url": image_url,
                         "height": height,
                         "width": width,
+                        "filesize": filesize,
                     }
                 )
     return images
