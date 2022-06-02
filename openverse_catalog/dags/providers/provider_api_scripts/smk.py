@@ -1,5 +1,6 @@
 import logging
 
+from common.extensions import extract_filetype
 from common.licenses import get_license_info
 from common.loader import provider_details as prov
 from common.requester import DelayedRequester
@@ -106,6 +107,8 @@ def _handle_items_data(
                 image_url=img.get("image_url"),
                 height=img.get("height"),
                 width=img.get("width"),
+                filesize=img.get("image_size"),
+                filetype=extract_filetype(img.get("image_url", ""), "image"),
                 license_info=license_info,
                 creator=creator,
                 title=title,
