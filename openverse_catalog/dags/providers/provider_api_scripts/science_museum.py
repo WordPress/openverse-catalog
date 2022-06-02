@@ -17,7 +17,7 @@ RETRIES = 3
 PROVIDER = prov.SCIENCE_DEFAULT_PROVIDER
 ENDPOINT = "https://collection.sciencemuseumgroup.org.uk/search/"
 
-delay_request = DelayedRequester(delay=DELAY)
+delayed_requester = DelayedRequester(delay=DELAY)
 image_store = ImageStore(provider=PROVIDER)
 
 HEADERS = {"Accept": "application/json"}
@@ -99,7 +99,7 @@ def _get_batch_objects(
         headers = HEADERS.copy()
     data = None
     for retry in range(retries):
-        response = delay_request.get(endpoint, query_param, headers=headers)
+        response = delayed_requester.get(endpoint, query_param, headers=headers)
         try:
             response_json = response.json()
             if "data" in response_json.keys():
@@ -135,7 +135,7 @@ def _handle_object_data(batch_data):
                 continue
             processed = image_data.get("processed")
             source = image_data.get("source")
-            image_url, height, width = _get_image_info(processed)
+            image_url, height, width, filetype, filesize = _get_image_info(processed)
             if image_url is None:
                 continue
 
@@ -151,6 +151,8 @@ def _handle_object_data(batch_data):
                 image_url=image_url,
                 height=height,
                 width=width,
+                filetype=filetype,
+                filesize=filesize,
                 license_info=license_info,
                 creator=creator,
                 title=title,
@@ -171,19 +173,28 @@ def _get_creator_info(obj_attr):
     return creator_info
 
 
+def _get_filesize(image_url):
+    """
+    Get the size of the image in bytes.
+    """
+    resp = delayed_requester.get(image_url)
+    if resp:
+        filesize = int(resp.headers.get("Content-Length", 0))
+        return filesize if filesize != 0 else None
+
+
 def _get_image_info(processed):
-    if processed.get("large"):
-        image = processed.get("large").get("location")
-        measurements = processed.get("large").get("measurements")
-    elif processed.get("medium"):
-        image = processed.get("medium").get("location")
-        measurements = processed.get("medium").get("measurements")
-    else:
-        image = None
-        measurements = None
+    image_data = processed.get("large")
+    if image_data is None:
+        image_data = processed.get("medium", {})
+
+    image = image_data.get("location")
+    measurements = image_data.get("measurements")
+    filetype = image_data.get("format")
     image = check_url(image)
     height, width = _get_dimensions(measurements)
-    return image, height, width
+    filesize = _get_filesize(image)
+    return image, height, width, filetype, filesize
 
 
 def check_url(image_url):

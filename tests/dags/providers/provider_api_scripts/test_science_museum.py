@@ -92,7 +92,7 @@ def test_get_batch_object_success():
     r = requests.Response()
     r.status_code = 200
     r.json = MagicMock(return_value=response)
-    with patch.object(sm.delay_request, "get", return_value=r) as mock_call:
+    with patch.object(sm.delayed_requester, "get", return_value=r) as mock_call:
         actual_response = sm._get_batch_objects(query_param=query_param)
 
     expected_response = response.get("data")
@@ -114,7 +114,7 @@ def test_get_batch_object_failure():
     r = requests.Response()
     r.status_code = 400
     r.json = MagicMock(return_value=response)
-    with patch.object(sm.delay_request, "get", return_value=r) as mock_call:
+    with patch.object(sm.delayed_requester, "get", return_value=r) as mock_call:
         actual_response = sm._get_batch_objects(query_param=query_param)
 
     assert mock_call.call_count == 3
@@ -131,7 +131,7 @@ def test_get_batch_object_no_response():
         "date[to]": 1500,
     }
     response = None
-    with patch.object(sm.delay_request, "get", return_value=response) as mock_call:
+    with patch.object(sm.delayed_requester, "get", return_value=response) as mock_call:
         actual_response = sm._get_batch_objects(query_param=query_param)
 
     assert mock_call.call_count == 3
@@ -156,22 +156,38 @@ def test_creator_info_fail():
 
 def test_image_info_large():
     large_image = _get_resource_json("large_image.json")
-    actual_image, actual_height, actual_width = sm._get_image_info(large_image)
+    (
+        actual_image,
+        actual_height,
+        actual_width,
+        actual_filetype,
+        actual_filesize,
+    ) = sm._get_image_info(large_image)
     expected_image = (
         "https://coimages.sciencemuseumgroup.org.uk/images/3/563/"
         "large_1999_0299_0001__0002_.jpg"
     )
     expected_height = 1022
     expected_width = 1536
+    expected_filetype = "jpeg"
+    expected_filesize = None
 
     assert actual_image == expected_image
     assert actual_height == expected_height
     assert actual_width == expected_width
+    assert actual_filetype == expected_filetype
+    assert actual_filesize is expected_filesize
 
 
 def test_image_info_medium():
     medium_image = _get_resource_json("medium_image.json")
-    actual_image, actual_height, actual_width = sm._get_image_info(medium_image)
+    (
+        actual_image,
+        actual_height,
+        actual_width,
+        actual_filetype,
+        actual_filesize,
+    ) = sm._get_image_info(medium_image)
 
     expected_image = (
         "https://coimages.sciencemuseumgroup.org.uk/images/3/563/"
@@ -179,18 +195,30 @@ def test_image_info_medium():
     )
     expected_height = 576
     expected_width = 866
+    expected_filetype = "jpeg"
+    expected_filesize = None
 
     assert actual_image == expected_image
     assert actual_height == expected_height
     assert actual_width == expected_width
+    assert actual_filetype == expected_filetype
+    assert actual_filesize is expected_filesize
 
 
 def test_image_info_failure():
-    actual_image, actual_height, actual_width = sm._get_image_info({})
+    (
+        actual_image,
+        actual_height,
+        actual_width,
+        actual_filetype,
+        actual_filesize,
+    ) = sm._get_image_info({})
 
     assert actual_image is None
     assert actual_height is None
     assert actual_width is None
+    assert actual_filetype is None
+    assert actual_filesize is None
 
 
 def test_check_relative_url():
