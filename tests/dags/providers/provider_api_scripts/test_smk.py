@@ -118,6 +118,7 @@ def test_handle_items_data_success_data():
     items = _get_resource_json("items_batch.json")
     with patch.object(smk.image_store, "add_item") as mock_add_item:
         smk._handle_items_data(items)
+
     _, actual_image = mock_add_item.call_args
     expected_image = {
         "foreign_identifier": "https://iip.smk.dk/iiif/jp2/kks1615.tif.jp2",
