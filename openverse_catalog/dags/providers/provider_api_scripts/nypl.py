@@ -1,4 +1,5 @@
 import logging
+import re
 from urllib.parse import parse_qs, urlparse
 
 from airflow.models import Variable
@@ -21,6 +22,7 @@ BASE_ENDPOINT = "http://api.repo.nypl.org/api/v1/items/search"
 METADATA_ENDPOINT = "http://api.repo.nypl.org/api/v1/items/item_details/"
 NYPL_API = Variable.get("API_KEY_NYPL", default_var=None)
 TOKEN = f"Token token={NYPL_API}"
+FILETYPE_PATTERN = r" .(jpeg|gif) "
 
 delay_request = DelayedRequester(delay=DELAY)
 image_store = ImageStore(provider=PROVIDER)
@@ -119,7 +121,9 @@ def _get_capture_details(captures=None, metadata=None, creator=None, title=None)
         image_id = img.get("imageID", {}).get("$")
         if image_id is None:
             continue
-        image_url = _get_image_url(img.get("imageLinks", {}).get("imageLink", []))
+        image_url, filetype = _get_image_data(
+            img.get("imageLinks", {}).get("imageLink", [])
+        )
         foreign_landing_url = img.get("itemLink", {}).get("$")
         license_url = img.get("rightsStatementURI", {}).get("$")
         if image_url is None or foreign_landing_url is None or license_url is None:
@@ -129,6 +133,7 @@ def _get_capture_details(captures=None, metadata=None, creator=None, title=None)
             foreign_identifier=image_id,
             foreign_landing_url=foreign_landing_url,
             image_url=image_url,
+            filetype=filetype,
             license_info=get_license_info(license_url=license_url),
             title=title,
             creator=creator,
@@ -155,31 +160,54 @@ def _get_creators(creatorinfo):
         creator = None
 
     if creator is None:
-        logger.warning("No primary creator found")
+        logger.debug("No primary creator found")
 
     return creator
 
 
-def _get_image_url(images, image_url_dimensions=None):
-    if image_url_dimensions is None:
-        image_url_dimensions = IMAGE_URL_DIMENSIONS
-    image_type = {
-        parse_qs(urlparse(img.get("$")).query)["t"][0]: img.get("$") for img in images
+def _get_filetype(description: str):
+    """
+    Extracts the filetype from a description string like:
+    "Cropped .jpeg (1600 pixels on the long side)"
+    :param description: the description string
+    :return:  jpeg | gif
+    """
+    if match := re.search(FILETYPE_PATTERN, description):
+        return match.group(1)
+    return None
+
+
+def _get_image_data(images):
+    """
+    Gets a list of dictionaries of the following shape:
+    {
+      "$": "http://images.nypl.org/index.php?id=56738467&t=q&download=1
+    &suffix=29eed1f0-3d50-0134-c4c7-00505686a51c.001",
+      "description": "Cropped .jpeg (1600 pixels on the long side)"
     }
+    Extracts the largest image based on the `t` query parameter
+    and IMAGE_URL_DIMENSIONS.
+    """
 
-    image_url = _get_preferred_image(image_type, image_url_dimensions)
-
-    return image_url
-
-
-def _get_preferred_image(image_type, dimension_list):
+    image_type = {
+        parse_qs(urlparse(img.get("$")).query)["t"][0]: {
+            "url": img.get("$"),
+            "description": img.get("description"),
+        }
+        for img in images
+    }
+    if image_type == {}:
+        return None, None
     preferred_image = (
-        image_type.get(dimension).replace("&download=1", "")
-        for dimension in dimension_list
+        (
+            image_type[dimension]["url"].replace("&download=1", ""),
+            _get_filetype(image_type[dimension]["description"]),
+        )
+        for dimension in IMAGE_URL_DIMENSIONS
         if dimension in image_type
     )
-
-    return next(preferred_image, None)
+    image_url, filetype = next(preferred_image, None)
+    return image_url, filetype
 
 
 def _get_metadata(mods):
@@ -194,14 +222,12 @@ def _get_metadata(mods):
     if isinstance(mods.get("genre"), dict):
         metadata["genre"] = mods.get("genre").get("$")
 
-    origin_info = mods.get("originInfo")
+    origin_info = mods.get("originInfo", {})
     if date_issued := origin_info.get("dateIssued", {}).get("$"):
         metadata["date_issued"] = date_issued
     if publisher := origin_info.get("publisher", {}).get("$"):
         metadata["publisher"] = publisher
-
-    physical_description = mods.get("physicalDescription")
-    if description := physical_description.get("note", {}).get("$"):
+    if description := mods.get("physicalDescription", {}).get("note", {}).get("$"):
         metadata["description"] = description
 
     return metadata
