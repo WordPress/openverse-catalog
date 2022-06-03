@@ -142,6 +142,7 @@ def test_MediaStore_clean_media_metadata_does_not_change_required_media_argument
         "license_info": BY_LICENSE_INFO,
         "foreign_landing_url": foreign_landing_url,
         "image_url": image_url,
+        "filetype": None,
         "thumbnail_url": None,
         "foreign_identifier": None,
     }
@@ -160,6 +161,7 @@ def test_MediaStore_clean_media_metadata_adds_provider(
         "license_info": BY_LICENSE_INFO,
         "foreign_landing_url": None,
         "image_url": None,
+        "filetype": None,
     }
     cleaned_data = image_store.clean_media_metadata(**image_data)
 
@@ -176,6 +178,7 @@ def test_MediaStore_clean_media_metadata_removes_license_urls(
         "image_url": None,
         "thumbnail_url": None,
         "foreign_identifier": None,
+        "filetype": None,
     }
     cleaned_data = image_store.clean_media_metadata(**image_data)
 
@@ -189,6 +192,7 @@ def test_MediaStore_clean_media_metadata_replaces_license_url_with_license_info(
     image_store = image.ImageStore()
     image_data = {
         "license_info": BY_LICENSE_INFO,
+        "filetype": None,
     }
     cleaned_data = image_store.clean_media_metadata(**image_data)
 
@@ -213,6 +217,7 @@ def test_MediaStore_clean_media_metadata_adds_license_urls_to_meta_data(
             raw_license_url,
         ),
         "foreign_landing_url": None,
+        "filetype": None,
         "image_url": None,
         "thumbnail_url": None,
         "foreign_identifier": None,
