@@ -1,5 +1,8 @@
 """"
-Airflow Dag
+# Provider Workflow Dag Factory
+
+This file iterates over the configurations defined in PROVIDER_WORKFLOWS
+and generates a provider workflow DAG in Airflow for each.
 """
 
 import importlib
