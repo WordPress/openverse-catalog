@@ -1,7 +1,7 @@
 import json
 import logging
-import os
 from functools import partial
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -9,14 +9,35 @@ from common.licenses import get_license_info
 from providers.provider_api_scripts import phylopic as pp
 
 
-RESOURCES = os.path.join(
-    os.path.abspath(os.path.dirname(__file__)), "resources/phylopic"
-)
+RESOURCES = Path(__file__).parent.resolve() / "resources/phylopic"
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s",
     level=logging.DEBUG,
 )
+
+IMAGE_FILESIZE = 100
+
+
+@pytest.fixture
+def image_data():
+    IMAGE_DATA_EXAMPLE = RESOURCES / "correct_meta_data_example.json"
+    with open(IMAGE_DATA_EXAMPLE) as f:
+        yield json.load(f)
+
+
+@pytest.fixture(autouse=True)
+def file_size_patch():
+    with patch(
+        "providers.provider_api_scripts.phylopic._get_filesize"
+    ) as _get_filesize_mock:
+        _get_filesize_mock.return_value = IMAGE_FILESIZE
+        yield
+
+
+def get_json(filename):
+    with open(RESOURCES / filename) as f:
+        return json.load(f)
 
 
 def test_get_total_images_giving_zero():
@@ -26,8 +47,7 @@ def test_get_total_images_giving_zero():
 
 
 def test_get_total_images_correct():
-    with open(os.path.join(RESOURCES, "total_images_example.json")) as f:
-        r = json.load(f)
+    r = get_json("total_images_example.json")
     with patch.object(pp.delayed_requester, "get_response_json", return_value=r):
         img_count = pp._get_total_images()
         assert img_count == 10
@@ -66,8 +86,7 @@ def test_get_image_IDs_for_no_content():
 
 
 def test_get_img_IDs_correct():
-    with open(os.path.join(RESOURCES, "image_ids_example.json")) as f:
-        r = json.load(f)
+    r = get_json("image_ids_example.json")
     with patch.object(pp.delayed_requester, "get_response_json", return_value=r):
         actual_img_ids = pp._get_image_IDs("")
         expect_img_ids = [
@@ -79,8 +98,7 @@ def test_get_img_IDs_correct():
 
 
 def test_get_meta_data_with_no_img_url():
-    with open(os.path.join(RESOURCES, "no_image_url_example.json")) as f:
-        r = json.load(f)
+    r = get_json("no_image_url_example.json")
     with patch.object(pp.delayed_requester, "get_response_json", return_value=r):
         meta_data = pp._get_meta_data("")
         assert meta_data is None
@@ -97,10 +115,10 @@ cc0_license = get_license_info(
 )
 
 
-def test_get_meta_data_correct():
-    with open(os.path.join(RESOURCES, "correct_meta_data_example.json")) as f:
-        r = json.load(f)
-    with patch.object(pp.delayed_requester, "get_response_json", return_value=r):
+def test_get_meta_data_correct(image_data):
+    with patch.object(
+        pp.delayed_requester, "get_response_json", return_value=image_data
+    ):
         actual_meta_data = pp._get_meta_data("e9df48fe-68ea-419e-b9df-441e0b208335")
         expect_meta_data = {
             "foreign_identifier": "e9df48fe-68ea-419e-b9df-441e0b208335",
@@ -109,8 +127,10 @@ def test_get_meta_data_correct():
                 "419e-b9df-441e0b208335.1024.png"
             ),
             "foreign_landing_url": "http://phylopic.org/image/e9df48fe-68ea-419e-b9df-441e0b208335",
-            "width": "847",
-            "height": "1024",
+            "width": 847,
+            "height": 1024,
+            "filesize": IMAGE_FILESIZE,
+            "filetype": "png",
             "license_info": cc0_license,
             "creator": "Jonathan Wells",
             "title": "Chondrus crispus NODC Taxonomic Code, database (version 8.0) 1996",
@@ -125,11 +145,11 @@ def test_get_meta_data_correct():
         assert actual_meta_data == expect_meta_data
 
 
-def test_get_creator_details():
-    with open(os.path.join(RESOURCES, "correct_meta_data_example.json")) as f:
-        r = json.load(f)
-    with patch.object(pp.delayed_requester, "get_response_json", return_value=r):
-        result = r["result"]
+def test_get_creator_details(image_data):
+    with patch.object(
+        pp.delayed_requester, "get_response_json", return_value=image_data
+    ):
+        result = image_data["result"]
         actual_creator_details = pp._get_creator_details(result)
         expect_creator_details = (
             "Jonathan Wells",
@@ -139,11 +159,11 @@ def test_get_creator_details():
         assert actual_creator_details == expect_creator_details
 
 
-def test_get_taxa_details():
-    with open(os.path.join(RESOURCES, "correct_meta_data_example.json")) as f:
-        r = json.load(f)
-    with patch.object(pp.delayed_requester, "get_response_json", return_value=r):
-        result = r["result"]
+def test_get_taxa_details(image_data):
+    with patch.object(
+        pp.delayed_requester, "get_response_json", return_value=image_data
+    ):
+        result = image_data["result"]
         actual_taxa = pp._get_taxa_details(result)
         expect_taxa = (
             ["Chondrus crispus NODC Taxonomic Code, database (version 8.0) 1996"],
@@ -152,11 +172,11 @@ def test_get_taxa_details():
         assert actual_taxa == expect_taxa
 
 
-def test_get_image_info():
-    with open(os.path.join(RESOURCES, "correct_meta_data_example.json")) as f:
-        r = json.load(f)
-    with patch.object(pp.delayed_requester, "get_response_json", return_value=r):
-        result = r["result"]
+def test_get_image_info(image_data):
+    with patch.object(
+        pp.delayed_requester, "get_response_json", return_value=image_data
+    ):
+        result = image_data["result"]
         actual_img_info = pp._get_image_info(
             result, "e9df48fe-68ea-419e-b9df-441e0b208335"
         )
@@ -167,19 +187,20 @@ def test_get_image_info():
             ),
             847,
             1024,
+            "png",
+            IMAGE_FILESIZE,
         )
         assert actual_img_info == expect_img_info
 
 
 def test_get_image_info_with_no_img_url():
-    with open(os.path.join(RESOURCES, "no_image_url_example.json")) as f:
-        r = json.load(f)
+    r = get_json("no_image_url_example.json")
     with patch.object(pp.delayed_requester, "get_response_json", return_value=r):
         result = r["result"]
         actual_img_info = list(
             pp._get_image_info(result, "7f7431c6-8f78-498b-92e2-ebf8882a8923")
         )
-        expect_img_info = [None, None, None]
+        expect_img_info = [None, None, None, None, None]
         assert actual_img_info == expect_img_info
 
 
