@@ -187,7 +187,6 @@ def test_get_image_info(image_data):
             ),
             847,
             1024,
-            "png",
             IMAGE_FILESIZE,
         )
         assert actual_img_info == expect_img_info
@@ -200,7 +199,7 @@ def test_get_image_info_with_no_img_url():
         actual_img_info = list(
             pp._get_image_info(result, "7f7431c6-8f78-498b-92e2-ebf8882a8923")
         )
-        expect_img_info = [None, None, None, None, None]
+        expect_img_info = [None, None, None, None]
         assert actual_img_info == expect_img_info
 
 
