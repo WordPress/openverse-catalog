@@ -1,5 +1,5 @@
 EXTENSIONS = {
-    "image": {"jpg", "jpeg", "png", "gif", "bmp", "webp", "tiff", "tif", "svg", "webp"},
+    "image": {"jpg", "jpeg", "png", "gif", "bmp", "webp", "tiff", "tif", "svg"},
     "audio": {"mp3", "ogg", "wav", "aiff", "flac", "wma", "mp4", "aac", "m4a", "m4b"},
 }
 
