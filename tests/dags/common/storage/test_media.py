@@ -587,7 +587,7 @@ def test_MediaStore_get_image_nones_nonlist_tags():
             license_version="4.0",
         ),
         foreign_landing_url=None,
-        image_url=None,
+        image_url=TEST_IMAGE_URL,
         thumbnail_url=None,
         filetype=None,
         filesize=None,
