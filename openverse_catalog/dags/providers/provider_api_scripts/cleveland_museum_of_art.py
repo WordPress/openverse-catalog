@@ -1,6 +1,5 @@
 import logging
 
-from common.extensions import extract_filetype
 from common.licenses import get_license_info
 from common.loader import provider_details as prov
 from common.requester import DelayedRequester
@@ -97,7 +96,6 @@ def _handle_batch_item(data):
     image = _get_image_type(data.get("images", {}))
     if image is None or image.get("url") is None:
         return None
-    filetype = extract_filetype(image.get("filename", ""), "image")
 
     if data.get("creators"):
         creator_name = data.get("creators")[0].get("description", "")
@@ -112,7 +110,6 @@ def _handle_batch_item(data):
         "image_url": image["url"],
         "width": get_int_value(image, "width"),
         "height": get_int_value(image, "height"),
-        "filetype": filetype,
         "filesize": get_int_value(image, "filesize"),
         "license_info": CC0_LICENSE,
         "meta_data": _get_metadata(data),
