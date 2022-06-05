@@ -143,8 +143,10 @@ class ImageStore(MediaStore):
         image_metadata = self.clean_media_metadata(**kwargs)
         if image_metadata is None:
             return None
-        if image_metadata["thumbnail_url"] is not None:
-            image_metadata["thumbnail_url"] = None
+        # Set the thumbnail to None to make sure no image provider scripts
+        # write a value, and to make testing easier by not having to provide
+        # the value.
+        image_metadata["thumbnail_url"] = None
         # Convert the `image_url` key used in ImageStore, TSV and
         # provider API scripts into `url` key used in db
         image_metadata["url"] = image_metadata.pop("image_url")
