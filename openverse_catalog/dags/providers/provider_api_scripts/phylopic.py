@@ -15,7 +15,6 @@ import logging
 from datetime import date, timedelta
 
 import requests
-from common.extensions import extract_filetype
 from common.licenses import get_license_info
 from common.requester import DelayedRequester
 from common.storage.image import ImageStore
@@ -169,7 +168,7 @@ def _get_meta_data(_uuid):
         result
     )
 
-    img_url, width, height, filetype, filesize = _get_image_info(result, _uuid)
+    img_url, width, height, filesize = _get_image_info(result, _uuid)
 
     if img_url is None:
         return None
@@ -181,7 +180,6 @@ def _get_meta_data(_uuid):
         "license_info": get_license_info(license_url=license_url),
         "width": width,
         "height": height,
-        "filetype": filetype,
         "filesize": filesize,
         "creator": creator,
         "title": title,
@@ -236,7 +234,6 @@ def _get_image_info(result, _uuid):
     img_url = None
     width = None
     height = None
-    filetype = None
     filesize = None
 
     image_info = result.get("pngFiles")
@@ -250,13 +247,12 @@ def _get_image_info(result, _uuid):
         img_url = f"{base_url}{img_url}"
         width = img[0].get("width")
         height = img[0].get("height")
-        filetype = extract_filetype(img[0].get("url"), "image")
         filesize = _get_filesize(img_url)
 
     if not img_url:
         logging.warning(f"Image not detected in url: {base_url}/image/{_uuid}")
 
-    return img_url, width, height, filetype, filesize
+    return img_url, width, height, filesize
 
 
 def _compute_date_range(date_start: str, days: int = DEFAULT_PROCESS_DAYS) -> str:
