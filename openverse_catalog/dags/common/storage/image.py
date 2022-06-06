@@ -177,3 +177,7 @@ class MockImageStore(ImageStore):
         logger.info(f"Initialized with provider {provider}")
         super().__init__(provider=provider)
         self.license_info = license_info
+
+    def add_item(self, **kwargs):
+        image_data = kwargs | {"thumbnail_url": None}
+        return self._get_image(**image_data)

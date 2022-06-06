@@ -619,13 +619,14 @@ def test_MediaStore_get_image_nones_nonlist_tags():
     ],
 )
 def test_MediaStore_validates_filetype(filetype, image_url, expected_filetype):
-    image_store = image.ImageStore("test_provider")
+    image_store = image.MockImageStore("test_provider")
     test_image_args = TEST_IMAGE_DICT | {
         "license_info": BY_LICENSE_INFO,
         "foreign_landing_url": "https://example.com/image.html",
+        "foreign_identifier": "image1",
         "image_url": image_url,
         "filetype": filetype,
     }
-    actual_image = image_store._get_image(**test_image_args)
-
+    test_image_args.pop("thumbnail_url")
+    actual_image = image_store.add_item(**test_image_args)
     assert actual_image.filetype == expected_filetype
