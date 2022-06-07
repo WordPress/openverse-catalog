@@ -166,6 +166,23 @@ class MockImageStore(ImageStore):
                         the test script in which MockImageStore is being used.
     """
 
+    NULLABLE_FIELDS = [
+        "filesize",
+        "filetype",
+        "foreign_identifier",
+        "width",
+        "height",
+        "creator",
+        "creator_url",
+        "title",
+        "meta_data",
+        "raw_tags",
+        "category",
+        "watermarked",
+        "source",
+        "ingestion_type",
+    ]
+
     def __init__(
         self,
         provider=None,
@@ -180,4 +197,7 @@ class MockImageStore(ImageStore):
 
     def add_item(self, **kwargs):
         image_data = kwargs | {"thumbnail_url": None}
+        for field in MockImageStore.NULLABLE_FIELDS:
+            if field not in image_data:
+                image_data[field] = None
         return self._get_image(**image_data)
