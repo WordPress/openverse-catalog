@@ -53,7 +53,6 @@ CREATE MATERIALIZED VIEW audio_view AS
     identifier,
     created_on,
     updated_on,
-    ingestion_type,
     provider,
     source,
     foreign_identifier,
@@ -76,7 +75,6 @@ CREATE MATERIALIZED VIEW audio_view AS
     title,
     meta_data,
     tags,
-    watermarked,
     last_synced_with_source,
     removed_from_source,
     standardized_audio_popularity(

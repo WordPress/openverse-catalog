@@ -8,8 +8,8 @@ from common.storage.columns import Column
 # Image has 'legacy' 000 version
 # Audio versions start at 001
 CURRENT_VERSION = {
-    AUDIO: "001",
-    IMAGE: "001",
+    AUDIO: "002",
+    IMAGE: "002",
 }
 
 COLUMNS = {
@@ -34,6 +34,36 @@ COLUMNS = {
             col.PROVIDER,
             col.SOURCE,
             col.INGESTION_TYPE,
+            col.DURATION,
+            col.BIT_RATE,
+            col.SAMPLE_RATE,
+            col.GENRES,
+            col.AUDIO_SET,
+            col.SET_POSITION,
+            col.ALT_FILES,
+        ],
+        "002": [
+            # The order of this list maps to the order of the columns in the TSV.
+            col.FOREIGN_ID,
+            col.LANDING_URL,
+            col.DIRECT_URL,
+            col.THUMBNAIL,
+            col.FILETYPE,
+            col.FILESIZE,
+            col.LICENSE,
+            col.LICENSE_VERSION,
+            # Added in 002
+            col.LICENSE_URL,
+            col.CREATOR,
+            col.CREATOR_URL,
+            col.TITLE,
+            col.META_DATA,
+            col.TAGS,
+            col.CATEGORY,
+            # Removed col.WATERMARKED
+            col.PROVIDER,
+            col.SOURCE,
+            # Removed col.INGESTION_TYPE
             col.DURATION,
             col.BIT_RATE,
             col.SAMPLE_RATE,
@@ -84,6 +114,30 @@ COLUMNS = {
             col.PROVIDER,
             col.SOURCE,
             col.INGESTION_TYPE,
+            col.WIDTH,
+            col.HEIGHT,
+        ],
+        "002": [
+            col.FOREIGN_ID,
+            col.LANDING_URL,
+            col.DIRECT_URL,
+            col.THUMBNAIL,
+            col.FILETYPE,
+            col.FILESIZE,
+            col.LICENSE,
+            col.LICENSE_VERSION,
+            # Added in 002
+            col.LICENSE_URL,
+            col.CREATOR,
+            col.CREATOR_URL,
+            col.TITLE,
+            col.META_DATA,
+            col.TAGS,
+            col.CATEGORY,
+            # Removed col.WATERMARKED
+            col.PROVIDER,
+            col.SOURCE,
+            # Removed col.INGESTION_TYPE
             col.WIDTH,
             col.HEIGHT,
         ],

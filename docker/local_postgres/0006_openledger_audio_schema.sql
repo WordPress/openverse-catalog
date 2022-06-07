@@ -18,7 +18,6 @@ CREATE TABLE public.audio (
     identifier uuid PRIMARY KEY DEFAULT public.uuid_generate_v4(),
     created_on timestamp with time zone NOT NULL,
     updated_on timestamp with time zone NOT NULL,
-    ingestion_type character varying(80),
     provider character varying(80),
     source character varying(80),
     foreign_identifier character varying(3000),
@@ -42,9 +41,9 @@ CREATE TABLE public.audio (
     title character varying(5000),
     meta_data jsonb,
     tags jsonb,
-    watermarked boolean,
     last_synced_with_source timestamp with time zone,
-    removed_from_source boolean NOT NULL
+    removed_from_source boolean NOT NULL,
+    license_url character varying(200) NOT NULL
 );
 
 

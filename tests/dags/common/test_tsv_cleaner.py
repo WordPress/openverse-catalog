@@ -18,7 +18,7 @@ by_license = LicenseInfo(
     license="by",
     version="4.0",
     url="https://creativecommons.org/licenses/by/4.0/",
-    raw_url="https://creativecommons.org/licenses/by/4.0/",
+    raw_url=None,
 )
 
 
@@ -40,15 +40,14 @@ def test_clean_tsv_cleans_tsv_rows(tmpdir):
             meta_data={
                 "pub_date": "1557512425",
                 "description": "Airport",
-                "license_url": "https://creativecommons.org/licenses/by/4.0/",
+                "ingestion_type": "provider_api",
+                "watermarked": "False",
             },
             raw_tags=[
                 {"name": "travel", "provider": "test_provider"},
                 {"name": "flying", "provider": "test_provider"},
             ],
-            watermarked="f",
             source="alice_official",
-            ingestion_type="provider_api",
         ),
         call(provider="next_provider"),
         call().add_item(
@@ -63,16 +62,15 @@ def test_clean_tsv_cleans_tsv_rows(tmpdir):
             title="title_two",
             meta_data={
                 "description": "Train",
-                "license_url": "https://creativecommons.org/licenses/by-nc/4.0/",
                 "raw_license_url": "https://creativecommons.org/licenses/by-nc/4.0/",
+                "ingestion_type": "provider_api",
+                "watermarked": "False",
             },
             raw_tags=[
                 {"name": "travel", "provider": "next_provider"},
                 {"name": "rail", "provider": "other_provider"},
             ],
-            watermarked="f",
             source="next_provider",
-            ingestion_type="provider_api",
         ),
         call().commit(),
         call().commit(),
@@ -85,4 +83,5 @@ def test_clean_tsv_cleans_tsv_rows(tmpdir):
     ) as mock_image_store:
         tsv_cleaner.clean_tsv(tsv_file_path)
     for i, expected_call in enumerate(expected_calls):
+
         assert mock_image_store.mock_calls[i] == expected_call
