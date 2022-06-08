@@ -628,5 +628,6 @@ def test_MediaStore_validates_filetype(filetype, image_url, expected_filetype):
         "filetype": filetype,
     }
     test_image_args.pop("thumbnail_url")
-    actual_image = image_store.add_item(**test_image_args)
+    image_store.add_item(**test_image_args)
+    actual_image = image_store.get_item()
     assert actual_image.filetype == expected_filetype
