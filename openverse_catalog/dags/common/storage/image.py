@@ -208,8 +208,3 @@ class MockImageStore(ImageStore):
         if image is not None:
             self.media_buffer.append(image)
         return len(self.media_buffer)
-
-    def get_item(self):
-        if len(self.media_buffer):
-            return self.media_buffer[0]
-        return None
