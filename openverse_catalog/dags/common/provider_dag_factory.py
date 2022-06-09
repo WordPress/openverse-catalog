@@ -133,7 +133,7 @@ def _push_output_paths_wrapper(
 def create_provider_api_workflow(
     dag_id: str,
     main_function: Callable,
-    default_args: Optional[Dict] = None,
+    default_args: Dict = {},
     start_date: datetime = datetime(1970, 1, 1),
     max_active_runs: int = 1,
     max_active_tasks: int = 1,
@@ -160,7 +160,8 @@ def create_provider_api_workflow(
     Optional Arguments:
 
     default_args:      dictionary which is passed to the airflow.dag.DAG
-                       __init__ method.
+                       __init__ method and used to optionally override the
+                       DAG_DEFAULT_ARGS.
     start_date:        datetime.datetime giving the first valid execution
                        date of the DAG.
     max_active_runs:   integer that sets the number of dagruns for this DAG
@@ -184,7 +185,7 @@ def create_provider_api_workflow(
     media_types:       list describing the media type(s) that this provider handles
                        (e.g. `["audio"]`, `["image", "audio"]`, etc.)
     """
-    default_args = default_args or DAG_DEFAULT_ARGS
+    default_args = {**default_args, **DAG_DEFAULT_ARGS}
     media_type_name = "mixed" if len(media_types) > 1 else media_types[0]
     provider_name = dag_id.replace("_workflow", "")
     identifier = f"{provider_name}_{{{{ ts_nodash }}}}"

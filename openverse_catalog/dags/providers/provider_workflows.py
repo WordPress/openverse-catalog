@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import Dict, Optional, Sequence
+from typing import Dict, Sequence
 
 
 @dataclass
@@ -19,7 +19,8 @@ class ProviderWorkflow:
     Optional Arguments:
 
     default_args:      dictionary which is passed to the airflow.dag.DAG
-                       __init__ method.
+                       __init__ method and used to optionally override the
+                       DAG_DEFAULT_ARGS.
     start_date:        datetime.datetime giving the first valid execution
                        date of the DAG.
     max_active_runs:   integer that sets the number of dagruns of this DAG
@@ -46,7 +47,7 @@ class ProviderWorkflow:
 
     dag_id: str = field(init=False)
     provider_script: str
-    default_args: Optional[Dict] = None
+    default_args: Dict = {}
     start_date: datetime = datetime(1970, 1, 1)
     max_active_runs: int = 1
     max_active_tasks: int = 1
