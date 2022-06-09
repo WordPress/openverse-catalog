@@ -89,7 +89,6 @@ PROVIDER_WORKFLOWS = [
     ProviderWorkflow(
         dag_id="freesound_workflow",
         provider_script="freesound",
-        # doc_md = freesound.__doc__,
         media_types=("audio",),
     ),
     ProviderWorkflow(
