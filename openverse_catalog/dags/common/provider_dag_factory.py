@@ -303,7 +303,7 @@ def create_day_partitioned_ingestion_dag(
     start_date=datetime(1970, 1, 1),
     max_active_runs=1,
     max_active_tasks=1,
-    default_args=None,
+    default_args={},
     dagrun_timeout=timedelta(hours=23),
     ingestion_task_timeout=timedelta(hours=2),
 ):
@@ -338,7 +338,8 @@ def create_day_partitioned_ingestion_dag(
                              Provider API in mind when setting this
                              parameter.
     default_args:            dictionary which is passed to the
-                             airflow.dag.DAG __init__ method.
+                             airflow.dag.DAG __init__ method and used to
+                             optionally override the DAG_DEFAULT_ARGS.
     dagrun_timeout:          datetime.timedelta giving the total amount
                              of time a given dagrun may take.
     ingestion_task_timeout:  datetime.timedelta giving the amount of
@@ -380,7 +381,7 @@ def create_day_partitioned_ingestion_dag(
     executions of the `main_function` allowed; that is set by the
     `max_active_tasks` parameter.
     """
-    default_args = default_args or DAG_DEFAULT_ARGS
+    default_args = {**default_args, **DAG_DEFAULT_ARGS}
     dag = DAG(
         dag_id=dag_id,
         default_args={**default_args, "start_date": start_date},
