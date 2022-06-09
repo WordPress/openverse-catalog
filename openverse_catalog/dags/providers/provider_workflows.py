@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import Dict, Sequence
+from typing import Dict, Optional, Sequence
 
 
 @dataclass
@@ -47,7 +47,7 @@ class ProviderWorkflow:
 
     dag_id: str = field(init=False)
     provider_script: str
-    default_args: Dict = {}
+    default_args: Optional[Dict] = None
     start_date: datetime = datetime(1970, 1, 1)
     max_active_runs: int = 1
     max_active_tasks: int = 1

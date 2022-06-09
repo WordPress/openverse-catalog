@@ -133,7 +133,7 @@ def _push_output_paths_wrapper(
 def create_provider_api_workflow(
     dag_id: str,
     main_function: Callable,
-    default_args: Dict = {},
+    default_args: Optional[Dict] = None,
     start_date: datetime = datetime(1970, 1, 1),
     max_active_runs: int = 1,
     max_active_tasks: int = 1,
@@ -185,7 +185,7 @@ def create_provider_api_workflow(
     media_types:       list describing the media type(s) that this provider handles
                        (e.g. `["audio"]`, `["image", "audio"]`, etc.)
     """
-    default_args = {**default_args, **DAG_DEFAULT_ARGS}
+    default_args = {**DAG_DEFAULT_ARGS, **(default_args or {})}
     media_type_name = "mixed" if len(media_types) > 1 else media_types[0]
     provider_name = dag_id.replace("_workflow", "")
     identifier = f"{provider_name}_{{{{ ts_nodash }}}}"
@@ -297,15 +297,15 @@ def create_provider_api_workflow(
 
 
 def create_day_partitioned_ingestion_dag(
-    dag_id,
-    main_function,
-    reingestion_day_list_list,
-    start_date=datetime(1970, 1, 1),
-    max_active_runs=1,
-    max_active_tasks=1,
-    default_args={},
-    dagrun_timeout=timedelta(hours=23),
-    ingestion_task_timeout=timedelta(hours=2),
+    dag_id: str,
+    main_function: Callable,
+    reingestion_day_list_list: List[List[int]],
+    start_date: datetime = datetime(1970, 1, 1),
+    max_active_runs: int = 1,
+    max_active_tasks: int = 1,
+    default_args: Optional[Dict] = None,
+    dagrun_timeout: timedelta = timedelta(hours=23),
+    ingestion_task_timeout: timedelta = timedelta(hours=2),
 ):
     """
     Given a `main_function` and `reingestion_day_list_list`, this
@@ -381,7 +381,7 @@ def create_day_partitioned_ingestion_dag(
     executions of the `main_function` allowed; that is set by the
     `max_active_tasks` parameter.
     """
-    default_args = {**default_args, **DAG_DEFAULT_ARGS}
+    default_args = {**DAG_DEFAULT_ARGS, **(default_args or {})}
     dag = DAG(
         dag_id=dag_id,
         default_args={**default_args, "start_date": start_date},
