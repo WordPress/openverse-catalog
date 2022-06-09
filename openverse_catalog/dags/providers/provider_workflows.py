@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Dict, Optional, Sequence
 
@@ -8,7 +8,6 @@ class ProviderWorkflow:
     """
     Required Arguments:
 
-    dag_id:           string giving a unique id of the DAG to be created.
     provider_script:  string path for the provider_script file whose main
                       function is to be run. If the optional argument
                       `dated` is True, then the function must take a
@@ -18,6 +17,9 @@ class ProviderWorkflow:
 
     Optional Arguments:
 
+    dag_id:            string giving a unique id of the DAG to be created. By
+                       default this will be set to the name of the provider_script,
+                       appended with 'workflow'.
     default_args:      dictionary which is passed to the airflow.dag.DAG
                        __init__ method and used to optionally override the
                        DAG_DEFAULT_ARGS.
@@ -45,8 +47,8 @@ class ProviderWorkflow:
                        (e.g. `["audio"]`, `["image", "audio"]`, etc.)
     """
 
-    dag_id: str = field(init=False)
     provider_script: str
+    dag_id: str = ""
     default_args: Optional[Dict] = None
     start_date: datetime = datetime(1970, 1, 1)
     max_active_runs: int = 1
@@ -59,7 +61,8 @@ class ProviderWorkflow:
     media_types: Sequence[str] = ("image",)
 
     def __post_init__(self):
-        self.dag_id = f"{self.provider_script}_workflow"
+        if not self.dag_id:
+            self.dag_id = f"{self.provider_script}_workflow"
 
 
 PROVIDER_WORKFLOWS = [
