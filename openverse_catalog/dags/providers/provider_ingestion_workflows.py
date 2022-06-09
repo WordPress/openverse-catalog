@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
-from providers.provider_workflow_types import ProviderWorkflow
+from providers.provider_workflows import ProviderWorkflow
 
 
 @dataclass
