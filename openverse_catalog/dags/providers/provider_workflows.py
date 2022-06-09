@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Dict, Optional, Sequence
 
@@ -43,7 +43,7 @@ class ProviderWorkflow:
                        (e.g. `["audio"]`, `["image", "audio"]`, etc.)
     """
 
-    dag_id: str
+    dag_id: str = field(init=False)
     provider_script: str
     default_args: Optional[Dict] = None
     start_date: datetime = datetime(1970, 1, 1)
@@ -55,103 +55,88 @@ class ProviderWorkflow:
     doc_md: str = ""
     media_types: Sequence[str] = ("image",)
 
+    def __post_init__(self):
+        self.dag_id = f"{self.provider_script}_workflow"
+
 
 PROVIDER_WORKFLOWS = [
     ProviderWorkflow(
-        dag_id="brooklyn_museum_workflow",
         provider_script="brooklyn_museum",
         start_date=datetime(2020, 1, 1),
     ),
     ProviderWorkflow(
-        dag_id="cleveland_museum_workflow",
-        provider_script="cleveland_museum_of_art",
+        provider_script="cleveland_museum",
         start_date=datetime(2020, 1, 15),
         execution_timeout=timedelta(hours=12),
     ),
     ProviderWorkflow(
-        dag_id="europeana_workflow",
         provider_script="europeana",
         schedule_string="@daily",
         dated=True,
     ),
     ProviderWorkflow(
-        dag_id="finnish_museums_workflow",
         provider_script="finnish_museums",
         start_date=datetime(2020, 9, 1),
         execution_timeout=timedelta(days=3),
     ),
     ProviderWorkflow(
-        dag_id="flickr_wokrflow",
         provider_script="flickr",
         schedule_string="@daily",
         dated=True,
     ),
     ProviderWorkflow(
-        dag_id="freesound_workflow",
         provider_script="freesound",
         media_types=("audio",),
     ),
     ProviderWorkflow(
-        dag_id="jamendo_workflow",
         provider_script="jamendo",
         media_types=("audio",),
     ),
     ProviderWorkflow(
-        dag_id="metropolitan_museum_workflow",
-        provider_script="metropolitan_museum_of_art",
+        provider_script="metropolitan_museum",
         schedule_string="@daily",
         dated=True,
         execution_timeout=timedelta(hours=12),
     ),
     ProviderWorkflow(
-        dag_id="museum_victoria_workflow",
         provider_script="museum_victoria",
         start_date=datetime(2020, 1, 1),
     ),
     ProviderWorkflow(
-        dag_id="nypl_workflow",
         provider_script="nypl",
         start_date=datetime(2020, 1, 1),
     ),
     ProviderWorkflow(
-        dag_id="phylopic_workflow",
         provider_script="phylopic",
         schedule_string="@weekly",
         dated=True,
         execution_timeout=timedelta(hours=12),
     ),
     ProviderWorkflow(
-        dag_id="rawpixel_workflow",
-        provider_script="raw_pixel",
+        provider_script="rawpixel",
         execution_timeout=timedelta(hours=12),
     ),
     ProviderWorkflow(
-        dag_id="science_museum_workflow",
         provider_script="science_museum",
         start_date=datetime(2020, 1, 1),
     ),
     ProviderWorkflow(
-        dag_id="smithsonian_workflow",
         provider_script="smithsonian",
         start_date=datetime(2020, 1, 1),
         schedule_string="@weekly",
     ),
     ProviderWorkflow(
-        dag_id="smk_workflow",
         provider_script="smk",
         start_date=datetime(2020, 1, 1),
     ),
     ProviderWorkflow(
-        dag_id="stocksnap_workflow",
         provider_script="stocksnap",
     ),
     ProviderWorkflow(
-        dag_id="walters_workflow",
-        provider_script="walters_art_museum",
+        provider_script="walters",
         start_date=datetime(2020, 9, 27),
     ),
     ProviderWorkflow(
-        dag_id="wikimedia_commons_workflow",
         provider_script="wikimedia_commons",
         schedule_string="@daily",
         dated=True,
@@ -159,7 +144,6 @@ PROVIDER_WORKFLOWS = [
         media_types=("image", "audio"),
     ),
     ProviderWorkflow(
-        dag_id="wordpress_workflow",
         provider_script="wordpress",
         execution_timeout=timedelta(hours=12),
     ),
