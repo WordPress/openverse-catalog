@@ -21,6 +21,7 @@ for provider_workflow in PROVIDER_WORKFLOWS:
         provider_script.main,
         provider_workflow.default_args,
         provider_workflow.start_date,
+        provider_workflow.max_active_runs,
         provider_workflow.max_active_tasks,
         provider_workflow.schedule_string,
         provider_workflow.dated,

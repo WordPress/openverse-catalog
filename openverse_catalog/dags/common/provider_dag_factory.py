@@ -135,6 +135,7 @@ def create_provider_api_workflow(
     main_function: Callable,
     default_args: Optional[Dict] = None,
     start_date: datetime = datetime(1970, 1, 1),
+    max_active_runs: int = 1,
     max_active_tasks: int = 1,
     schedule_string: str = "@daily",
     dated: bool = True,
@@ -162,9 +163,10 @@ def create_provider_api_workflow(
                        __init__ method.
     start_date:        datetime.datetime giving the first valid execution
                        date of the DAG.
+    max_active_runs:   integer that sets the number of dagruns for this DAG
+                       which can be run in parallel.
     max_active_tasks:  integer that sets the number of tasks which can
-                       run simultaneously for this DAG, and the number of
-                       dagruns of this DAG which can be run in parallel.
+                       run simultaneously for this DAG.
                        It's important to keep the rate limits of the
                        Provider API in mind when setting this parameter.
     schedule_string:   string giving the schedule on which the DAG should
@@ -191,7 +193,7 @@ def create_provider_api_workflow(
         dag_id=dag_id,
         default_args={**default_args, "start_date": start_date},
         max_active_tasks=max_active_tasks,
-        max_active_runs=max_active_tasks,
+        max_active_runs=max_active_runs,
         start_date=start_date,
         schedule_interval=schedule_string,
         catchup=False,
@@ -298,6 +300,7 @@ def create_day_partitioned_ingestion_dag(
     main_function,
     reingestion_day_list_list,
     start_date=datetime(1970, 1, 1),
+    max_active_runs=1,
     max_active_tasks=1,
     default_args=None,
     dagrun_timeout=timedelta(hours=23),
@@ -381,7 +384,7 @@ def create_day_partitioned_ingestion_dag(
         dag_id=dag_id,
         default_args={**default_args, "start_date": start_date},
         max_active_tasks=max_active_tasks,
-        max_active_runs=max_active_tasks,
+        max_active_runs=max_active_runs,
         dagrun_timeout=dagrun_timeout,
         schedule_interval="@daily",
         start_date=start_date,

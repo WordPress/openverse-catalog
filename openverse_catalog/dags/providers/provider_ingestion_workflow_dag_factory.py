@@ -38,6 +38,7 @@ for config in PROVIDER_INGESTION_WORKFLOWS:
         provider_script.main,
         reingestion_days,
         config.start_date,
+        config.max_active_runs,
         config.max_active_tasks,
         config.default_args,
         config.dagrun_timeout,
