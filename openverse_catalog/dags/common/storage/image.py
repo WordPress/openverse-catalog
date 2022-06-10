@@ -157,6 +157,9 @@ class MockImageStore(ImageStore):
     """
     A class that mocks the role of the ImageStore class. This class replaces
     all functionality of ImageStore that calls the internet.
+    It also allows for easy introspection into the images added to the
+    media_buffer by making it a public attribute, and not converting the
+    images to TSV.
 
     For information about all arguments other than license_info refer to
     ImageStore class.
@@ -165,6 +168,23 @@ class MockImageStore(ImageStore):
     license_info:       A named tuple consisting of valid license info from
                         the test script in which MockImageStore is being used.
     """
+
+    NULLABLE_FIELDS = [
+        "filesize",
+        "filetype",
+        "foreign_identifier",
+        "width",
+        "height",
+        "creator",
+        "creator_url",
+        "title",
+        "meta_data",
+        "raw_tags",
+        "category",
+        "watermarked",
+        "source",
+        "ingestion_type",
+    ]
 
     def __init__(
         self,
@@ -177,7 +197,14 @@ class MockImageStore(ImageStore):
         logger.info(f"Initialized with provider {provider}")
         super().__init__(provider=provider)
         self.license_info = license_info
+        self.media_buffer = []
 
     def add_item(self, **kwargs):
         image_data = kwargs | {"thumbnail_url": None}
-        return self._get_image(**image_data)
+        for field in MockImageStore.NULLABLE_FIELDS:
+            if field not in image_data:
+                image_data[field] = None
+        image = self._get_image(**image_data)
+        if image is not None:
+            self.media_buffer.append(image)
+        return len(self.media_buffer)
