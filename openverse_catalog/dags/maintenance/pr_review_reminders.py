@@ -30,8 +30,8 @@ from common.constants import DAG_DEFAULT_ARGS
 
 DAG_ID = "pr_review_reminders"
 MAX_ACTIVE_TASKS = 1
-ACCESS_KEY = Variable.get("GITHUB_ACCESS_TOKEN")
 DRY_RUN = Variable.get("PR_REVIEW_REMINDER_DRY_RUN", default_var=True)
+GITHUB_PAT = Variable.get("GITHUB_PAT", default_var="not_set")
 
 dag = DAG(
     dag_id=DAG_ID,
@@ -56,5 +56,5 @@ with dag:
     PythonOperator(
         task_id="pr_review_reminder_operator",
         python_callable=pr_review_reminders.post_reminders,
-        op_args=[ACCESS_KEY, DRY_RUN],
+        op_args=[GITHUB_PAT, DRY_RUN],
     )

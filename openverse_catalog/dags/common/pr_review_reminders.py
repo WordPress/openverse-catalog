@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Optional
 
-from common.github import GithubAPI
+from common.github import GitHubAPI
 
 
 logger = logging.getLogger(__name__)
@@ -48,16 +48,16 @@ def days_without_weekends(today: datetime, delta: timedelta) -> int:
 
 
 def get_urgency_if_urgent(pr) -> Optional[ReviewDelta]:
-    updated_at = datetime.fromisoformat(pr["updated_at"])
+    updated_at = datetime.fromisoformat(pr["updated_at"].rstrip("Z"))
     today = datetime.now()
     urgency = pr_urgency(pr)
-    days = days_without_weekends(today - updated_at)
+    days = days_without_weekends(today, today - updated_at)
 
     return ReviewDelta(urgency, days) if days > urgency.days else None
 
 
 def has_already_reviewed(request, reviews):
-    return request["user"]["login"] in [review["user"]["login"] for review in reviews]
+    return request["login"] in [review["user"]["login"] for review in reviews]
 
 
 COMMENT_MARKER = (
@@ -77,25 +77,33 @@ gently reminded to review this PR:
     """
 Ignoring weekend days, this PR was updated {days_since_update} day(s) ago. PRs
 labelled with {urgency_label} urgency are expected to be reviewed within {urgency_days}.
+
+@{pr_author}, if this PR is not ready for a review, please draft it to prevent reviewers
+from getting further unnecessary pings.
 """
 )
 
 
-def build_comment(review_delta: ReviewDelta, stale_requests, dry_run: bool):
-    user_handles = [f"@{req['user']['login']}" for req in stale_requests]
+def build_comment(review_delta: ReviewDelta, stale_requests, pr):
+    user_handles = [f"@{req['login']}" for req in stale_requests]
     return user_handles, COMMENT_TEMPLATE.format(
         urgency_label=review_delta.urgency.label,
         urgency_days=review_delta.urgency.days,
         user_logins="\n".join(user_handles),
         days_since_update=review_delta.days,
+        pr_author=pr["user"]["login"],
     )
 
 
-def post_reminders(access_key: str, dry_run: bool):
+def base_repo_name(pr):
+    return pr["base"]["repo"]["name"]
+
+
+def post_reminders(github_pat: str, dry_run: bool):
     if datetime.now().weekday() >= 5:
         return  # it's the weekend!
 
-    gh = GithubAPI(access_key, "pr_review_reminders")
+    gh = GitHubAPI(github_pat)
 
     repositories = [
         "openverse",
@@ -117,7 +125,7 @@ def post_reminders(access_key: str, dry_run: bool):
 
     to_ping = []
     for pr, review_delta in urgent_prs:
-        comments = gh.get_issue_comments(pr["repo"]["name"], pr["number"])
+        comments = gh.get_issue_comments(base_repo_name(pr), pr["number"])
 
         reminder_comments = [
             comment
@@ -131,23 +139,23 @@ def post_reminders(access_key: str, dry_run: bool):
             # maybe in the future we re-ping in some cases?
             continue
 
-        review_requests = gh.get_pr_review_requests(pr["repo"]["name"], pr["number"])
-        reviews = gh.get_pr_reviews(pr["repo"]["name"], pr["number"])
+        review_requests = gh.get_pr_review_requests(base_repo_name(pr), pr["number"])
+        reviews = gh.get_pr_reviews(base_repo_name(pr), pr["number"])
 
         stale_requests = [
             request
-            for request in review_requests
+            for request in review_requests["users"]
             if not has_already_reviewed(request, reviews)
         ]
         if stale_requests:
             to_ping.append((pr, review_delta, stale_requests))
 
-    for pr, stale_requests in to_ping:
-        user_handles, comment_body = build_comment(review_delta, stale_requests)
+    for pr, review_delta, stale_requests in to_ping:
+        user_handles, comment_body = build_comment(review_delta, stale_requests, pr)
 
         logger.info(f"Pinging {', '.join(user_handles)} to review {pr['title']}")
         if not dry_run:
-            gh.post_issue_comment(pr["repo"]["name"], pr["number"], comment_body)
+            gh.post_issue_comment(base_repo_name(pr), pr["number"], comment_body)
 
     if dry_run:
         logger.info(

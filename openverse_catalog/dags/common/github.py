@@ -1,36 +1,26 @@
-from airflow.providers.http.hooks.http import HttpHook
-from requests import Response
+import requests
 
 
-class GithubAPI:
-    def __init__(self, github_pat: str, http_conn_id: str):
-        self.github_pat = github_pat
-        self.http_conn_id = http_conn_id
+class GitHubAPI:
+    def __init__(self, pat: str):
+        """
+        :param pat: GitHub Personal Access Token to use to authenticate requests
+        """
+        self.pat = pat
 
-    def _get_endpoint(self, resource):
-        return f"https://api.github.com/{resource}"
-
-    def _get_hook(self, method) -> HttpHook:
-        return HttpHook(method, self.http_conn_id)
-
-    @property
-    def _headers(self):
-        return {"Authorization": f"token {self.github_pat}"}
-
-    def _run_hook(self, method, resource, data=None, params=None) -> Response:
-        hook = self._get_hook(method)
-        return hook.run(
-            self._get_endpoint(resource),
-            data=data,
-            params=params,
-            headers=self._headers,
+    def _make_request(self, method: str, resource: str, **kwargs) -> requests.Response:
+        headers = kwargs.get("headers", {})
+        headers.update(Authorization=f"token {self.pat}")
+        kwargs.update(headers=headers)
+        return getattr(requests, method.lower())(
+            f"https://api.github.com/{resource}", **kwargs
         )
 
     def get_open_prs(self, repo, owner="WordPress"):
-        return self._run_hook(
+        return self._make_request(
             "GET",
             f"repos/{owner}/{repo}/pulls",
-            params={
+            data={
                 "state": "open",
                 "base": "main",
                 "sort": "updated",
@@ -47,30 +37,30 @@ class GithubAPI:
     def get_pr_review_requests(
         self, repo: str, pr_number: int, owner: str = "WordPress"
     ):
-        return self._run_hook(
+        return self._make_request(
             "GET",
             f"repos/{owner}/{repo}/pulls/{pr_number}/requested_reviewers",
-        )
+        ).json()
 
     def get_pr_reviews(self, repo: str, pr_number: int, owner: str = "WordPress"):
-        return self._run_hook(
+        return self._make_request(
             "GET",
             f"repos/{owner}/{repo}/pulls/{pr_number}/reviews",
-        )
+        ).json()
 
     def post_issue_comment(
         self, repo: str, issue_number: int, comment_body: str, owner: str = "WordPress"
     ):
-        return self._run_hook(
+        return self._make_request(
             "POST",
             f"repos/{owner}/{repo}/issues/{issue_number}/comments",
             data={"body": comment_body},
-        )
+        ).json()
 
     def get_issue_comments(
         self, repo: str, issue_number: int, owner: str = "WordPress"
     ):
-        return self._run_hook(
+        return self._make_request(
             "GET",
             f"repos/{owner}/{repo}/issues/{issue_number}/comments",
-        )
+        ).json()
