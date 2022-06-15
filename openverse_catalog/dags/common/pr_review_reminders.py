@@ -38,11 +38,9 @@ def pr_urgency(pr) -> Urgency:
 def days_without_weekends(today: datetime, delta: timedelta) -> int:
     days_in_previous_week = abs(today.weekday() - delta.days)
     if days_in_previous_week > 0:
-        # we know there's at least one weekend in this case,
-        # so anything floored by 7 will indicate additional weekends
-        additional_weekends = days_in_previous_week // 7
-        num_weekends = additional_weekends + 1
-        return delta.days - max(num_weekends * 2, 2)
+        if days_in_previous_week < 2:
+            return 0
+        return abs(delta.days - max((days_in_previous_week // 7) * 2, 2))
 
     return delta.days
 
