@@ -190,9 +190,9 @@ def _get_image_data(images):
     """
 
     image_type = {
-        parse_qs(urlparse(img.get("$")).query)["t"][0]: {
-            "url": img.get("$"),
-            "description": img.get("description"),
+        parse_qs(urlparse(img["$"]).query)["t"][0]: {
+            "url": img["$"],
+            "description": img["description"],
         }
         for img in images
     }
