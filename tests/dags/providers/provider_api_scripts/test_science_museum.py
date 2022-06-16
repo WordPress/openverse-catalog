@@ -161,7 +161,6 @@ def test_image_info_large():
         actual_height,
         actual_width,
         actual_filetype,
-        actual_filesize,
     ) = sm._get_image_info(large_image)
     expected_image = (
         "https://coimages.sciencemuseumgroup.org.uk/images/3/563/"
@@ -170,13 +169,11 @@ def test_image_info_large():
     expected_height = 1022
     expected_width = 1536
     expected_filetype = "jpeg"
-    expected_filesize = None
 
     assert actual_image == expected_image
     assert actual_height == expected_height
     assert actual_width == expected_width
     assert actual_filetype == expected_filetype
-    assert actual_filesize is expected_filesize
 
 
 def test_image_info_medium():
@@ -186,7 +183,6 @@ def test_image_info_medium():
         actual_height,
         actual_width,
         actual_filetype,
-        actual_filesize,
     ) = sm._get_image_info(medium_image)
 
     expected_image = (
@@ -196,13 +192,11 @@ def test_image_info_medium():
     expected_height = 576
     expected_width = 866
     expected_filetype = "jpeg"
-    expected_filesize = None
 
     assert actual_image == expected_image
     assert actual_height == expected_height
     assert actual_width == expected_width
     assert actual_filetype == expected_filetype
-    assert actual_filesize is expected_filesize
 
 
 def test_image_info_failure():
@@ -211,14 +205,12 @@ def test_image_info_failure():
         actual_height,
         actual_width,
         actual_filetype,
-        actual_filesize,
     ) = sm._get_image_info({})
 
     assert actual_image is None
     assert actual_height is None
     assert actual_width is None
     assert actual_filetype is None
-    assert actual_filesize is None
 
 
 def test_check_relative_url():

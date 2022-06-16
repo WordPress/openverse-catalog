@@ -135,7 +135,7 @@ def _handle_object_data(batch_data):
                 continue
             processed = image_data.get("processed")
             source = image_data.get("source")
-            image_url, height, width, filetype, filesize = _get_image_info(processed)
+            image_url, height, width, filetype = _get_image_info(processed)
             if image_url is None:
                 continue
 
@@ -152,7 +152,6 @@ def _handle_object_data(batch_data):
                 height=height,
                 width=width,
                 filetype=filetype,
-                filesize=filesize,
                 license_info=license_info,
                 creator=creator,
                 title=title,
@@ -173,16 +172,6 @@ def _get_creator_info(obj_attr):
     return creator_info
 
 
-def _get_filesize(image_url):
-    """
-    Get the size of the image in bytes.
-    """
-    resp = delayed_requester.get(image_url)
-    if resp:
-        filesize = int(resp.headers.get("Content-Length", 0))
-        return filesize if filesize != 0 else None
-
-
 def _get_image_info(processed):
     image_data = processed.get("large")
     if image_data is None:
@@ -193,8 +182,7 @@ def _get_image_info(processed):
     filetype = image_data.get("format")
     image = check_url(image)
     height, width = _get_dimensions(measurements)
-    filesize = _get_filesize(image)
-    return image, height, width, filetype, filesize
+    return image, height, width, filetype
 
 
 def check_url(image_url):
