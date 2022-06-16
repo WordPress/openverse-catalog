@@ -16,9 +16,12 @@ for provider_workflow in PROVIDER_WORKFLOWS:
         f"providers.provider_api_scripts.{provider_workflow.provider_script}"
     )
 
+    # Use the ingester class if it exists, or fall back to the `main` method
+    ingestion_callable = provider_workflow.ingester_class or provider_script.main
+
     globals()[provider_workflow.dag_id] = create_provider_api_workflow(
         provider_workflow.dag_id,
-        provider_script.main,
+        ingestion_callable,
         provider_workflow.default_args,
         provider_workflow.start_date,
         provider_workflow.max_active_runs,
