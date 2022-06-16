@@ -1,4 +1,5 @@
 import logging
+from typing import Dict, Tuple
 
 from common.licenses import get_license_info
 from common.loader import provider_details as prov
@@ -134,11 +135,10 @@ def _handle_object_data(batch_data):
             if foreign_id is None:
                 continue
             processed = image_data.get("processed")
-            source = image_data.get("source")
             image_url, height, width, filetype = _get_image_info(processed)
             if image_url is None:
                 continue
-
+            source = image_data.get("source")
             license_version = _get_license_version(source)
             if license_version is None:
                 continue
@@ -172,49 +172,51 @@ def _get_creator_info(obj_attr):
     return creator_info
 
 
-def _get_image_info(processed):
+def _get_image_info(
+    processed: Dict,
+) -> Tuple[str | None, int | None, int | None, str | None]:
+    height, width, filetype = None, None, None
     image_data = processed.get("large")
     if image_data is None:
         image_data = processed.get("medium", {})
 
-    image = image_data.get("location")
-    measurements = image_data.get("measurements")
-    filetype = image_data.get("format")
-    image = check_url(image)
-    height, width = _get_dimensions(measurements)
-    return image, height, width, filetype
-
-
-def check_url(image_url):
-    base_url = "https://coimages.sciencemuseumgroup.org.uk/images/"
+    image_url = check_url(image_data.get("location"))
     if image_url:
-        if "http" in image_url:
-            checked_url = image_url
-        else:
-            checked_url = base_url + image_url
+        filetype = image_data.get("format")
+        height, width = _get_dimensions(image_data)
+    return image_url, height, width, filetype
+
+
+def check_url(image_url: str | None) -> str | None:
+    if not image_url:
+        return None
+    if image_url.startswith("http"):
+        return image_url
     else:
-        checked_url = None
-    return checked_url
+        return f"https://coimages.sciencemuseumgroup.org.uk/images/{image_url}"
 
 
-def _get_dimensions(measurements):
-    height_width = {}
-    if measurements:
-        dimensions = measurements.get("dimensions")
-        if dimensions:
-            for dim in dimensions:
-                height_width[dim.get("dimension")] = dim.get("value")
-    return height_width.get("height"), height_width.get("width")
+def _get_dimensions(image_data: Dict) -> Tuple[int | None, int | None]:
+    """
+    Returns the height and width of the image from a list of dictionaries
+    with keys of "dimension", "units", "value".
+    """
+    size = {}
+    dimensions = image_data.get("measurements", {}).get("dimensions")
+    if dimensions:
+        for dim in dimensions:
+            size[dim.get("dimension")] = (
+                dim.get("value") if dim.get("units") == "pixels" else None
+            )
+    return size.get("height"), size.get("width")
 
 
-def _get_license_version(source):
+def _get_license_version(source: Dict | None) -> str | None:
     license_version = None
     if source:
-        legal = source.get("legal")
-        if legal:
-            rights = legal.get("rights")
-            if type(rights) == list:
-                license_version = rights[0].get("usage_terms")
+        rights = source.get("legal", {}).get("rights")
+        if type(rights) == list and len(rights) > 0:
+            license_version = rights[0].get("usage_terms")
     return license_version
 
 
