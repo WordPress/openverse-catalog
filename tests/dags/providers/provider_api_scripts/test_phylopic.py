@@ -118,7 +118,6 @@ def test_get_meta_data_correct(image_data):
             "foreign_landing_url": "http://phylopic.org/image/e9df48fe-68ea-419e-b9df-441e0b208335",
             "width": 847,
             "height": 1024,
-            "filetype": "png",
             "license_info": cc0_license,
             "creator": "Jonathan Wells",
             "title": "Chondrus crispus NODC Taxonomic Code, database (version 8.0) 1996",
@@ -186,7 +185,7 @@ def test_get_image_info_with_no_img_url():
         actual_img_info = list(
             pp._get_image_info(result, "7f7431c6-8f78-498b-92e2-ebf8882a8923")
         )
-        expect_img_info = [None, None, None, None]
+        expect_img_info = [None, None, None]
         assert actual_img_info == expect_img_info
 
 
