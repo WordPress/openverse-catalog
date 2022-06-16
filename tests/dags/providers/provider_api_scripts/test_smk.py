@@ -127,9 +127,7 @@ def test_handle_items_data_success_data():
         "height": 5141,
         "width": 3076,
         "filesize": 47466428,
-        "filetype": "jpg",
         "license_info": CC0,
-        "thumbnail_url": "https://iip.smk.dk/iiif/jp2/kks1615.tif.jp2/full/!400,/0/default.jpg",
         "creator": "Altdorfer, Albrecht",
         "title": "Jomfru Maria med barnet og Sankt Anne ved vuggen",
         "meta_data": {
