@@ -183,10 +183,10 @@ def test_get_response_failure():
 
 def test_handle_single_response():
     response_json = _get_resource_json("response_success.json")
-    data = response_json["data"][0]
-    actual_image = clm._handle_batch_item(data)
-
-    assert actual_image == {
+    data = response_json["data"]
+    clm._handle_response(data)
+    actual_image = clm.image_store.media_buffer[0]
+    expected_image = {
         "creator": "",
         "foreign_identifier": "96887",
         "foreign_landing_url": "https://clevelandart.org/art/1916.586.a",
@@ -194,8 +194,9 @@ def test_handle_single_response():
         "height": 900,
         "filesize": 222248,
         "filetype": "jpg",
-        "image_url": "https://openaccess-cdn.clevelandart.org/1916.586.a/1916.586.a_web.jpg",
-        "license_info": CC0_LICENSE,
+        "url": "https://openaccess-cdn.clevelandart.org/1916.586.a/1916.586.a_web.jpg",
+        "license": CC0_LICENSE.license,
+        "license_version": CC0_LICENSE.version,
         "meta_data": {
             "accession_number": "1916.586.a",
             "classification": "Miscellaneous",
@@ -209,6 +210,8 @@ def test_handle_single_response():
         },
         "title": "Scent Bottle",
     }
+    for key, value in expected_image.items():
+        assert getattr(actual_image, key) == value
 
 
 def test_get_response_None():

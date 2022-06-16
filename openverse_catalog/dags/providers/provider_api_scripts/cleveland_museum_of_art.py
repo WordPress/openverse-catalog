@@ -1,4 +1,5 @@
 import logging
+from typing import Dict, List
 
 from common.licenses import get_license_info
 from common.loader import provider_details as prov
@@ -79,14 +80,22 @@ def _get_response(query_param, endpoint=ENDPOINT, retries=RETRIES):
         return response_json, total_images
 
 
-def get_int_value(data, key):
+def get_int_value(data: Dict, key: str) -> int | None:
+    """
+    Converts the value of the key `key` in `data` to an integer.
+    Returns None if the value is not convertible to an integer, or
+    if the value doesn't exist.
+    """
     value = data.get(key)
-    if value is not None and value != "":
-        return int(value)
+    if bool(value):
+        if isinstance(value, str) and value.isdigit():
+            return int(value)
+        elif isinstance(value, int):
+            return value
     return None
 
 
-def _handle_batch_item(data):
+def _handle_batch_item(data: Dict) -> Dict | None:
     license_ = data.get("share_license_status", "").lower()
     if license_ != "cc0":
         return None
@@ -116,7 +125,7 @@ def _handle_batch_item(data):
     }
 
 
-def _handle_response(batch):
+def _handle_response(batch: List):
     total_images = 0
     for data in batch:
         item = _handle_batch_item(data)
