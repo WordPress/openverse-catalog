@@ -1,6 +1,6 @@
 import logging
+from typing import Dict, Tuple
 
-from common.extensions import extract_filetype
 from common.licenses import get_license_info
 from common.loader import provider_details as prov
 from common.requester import DelayedRequester
@@ -106,14 +106,14 @@ def _handle_batch_objects(objects, landing_page=LANDING_PAGE):
         meta_data = _get_metadata(obj)
         title = obj.get("displayTitle")
         for img in image_data:
-            license_info = get_license_info(license_url=img.get("license_url"))
             image_count = image_store.add_item(
                 foreign_identifier=img.get("image_id"),
                 foreign_landing_url=foreign_landing_url,
                 image_url=img.get("image_url"),
                 height=img.get("height"),
                 width=img.get("width"),
-                license_info=license_info,
+                filesize=img.get("filesize"),
+                license_info=img.get("license_info"),
                 title=title,
                 creator=img.get("creators"),
                 meta_data=meta_data,
@@ -127,41 +127,44 @@ def _get_media_info(media_data):
         media_type = media.get("type")
         if media_type == "image":
             image_id = media.get("id")
-            image_url, height, width, filesize, filetype = _get_image_data(media)
             license_url = _get_license_url(media)
-            if image_url is None or image_id is None or license_url is None:
+            if image_id is None or license_url is None:
+                continue
+            image_url, height, width, filesize = _get_image_data(media)
+            if image_url is None:
                 continue
             creators = _get_creator(media)
+            license_info = get_license_info(license_url=license_url)
             image_data.append(
                 {
                     "image_id": image_id,
                     "image_url": image_url,
                     "height": height,
                     "width": width,
-                    "license_url": license_url,
+                    "filesize": filesize,
+                    "license_info": license_info,
                     "creators": creators,
                 }
             )
     return image_data
 
 
-def _get_image_data(media):
+def _get_image_data(
+    media: Dict,
+) -> Tuple[str | None, int | None, int | None, int | None]:
+    height, width, filesize = None, None, None
     media_data = {}
-    filetype = None
-    if "large" in media.keys():
-        media_data = media.get("large")
-    elif "medium" in media.keys():
-        media_data = media.get("medium")
-    elif "small" in media.keys():
-        media_data = media.get("small")
+    for size in ["large", "medium", "small"]:
+        if size in media:
+            media_data = media[size]
+            break
 
     image_url = media_data.get("uri")
-    height = media_data.get("height")
-    width = media_data.get("width")
-    filesize = media_data.get("size")
-    if image_url:
-        filetype = extract_filetype(image_url, "image")
-    return image_url, height, width, filesize, filetype
+    if image_url is not None:
+        height = media_data.get("height")
+        width = media_data.get("width")
+        filesize = media_data.get("size")
+    return image_url, height, width, filesize
 
 
 def _get_license_url(media):
@@ -175,11 +178,11 @@ def _get_license_url(media):
 
 
 def _get_metadata(obj):
-    metadata = {}
-
-    metadata["datemodified"] = obj.get("dateModified")
-    metadata["category"] = obj.get("category")
-    metadata["description"] = obj.get("physicalDescription")
+    metadata = {
+        "datemodified": obj.get("dateModified"),
+        "category": obj.get("category"),
+        "description": obj.get("physicalDescription"),
+    }
 
     keywords = obj.get("keywords")
     if type(keywords) == list:
@@ -189,10 +192,14 @@ def _get_metadata(obj):
     if type(classifications) == list:
         metadata["classifications"] = ",".join(classifications)
 
+    for key, value in metadata.items():
+        if value is None:
+            metadata.pop(key)
+
     return metadata
 
 
-def _get_creator(media):
+def _get_creator(media: Dict) -> str | None:
     creators = None
     if type(media.get("creators")) == list:
         creators = ",".join(media.get("creators"))
