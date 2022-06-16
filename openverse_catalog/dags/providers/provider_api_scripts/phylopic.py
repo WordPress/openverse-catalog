@@ -14,7 +14,6 @@ import argparse
 import logging
 from datetime import date, timedelta
 
-import requests
 from common.licenses import get_license_info
 from common.requester import DelayedRequester
 from common.storage.image import ImageStore
@@ -168,7 +167,7 @@ def _get_meta_data(_uuid):
         result
     )
 
-    img_url, width, height, filesize = _get_image_info(result, _uuid)
+    img_url, width, height = _get_image_info(result, _uuid)
 
     if img_url is None:
         return None
@@ -180,7 +179,6 @@ def _get_meta_data(_uuid):
         "license_info": get_license_info(license_url=license_url),
         "width": width,
         "height": height,
-        "filesize": filesize,
         "creator": creator,
         "title": title,
         "meta_data": meta_data,
@@ -221,38 +219,28 @@ def _get_taxa_details(result):
     return taxa_list, title
 
 
-def _get_filesize(img_url):
-    filesize = requests.head(img_url).headers.get("content-length", "")
-    try:
-        return int(filesize)
-    except ValueError:
-        return None
-
-
 def _get_image_info(result, _uuid):
     base_url = "http://phylopic.org"
     img_url = None
     width = None
     height = None
-    filesize = None
 
     image_info = result.get("pngFiles")
-    img = []
     if image_info:
-        img = list(filter(lambda x: (int(str(x.get("width", "0"))) >= 257), image_info))
-        img = sorted(img, key=lambda x: x["width"], reverse=True)
+        images = list(
+            filter(lambda x: (int(str(x.get("width", "0"))) >= 257), image_info)
+        )
+        if len(images) > 0:
+            image = sorted(images, key=lambda x: x["width"], reverse=True)[0]
+            img_url = image.get("url")
+            if not img_url:
+                logging.warning(f"Image not detected in url: {base_url}/image/{_uuid}")
+            else:
+                img_url = f"{base_url}{img_url}"
+                width = image.get("width")
+                height = image.get("height")
 
-    if len(img) > 0:
-        img_url = img[0].get("url")
-        img_url = f"{base_url}{img_url}"
-        width = img[0].get("width")
-        height = img[0].get("height")
-        filesize = _get_filesize(img_url)
-
-    if not img_url:
-        logging.warning(f"Image not detected in url: {base_url}/image/{_uuid}")
-
-    return img_url, width, height, filesize
+    return img_url, width, height
 
 
 def _compute_date_range(date_start: str, days: int = DEFAULT_PROCESS_DAYS) -> str:
