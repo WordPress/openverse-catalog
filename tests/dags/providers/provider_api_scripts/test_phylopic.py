@@ -16,23 +16,12 @@ logging.basicConfig(
     level=logging.DEBUG,
 )
 
-IMAGE_FILESIZE = 100
-
 
 @pytest.fixture
 def image_data():
     IMAGE_DATA_EXAMPLE = RESOURCES / "correct_meta_data_example.json"
     with open(IMAGE_DATA_EXAMPLE) as f:
         yield json.load(f)
-
-
-@pytest.fixture(autouse=True)
-def file_size_patch():
-    with patch(
-        "providers.provider_api_scripts.phylopic._get_filesize"
-    ) as _get_filesize_mock:
-        _get_filesize_mock.return_value = IMAGE_FILESIZE
-        yield
 
 
 def get_json(filename):
@@ -129,7 +118,6 @@ def test_get_meta_data_correct(image_data):
             "foreign_landing_url": "http://phylopic.org/image/e9df48fe-68ea-419e-b9df-441e0b208335",
             "width": 847,
             "height": 1024,
-            "filesize": IMAGE_FILESIZE,
             "filetype": "png",
             "license_info": cc0_license,
             "creator": "Jonathan Wells",
@@ -187,7 +175,6 @@ def test_get_image_info(image_data):
             ),
             847,
             1024,
-            IMAGE_FILESIZE,
         )
         assert actual_img_info == expect_img_info
 
