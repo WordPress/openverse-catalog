@@ -125,11 +125,6 @@ def test_get_image_type_none():
     data["images"] = image_data
     actual_image = clm._handle_batch_item(data)
 
-    # image_data = _get_resource_json("image_type_none.json")
-    # actual_url, actual_key = clm._get_image_type(image_data)
-    # expected_url = None
-    # expected_key = None
-
     assert actual_image is None
 
 
