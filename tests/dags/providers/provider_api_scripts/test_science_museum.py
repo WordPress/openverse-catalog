@@ -243,8 +243,8 @@ def test_check_url_none():
 
 
 def test_get_dimensions():
-    measurements = _get_resource_json("measurements.json")
-    actual_height, actual_width = sm._get_dimensions(measurements)
+    image_data = {"measurements": _get_resource_json("measurements.json")}
+    actual_height, actual_width = sm._get_dimensions(image_data)
     expected_height, expected_width = (1022, 1536)
 
     assert actual_height == expected_height
@@ -252,8 +252,8 @@ def test_get_dimensions():
 
 
 def test_get_dimensions_none():
-    measurements = None
-    actual_height, actual_width = sm._get_dimensions(measurements)
+    image_data = {"measurements": {"dimensions": None}}
+    actual_height, actual_width = sm._get_dimensions(image_data)
 
     assert actual_height is None
     assert actual_width is None
