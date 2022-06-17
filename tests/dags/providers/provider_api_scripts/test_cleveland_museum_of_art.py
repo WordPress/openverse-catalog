@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 import requests
 from common.licenses import LicenseInfo
-from common.storage.image import MockImageStore
+from common.storage.image import ImageStore
 from providers.provider_api_scripts import cleveland_museum_of_art as clm
 
 
@@ -24,9 +24,8 @@ _license_info = (
     None,
 )
 CC0_LICENSE = LicenseInfo(*_license_info)
-clm.image_store = MockImageStore(
+clm.image_store = ImageStore(
     provider=clm.PROVIDER,
-    license_info=CC0_LICENSE,
 )
 
 RESOURCES = Path(__file__).parent / "resources/clevelandmuseum"
@@ -59,19 +58,19 @@ def test_get_image_type_web():
     image_data = _get_resource_json("image_type_web.json")
     data = response_json["data"][0]
     data["images"] = image_data
-    actual_image = clm._handle_batch_item(data)
+    with patch.object(clm.image_store, "save_item") as mock_save_item:
+        clm._handle_response([data])
 
-    expected_url = "https://openaccess-cdn.clevelandart.org/1335.1917/1335.1917_web.jpg"
-    expected_width = 1263
-    expected_height = 775
-    expected_filetype = "jpg"
-    expected_filesize = 716717
+    expected_image = {
+        "url": "https://openaccess-cdn.clevelandart.org/1335.1917/1335.1917_web.jpg",
+        "width": 1263,
+        "height": 775,
+        "filesize": 716717,
+    }
 
-    assert actual_image["image_url"] == expected_url
-    assert actual_image["width"] == expected_width
-    assert actual_image["height"] == expected_height
-    assert actual_image["filetype"] == expected_filetype
-    assert actual_image["filesize"] == expected_filesize
+    actual_image = mock_save_item.call_args[0][0]
+    for key, value in expected_image.items():
+        assert getattr(actual_image, key) == value
 
 
 def test_get_image_type_print():
@@ -79,21 +78,19 @@ def test_get_image_type_print():
     image_data = _get_resource_json("image_type_print.json")
     data = response_json["data"][0]
     data["images"] = image_data
-    actual_image = clm._handle_batch_item(data)
+    with patch.object(clm.image_store, "save_item") as mock_save_item:
+        clm._handle_response([data])
 
-    expected_url = (
-        "https://openaccess-cdn.clevelandart.org/1335.1917/1335.1917_print.jpg"
-    )
-    expected_width = 3400
-    expected_height = 2086
-    expected_filetype = "jpg"
-    expected_filesize = 5582485
+    expected_image = {
+        "url": "https://openaccess-cdn.clevelandart.org/1335.1917/1335.1917_print.jpg",
+        "width": 3400,
+        "height": 2086,
+        "filesize": 5582485,
+    }
 
-    assert actual_image["image_url"] == expected_url
-    assert actual_image["width"] == expected_width
-    assert actual_image["height"] == expected_height
-    assert actual_image["filetype"] == expected_filetype
-    assert actual_image["filesize"] == expected_filesize
+    actual_image = mock_save_item.call_args[0][0]
+    for key, value in expected_image.items():
+        assert getattr(actual_image, key) == value
 
 
 def test_get_image_type_full():
@@ -101,21 +98,21 @@ def test_get_image_type_full():
     image_data = _get_resource_json("image_type_full.json")
     data = response_json["data"][0]
     data["images"] = image_data
-    actual_image = clm._handle_batch_item(data)
+    batch = [data]
+    with patch.object(clm.image_store, "save_item") as mock_save_item:
+        clm._handle_response(batch)
+    actual_image = mock_save_item.call_args[0][0]
 
-    expected_url = (
-        "https://openaccess-cdn.clevelandart.org/1335.1917/1335.1917_full.tif"
-    )
-    expected_width = 6280
-    expected_height = 3853
-    expected_filetype = "tif"
-    expected_filesize = 72628688
+    expected_image = {
+        "url": "https://openaccess-cdn.clevelandart.org/1335.1917/1335.1917_full.tif",
+        "width": 6280,
+        "height": 3853,
+        "filesize": 72628688,
+        "filetype": "tiff",
+    }
 
-    assert actual_image["image_url"] == expected_url
-    assert actual_image["width"] == expected_width
-    assert actual_image["height"] == expected_height
-    assert actual_image["filetype"] == expected_filetype
-    assert actual_image["filesize"] == expected_filesize
+    for key, value in expected_image.items():
+        assert getattr(actual_image, key) == value
 
 
 def test_get_image_type_none():
@@ -178,9 +175,10 @@ def test_get_response_failure():
 
 def test_handle_single_response():
     response_json = _get_resource_json("response_success.json")
-    data = response_json["data"]
-    clm._handle_response(data)
-    actual_image = clm.image_store.media_buffer[0]
+    batch = response_json["data"]
+    # Patching save_item because it will have the filetype after clean_metadata
+    with patch.object(clm.image_store, "save_item") as mock_save_item:
+        clm._handle_response(batch)
     expected_image = {
         "creator": "",
         "foreign_identifier": "96887",
@@ -190,9 +188,11 @@ def test_handle_single_response():
         "filesize": 222248,
         "filetype": "jpg",
         "url": "https://openaccess-cdn.clevelandart.org/1916.586.a/1916.586.a_web.jpg",
-        "license": CC0_LICENSE.license,
+        "license_": CC0_LICENSE.license,
         "license_version": CC0_LICENSE.version,
         "meta_data": {
+            "license_url": CC0_LICENSE.url,
+            "raw_license_url": None,
             "accession_number": "1916.586.a",
             "classification": "Miscellaneous",
             "credit_line": "Gift of Mr. and Mrs. J. H. Wade",
@@ -205,6 +205,8 @@ def test_handle_single_response():
         },
         "title": "Scent Bottle",
     }
+
+    actual_image = mock_save_item.call_args[0][0]
     for key, value in expected_image.items():
         assert getattr(actual_image, key) == value
 
