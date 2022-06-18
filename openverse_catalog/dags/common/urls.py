@@ -30,7 +30,8 @@ def validate_url_string(url_string, strip_slash: bool = True):
     url_string:  URL (string) which will be validated and/or repaired.
 
     Optional Arguments:
-    strip_slash: Flag (bool) which decides whether to strip slashes in URL or not.
+    strip_slash: Flag (bool) decides whether to strip slashes in URL or not,
+    Default value is `True`
     """
     logger.debug(f"Validating_url {url_string}")
     if not type(url_string) == str or not url_string:

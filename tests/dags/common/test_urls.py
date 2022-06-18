@@ -102,6 +102,13 @@ def test_validate_url_string_keeps_trailing_slash():
     assert actual_validated_url == url_string
 
 
+def test_validate_url_string_removes_trailing_slash():
+    url_string = "https://wordpress.org/photos/photo/5262839486/"
+    actual_validated_url = urls.validate_url_string(url_string)
+    expect_validated_url = "https://wordpress.org/photos/photo/5262839486"
+    assert actual_validated_url == expect_validated_url
+
+
 def test_rewrite_redirected_url_returns_when_ok(clear_rewriter_cache, monkeypatch):
     expect_url = "https://rewritten.url"
     r = requests.Response()
