@@ -7,7 +7,7 @@ import pytest
 import requests
 from common.licenses import LicenseInfo
 from common.storage.image import ImageStore
-from providers.provider_api_scripts import cleveland_museum_of_art as clm
+from providers.provider_api_scripts import cleveland_museum as clm
 
 
 @pytest.fixture(autouse=True)
