@@ -30,7 +30,7 @@ class ReviewDelta:
     days: int
 
 
-def pr_urgency(pr) -> Urgency:
+def pr_urgency(pr: dict) -> Urgency:
     priority_label = [
         label["name"] for label in pr["labels"] if "priority" in label["name"].lower()
     ][0]
@@ -54,7 +54,7 @@ def days_without_weekends(today: datetime, delta: timedelta) -> int:
     return delta.days
 
 
-def get_urgency_if_urgent(pr) -> Optional[ReviewDelta]:
+def get_urgency_if_urgent(pr: dict) -> Optional[ReviewDelta]:
     updated_at = datetime.fromisoformat(pr["updated_at"].rstrip("Z"))
     today = datetime.now()
     urgency = pr_urgency(pr)
@@ -63,7 +63,7 @@ def get_urgency_if_urgent(pr) -> Optional[ReviewDelta]:
     return ReviewDelta(urgency, days) if days > urgency.days else None
 
 
-def has_already_reviewed(request, reviews):
+def has_already_reviewed(request: dict, reviews: list[dict]):
     return request["login"] in [review["user"]["login"] for review in reviews]
 
 
@@ -91,7 +91,7 @@ from getting further unnecessary pings.
 )
 
 
-def build_comment(review_delta: ReviewDelta, stale_requests, pr):
+def build_comment(review_delta: ReviewDelta, stale_requests: list[dict], pr: dict):
     user_handles = [f"@{req['login']}" for req in stale_requests]
     return user_handles, COMMENT_TEMPLATE.format(
         urgency_label=review_delta.urgency.label,
@@ -102,7 +102,7 @@ def build_comment(review_delta: ReviewDelta, stale_requests, pr):
     )
 
 
-def base_repo_name(pr):
+def base_repo_name(pr: dict):
     return pr["base"]["repo"]["name"]
 
 
