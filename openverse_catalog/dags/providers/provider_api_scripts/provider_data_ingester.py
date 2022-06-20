@@ -206,13 +206,15 @@ class ProviderDataIngester(ABC):
             record_data = self.get_record_data(record)
 
             if record_data is not None:
+                record_count += 1
+
                 # We need to know what type of record we're handling in
                 # order to add it to the correct store
                 media_type = self.get_media_type(record)
 
                 # Get the store for that media_type
                 store = self.media_stores[media_type]
-                record_count = store.add_item(**record_data)
+                store.add_item(**record_data)
 
         return record_count
 
