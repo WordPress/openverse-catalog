@@ -21,7 +21,6 @@ is unavailable for the time period during which the PR should be reviewed.
 
 from datetime import datetime, timedelta
 
-import jinja2
 from airflow.models import DAG, Variable
 from airflow.operators.python import PythonOperator
 from common import pr_review_reminders
@@ -38,7 +37,6 @@ dag = DAG(
     default_args={
         **DAG_DEFAULT_ARGS,
         "retry_delay": timedelta(minutes=1),
-        "template_undefined": jinja2.Undefined,
     },
     start_date=datetime(2022, 6, 9),
     # Run every weekday
