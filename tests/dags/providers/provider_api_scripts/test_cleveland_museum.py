@@ -119,10 +119,10 @@ class TestClevelandDataIngester(unittest.TestCase):
             self.clm.delayed_requester, "get", return_value=r
         ) as mock_get:
             batch, _ = self.clm.get_batch(query_param)
-        expected_response = self._get_resource_json("response_success.json")
+        expected_response = self._get_resource_json("expected_batch_data.json")
 
         assert mock_get.call_count == 1
-        assert response_json == expected_response
+        assert batch == [expected_response]
         assert len(batch) == 1
 
     def test_get_response_no_data(self):
@@ -135,10 +135,9 @@ class TestClevelandDataIngester(unittest.TestCase):
             self.clm.delayed_requester, "get", return_value=r
         ) as mock_get:
             batch, should_continue = self.clm.get_batch(query_param)
-        expected_response = self._get_resource_json("response_no_data.json")
 
         assert mock_get.call_count == 1
-        assert response_json == expected_response
+        assert batch == []
         assert len(batch) == 0
 
     def test_get_response_failure(self):
@@ -149,9 +148,10 @@ class TestClevelandDataIngester(unittest.TestCase):
         with patch.object(
             self.clm.delayed_requester, "get", return_value=r
         ) as mock_get:
-            self.clm.get_batch(query_param)
+            batch, should_continue = self.clm.get_batch(query_param)
 
         assert mock_get.call_count == 4
+        assert batch is None
 
     def test_get_response_None(self):
         query_param = {"cc": 1, "has_image": 1, "limit": 1, "skip": -1}
