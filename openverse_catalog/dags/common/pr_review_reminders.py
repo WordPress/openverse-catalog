@@ -9,6 +9,15 @@ from common.github import GitHubAPI
 logger = logging.getLogger(__name__)
 
 
+REPOSITORIES = [
+    "openverse",
+    "openverse-catalog",
+    "openverse-api",
+    "openverse-frontend",
+    "openverse-infrastructure",
+]
+
+
 @dataclass
 class Urgency:
     label: str
@@ -100,16 +109,8 @@ def base_repo_name(pr):
 def post_reminders(github_pat: str, dry_run: bool):
     gh = GitHubAPI(github_pat)
 
-    repositories = [
-        "openverse",
-        "openverse-catalog",
-        "openverse-api",
-        "openverse-frontend",
-        "openverse-infrastructure",
-    ]
-
     open_prs = []
-    for repo in repositories:
+    for repo in REPOSITORIES:
         open_prs += [pr for pr in gh.get_open_prs(repo) if not pr["draft"]]
 
     urgent_prs = []
