@@ -31,9 +31,15 @@ class ReviewDelta:
 
 
 def pr_urgency(pr: dict) -> Urgency:
-    priority_label = [
+    priority_labels = [
         label["name"] for label in pr["labels"] if "priority" in label["name"].lower()
-    ][0]
+    ]
+    if not priority_labels:
+        logger.error(f"Found unabled PR ({pr['html_url']}). Skipping!")
+        return None
+
+    priority_label = priority_labels[0]
+
     if "critical" in priority_label:
         return Urgency("critical", 1)
     elif "high" in priority_label:
@@ -58,6 +64,9 @@ def get_urgency_if_urgent(pr: dict) -> Optional[ReviewDelta]:
     updated_at = datetime.fromisoformat(pr["updated_at"].rstrip("Z"))
     today = datetime.now()
     urgency = pr_urgency(pr)
+    if urgency is None:
+        return None
+
     days = days_without_weekends(today, today - updated_at)
 
     return ReviewDelta(urgency, days) if days > urgency.days else None

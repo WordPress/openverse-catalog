@@ -6,17 +6,17 @@ class GitHubAPI:
         """
         :param pat: GitHub Personal Access Token to use to authenticate requests
         """
-        self.pat = pat
+        self.session = requests.Session()
+        self.session.headers["Authorization"] = f"token {pat}"
 
     def _make_request(self, method: str, resource: str, **kwargs) -> requests.Response:
-        headers = kwargs.get("headers", {})
-        headers.update(Authorization=f"token {self.pat}")
-        kwargs.update(headers=headers)
-        return getattr(requests, method.lower())(
+        response = getattr(self.session, method.lower())(
             f"https://api.github.com/{resource}", **kwargs
         )
+        response.raise_for_status()
+        return response.json()
 
-    def get_open_prs(self, repo, owner="WordPress"):
+    def get_open_prs(self, repo: str, owner: str = "WordPress"):
         return self._make_request(
             "GET",
             f"repos/{owner}/{repo}/pulls",
@@ -32,7 +32,7 @@ class GitHubAPI:
                 # then something is seriously wrong
                 "per_page": 100,
             },
-        ).json()
+        )
 
     def get_pr_review_requests(
         self, repo: str, pr_number: int, owner: str = "WordPress"
@@ -40,13 +40,13 @@ class GitHubAPI:
         return self._make_request(
             "GET",
             f"repos/{owner}/{repo}/pulls/{pr_number}/requested_reviewers",
-        ).json()
+        )
 
     def get_pr_reviews(self, repo: str, pr_number: int, owner: str = "WordPress"):
         return self._make_request(
             "GET",
             f"repos/{owner}/{repo}/pulls/{pr_number}/reviews",
-        ).json()
+        )
 
     def post_issue_comment(
         self, repo: str, issue_number: int, comment_body: str, owner: str = "WordPress"
@@ -55,7 +55,7 @@ class GitHubAPI:
             "POST",
             f"repos/{owner}/{repo}/issues/{issue_number}/comments",
             data={"body": comment_body},
-        ).json()
+        )
 
     def get_issue_comments(
         self, repo: str, issue_number: int, owner: str = "WordPress"
@@ -63,4 +63,4 @@ class GitHubAPI:
         return self._make_request(
             "GET",
             f"repos/{owner}/{repo}/issues/{issue_number}/comments",
-        ).json()
+        )
