@@ -41,7 +41,8 @@ dag = DAG(
         "template_undefined": jinja2.Undefined,
     },
     start_date=datetime(2022, 6, 9),
-    schedule_interval="@daily",
+    # Run every weekday
+    schedule_interval="0 0 * * 1-5",
     max_active_tasks=MAX_ACTIVE_TASKS,
     max_active_runs=MAX_ACTIVE_TASKS,
     # If this was True, airflow would run this DAG in the beginning
@@ -56,5 +57,5 @@ with dag:
     PythonOperator(
         task_id="pr_review_reminder_operator",
         python_callable=pr_review_reminders.post_reminders,
-        op_args=[GITHUB_PAT, DRY_RUN],
+        op_kwargs={"github_pat": GITHUB_PAT, "dry_run": DRY_RUN},
     )

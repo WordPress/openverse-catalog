@@ -98,9 +98,6 @@ def base_repo_name(pr):
 
 
 def post_reminders(github_pat: str, dry_run: bool):
-    if datetime.now().weekday() >= 5:
-        return  # it's the weekend!
-
     gh = GitHubAPI(github_pat)
 
     repositories = [
