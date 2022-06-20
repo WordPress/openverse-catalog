@@ -121,7 +121,8 @@ def post_reminders(github_pat: str, dry_run: bool):
 
     to_ping = []
     for pr, review_delta in urgent_prs:
-        comments = gh.get_issue_comments(base_repo_name(pr), pr["number"])
+        repo = base_repo_name(pr)
+        comments = gh.get_issue_comments(repo, pr["number"])
 
         reminder_comments = [
             comment
@@ -135,8 +136,8 @@ def post_reminders(github_pat: str, dry_run: bool):
             # maybe in the future we re-ping in some cases?
             continue
 
-        review_requests = gh.get_pr_review_requests(base_repo_name(pr), pr["number"])
-        reviews = gh.get_pr_reviews(base_repo_name(pr), pr["number"])
+        review_requests = gh.get_pr_review_requests(repo, pr["number"])
+        reviews = gh.get_pr_reviews(repo, pr["number"])
 
         stale_requests = [
             request
