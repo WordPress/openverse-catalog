@@ -5,7 +5,7 @@ This file configures the Apache Airflow DAG to (re)ingest Inaturalist data.
 from datetime import datetime
 import logging
 
-from provider_api_scripts import inaturalist
+from providers.provider_api_scripts import inaturalist
 from common.provider_dag_factory import create_provider_api_workflow
 
 
