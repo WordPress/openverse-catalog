@@ -192,8 +192,7 @@ def check_url(image_url: str | None) -> str | None:
         return None
     if image_url.startswith("http"):
         return image_url
-    else:
-        return f"https://coimages.sciencemuseumgroup.org.uk/images/{image_url}"
+    return f"https://coimages.sciencemuseumgroup.org.uk/images/{image_url}"
 
 
 def _get_dimensions(image_data: Dict) -> Tuple[int | None, int | None]:
@@ -215,7 +214,7 @@ def _get_license_version(source: Dict | None) -> str | None:
     license_version = None
     if source:
         rights = source.get("legal", {}).get("rights")
-        if type(rights) == list and len(rights) > 0:
+        if isinstance(rights, list) and len(rights) > 0:
             license_version = rights[0].get("usage_terms")
     return license_version
 
