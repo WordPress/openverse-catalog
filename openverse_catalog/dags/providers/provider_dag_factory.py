@@ -104,7 +104,8 @@ def _push_output_paths_wrapper(
         module = inspect.getmodule(ingestion_callable)
         stores = {}
         for media_type in media_types:
-            if not (store := getattr(module, f"{media_type}_store", None)):
+            store = getattr(module, f"{media_type}_store", None)
+            if not store:
                 continue
             stores[media_type] = store
 

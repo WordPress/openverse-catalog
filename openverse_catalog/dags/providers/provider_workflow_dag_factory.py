@@ -7,7 +7,7 @@ and generates a provider workflow DAG in Airflow for each.
 
 import importlib
 
-from common.provider_dag_factory import create_provider_api_workflow
+from providers.provider_dag_factory import create_provider_api_workflow
 from providers.provider_workflows import PROVIDER_WORKFLOWS
 
 

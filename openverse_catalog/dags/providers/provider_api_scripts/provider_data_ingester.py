@@ -9,9 +9,6 @@ from common.storage.image import ImageStore
 from common.storage.media import MediaStore
 
 
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s", level=logging.INFO
-)
 logger = logging.getLogger(__name__)
 
 
