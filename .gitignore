@@ -144,3 +144,10 @@ si_samples_*
 
 # Vim detritus
 *.swp
+
+# minio testing detritus
+/tests/s3-data/.minio.sys/
+/tests/s3-data/commonsmapper/
+/tests/s3-data/commonsmapper-v2/
+/tests/s3-data/openverse-airflow-logs/
+/tests/s3-data/openverse-storage/
