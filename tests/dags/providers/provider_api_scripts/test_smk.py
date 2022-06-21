@@ -116,27 +116,44 @@ def test_handle_items_data_success():
 
 def test_handle_items_data_success_data():
     items = _get_resource_json("items_batch.json")
-    with patch.object(smk.image_store, "add_item") as mock_add_item:
+    with patch.object(smk.image_store, "save_item") as mock_save_item:
         smk._handle_items_data(items)
 
-    _, actual_image = mock_add_item.call_args
+    args, kwargs = mock_save_item.call_args
     expected_image = {
         "foreign_identifier": "https://iip.smk.dk/iiif/jp2/kks1615.tif.jp2",
         "foreign_landing_url": "https://open.smk.dk/en/artwork/image/KKS1615",
-        "image_url": "https://iip.smk.dk/iiif/jp2/kks1615.tif.jp2/full/!2048,/0/default.jpg",
+        "url": "https://iip.smk.dk/iiif/jp2/kks1615.tif.jp2/full/!2048,/0/default.jpg",
         "height": 5141,
         "width": 3076,
         "filesize": 47466428,
-        "license_info": CC0,
+        "filetype": "jpg",
+        "license_version": CC0.version,
+        "license_": CC0.license,
         "creator": "Altdorfer, Albrecht",
         "title": "Jomfru Maria med barnet og Sankt Anne ved vuggen",
         "meta_data": {
             "created_date": "2020-03-21T10:18:17Z",
             "collection": "Gammel bestand",
             "techniques": "Kobberstik",
+            "license_url": CC0.url,
+            "raw_license_url": None,
         },
     }
-    assert actual_image == expected_image
+    actual_image = args[0]
+    for key, value in expected_image.items():
+        assert getattr(actual_image, key) == expected_image[key]
+
+
+def test_filesize_set_to_none_when_none_given():
+    items = _get_resource_json("items_batch.json")
+    items[0].pop("image_size", None)
+    with patch.object(smk.image_store, "save_item") as mock_save_item:
+        smk._handle_items_data(items)
+
+    args, kwargs = mock_save_item.call_args
+    actual_image = args[0]
+    assert actual_image.filesize is None
 
 
 def test_handle_items_data_failure():
