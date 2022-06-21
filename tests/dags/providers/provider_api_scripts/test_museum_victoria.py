@@ -19,7 +19,7 @@ logging.basicConfig(
 def _get_resource_json(json_name):
     with open(os.path.join(RESOURCES, json_name)) as f:
         resource_json = json.load(f)
-    return resource_json
+        return resource_json
 
 
 def test_get_query_param_default():
@@ -100,12 +100,22 @@ def test_get_batch_objects_error():
 
 
 def test_get_media_info_success():
-    media = _get_resource_json("media_data_success.json")
-    actual_image_data = mv._get_media_info(media)
+    media = _get_resource_json("response_success.json")
+    with patch.object(mv.image_store, "save_item") as mock_save_image:
+        mv._handle_batch_objects(media)
+    actual_image_data = mock_save_image.call_args[0][0]
 
-    expected_image_data = _get_resource_json("image_data_success.json")
-
-    assert actual_image_data == expected_image_data
+    expected_image = {
+        "creator": "Photographer: Deborah Tout-Smith",
+        "foreign_identifier": "media/329745",
+        "url": "https://collections.museumsvictoria.com.au/content/media/45/329745-large.jpg",
+        "height": 2581,
+        "width": 2785,
+        "filesize": 890933,
+        "filetype": "jpg",
+    }
+    for key, value in expected_image.items():
+        assert getattr(actual_image_data, key) == value
 
 
 def test_get_media_info_failure():
@@ -116,64 +126,67 @@ def test_get_media_info_failure():
 
 
 def test_get_image_data_large():
-    image_data = _get_resource_json("large_image_data.json")
+    image_data = _get_resource_json("response_success.json")
+    with patch.object(mv.image_store, "save_item") as mock_save_item:
+        mv._handle_batch_objects(image_data)
 
-    (
-        actual_image_url,
-        actual_height,
-        actual_width,
-        actual_filesize,
-    ) = mv._get_image_data(image_data)
-    assert actual_image_url == (
-        "https://collections.museumsvictoria.com.au/content/media/45/"
-        "329745-large.jpg"
-    )
-    assert actual_height == 2581
-    assert actual_width == 2785
-    assert actual_filesize == 890933
+    actual_image = mock_save_item.call_args[0][0]
+    expected_image = {
+        "url": "https://collections.museumsvictoria.com.au/content/media/45/"
+        "329745-large.jpg",
+        "height": 2581,
+        "width": 2785,
+        "filesize": 890933,
+        "filetype": "jpg",
+    }
+    for key, value in expected_image.items():
+        assert getattr(actual_image, key) == value
 
 
 def test_get_image_data_medium():
-    image_data = _get_resource_json("medium_image_data.json")
+    image_data = _get_resource_json("response_success.json")
+    image_data[0].pop("large", None)
+    with patch.object(mv.image_store, "save_item") as mock_save_item:
+        mv._handle_batch_objects(image_data)
 
-    (
-        actual_image_url,
-        actual_height,
-        actual_width,
-        actual_filesize,
-    ) = mv._get_image_data(image_data)
+    actual_image = mock_save_item.call_args[0][0]
 
-    assert actual_image_url == (
-        "https://collections.museumsvictoria.com.au/content/media/45/"
-        "329745-medium.jpg"
-    )
-    assert actual_height == 1390
-    assert actual_width == 1500
-    assert actual_filesize == 170943
+    expected_image = {
+        "url": "https://collections.museumsvictoria.com.au/content/media/45/"
+        "329745-medium.jpg",
+        "height": 1390,
+        "width": 1500,
+        "filesize": 170943,
+        "filetype": "jpg",
+    }
+    for key, value in expected_image.items():
+        assert getattr(actual_image, key) == value
 
 
+@patch("mv.RECORDS_IDS", [])
 def test_get_image_data_small():
-    image_data = _get_resource_json("small_image_data.json")
+    image_data = _get_resource_json("response_success.json")
+    image_data[0].pop("large", None)
+    image_data[0].pop("medium", None)
 
-    (
-        actual_image_url,
-        actual_height,
-        actual_width,
-        actual_filesize,
-    ) = mv._get_image_data(image_data)
+    with patch.object(mv.image_store, "save_item") as mock_save_item:
+        mv._handle_batch_objects(image_data)
+    actual_image = mock_save_item.call_args[0][0]
 
-    assert actual_image_url == (
-        "https://collections.museumsvictoria.com.au/content/media/45/"
-        "329745-small.jpg"
-    )
-    assert actual_height == 500
-    assert actual_width == 540
-    assert actual_filesize == 20109
+    expected_image_data = {
+        "url": "https://collections.museumsvictoria.com.au/content/media/45/"
+        "329745-small.jpg",
+        "height": 500,
+        "width": 540,
+        "filesize": 20109,
+        "filetype": "jpg",
+    }
+    for key, value in expected_image_data:
+        assert getattr(actual_image, key) == value
 
 
 def test_get_image_data_none():
     image_data = {}
-
     (
         actual_image_url,
         actual_height,
