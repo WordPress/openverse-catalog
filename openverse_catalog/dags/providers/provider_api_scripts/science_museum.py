@@ -18,7 +18,7 @@ RETRIES = 3
 PROVIDER = prov.SCIENCE_DEFAULT_PROVIDER
 ENDPOINT = "https://collection.sciencemuseumgroup.org.uk/search/"
 
-delayed_requester = DelayedRequester(delay=DELAY)
+delay_request = DelayedRequester(delay=DELAY)
 image_store = ImageStore(provider=PROVIDER)
 
 HEADERS = {"Accept": "application/json"}
@@ -100,7 +100,7 @@ def _get_batch_objects(
         headers = HEADERS.copy()
     data = None
     for retry in range(retries):
-        response = delayed_requester.get(endpoint, query_param, headers=headers)
+        response = delay_request.get(endpoint, query_param, headers=headers)
         try:
             response_json = response.json()
             if "data" in response_json.keys():
@@ -138,6 +138,7 @@ def _handle_object_data(batch_data):
             image_url, height, width, filetype = _get_image_info(processed)
             if image_url is None:
                 continue
+
             source = image_data.get("source")
             license_version = _get_license_version(source)
             if license_version is None:

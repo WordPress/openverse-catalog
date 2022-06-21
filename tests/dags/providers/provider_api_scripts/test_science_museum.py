@@ -92,7 +92,7 @@ def test_get_batch_object_success():
     r = requests.Response()
     r.status_code = 200
     r.json = MagicMock(return_value=response)
-    with patch.object(sm.delayed_requester, "get", return_value=r) as mock_call:
+    with patch.object(sm.delay_request, "get", return_value=r) as mock_call:
         actual_response = sm._get_batch_objects(query_param=query_param)
 
     expected_response = response.get("data")
@@ -114,7 +114,7 @@ def test_get_batch_object_failure():
     r = requests.Response()
     r.status_code = 400
     r.json = MagicMock(return_value=response)
-    with patch.object(sm.delayed_requester, "get", return_value=r) as mock_call:
+    with patch.object(sm.delay_request, "get", return_value=r) as mock_call:
         actual_response = sm._get_batch_objects(query_param=query_param)
 
     assert mock_call.call_count == 3
@@ -131,7 +131,7 @@ def test_get_batch_object_no_response():
         "date[to]": 1500,
     }
     response = None
-    with patch.object(sm.delayed_requester, "get", return_value=response) as mock_call:
+    with patch.object(sm.delay_request, "get", return_value=response) as mock_call:
         actual_response = sm._get_batch_objects(query_param=query_param)
 
     assert mock_call.call_count == 3
