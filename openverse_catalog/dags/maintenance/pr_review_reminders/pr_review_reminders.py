@@ -18,10 +18,16 @@ REPOSITORIES = [
 ]
 
 
-@dataclass
 class Urgency:
-    label: str
-    days: int
+    @dataclass
+    class Urgency:
+        label: str
+        days: int
+
+    CRITICAL = Urgency("critical", 1)
+    HIGH = Urgency("high", 2)
+    MEDIUM = Urgency("medium", 4)
+    LOW = Urgency("low", 5)
 
 
 @dataclass
@@ -41,13 +47,13 @@ def pr_urgency(pr: dict) -> Urgency:
     priority_label = priority_labels[0]
 
     if "critical" in priority_label:
-        return Urgency("critical", 1)
+        return Urgency.CRITICAL
     elif "high" in priority_label:
-        return Urgency("high", 2)
+        return Urgency.HIGH
     elif "medium" in priority_label:
-        return Urgency("medium", 4)
+        return Urgency.MEDIUM
     elif "low" in priority_label:
-        return Urgency("low", 5)
+        return Urgency.LOW
 
 
 def days_without_weekends(today: datetime, delta: timedelta) -> int:
@@ -100,8 +106,8 @@ from getting further unnecessary pings.
 )
 
 
-def build_comment(review_delta: ReviewDelta, stale_requests: list[dict], pr: dict):
-    user_handles = [f"@{req['login']}" for req in stale_requests]
+def build_comment(review_delta: ReviewDelta, pr: dict):
+    user_handles = [f"@{req['login']}" for req in pr["requested_reviewers"]]
     return user_handles, COMMENT_TEMPLATE.format(
         urgency_label=review_delta.urgency.label,
         urgency_days=review_delta.urgency.days,
@@ -145,19 +151,15 @@ def post_reminders(github_pat: str, dry_run: bool):
             # maybe in the future we re-ping in some cases?
             continue
 
-        review_requests = gh.get_pr_review_requests(repo, pr["number"])
-        reviews = gh.get_pr_reviews(repo, pr["number"])
+        if pr["requested_reviewers"] == []:
+            # no requested reviewers to ping, maybe in the future we ping
+            # the PR author or the whole openverse maintainers team?
+            continue
 
-        stale_requests = [
-            request
-            for request in review_requests["users"]
-            if not has_already_reviewed(request, reviews)
-        ]
-        if stale_requests:
-            to_ping.append((pr, review_delta, stale_requests))
+        to_ping.append((pr, review_delta))
 
-    for pr, review_delta, stale_requests in to_ping:
-        user_handles, comment_body = build_comment(review_delta, stale_requests, pr)
+    for pr, review_delta in to_ping:
+        user_handles, comment_body = build_comment(review_delta, pr)
 
         logger.info(f"Pinging {', '.join(user_handles)} to review {pr['title']}")
         if not dry_run:

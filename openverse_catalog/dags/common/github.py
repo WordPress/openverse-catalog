@@ -34,20 +34,6 @@ class GitHubAPI:
             },
         )
 
-    def get_pr_review_requests(
-        self, repo: str, pr_number: int, owner: str = "WordPress"
-    ):
-        return self._make_request(
-            "GET",
-            f"repos/{owner}/{repo}/pulls/{pr_number}/requested_reviewers",
-        )
-
-    def get_pr_reviews(self, repo: str, pr_number: int, owner: str = "WordPress"):
-        return self._make_request(
-            "GET",
-            f"repos/{owner}/{repo}/pulls/{pr_number}/reviews",
-        )
-
     def post_issue_comment(
         self, repo: str, issue_number: int, comment_body: str, owner: str = "WordPress"
     ):
