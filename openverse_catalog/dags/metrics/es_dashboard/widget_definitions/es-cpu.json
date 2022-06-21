@@ -1,0 +1,68 @@
+{
+  "end": "PT0H",
+  "height": 395,
+  "metrics": [
+    [
+      {
+        "color": "#9467bd",
+        "expression": "AVG(METRICS())",
+        "id": "e1",
+        "label": "Average CPU",
+        "region": "us-east-1"
+      }
+    ],
+    [
+      "AWS/EC2",
+      "CPUUtilization",
+      "InstanceId",
+      "{es_node_1}"
+    ],
+    [
+      "...",
+      "{es_node_2}",
+      {
+        "id": "in2",
+        "visible": false
+      }
+    ],
+    [
+      "...",
+      "{es_node_3}",
+      {
+        "id": "in3",
+        "visible": false
+      }
+    ],
+    [
+      "AWS/EC2",
+      "NetworkOut",
+      "InstanceId",
+      "{es_node_1}",
+      {
+        "id": "out1",
+        "visible": false
+      }
+    ],
+    [
+      "...",
+      "{es_node_2}",
+      {
+        "id": "out2",
+        "visible": false
+      }
+    ],
+    [
+      "...",
+      "{es_node_3}",
+      {
+        "id": "out3",
+        "visible": false
+      }
+    ]
+  ],
+  "period": 300,
+  "stacked": false,
+  "start": "-PT72H",
+  "title": "Elasticsearch: CPU",
+  "width": 600
+}
