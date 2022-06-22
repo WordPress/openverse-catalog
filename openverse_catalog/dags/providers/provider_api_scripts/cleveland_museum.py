@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 from common.licenses import get_license_info
 from common.loader import provider_details as prov
@@ -57,7 +57,7 @@ class ClevelandDataIngester(ProviderDataIngester):
             creator_name = record.get("creators")[0].get("description", "")
         else:
             creator_name = ""
-        
+
         return {
             "foreign_identifier": f"{foreign_id}",
             "foreign_landing_url": record.get("url"),
@@ -72,17 +72,11 @@ class ClevelandDataIngester(ProviderDataIngester):
         }
 
     def _get_image_type(self, image_data):
-        key, image_url = None, None
-        if image_data.get("web"):
-            key = "web"
-            image_url = image_data.get("web").get("url", None)
-        elif image_data.get("print"):
-            key = "print"
-            image_url = image_data.get("print").get("url", None)
-        elif image_data.get("full"):
-            key = "full"
-            image_url = image_data.get("full").get("url", None)
-        return image_url, key
+        # Returns the image url and key for the image in `image_data` dict.
+        for key in ["web", "print", "full"]:
+            if keyed_image := image_data.get(key):
+                return keyed_image
+        return None
 
     def _get_int_value(self, data: Dict, key: str) -> int | None:
         """

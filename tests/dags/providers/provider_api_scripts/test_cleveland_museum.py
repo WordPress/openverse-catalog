@@ -1,7 +1,7 @@
 import json
 import logging
-from pathlib import Path
 import unittest
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -38,12 +38,8 @@ logging.basicConfig(
 class TestClevelandDataIngester(unittest.TestCase):
     def setUp(self):
         self.clm = ClevelandDataIngester()
-        self.image_store = ImageStore(
-            provider=prov.CLEVELAND_DEFAULT_PROVIDER
-        )
-        self.clm.media_stores = {
-            "image": self.image_store
-        }
+        self.image_store = ImageStore(provider=prov.CLEVELAND_DEFAULT_PROVIDER)
+        self.clm.media_stores = {"image": self.image_store}
 
     def _get_resource_json(self, json_name):
         with open(RESOURCES / json_name) as f:
@@ -64,44 +60,50 @@ class TestClevelandDataIngester(unittest.TestCase):
 
     def test_get_image_type_web(self):
         image_data = self._get_resource_json("image_type_web.json")
-        actual_url, actual_key = self.clm._get_image_type(image_data)
+        actual_image = self.clm._get_image_type(image_data)
 
-        expected_url = "https://openaccess-cdn.clevelandart.org/1335.1917/1335.1917_web.jpg"
-        expected_key = "web"
-
-        assert actual_url == expected_url
-        assert actual_key == expected_key
+        expected_image = {
+            "url": "https://openaccess-cdn.clevelandart.org/1335.1917/1335.1917_web.jpg",
+            "width": "1263",
+            "height": "775",
+            "filesize": "716717",
+            "filename": "1335.1917_web.jpg",
+        }
+        assert actual_image == expected_image
 
     def test_get_image_type_print(self):
         image_data = self._get_resource_json("image_type_print.json")
-        actual_url, actual_key = self.clm._get_image_type(image_data)
-        expected_url = (
-            "https://openaccess-cdn.clevelandart.org/" "1335.1917/1335.1917_print.jpg"
-        )
-        expected_key = "print"
+        actual_image = self.clm._get_image_type(image_data)
 
-        assert actual_url == expected_url
-        assert actual_key == expected_key
+        expected_image = {
+            "url": "https://openaccess-cdn.clevelandart.org/1335.1917/1335.1917_print.jpg",
+            "width": "3400",
+            "height": "2086",
+            "filesize": "5582485",
+            "filename": "1335.1917_print.jpg",
+        }
+
+        assert actual_image == expected_image
 
     def test_get_image_type_full(self):
         image_data = self._get_resource_json("image_type_full.json")
-        actual_url, actual_key = self.clm._get_image_type(image_data)
-        expected_url = (
-            "https://openaccess-cdn.clevelandart.org/" "1335.1917/1335.1917_full.tif"
-        )
-        expected_key = "full"
+        actual_image = self.clm._get_image_type(image_data)
 
-        assert actual_url == expected_url
-        assert actual_key == expected_key
+        expected_image = {
+            "url": "https://openaccess-cdn.clevelandart.org/1335.1917/1335.1917_full.tif",
+            "width": "6280",
+            "height": "3853",
+            "filesize": "72628688",
+            "filename": "1335.1917_full.tif",
+        }
+
+        assert actual_image == expected_image
 
     def test_get_image_type_none(self):
         image_data = self._get_resource_json("image_type_none.json")
-        actual_url, actual_key = self.clm._get_image_type(image_data)
-        expected_url = None
-        expected_key = None
+        actual_image = self.clm._get_image_type(image_data)
 
-        assert actual_url == expected_url
-        assert actual_key == expected_key
+        assert actual_image is None
 
     def test_get_metadata(self):
         data = self._get_resource_json("complete_data.json")
@@ -170,3 +172,40 @@ class TestClevelandDataIngester(unittest.TestCase):
         expected_total_images = 100
 
         assert actual_total_images == expected_total_images
+
+    def test_handle_single_response(self):
+        response_json = self._get_resource_json("response_success.json")
+        batch = response_json["data"]
+        # Patching save_item because it will have the filetype after clean_metadata
+        with patch.object(self.image_store, "save_item") as mock_save_item:
+            self.clm.process_batch(batch)
+        expected_image = {
+            "creator": "",
+            "foreign_identifier": "96887",
+            "foreign_landing_url": "https://clevelandart.org/art/1916.586.a",
+            "width": 641,
+            "height": 900,
+            "filesize": 222248,
+            "filetype": "jpg",
+            "url": "https://openaccess-cdn.clevelandart.org/1916.586.a/1916.586.a_web.jpg",
+            "license_": CC0_LICENSE.license,
+            "license_version": CC0_LICENSE.version,
+            "meta_data": {
+                "license_url": CC0_LICENSE.url,
+                "raw_license_url": None,
+                "accession_number": "1916.586.a",
+                "classification": "Miscellaneous",
+                "credit_line": "Gift of Mr. and Mrs. J. H. Wade",
+                "culture": "Germany, 18th century",
+                "date": "1700s",
+                "tombstone": "Scent Bottle, 1700s. Germany, 18th century. Glass with "
+                "enamel decoration; overall: 10.2 cm (4 in.). The Cleveland "
+                "Museum of Art, Gift of Mr. and Mrs. J. H. Wade 1916.586.a",
+                "technique": "glass with enamel decoration",
+            },
+            "title": "Scent Bottle",
+        }
+
+        actual_image = mock_save_item.call_args[0][0]
+        for key, value in expected_image.items():
+            assert getattr(actual_image, key) == value
