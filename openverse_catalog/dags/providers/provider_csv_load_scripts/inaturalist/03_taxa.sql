@@ -52,7 +52,7 @@ create temporary table taxa_tags as
 
 update inaturalist.taxa
 set tags = taxa_tags.tags
-from inaturalist.taxa_tags
+from taxa_tags
 where taxa_tags.taxon_id = taxa.taxon_id;
 
 select count(*) from inaturalist.taxa;

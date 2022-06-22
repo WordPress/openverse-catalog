@@ -12,7 +12,7 @@ Taking DDL from https://github.com/inaturalist/inaturalist-open-data/blob/main/M
 DROP TABLE IF EXISTS inaturalist.observations;
 commit;
 
-CREATE TABLE CREATE TABLE inaturalist.observations (
+CREATE TABLE inaturalist.observations (
     observation_uuid uuid,
     observer_id integer,
     latitude numeric(15,10),

@@ -12,7 +12,7 @@ PHOTOS
 Taking DDL from https://github.com/inaturalist/inaturalist-open-data/blob/main/Metadata/structure.sql
 */
 
-DROP TABLE IF EXISTS inaturalist.photos;
+DROP TABLE IF EXISTS inaturalist.photos CASCADE;
 commit;
 
 CREATE TABLE inaturalist.photos (

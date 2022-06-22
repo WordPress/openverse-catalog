@@ -86,11 +86,14 @@ def run_sql_file(file_name, file_path=SCRIPT_DIR, conn_id=CONNECTION_ID):
         cursor = db.cursor()
         query = dedent(open(file_path + file_name, 'r').read())
         cursor.execute(query)
-        result = cursor.fetchall()
         db.commit()
+        if cursor.rowcount and cursor.rowcount > 0:
+            result = cursor.fetchall()
+        else:
+            result = "No rows returned"
         logger.info("Success!")
     except Exception as e:
-        logger.warning(f"SQL step failed due to {e}")
+        logger.exception(f"SQL step failed due to {e}")
     return result
 
 
