@@ -127,6 +127,7 @@ def test_get_media_info_failure():
 
 def test_get_image_data_large():
     image_data = _get_resource_json("response_success.json")
+    image_data[0]["id"] += "_large"
     with patch.object(mv.image_store, "save_item") as mock_save_item:
         mv._handle_batch_objects(image_data)
 
@@ -144,8 +145,7 @@ def test_get_image_data_large():
 
 
 def test_get_image_data_medium():
-    image_data = _get_resource_json("response_success.json")
-    image_data[0].pop("large", None)
+    image_data = _get_resource_json("response_success_medium.json")
     with patch.object(mv.image_store, "save_item") as mock_save_item:
         mv._handle_batch_objects(image_data)
 
@@ -163,11 +163,8 @@ def test_get_image_data_medium():
         assert getattr(actual_image, key) == value
 
 
-@patch("mv.RECORDS_IDS", [])
 def test_get_image_data_small():
-    image_data = _get_resource_json("response_success.json")
-    image_data[0].pop("large", None)
-    image_data[0].pop("medium", None)
+    image_data = _get_resource_json("response_success_small.json")
 
     with patch.object(mv.image_store, "save_item") as mock_save_item:
         mv._handle_batch_objects(image_data)
@@ -181,7 +178,7 @@ def test_get_image_data_small():
         "filesize": 20109,
         "filetype": "jpg",
     }
-    for key, value in expected_image_data:
+    for key, value in expected_image_data.items():
         assert getattr(actual_image, key) == value
 
 
