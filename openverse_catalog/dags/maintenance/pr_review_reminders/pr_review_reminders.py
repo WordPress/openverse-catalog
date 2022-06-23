@@ -1,6 +1,6 @@
+import datetime
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timedelta
 from typing import Optional
 
 from common.github import GitHubAPI
@@ -56,26 +56,31 @@ def pr_urgency(pr: dict) -> Urgency:
         return Urgency.LOW
 
 
-def days_without_weekends(today: datetime, delta: timedelta) -> int:
-    days_in_previous_week = abs(today.weekday() - delta.days)
-    if days_in_previous_week > 0:
-        if days_in_previous_week < 2:
-            return 0
-        return abs(delta.days - max((days_in_previous_week // 7) * 2, 2))
+def days_without_weekends(today: datetime, updated_at: datetime) -> int:
+    """
+    Adapted from:
+    https://stackoverflow.com/a/3615984 CC BY-SA 2.5
+    """
+    if today.weekday() == 0 and (today - updated_at).days < 3:
+        # shortcut mondays to 0 if last updated on the weekend
+        return 0
 
-    return delta.days
+    daygenerator = (
+        updated_at + datetime.timedelta(x + 1) for x in range((today - updated_at).days)
+    )
+    return sum(1 for day in daygenerator if day.weekday() < 5)
 
 
 def get_urgency_if_urgent(pr: dict) -> Optional[ReviewDelta]:
-    updated_at = datetime.fromisoformat(pr["updated_at"].rstrip("Z"))
-    today = datetime.now()
+    updated_at = datetime.datetime.fromisoformat(pr["updated_at"].rstrip("Z"))
+    today = datetime.datetime.now()
     urgency = pr_urgency(pr)
     if urgency is None:
         return None
 
-    days = days_without_weekends(today, today - updated_at)
+    days = days_without_weekends(today, updated_at)
 
-    return ReviewDelta(urgency, days) if days > urgency.days else None
+    return ReviewDelta(urgency, days) if days >= urgency.days else None
 
 
 def has_already_reviewed(request: dict, reviews: list[dict]):
