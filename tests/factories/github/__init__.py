@@ -31,7 +31,19 @@ def walk_backwards_in_time_until_weekday_count(today: datetime.datetime, count: 
 _pr_count = 1
 
 
-def make_pull(priority: Urgency, past_due: bool) -> dict:
+def make_pull(urgency: Urgency, past_due: bool) -> dict:
+    """
+    Creates a PR object like the one returned by the GitHub API.
+    The PR will also be created specifically to have the priority
+    label associated with the passed in urgency.
+
+    A "past due" PR is one that has an ``updated_at`` value that is
+    further in the past than the number of days allowed by the
+    urgency of the PR.
+
+    :param urgency: The priority to apply to the PR.
+    :param past_due: Whether to create a PR that is "past due".
+    """
     global _pr_count
     pull = _read_fixture("pull")
     pull["number"] = pull["id"] = _pr_count
@@ -39,12 +51,12 @@ def make_pull(priority: Urgency, past_due: bool) -> dict:
 
     for label in pull["labels"]:
         if "priority" in label["name"]:
-            label.update(**_make_label(priority))
+            label.update(**_make_label(urgency))
             break
 
     if past_due:
         updated_at = walk_backwards_in_time_until_weekday_count(
-            datetime.datetime.now(), priority.days
+            datetime.datetime.now(), urgency.days
         )
     else:
         updated_at = datetime.datetime.now()
