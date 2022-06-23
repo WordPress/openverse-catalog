@@ -198,7 +198,7 @@ def check_url(image_url: str | None) -> str | None:
 
 def _get_dimensions(image_data: Dict) -> Tuple[int | None, int | None]:
     """
-    Returns the height and width of the image from a list of dictionaries
+    Returns the height and width of the image from "image_data"."measurements"
     with keys of "dimension", "units", "value".
     """
     size = {}
