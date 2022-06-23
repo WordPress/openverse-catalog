@@ -83,10 +83,6 @@ def get_urgency_if_urgent(pr: dict) -> Optional[ReviewDelta]:
     return ReviewDelta(urgency, days) if days >= urgency.days else None
 
 
-def has_already_reviewed(request: dict, reviews: list[dict]):
-    return request["login"] in [review["user"]["login"] for review in reviews]
-
-
 COMMENT_MARKER = (
     "This reminder is being automatically generated due to the urgency configuration."
 )
