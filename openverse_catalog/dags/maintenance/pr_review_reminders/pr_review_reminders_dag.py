@@ -29,7 +29,8 @@ from common.constants import DAG_DEFAULT_ARGS
 
 DAG_ID = "pr_review_reminders"
 MAX_ACTIVE_TASKS = 1
-DRY_RUN = Variable.get("PR_REVIEW_REMINDER_DRY_RUN", default_var=True)
+ENVIRONMENT = Variable.get("ENVIRONMENT", default_var="dev")
+DRY_RUN = Variable.get("PR_REVIEW_REMINDER_DRY_RUN", default_var=(ENVIRONMENT == "dev"))
 GITHUB_PAT = Variable.get("GITHUB_API_KEY", default_var="not_set")
 
 dag = DAG(
