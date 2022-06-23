@@ -32,11 +32,11 @@ class Urgency:
 
 @dataclass
 class ReviewDelta:
-    urgency: Urgency
+    urgency: Urgency.Urgency
     days: int
 
 
-def pr_urgency(pr: dict) -> Urgency:
+def pr_urgency(pr: dict) -> Urgency.Urgency:
     priority_labels = [
         label["name"] for label in pr["labels"] if "priority" in label["name"].lower()
     ]
