@@ -16,13 +16,13 @@ class ClevelandDataIngester(ProviderDataIngester):
         self,
         providers={"image": prov.CLEVELAND_DEFAULT_PROVIDER},
         endpoint="http://openaccess-api.clevelandart.org/api/artworks/",
-        delay=5,
         batch_limit=1000,
+        delay=5,
         retries=3,
         headers: Optional[Dict] = {},
     ):
         # Initialize the DataIngester with appropriate values
-        super().__init__(providers, endpoint, delay, batch_limit, retries, headers)
+        super().__init__(providers, endpoint, batch_limit, delay, retries, headers)
 
     def get_next_query_params(self, old_query_params, **kwargs):
         if not old_query_params:

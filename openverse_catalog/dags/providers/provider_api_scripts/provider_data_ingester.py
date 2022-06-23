@@ -35,16 +35,16 @@ class ProviderDataIngester(ABC):
         self,
         providers: dict[str, str],
         endpoint: str,
-        delay: int,
         batch_limit: int,
-        retries: int,
-        headers: Optional[Dict],
+        delay: int = 1,
+        retries: int = 3,
+        headers: Optional[Dict] = None,
     ):
         self.providers = providers
         self.endpoint = endpoint
         self.delay = delay
         self.retries = retries
-        self.headers = headers
+        self.headers = headers or {}
 
         # An airflow variable used to cap the amount of records to be ingested.
         # This can be used for testing purposes to ensure a provider script
