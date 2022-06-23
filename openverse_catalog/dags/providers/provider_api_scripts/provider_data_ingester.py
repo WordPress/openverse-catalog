@@ -4,9 +4,8 @@ from typing import Dict, List, Optional, Tuple
 
 from airflow.models import Variable
 from common.requester import DelayedRequester
-from common.storage.audio import AudioStore
-from common.storage.image import ImageStore
 from common.storage.media import MediaStore
+from common.storage.util import get_media_store_class
 
 
 logger = logging.getLogger(__name__)
@@ -72,21 +71,10 @@ class ProviderDataIngester(ABC):
         media_stores = {}
 
         for media_type, provider in self.providers.items():
-            media_stores[media_type] = self.create_media_store(media_type, provider)
+            StoreClass = get_media_store_class(media_type)
+            media_stores[media_type] = StoreClass(provider)
 
         return media_stores
-
-    def create_media_store(self, media_type: str, provider: str) -> MediaStore:
-        """
-        A factory method to create the appropriate MediaStore for the given
-        media type.
-        """
-        if media_type == "image":
-            return ImageStore(provider)
-        if media_type == "audio":
-            return AudioStore(provider)
-
-        raise Exception(f"No MediaStore is configured for type: {media_type}")
 
     def ingest_records(self, **kwargs) -> None:
         """
