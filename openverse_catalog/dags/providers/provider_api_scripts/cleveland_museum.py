@@ -39,6 +39,11 @@ class ClevelandDataIngester(ProviderDataIngester):
         # This provider only supports Images.
         return "image"
 
+    def get_batch_data(self, response_json):
+        if response_json:
+            return response_json.get("data")
+        return None
+
     def get_record_data(self, record):
         license_ = record.get("share_license_status", "").lower()
         if license_ != "cc0":

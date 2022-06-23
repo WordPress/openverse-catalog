@@ -39,6 +39,11 @@ class MockProviderDataIngester(ProviderDataIngester):
     def get_next_query_params(self, old_query_params):
         return DEFAULT_QUERY_PARAMS
 
+    def get_batch_data(self, response_json):
+        if response_json:
+            return response_json.get("data")
+        return None
+
     def get_media_type(self, record):
         return record["media_type"]
 

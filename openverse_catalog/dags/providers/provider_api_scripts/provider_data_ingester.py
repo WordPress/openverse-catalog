@@ -173,14 +173,12 @@ class ProviderDataIngester(ABC):
         """
         return True
 
+    @abstractmethod
     def get_batch_data(self, response_json):
         """
-        Takes an API response and returns the list of records. This method
-        can be overridden to accomodate different response formats.
+        Take an API response and return the list of records.
         """
-        if response_json:
-            return response_json.get("data")
-        return None
+        pass
 
     def process_batch(self, media_batch):
         """
