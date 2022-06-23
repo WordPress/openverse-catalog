@@ -48,10 +48,11 @@ class TestProviderDataIngester(unittest.TestCase):
         with patch(
             "providers.provider_api_scripts.provider_data_ingester.Variable"
         ) as MockVariable:
-            MockVariable.get.side_effect = ["200"]
+            MockVariable.get.side_effect = [200]
 
             ingester = MockProviderDataIngester()
             assert ingester.batch_limit == 200
+            assert ingester.limit == 200
 
     def test_get_batch_data(self):
         response_json = self._get_resource_json("complete_response.json")

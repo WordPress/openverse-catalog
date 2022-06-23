@@ -49,12 +49,15 @@ class ProviderDataIngester(ABC):
         # An airflow variable used to cap the amount of records to be ingested.
         # This can be used for testing purposes to ensure a provider script
         # processes some data but still returns quickly.
-        self.limit = Variable.get("ingestion_limit", None)
+        # When set to 0, no limit is imposed.
+        self.limit = Variable.get(
+            "ingestion_limit", deserialize_json=True, default_var=0
+        )
 
         # If a test limit is imposed, ensure that the `batch_limit` does not
         # exceed this.
         self.batch_limit = (
-            batch_limit if self.limit is None else min(batch_limit, int(self.limit))
+            batch_limit if not self.limit else min(batch_limit, self.limit)
         )
 
         # Initialize the DelayedRequester and all necessary Media Stores.
@@ -110,7 +113,7 @@ class ProviderDataIngester(ABC):
                 logger.info("Batch complete.")
                 should_continue = False
 
-            if self.limit and record_count >= int(self.limit):
+            if self.limit and record_count >= self.limit:
                 logger.info(f"Ingestion limit of {self.limit} has been reached.")
                 should_continue = False
 

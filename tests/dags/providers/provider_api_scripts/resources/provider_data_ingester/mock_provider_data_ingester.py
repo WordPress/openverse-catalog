@@ -34,7 +34,7 @@ class MockProviderDataIngester(ProviderDataIngester):
         retries=RETRIES,
         headers=HEADERS,
     ):
-        super().__init__(providers, endpoint, delay, batch_limit, retries, headers)
+        super().__init__(providers, endpoint, batch_limit, delay, retries, headers)
 
     def get_next_query_params(self, old_query_params):
         return DEFAULT_QUERY_PARAMS
