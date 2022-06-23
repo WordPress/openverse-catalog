@@ -346,6 +346,7 @@ def create_media_view(
         CREATE MATERIALIZED VIEW public.{db_view_name} AS
           SELECT
             *,
+            audio_set ->> 'foreign_identifier' AS audio_set_foreign_identifier,
             {standardized_popularity_func}(
               {table_name}.{PARTITION},
               {table_name}.{METADATA_COLUMN}
