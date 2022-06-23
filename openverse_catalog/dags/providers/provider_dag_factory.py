@@ -98,6 +98,8 @@ def _push_output_paths_wrapper(
     args = args or []
     logger.info("Pushing available store paths to XComs")
 
+    # TODO: This entire branch can be removed when all of the provider scripts have been
+    # refactored to subclass ProviderDataIngester.
     if isinstance(ingestion_callable, FunctionType):
         # Stores exist at the module level, so in order to retrieve the output values we
         # must first pull the stores from the module.
