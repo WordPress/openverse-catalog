@@ -22,13 +22,3 @@ def get_media_store_class(media_type: str) -> Type[MediaStore]:
     if StoreClass is None:
         raise ValueError(f"No MediaStore is configured for type: {media_type}")
     return StoreClass
-
-
-def get_source(source, provider):
-    """
-    Returns `source` if given, otherwise `provider`
-    """
-    if not source:
-        source = provider
-
-    return source
