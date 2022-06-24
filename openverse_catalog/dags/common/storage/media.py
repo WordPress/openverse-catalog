@@ -118,7 +118,7 @@ class MediaStore(metaclass=abc.ABCMeta):
         ):
             logger.debug("Discarding media due to invalid license")
             return None
-        media_data["source"] = self.get_source(media_data.get("source"), self.provider)
+        media_data["source"] = self._get_source(media_data.get("source"), self.provider)
         # Add ingestion_type column value based on `source`.
         # The implementation is based on `ingestion_column`
         if media_data.get("ingestion_type") is None:
@@ -298,7 +298,7 @@ class MediaStore(metaclass=abc.ABCMeta):
         return FILETYPE_EQUIVALENTS.get(filetype, filetype)
 
     @staticmethod
-    def get_source(source, provider):
+    def _get_source(source, provider):
         """
         Returns `source` if given, otherwise `provider`
         """
