@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Optional
+from typing import Dict
 
 from common.licenses import get_license_info
 from common.loader import provider_details as prov
@@ -12,17 +12,10 @@ CC0_LICENSE = get_license_info(license_="cc0", license_version="1.0")
 
 
 class ClevelandDataIngester(ProviderDataIngester):
-    def __init__(
-        self,
-        providers={"image": prov.CLEVELAND_DEFAULT_PROVIDER},
-        endpoint="http://openaccess-api.clevelandart.org/api/artworks/",
-        batch_limit=1000,
-        delay=5,
-        retries=3,
-        headers: Optional[Dict] = {},
-    ):
-        # Initialize the DataIngester with appropriate values
-        super().__init__(providers, endpoint, batch_limit, delay, retries, headers)
+    providers = {"image": prov.CLEVELAND_DEFAULT_PROVIDER}
+    endpoint = "http://openaccess-api.clevelandart.org/api/artworks/"
+    batch_limit = 1000
+    delay = 5
 
     def get_next_query_params(self, old_query_params, **kwargs):
         if not old_query_params:

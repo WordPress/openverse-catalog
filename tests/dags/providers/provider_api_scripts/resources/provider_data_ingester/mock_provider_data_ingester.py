@@ -12,9 +12,6 @@ LICENSE_INFO = LicenseInfo(*_license_info)
 AUDIO_PROVIDER = "mock_audio_provider"
 IMAGE_PROVIDER = "mock_image_provider"
 ENDPOINT = "http://mock-api/endpoint"
-DELAY = 5
-RETRIES = 3
-BATCH_LIMIT = 1000
 HEADERS = {"api_key": "mock_api_key"}
 DEFAULT_QUERY_PARAMS = {"has_image": 1, "page": 1}
 
@@ -25,16 +22,8 @@ class MockProviderDataIngester(ProviderDataIngester):
     for testing purposes.
     """
 
-    def __init__(
-        self,
-        providers={"audio": AUDIO_PROVIDER, "image": IMAGE_PROVIDER},
-        endpoint=ENDPOINT,
-        delay=DELAY,
-        batch_limit=BATCH_LIMIT,
-        retries=RETRIES,
-        headers=HEADERS,
-    ):
-        super().__init__(providers, endpoint, batch_limit, delay, retries, headers)
+    providers = {"audio": AUDIO_PROVIDER, "image": IMAGE_PROVIDER}
+    endpoint = ENDPOINT
 
     def get_next_query_params(self, old_query_params):
         return DEFAULT_QUERY_PARAMS

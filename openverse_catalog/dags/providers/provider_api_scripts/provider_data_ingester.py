@@ -16,7 +16,7 @@ class ProviderDataIngester(ABC):
     An abstract base class that initializes media stores and ingests records
     from a given provider.
 
-    Required Init Arguments:
+    Class variables of note:
     providers:   a dictionary whose keys are the supported `media_types`, and values are
                  the `provider` string in the `media` table of the DB for that type.
                  Used to initialize the media stores.
@@ -25,26 +25,32 @@ class ProviderDataIngester(ABC):
                  consecutive requests via the `get` method
     batch_limit: integer giving the number of records to get in each batch
     retries:     integer number of times to retry the request on error
-
-    Optional Init Arguments:
-    headers: dictionary to be passed as headers to the request
+    headers:     dictionary to be passed as headers to the request
     """
 
-    def __init__(
-        self,
-        providers: dict[str, str],
-        endpoint: str,
-        batch_limit: int,
-        delay: int = 1,
-        retries: int = 3,
-        headers: Optional[Dict] = None,
-    ):
-        self.providers = providers
-        self.endpoint = endpoint
-        self.delay = delay
-        self.retries = retries
-        self.headers = headers or {}
+    delay = 1
+    retries = 3
+    batch_limit = 100
+    headers: Dict = {}
 
+    @property
+    @abstractmethod
+    def providers(self) -> dict[str, str]:
+        """
+        A dictionary whose keys are the supported `media_types`, and values are
+        the `provider` string in the `media` table of the DB for that type.
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def endpoint(self):
+        """
+        The URL with which to request records from the API.
+        """
+        pass
+
+    def __init__(self):
         # An airflow variable used to cap the amount of records to be ingested.
         # This can be used for testing purposes to ensure a provider script
         # processes some data but still returns quickly.
@@ -55,9 +61,8 @@ class ProviderDataIngester(ABC):
 
         # If a test limit is imposed, ensure that the `batch_limit` does not
         # exceed this.
-        self.batch_limit = (
-            batch_limit if not self.limit else min(batch_limit, self.limit)
-        )
+        if self.limit:
+            self.batch_limit = min(self.batch_limit, self.limit)
 
         # Initialize the DelayedRequester and all necessary Media Stores.
         self.delayed_requester = DelayedRequester(self.delay)
