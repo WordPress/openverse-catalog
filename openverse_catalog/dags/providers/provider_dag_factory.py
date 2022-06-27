@@ -135,7 +135,7 @@ def _push_output_paths_wrapper(
         # A ProviderDataIngester class was passed instead. First we initialize the
         # class, which will initialize the media stores and DelayedRequester.
         logger.info(f"Initializing ProviderIngester {ingestion_callable.__name__}")
-        ingester = ingestion_callable()
+        ingester = ingestion_callable(*args)
 
         # Push the media store output directories to XComs.
         for store in ingester.media_stores.values():

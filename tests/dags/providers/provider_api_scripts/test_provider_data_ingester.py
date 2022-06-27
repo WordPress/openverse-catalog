@@ -44,6 +44,14 @@ class TestProviderDataIngester(unittest.TestCase):
         assert isinstance(ingester.media_stores["audio"], AudioStore)
         assert isinstance(ingester.media_stores["image"], ImageStore)
 
+    def test_init_with_date(self):
+        ingester = MockProviderDataIngester(date="2020-06-27")
+        assert ingester.date == "2020-06-27"
+
+    def test_init_without_date(self):
+        ingester = MockProviderDataIngester()
+        assert ingester.date is None
+
     def test_batch_limit_is_capped_to_ingestion_limit(self):
         with patch(
             "providers.provider_api_scripts.provider_data_ingester.Variable"

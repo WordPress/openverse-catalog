@@ -50,7 +50,12 @@ class ProviderDataIngester(ABC):
         """
         pass
 
-    def __init__(self):
+    def __init__(self, date: str = None):
+        """
+        Optional Arguments:
+        date: Date String in the form YYYY-MM-DD. This is the date for
+              which running the script will pull data
+        """
         # An airflow variable used to cap the amount of records to be ingested.
         # This can be used for testing purposes to ensure a provider script
         # processes some data but still returns quickly.
@@ -67,6 +72,7 @@ class ProviderDataIngester(ABC):
         # Initialize the DelayedRequester and all necessary Media Stores.
         self.delayed_requester = DelayedRequester(self.delay)
         self.media_stores = self.init_media_stores()
+        self.date = date
 
     def init_media_stores(self) -> dict[str, MediaStore]:
         """

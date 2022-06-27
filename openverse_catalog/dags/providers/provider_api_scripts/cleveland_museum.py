@@ -69,7 +69,8 @@ class ClevelandDataIngester(ProviderDataIngester):
             "meta_data": self._get_metadata(record),
         }
 
-    def _get_image_type(self, image_data):
+    @staticmethod
+    def _get_image_type(image_data):
         # Returns the image url and key for the image in `image_data` dict.
         for key in ["web", "print", "full"]:
             if keyed_image := image_data.get(key):
@@ -90,7 +91,8 @@ class ClevelandDataIngester(ProviderDataIngester):
                 return value
         return None
 
-    def _get_metadata(self, data):
+    @staticmethod
+    def _get_metadata(data):
         metadata = {
             "accession_number": data.get("accession_number", ""),
             "technique": data.get("technique", ""),
