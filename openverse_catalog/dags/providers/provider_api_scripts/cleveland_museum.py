@@ -102,3 +102,13 @@ class ClevelandDataIngester(ProviderDataIngester):
         }
         metadata = {k: v for k, v in metadata.items() if v is not None}
         return metadata
+
+
+def main():
+    logger.info("Begin: Cleveland Museum data ingestion")
+    ingester = ClevelandDataIngester()
+    ingester.ingest_records()
+
+
+if __name__ == "__main__":
+    main()
