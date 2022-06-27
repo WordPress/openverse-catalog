@@ -118,11 +118,11 @@ def test_get_data_for_image_returns_response_json_when_all_ok(monkeypatch):
         "creator": "",
         "foreign_identifier": "45733-79_2_414b_S1_sf",
         "foreign_landing_url": "https://www.metmuseum.org/art/collection/search/47533",
-        "url": (
-            "https://images.metmuseum.org/CRDImages/as/original/79_2_414b_S1" "_sf.jpg"
-        ),
+        "url": "https://images.metmuseum.org/CRDImages/as/original/79_2_414b_S1_sf.jpg",
         "license_": CC0.license,
         "license_version": CC0.version,
+        "filetype": "jpg",
+        "filesize": None,
         "meta_data": {
             "license_url": CC0.url,
             "raw_license_url": CC0.raw_url,
