@@ -198,7 +198,7 @@ def _clean_intermediate_table_data(postgres_hook, load_table) -> tuple[int, int]
             WHERE
               p1.ctid < p2.ctid
               AND p1.{col.PROVIDER.db_name} = p2.{col.PROVIDER.db_name}
-              AND p1.{col.FOREIGN_ID.db_name} = p2.{col.FOREIGN_ID.db_name};
+              AND MD5(p1.{col.FOREIGN_ID.db_name}) = MD5(p2.{col.FOREIGN_ID.db_name});
             """
         ),
         handler=RETURN_ROW_COUNT,
