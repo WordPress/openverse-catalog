@@ -70,7 +70,7 @@ def test_create_endpoint_for_IDs(data, expected):
 def test_get_image_IDs_for_no_content():
     with patch.object(pp.delayed_requester, "get_response_json", return_value=None):
         image_ids = pp._get_image_IDs("")
-        expect_image_ids = [None]
+        expect_image_ids = None
         assert image_ids == expect_image_ids
 
 
@@ -89,47 +89,13 @@ def test_get_img_IDs_correct():
 def test_get_meta_data_with_no_img_url():
     r = get_json("no_image_url_example.json")
     with patch.object(pp.delayed_requester, "get_response_json", return_value=r):
-        meta_data = pp._get_meta_data("")
-        assert meta_data is None
-
-
-def test_get_meta_data_for_none_response():
-    with patch.object(pp.delayed_requester, "get_response_json", return_value=None):
-        meta_data = pp._get_meta_data("")
+        meta_data = pp._get_meta_data({})
         assert meta_data is None
 
 
 cc0_license = get_license_info(
     license_url="http://creativecommons.org/publicdomain/zero/1.0/"
 )
-
-
-def test_get_meta_data_correct(image_data):
-    with patch.object(
-        pp.delayed_requester, "get_response_json", return_value=image_data
-    ):
-        actual_meta_data = pp._get_meta_data("e9df48fe-68ea-419e-b9df-441e0b208335")
-        expect_meta_data = {
-            "foreign_identifier": "e9df48fe-68ea-419e-b9df-441e0b208335",
-            "image_url": (
-                "http://phylopic.org/assets/images/submissions/e9df48fe-68ea-"
-                "419e-b9df-441e0b208335.1024.png"
-            ),
-            "foreign_landing_url": "http://phylopic.org/image/e9df48fe-68ea-419e-b9df-441e0b208335",
-            "width": 847,
-            "height": 1024,
-            "license_info": cc0_license,
-            "creator": "Jonathan Wells",
-            "title": "Chondrus crispus NODC Taxonomic Code, database (version 8.0) 1996",
-            "meta_data": {
-                "taxa": [
-                    "Chondrus crispus NODC Taxonomic Code, database (version 8.0) 1996"
-                ],
-                "credit_line": "Jonathan Wells",
-                "pub_date": "2020-02-26 11:59:53",
-            },
-        }
-        assert actual_meta_data == expect_meta_data
 
 
 def test_get_creator_details(image_data):
@@ -176,6 +142,37 @@ def test_get_image_info(image_data):
             1024,
         )
         assert actual_img_info == expect_img_info
+
+
+def test_process_item(image_data):
+    image_uuid = "e9df48fe-68ea-419e-b9df-441e0b208335"
+    with patch.object(pp.image_store, "save_item") as mock_save:
+        item_data = image_data["result"]
+        pp._process_item(item_data)
+    actual_image = mock_save.call_args[0][0]
+    expected_image = {
+        "foreign_identifier": image_uuid,
+        "foreign_landing_url": f"http://phylopic.org/image/{image_uuid}",
+        "url": "http://phylopic.org/assets/images/submissions/e9df48fe-68ea-419e-b9df-441e0b208335.1024.png",
+        "width": 847,
+        "height": 1024,
+        "filetype": "png",
+        "creator": "Jonathan Wells",
+        "license_": "cc0",
+        "license_version": "1.0",
+        "title": "Chondrus crispus NODC Taxonomic Code, database (version 8.0) 1996",
+        "meta_data": {
+            "taxa": [
+                "Chondrus crispus NODC Taxonomic Code, database (version 8.0) 1996"
+            ],
+            "credit_line": "Jonathan Wells",
+            "pub_date": "2020-02-26 11:59:53",
+            "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+            "raw_license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
+        },
+    }
+    for key, value in expected_image.items():
+        assert getattr(actual_image, key) == value
 
 
 def test_get_image_info_with_no_img_url():
