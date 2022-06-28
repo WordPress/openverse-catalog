@@ -19,9 +19,7 @@ logging.basicConfig(
 
 @pytest.fixture
 def image_data():
-    IMAGE_DATA_EXAMPLE = RESOURCES / "correct_meta_data_example.json"
-    with open(IMAGE_DATA_EXAMPLE) as f:
-        yield json.load(f)
+    yield get_json("correct_meta_data_example.json")
 
 
 def get_json(filename):
