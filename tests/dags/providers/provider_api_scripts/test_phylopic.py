@@ -9,7 +9,7 @@ from common.licenses import get_license_info
 from providers.provider_api_scripts import phylopic as pp
 
 
-RESOURCES = Path(__file__).parent.resolve() / "resources/phylopic"
+RESOURCES = Path(__file__).parent / "resources/phylopic"
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s",
