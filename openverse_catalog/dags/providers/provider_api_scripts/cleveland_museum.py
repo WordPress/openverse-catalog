@@ -77,7 +77,8 @@ class ClevelandDataIngester(ProviderDataIngester):
                 return keyed_image
         return None
 
-    def _get_int_value(self, data: Dict, key: str) -> int | None:
+    @staticmethod
+    def _get_int_value(data: Dict, key: str) -> int | None:
         """
         Converts the value of the key `key` in `data` to an integer.
         Returns None if the value is not convertible to an integer, or

@@ -21,7 +21,7 @@ class ProviderDataIngester(ABC):
                  the `provider` string in the `media` table of the DB for that type.
                  Used to initialize the media stores.
     endpoint:    the URL with which to request records from the API
-    delay:       integer giving the minimimum number of seconds to wait between
+    delay:       integer giving the minimum number of seconds to wait between
                  consecutive requests via the `get` method
     batch_limit: integer giving the number of records to get in each batch
     retries:     integer number of times to retry the request on error
