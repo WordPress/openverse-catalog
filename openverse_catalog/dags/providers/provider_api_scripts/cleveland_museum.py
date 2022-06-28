@@ -37,36 +37,36 @@ class ClevelandDataIngester(ProviderDataIngester):
             return response_json.get("data")
         return None
 
-    def get_record_data(self, record):
-        license_ = record.get("share_license_status", "").lower()
+    def get_record_data(self, data):
+        license_ = data.get("share_license_status", "").lower()
         if license_ != "cc0":
             logger.error("Wrong license image")
             return None
 
-        foreign_id = record.get("id")
+        foreign_id = data.get("id")
         if foreign_id is None:
             return None
 
-        image = self._get_image_type(record.get("images", {}))
+        image = self._get_image_type(data.get("images", {}))
         if image is None or image.get("url") is None:
             return None
 
-        if record.get("creators"):
-            creator_name = record.get("creators")[0].get("description", "")
+        if data.get("creators"):
+            creator_name = data.get("creators")[0].get("description", "")
         else:
             creator_name = ""
 
         return {
             "foreign_identifier": f"{foreign_id}",
-            "foreign_landing_url": record.get("url"),
-            "title": record.get("title", None),
+            "foreign_landing_url": data.get("url"),
+            "title": data.get("title", None),
             "creator": creator_name,
             "image_url": image["url"],
             "width": self._get_int_value(image, "width"),
             "height": self._get_int_value(image, "height"),
             "filesize": self._get_int_value(image, "filesize"),
             "license_info": CC0_LICENSE,
-            "meta_data": self._get_metadata(record),
+            "meta_data": self._get_metadata(data),
         }
 
     @staticmethod

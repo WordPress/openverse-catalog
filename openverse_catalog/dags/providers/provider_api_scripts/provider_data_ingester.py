@@ -199,24 +199,34 @@ class ProviderDataIngester(ABC):
         """
         record_count = 0
 
-        for record in media_batch:
-            record_data = self.get_record_data(record)
+        for data in media_batch:
+            record_data = self.get_record_data(data)
 
-            if record_data is not None:
-                record_count += 1
+            if record_data is None:
+                continue
 
+            record_data = (
+                record_data
+                if isinstance(record_data, list)
+                else [
+                    record_data,
+                ]
+            )
+
+            for record in record_data:
                 # We need to know what type of record we're handling in
                 # order to add it to the correct store
                 media_type = self.get_media_type(record)
 
-                # Get the store for that media_type
+                # Add the record to the correct store
                 store = self.media_stores[media_type]
-                store.add_item(**record_data)
+                store.add_item(**record)
+                record_count += 1
 
         return record_count
 
     @abstractmethod
-    def get_media_type(self, record):
+    def get_media_type(self, record: dict) -> str:
         """
         For a given record, return the media type it represents (eg "image", "audio",
         etc.) If a provider only supports a single media type, this may be hard-coded
@@ -225,9 +235,13 @@ class ProviderDataIngester(ABC):
         pass
 
     @abstractmethod
-    def get_record_data(self, record):
+    def get_record_data(self, data: dict) -> dict | List[dict]:
         """
-        Parse out the necessary information (license info, urls, etc) from the record.
+        Parse out the necessary information (license info, urls, etc) from the record
+        data into a dictionary.
+
+        If the record being parsed contains data for additional related records, a list
+        may be returned of multiple record dictionaries.
         """
         pass
 

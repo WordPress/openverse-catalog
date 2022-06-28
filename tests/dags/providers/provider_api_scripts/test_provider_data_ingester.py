@@ -10,6 +10,7 @@ from tests.dags.providers.provider_api_scripts.resources.provider_data_ingester.
     AUDIO_PROVIDER,
     EXPECTED_BATCH_DATA,
     IMAGE_PROVIDER,
+    MOCK_RECORD_DATA_LIST,
     MockProviderDataIngester,
 )
 
@@ -78,6 +79,22 @@ class TestProviderDataIngester(unittest.TestCase):
             assert record_count == 3
             assert audio_store_mock.call_count == 1
             assert image_store_mock.call_count == 2
+
+    def test_process_batch_handles_list_of_records(self):
+        with (
+            patch.object(self.audio_store, "add_item") as audio_store_mock,
+            patch.object(self.image_store, "add_item") as image_store_mock,
+            patch.object(self.ingester, "get_record_data") as get_record_data_mock,
+        ):
+            # Mock `get_record_data` to return a list of records
+            get_record_data_mock.return_value = MOCK_RECORD_DATA_LIST
+
+            record_count = self.ingester.process_batch(EXPECTED_BATCH_DATA[:1])
+
+            # Both records are added, and to the appropriate stores
+            assert record_count == 2
+            assert audio_store_mock.call_count == 1
+            assert image_store_mock.call_count == 1
 
     def test_ingest_records(self):
         with (

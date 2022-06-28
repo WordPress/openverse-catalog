@@ -40,6 +40,7 @@ class MockProviderDataIngester(ProviderDataIngester):
         data = {
             "foreign_identifier": record["id"],
             "foreign_landing_url": record["url"],
+            "media_type": record["media_type"],
             "license_info": LICENSE_INFO,
         }
         if record["media_type"] == "audio":
@@ -74,18 +75,20 @@ EXPECTED_BATCH_DATA = [
     },
 ]
 
-# Expected result of calling `get_record_data` with `audio_record.json`
-EXPECTED_RECORD_DATA_AUDIO = {
-    "foreign_identifier": 101,
-    "foreign_landing_url": "https://clevelandart.org/art/1335.1917",
-    "license_info": LICENSE_INFO,
-    "audio_url": "https://openaccess-cdn.clevelandart.org/1335.1917/1335.1917_web.jpg",
-}
-
-# Expected result of calling `get_record_data` with `image_record.json`
-EXPECTED_RECORD_DATA_IMAGE = {
-    "foreign_identifier": 100,
-    "foreign_landing_url": "https://clevelandart.org/art/1916.586.a",
-    "license_info": LICENSE_INFO,
-    "image_url": "https://openaccess-cdn.clevelandart.org/1916.586.a/1916.586.a_web.jpg",  # noqa: E501
-}
+# Sample record data containing multiple records
+MOCK_RECORD_DATA_LIST = [
+    {
+        "foreign_identifier": 101,
+        "foreign_landing_url": "https://clevelandart.org/art/1335.1917",
+        "media_type": "audio",
+        "license_info": LICENSE_INFO,
+        "audio_url": "https://openaccess-cdn.clevelandart.org/1335.1917/1335.1917_web.jpg",  # noqa: E501
+    },
+    {
+        "foreign_identifier": 100,
+        "foreign_landing_url": "https://clevelandart.org/art/1916.586.a",
+        "media_type": "image",
+        "license_info": LICENSE_INFO,
+        "image_url": "https://openaccess-cdn.clevelandart.org/1916.586.a/1916.586.a_web.jpg",  # noqa: E501
+    },
+]
