@@ -106,7 +106,7 @@ class ProviderDataIngester(ABC):
             batch, should_continue = self.get_batch(query_params)
 
             if batch and len(batch) > 0:
-                record_count = self.process_batch(batch)
+                record_count += self.process_batch(batch)
                 logger.info(f"{record_count} records ingested so far.")
             else:
                 logger.info("Batch complete.")
