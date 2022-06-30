@@ -47,10 +47,12 @@ https://github.com/WordPress/openverse-catalog/issues/353)
 import json
 import logging
 import os
+import uuid
 from typing import Sequence
 from urllib.parse import urlparse
 
 from airflow.exceptions import AirflowException
+from airflow.models.baseoperator import chain
 from airflow.providers.http.operators.http import SimpleHttpOperator
 from airflow.providers.http.sensors.http import HttpSensor
 from airflow.utils.task_group import TaskGroup
@@ -138,37 +140,77 @@ def create_data_refresh_task_group(
             pool=DATA_REFRESH_POOL,
         )
 
-        data_refresh_post_data = {
-            "model": data_refresh.media_type,
-            "action": "INGEST_UPSTREAM",
+        # This UUID is the suffix for the new index created as a result of this refresh.
+        index_suffix = str(uuid.uuid4())
+
+        def _get_http_operator(task_id: str, post_data: dict) -> SimpleHttpOperator:
+            """
+            Get a ``SimpleHttpOperator`` instance that is configured to make a POST
+            request with the given POST data.
+
+            :param task_id: the name of the task associated with the operator
+            :param post_data: the JSON data to send to the ingestion server
+            """
+
+            return SimpleHttpOperator(
+                task_id=task_id,
+                http_conn_id="data_refresh",
+                endpoint="task",
+                method="POST",
+                headers={"Content-Type": "application/json"},
+                data=json.dumps(post_data),
+                response_check=lambda response: response.status_code == 202,
+                response_filter=response_filter_data_refresh,
+            )
+
+        def _get_http_sensor(task_id: str, endpoint: str) -> HttpSensor:
+            """
+            Get an ``HttpSensor`` instance that waits for a given  ingestion server task
+            to be completed. The trigger task status can be observed by polling an
+            endpoint.
+
+            :param task_id: the name of the task associated with the sensor
+            :endpoint: the REST endpoint for tracking the status of the triggered task
+            """
+
+            return HttpSensor(
+                task_id=task_id,
+                http_conn_id="data_refresh",
+                endpoint=endpoint,
+                method="GET",
+                response_check=response_check_wait_for_completion,
+                mode="reschedule",
+                poke_interval=poke_interval,
+                timeout=data_refresh.data_refresh_timeout,
+            )
+
+        tasks = [wait_for_data_refresh]
+        action_data_map: dict[str, dict] = {
+            "ingest_upstream": {},
+            "point_alias": {"alias": data_refresh.media_type},
         }
+        for action, action_post_data in action_data_map.items():
+            trigger = _get_http_operator(
+                task_id=f"trigger_{action}",
+                post_data=action_post_data
+                | {
+                    "model": data_refresh.media_type,
+                    "action": action.upper(),
+                    "index_suffix": index_suffix,
+                },
+            )
+            waiter = _get_http_sensor(
+                task_id=f"wait_for_{action}",
+                endpoint=XCOM_PULL_TEMPLATE.format(trigger.task_id, "return_value"),
+            )
+            tasks.extend([trigger, waiter])
 
-        # Trigger the refresh on the data refresh server.
-        trigger_data_refresh = SimpleHttpOperator(
-            task_id="trigger_data_refresh",
-            http_conn_id="data_refresh",
-            endpoint="task",
-            method="POST",
-            headers={"Content-Type": "application/json"},
-            data=json.dumps(data_refresh_post_data),
-            response_check=lambda response: response.status_code == 202,
-            response_filter=response_filter_data_refresh,
-        )
-
-        # Wait for the data refresh to complete.
-        wait_for_completion = HttpSensor(
-            task_id="wait_for_completion",
-            http_conn_id="data_refresh",
-            endpoint=XCOM_PULL_TEMPLATE.format(
-                trigger_data_refresh.task_id, "return_value"
-            ),
-            method="GET",
-            response_check=response_check_wait_for_completion,
-            mode="reschedule",
-            poke_interval=poke_interval,
-            timeout=data_refresh.data_refresh_timeout,
-        )
-
-        wait_for_data_refresh >> trigger_data_refresh >> wait_for_completion
+        # ``tasks`` contains the following tasks:
+        # wait_for_data_refresh
+        # └─ trigger_ingest_upstream
+        #    └─ wait_for_ingest_upstream
+        #       └─ trigger_point_alias
+        #          └─ wait_for_point_alias
+        chain(*tasks)
 
     return data_refresh_group
