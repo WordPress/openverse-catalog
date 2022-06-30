@@ -11,7 +11,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 API_URL = "https://api.finna.fi"
-LANDING_URL = "https://www.finna.fi/Record"
+LANDING_URL = "https://www.finna.fi/Record/"
 
 PROVIDER = prov.FINNISH_DEFAULT_PROVIDER
 SUB_PROVIDERS = prov.FINNISH_SUB_PROVIDERS
@@ -31,8 +31,8 @@ class FinnishMuseumsDataIngester(ProviderDataIngester):
             super().ingest_records(building=building)
 
     def get_next_query_params(self, old_query_params, **kwargs):
-        building = kwargs["building"]
         if not old_query_params:
+            building = kwargs.get("building")
             return {
                 "filter[]": [f'format:"{self.format_type}"', f'building:"{building}"'],
                 "limit": self.batch_limit,
