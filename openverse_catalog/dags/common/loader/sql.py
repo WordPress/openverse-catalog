@@ -287,7 +287,7 @@ def upsert_records_to_db_table(
         WHERE NOT EXISTS (
             SELECT {col.DIRECT_URL.name} from {db_table}
             WHERE {col.DIRECT_URL.name} = new.{col.DIRECT_URL.name} AND
-                {col.FOREIGN_ID.name} <> new.{col.FOREIGN_ID.name}
+                MD5({col.FOREIGN_ID.name}) <> MD5(new.{col.FOREIGN_ID.name})
         )
         ON CONFLICT ({col.PROVIDER.db_name}, md5({col.FOREIGN_ID.db_name}))
         DO UPDATE SET
