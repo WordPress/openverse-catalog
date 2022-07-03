@@ -3,14 +3,14 @@
 Final transformed view
 ********************************************************************************
 
-This is really just a placeholder for the transformation logic in SQL. I'm not at 
-all sure that a massive logical view is an implementation that makes any sense at 
+This is really just a placeholder for the transformation logic in SQL. I'm not at
+all sure that a massive logical view is an implementation that makes any sense at
 all for actually updating the images table.
 */
 
 CREATE OR REPLACE VIEW inaturalist.tsv as
 (
-    select 
+    select
         p.photo_id as foreign_identifier,
         lower(p.extension) as filetype,
         lower(replace(p.license,'CC-','')) license_name,
@@ -18,7 +18,7 @@ CREATE OR REPLACE VIEW inaturalist.tsv as
         taking the hard coded license versions from inaturalist
         https://github.com/inaturalist/inaturalist/blob/d338ba76d82af83d8ad0107563015364a101568c/app/models/shared/license_module.rb#L5
         */
-        (case 
+        (case
             when p.license='CC-BY-NC-SA' then '4.0'
             when p.license='CC-BY-NC' then '4.0'
             when p.license='CC-BY-NC-ND' then '4.0'

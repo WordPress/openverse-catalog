@@ -2,8 +2,8 @@
 ********************************************************************************
 OBSERVATIONS
 ********************************************************************************
---  ~400,000 observations do not have a taxon_id that is in the taxa table. 
---  Their photos are not included in the final transformed view on the assumption 
+--  ~400,000 observations do not have a taxon_id that is in the taxa table.
+--  Their photos are not included in the final transformed view on the assumption
     that photos are not useful to us without a title or tags
 
 Taking DDL from https://github.com/inaturalist/inaturalist-open-data/blob/main/Metadata/structure.sql
@@ -23,11 +23,11 @@ CREATE TABLE inaturalist.observations (
     observed_on date
 );
 
-select aws_s3.table_import_from_s3('inaturalist.observations', 
-    '', 
+select aws_s3.table_import_from_s3('inaturalist.observations',
+    '',
     '(FORMAT ''csv'', DELIMITER E''\t'', HEADER, QUOTE E''\b'')',
-    'inaturalist-open-data', 
-    'observations.csv.gz', 
+    'inaturalist-open-data',
+    'observations.csv.gz',
     'us-east-1');
 
 ALTER TABLE inaturalist.observations ADD PRIMARY KEY (observation_uuid);
