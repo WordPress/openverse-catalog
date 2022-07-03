@@ -15,11 +15,6 @@ import logging
 
 from common.licenses import get_license_info
 from common.loader import provider_details as prov
-
-# There are a couple of things that seem really broadly applicable from the Cleveland
-# sample script: the method _get_int_value and the constant CC0_LICENSE.
-# I'm not using the latter, because it fails some of the existing StockSnap tests,
-# because of a difference in trailing / in the license url.
 from providers.provider_api_scripts.cleveland_museum import ClevelandDataIngester
 from providers.provider_api_scripts.provider_data_ingester import ProviderDataIngester
 
