@@ -15,7 +15,6 @@ import logging
 
 from common.licenses import get_license_info
 from common.loader import provider_details as prov
-from providers.provider_api_scripts.cleveland_museum import ClevelandDataIngester
 from providers.provider_api_scripts.provider_data_ingester import ProviderDataIngester
 
 
@@ -113,8 +112,8 @@ class StockSnapDataIngester(ProviderDataIngester):
 
     @staticmethod
     def _get_image_info(item):
-        width = ClevelandDataIngester._get_int_value(item, "img_width")
-        height = ClevelandDataIngester._get_int_value(item, "img_height")
+        width = item.get("img_width")
+        height = item.get("img_height")
         img_id = item.get("img_id")
         image_url = f"{IMAGE_CDN}/{img_id}.jpg"
         return image_url, width, height
