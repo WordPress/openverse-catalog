@@ -45,7 +45,7 @@ class StockSnapDataIngester(ProviderDataIngester):
         super(StockSnapDataIngester, self).__init__()
         self._page_counter = 1
 
-    def get_next_query_params(self):
+    def get_next_query_params(self, old_query_params, **kwargs):
         # StockSnap uses /{page} at the end of the endpoint url instead of query params.
         # Page number is incremented in get_should_continue below.
         return None
