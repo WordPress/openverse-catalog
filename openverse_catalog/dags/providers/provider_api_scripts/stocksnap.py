@@ -25,8 +25,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-DELAY = 1  # in seconds
-RETRIES = 3
 HOST = "stocksnap.io"
 ENDPOINT_BASE = f"https://{HOST}/api/load-photos/date/desc"
 IMAGE_CDN = "https://cdn.stocksnap.io/img-thumbs/960w"
