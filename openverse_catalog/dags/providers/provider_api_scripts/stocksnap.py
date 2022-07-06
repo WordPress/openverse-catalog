@@ -43,11 +43,11 @@ class StockSnapDataIngester(ProviderDataIngester):
 
     def __init__(self):
         super(StockSnapDataIngester, self).__init__()
-        self._page_counter = 1
+        self._page_counter = 0
 
     def get_next_query_params(self, old_query_params, **kwargs):
         # StockSnap uses /{page} at the end of the endpoint url instead of query params.
-        # Page number is incremented in get_should_continue below.
+        self._page_counter += 1
         return None
 
     def get_media_type(self):
@@ -56,13 +56,6 @@ class StockSnapDataIngester(ProviderDataIngester):
     @property
     def endpoint(self):
         return f"{ENDPOINT_BASE}/{self._page_counter}"
-
-    def get_should_continue(self, response_json):
-        if isinstance(response_json, list) and len(response_json) > 0:
-            self._page_counter += 1
-            return True
-        else:
-            return False
 
     def get_batch_data(self, response_json):
         """

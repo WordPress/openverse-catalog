@@ -37,8 +37,8 @@ def test_get_media_type():
 
 
 def test_endpoint_with_initialized_page_counter():
-    expect_result = "https://stocksnap.io/api/load-photos/date/desc/1"
-    actual_result = stocksnap.endpoint()
+    expect_result = "https://stocksnap.io/api/load-photos/date/desc/0"
+    actual_result = stocksnap.endpoint
     assert expect_result == actual_result
 
 
@@ -54,21 +54,11 @@ def test_get_batch_data_returns_correctly_with_no_results():
     assert actual_result == expect_result
 
 
-def test_endpoint_increment_after_none_response():
-    expect_result = (False, "https://stocksnap.io/api/load-photos/date/desc/1")
-    pulled_batch = None
-    should_continue = stocksnap.get_should_continue(pulled_batch)
-    next_endpoint = stocksnap.endpoint()
-    actual_result = (should_continue, next_endpoint)
-    assert expect_result == actual_result
-
-
-def test_endpoint_increment_after_complete_response():
-    expect_result = (True, "https://stocksnap.io/api/load-photos/date/desc/2")
-    pulled_batch = _get_resource_json("full_response.json")
-    should_continue = stocksnap.get_should_continue(pulled_batch)
-    next_endpoint = stocksnap.endpoint()
-    actual_result = (should_continue, next_endpoint)
+def test_endpoint_increment():
+    expect_result = (None, "https://stocksnap.io/api/load-photos/date/desc/1")
+    query_params = stocksnap.get_next_query_params(None)
+    next_endpoint = stocksnap.endpoint
+    actual_result = (query_params, next_endpoint)
     assert expect_result == actual_result
 
 
