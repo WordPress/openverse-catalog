@@ -99,6 +99,7 @@ def test_process_object_with_real_example():
         "source": "finnish_heritage_agency",
         "raw_tags": [
             "koivu",
+            "koivussa",
             "linnunpöntöt",
             "Revonristi",
             "valmistusaika: 11.06.1923",

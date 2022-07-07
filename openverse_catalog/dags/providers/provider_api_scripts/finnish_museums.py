@@ -1,4 +1,5 @@
 import logging
+from itertools import chain
 
 from common.licenses import get_license_info
 from common.loader import provider_details as prov
@@ -50,11 +51,9 @@ class FinnishMuseumsDataIngester(ProviderDataIngester):
             or response_json.get("records") is None
             or len(response_json.get("records")) == 0
         ):
-            logger.info("emptty batch")
-            object_list = None
-        else:
-            object_list = response_json.get("records")
-        return object_list
+            return None
+
+        return response_json.get("records")
 
     def get_record_data(self, data):
         records = []
@@ -66,18 +65,18 @@ class FinnishMuseumsDataIngester(ProviderDataIngester):
         foreign_identifier = data.get("id")
         title = data.get("title")
         building = data.get("buildings")[0].get("value")
-
         source = next(
             (s for s in SUB_PROVIDERS if building in SUB_PROVIDERS[s]), PROVIDER
         )
         foreign_landing_url = self._get_landing(data)
         raw_tags = self._get_raw_tags(data)
+
         image_list = data.get("images")
         for img in image_list:
             image_url = self._get_image_url(img)
             records.append(
                 {
-                    "license_info": get_license_info(license_url=license_url),
+                    "license_info": get_license_info(license_url),
                     "foreign_identifier": foreign_identifier,
                     "foreign_landing_url": foreign_landing_url,
                     "image_url": image_url,
@@ -91,7 +90,6 @@ class FinnishMuseumsDataIngester(ProviderDataIngester):
     @staticmethod
     def get_license_url(obj):
         license_url = obj.get("imageRights", {}).get("link")
-
         if license_url is None:
             return None
 
@@ -102,28 +100,23 @@ class FinnishMuseumsDataIngester(ProviderDataIngester):
 
     @staticmethod
     def _get_raw_tags(obj):
-        raw_tags = []
-        if obj.get("subjects") is None:
+        tag_lists = obj.get("subjects")
+        if tag_lists is None:
             return None
-        for tag_list in obj.get("subjects"):
-            for tag in tag_list:
-                raw_tags.append(tag)
-        return raw_tags
+        return list(chain(*tag_lists))
 
     @staticmethod
     def _get_landing(obj, landing_url=LANDING_URL):
-        l_url = None
         id_ = obj.get("id")
-        if id_:
-            l_url = landing_url + id_
-        return l_url
+        if id_ is None:
+            return None
+        return landing_url + id_
 
     @staticmethod
     def _get_image_url(img, image_url=API_URL):
-        img_url = None
-        if img:
-            img_url = image_url + img
-        return img_url
+        if img is None:
+            return None
+        return image_url + img
 
 
 def main():
