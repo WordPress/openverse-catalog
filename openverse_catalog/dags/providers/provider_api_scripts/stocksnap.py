@@ -55,6 +55,9 @@ class StockSnapDataIngester(ProviderDataIngester):
     def endpoint(self):
         return f"{ENDPOINT_BASE}/{self._page_counter}"
 
+    def get_should_continue(self, response_json):
+        return bool(response_json.get("nextPage"))
+
     def get_batch_data(self, response_json):
         """
         Take an API response and return the list of records.

@@ -115,8 +115,8 @@ def test_get_batch_data_returns_correctly_with_full_response():
 def test_process_batch():
     expect_result = 40
     actual_result = stocksnap.process_batch(
-        stocksnap.get_batch_data(_get_resource_json('full_response.json'))
-        )
+        stocksnap.get_batch_data(_get_resource_json("full_response.json"))
+    )
     assert expect_result == actual_result
 
 
@@ -238,6 +238,22 @@ def test_get_record_data_handles_example_dict():
         "category": "photograph",
     }
     assert actual_image_info == expected_image_info
+
+
+def test_get_should_continue_first_response():
+    expect_result = True
+    actual_result = stocksnap.get_should_continue(
+        _get_resource_json("full_response.json")
+    )
+    assert expect_result == actual_result
+
+
+def test_get_should_continue_last_response():
+    expect_result = False
+    actual_result = stocksnap.get_should_continue(
+        _get_resource_json("last_full_response.json")
+    )
+    assert expect_result == actual_result
 
 
 def test_get_image_tags():
