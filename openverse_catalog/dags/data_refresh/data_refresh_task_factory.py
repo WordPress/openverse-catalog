@@ -53,6 +53,7 @@ from urllib.parse import urlparse
 
 from airflow.exceptions import AirflowException
 from airflow.models.baseoperator import chain
+from airflow.operators.python import PythonOperator
 from airflow.providers.http.operators.http import SimpleHttpOperator
 from airflow.providers.http.sensors.http import HttpSensor
 from airflow.utils.task_group import TaskGroup
@@ -139,8 +140,12 @@ def create_data_refresh_task_group(
             pool=DATA_REFRESH_POOL,
         )
 
-        # This UUID is the suffix for the new index created as a result of this refresh.
-        index_suffix = str(uuid.uuid4())
+        # Generate a UUID suffix that will be used by the newly created index.
+        generate_index_suffix = PythonOperator(
+            task_id="generate_index_suffix", python_callable=lambda: uuid.uuid4().hex
+        )
+
+        tasks = [wait_for_data_refresh, generate_index_suffix]
 
         def _get_http_operator(task_id: str, post_data: dict) -> SimpleHttpOperator:
             """
@@ -183,7 +188,6 @@ def create_data_refresh_task_group(
                 timeout=data_refresh.data_refresh_timeout,
             )
 
-        tasks = [wait_for_data_refresh]
         action_data_map: dict[str, dict] = {
             "ingest_upstream": {},
             "promote": {"alias": data_refresh.media_type},
@@ -196,7 +200,9 @@ def create_data_refresh_task_group(
                     | {
                         "model": data_refresh.media_type,
                         "action": action.upper(),
-                        "index_suffix": index_suffix,
+                        "index_suffix": XCOM_PULL_TEMPLATE.format(
+                            generate_index_suffix.task_id, "return_value"
+                        ),
                     },
                 )
                 waiter = _get_http_sensor(
