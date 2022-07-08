@@ -186,7 +186,7 @@ def create_data_refresh_task_group(
         tasks = [wait_for_data_refresh]
         action_data_map: dict[str, dict] = {
             "ingest_upstream": {},
-            "point_alias": {"alias": data_refresh.media_type},
+            "promote": {"alias": data_refresh.media_type},
         }
         for action, action_post_data in action_data_map.items():
             with TaskGroup(group_id=action) as task_group:
