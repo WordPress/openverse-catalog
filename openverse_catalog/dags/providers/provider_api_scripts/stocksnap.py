@@ -38,14 +38,12 @@ class StockSnapDataIngester(ProviderDataIngester):
         "Accept": "application/json",
     }
 
-    def __init__(self):
-        super(StockSnapDataIngester, self).__init__()
-        self._page_counter = 0
-
     def get_next_query_params(self, old_query_params, **kwargs):
-        # StockSnap uses /{page} at the end of the endpoint url instead of query params.
-        self._page_counter += 1
-        return None
+        if old_query_params is None:
+            return {"page_counter": 1}
+        else:
+            next_page = old_query_params.get("page_counter") + 1
+            return {"page_counter": next_page}
 
     def get_media_type(self):
         return "image"
