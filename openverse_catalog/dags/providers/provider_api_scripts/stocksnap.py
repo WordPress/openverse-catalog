@@ -45,7 +45,7 @@ class StockSnapDataIngester(ProviderDataIngester):
             next_page = old_query_params.get("page_counter") + 1
             return {"page_counter": next_page}
 
-    def get_media_type(self):
+    def get_media_type(self, record):
         return "image"
 
     @property
