@@ -5,10 +5,11 @@ ETL Process:            Use the API to identify all CC-licensed images.
 
 Output:                 TSV file containing the image, the respective meta-data.
 
-Notes:                  https://stocksnap.io/faq
+Notes:                  https://stocksnap.io/api/load-photos/date/desc/1
+                        https://stocksnap.io/faq
                         All images are licensed under CC0.
-                        Seems like their API has been suspended, but this assumes
-                        that there is a special agreement with Openverse.
+                        No rate limits or authorization required.
+                        API is undocumented.
 """
 import json
 import logging
