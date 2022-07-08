@@ -65,7 +65,6 @@ class StockSnapDataIngester(ProviderDataIngester):
         if response_json:
             return response_json.get("results")
         return None
-        return None
 
     def get_record_data(self, data):
         """
