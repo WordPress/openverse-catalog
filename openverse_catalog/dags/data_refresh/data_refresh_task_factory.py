@@ -190,27 +190,28 @@ def create_data_refresh_task_group(
             "point_alias": {"alias": data_refresh.media_type},
         }
         for action, action_post_data in action_data_map.items():
-            trigger = _get_http_operator(
-                task_id=f"trigger_{action}",
-                post_data=action_post_data
-                | {
-                    "model": data_refresh.media_type,
-                    "action": action.upper(),
-                    "index_suffix": index_suffix,
-                },
-            )
-            waiter = _get_http_sensor(
-                task_id=f"wait_for_{action}",
-                endpoint=XCOM_PULL_TEMPLATE.format(trigger.task_id, "return_value"),
-            )
-            tasks.extend([trigger, waiter])
+            with TaskGroup(group_id=action) as task_group:
+                trigger = _get_http_operator(
+                    task_id=f"trigger_{action}",
+                    post_data=action_post_data
+                    | {
+                        "model": data_refresh.media_type,
+                        "action": action.upper(),
+                        "index_suffix": index_suffix,
+                    },
+                )
+                waiter = _get_http_sensor(
+                    task_id=f"wait_for_{action}",
+                    endpoint=XCOM_PULL_TEMPLATE.format(trigger.task_id, "return_value"),
+                )
+                trigger >> waiter
+
+            tasks.append(task_group)
 
         # ``tasks`` contains the following tasks:
         # wait_for_data_refresh
-        # └─ trigger_ingest_upstream
-        #    └─ wait_for_ingest_upstream
-        #       └─ trigger_point_alias
-        #          └─ wait_for_point_alias
+        # └─ ingest_upstream (trigger_ingest_upstream + wait_for_ingest_upstream)
+        #    └─ point_alias (trigger_point_alias + wait_for_point_alias)
         chain(*tasks)
 
     return data_refresh_group
