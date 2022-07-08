@@ -56,9 +56,9 @@ class StockSnapDataIngester(ProviderDataIngester):
         """
         Take an API response and return the list of records.
         """
-        # Based on the sample test file, using json.load on the file will return a list.
-        if isinstance(response_json, list) and len(response_json) > 0:
-            return response_json
+        if response_json:
+            return response_json.get("results")
+        return None
         return None
 
     def get_record_data(self, data):
