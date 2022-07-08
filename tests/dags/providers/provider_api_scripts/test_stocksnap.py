@@ -24,6 +24,16 @@ image_store = ImageStore(provider=prov.STOCKSNAP_DEFAULT_PROVIDER)
 stocksnap.media_stores = {"image": image_store}
 
 
+#     def _get_image_info(item):
+#     def _get_title(item):
+#     def _get_metadata(item):
+# def ingest_records(self, **kwargs) -> None:
+# def get_batch(self, query_params: Dict) -> Tuple[Optional[List], bool]:
+# def get_should_continue(self, response_json):
+# def get_batch_data(self, response_json):
+# def process_batch(self, media_batch):
+
+
 def _get_resource_json(json_name):
     with open(os.path.join(RESOURCES, json_name)) as f:
         resource_json = json.load(f)
@@ -32,7 +42,7 @@ def _get_resource_json(json_name):
 
 def test_get_media_type():
     expect_result = "image"
-    actual_result = stocksnap.get_media_type()
+    actual_result = stocksnap.get_media_type(_get_resource_json("full_item.json"))
     assert expect_result == actual_result
 
 
@@ -52,6 +62,62 @@ def test_get_batch_data_returns_correctly_with_no_results():
     expect_result = None
     actual_result = stocksnap.get_batch_data({})
     assert actual_result == expect_result
+
+
+def test_get_batch_data_returns_correctly_with_full_response():
+    actual_result = stocksnap.get_batch_data(_get_resource_json("full_response.json"))
+    assert isinstance(actual_result, list)
+    assert len(actual_result) == 40
+    assert actual_result[0] == {
+        "img_id": "OAJ3645ZWF",
+        "tags": "flower,   blossom,   macro,   close up,   fresh,   petals,   flora,   floral,   plants,   organic,   natural,   spring,   bloom,   minimal,   background,   wallpaper,   texture,   pattern,   delicate,   detail,   botanical,  magnolia",
+        "page_views": 25,
+        "downloads": 5,
+        "favorites": 0,
+        "img_width": 6000,
+        "img_height": 4000,
+        "author_name": "Macro Mama",
+        "author_id": 125683,
+        "author_website": "https://stocksnap.io/",
+        "author_profile": "https://stocksnap.io/author/125683",
+        "adjustedWidth": 420,
+        "page_views_raw": 25,
+        "downloads_raw": 5,
+        "favorites_raw": 0,
+        "keywords": [
+            "flower",
+            "blossom",
+            "macro",
+            "closeup",
+            "fresh",
+            "petals",
+            "flora",
+            "floral",
+            "plants",
+            "organic",
+            "natural",
+            "spring",
+            "bloom",
+            "minimal",
+            "background",
+            "wallpaper",
+            "texture",
+            "pattern",
+            "delicate",
+            "detail",
+            "botanical",
+            "magnolia",
+        ],
+        "favorited": False,
+    }
+
+
+def test_process_batch():
+    expect_result = 40
+    actual_result = stocksnap.process_batch(
+        stocksnap.get_batch_data(_get_resource_json('full_response.json'))
+        )
+    assert expect_result == actual_result
 
 
 def test_endpoint_increment():
