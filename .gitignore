@@ -144,7 +144,3 @@ si_samples_*
 
 # Vim detritus
 *.swp
-
-# minio testing detritus
-/tests/s3-data/*
-!/tests/s3-data/inatrualist-open-data/*
