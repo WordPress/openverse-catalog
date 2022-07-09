@@ -38,6 +38,8 @@ services:
       done &&
       exec $$0 \"$$@\""
     command: minio server /data --address :5000 --console-address :5001
+    volumes:
+      - minio:/data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5010/minio/health/live"]
       interval: 30s
