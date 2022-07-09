@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 # Below are record counts from the sample files in tests/s3-data/inaturalist-open-data
-# 33 of the photo records link to unclassified observations, so they have no title or
+# 3 of the photo records link to unclassified observations, so they have no title or
 # tags, so we don't load them.
 # ---> Reading file taxa.csv.gz
 # 183 records
