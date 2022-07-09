@@ -19,8 +19,8 @@ CREATE TABLE inaturalist.taxa (
     active boolean,
     tags text
 );
+commit;
 
--- Load from S3
 select aws_s3.table_import_from_s3('inaturalist.taxa',
     'taxon_id, ancestry, rank_level, rank, name, active',
     '(FORMAT ''csv'', DELIMITER E''\t'', HEADER, QUOTE E''\b'')',
@@ -28,9 +28,8 @@ select aws_s3.table_import_from_s3('inaturalist.taxa',
     'taxa.csv.gz',
     'us-east-1');
 
--- doing this after the load to help performance, but will need a way to
--- handle non-uniqueness if it comes up
 ALTER TABLE inaturalist.taxa ADD PRIMARY KEY (taxon_id);
+commit;
 
 -- Aggregate ancestry names as tags
 create temporary table unnest_ancestry as
@@ -54,5 +53,6 @@ update inaturalist.taxa
 set tags = taxa_tags.tags
 from taxa_tags
 where taxa_tags.taxon_id = taxa.taxon_id;
+commit;
 
 select count(*) from inaturalist.taxa;

@@ -51,7 +51,7 @@ services:
     depends_on:
       - s3
     volumes:
-      # Buckets for testing provider data imported from s3 are subdirectories under 
+      # Buckets for testing provider data imported from s3 are subdirectories under
       # /tests/s3-data/
       - ./tests/s3-data:/data:rw
     # Loop through subdirectories mounted to the volume and load them to s3/minio.

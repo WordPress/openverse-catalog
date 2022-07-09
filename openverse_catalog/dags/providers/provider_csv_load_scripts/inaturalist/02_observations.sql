@@ -22,6 +22,7 @@ CREATE TABLE inaturalist.observations (
     quality_grade character varying(255),
     observed_on date
 );
+commit;
 
 select aws_s3.table_import_from_s3('inaturalist.observations',
     '',
@@ -31,5 +32,6 @@ select aws_s3.table_import_from_s3('inaturalist.observations',
     'us-east-1');
 
 ALTER TABLE inaturalist.observations ADD PRIMARY KEY (observation_uuid);
+commit;
 
 select count(*) from inaturalist.observations;

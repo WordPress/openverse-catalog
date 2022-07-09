@@ -14,6 +14,7 @@ CREATE TABLE inaturalist.observers (
     login character varying(255),
     name character varying(255)
 );
+commit;
 
 select aws_s3.table_import_from_s3('inaturalist.observers',
     '',
@@ -22,8 +23,7 @@ select aws_s3.table_import_from_s3('inaturalist.observers',
     'observers.csv.gz',
     'us-east-1');
 
--- doing this after the load to speed performance, but will need a way to handle
--- non-uniqueness
 ALTER TABLE inaturalist.observers ADD PRIMARY KEY (observer_id);
+commit;
 
 select count(*) from inaturalist.observers;

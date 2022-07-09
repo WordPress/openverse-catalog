@@ -26,6 +26,7 @@ CREATE TABLE inaturalist.photos (
     height smallint,
     position smallint
 );
+commit;
 
 select aws_s3.table_import_from_s3('inaturalist.photos',
     '',
@@ -33,7 +34,5 @@ select aws_s3.table_import_from_s3('inaturalist.photos',
     'inaturalist-open-data',
     'photos.csv.gz',
     'us-east-1');
-
-CREATE INDEX index_inaturalist_photo_id ON inaturalist.photos (photo_id);
 
 select count(*) from inaturalist.photos;

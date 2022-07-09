@@ -1,38 +1,19 @@
-"""
-What am I trying to test here?
--   Data gets from S3 into postgres
--   Records in the final view look like what we expect them to look like [depends on
-    above, which isn't working yet]
-
-What do I need in place to test it?
--   I need to have a way to make airflow think that it is pulling data from
-    s3://inaturalist-open-data when it is actually coming from small test files I've
-    created from the inaturalist data
--   I need to have a way to look at the results in the database
-
-How do we accomplish this?
--   Changed the s3 volume in docker-compose.override.yml to come from a physical folder
-    tests/s3-data, that includes a subfolder (inaturalist-open-data) with the temporary
-    files
--   I hoped that this would mean that tests.dags.common.conftest.pytest_configure would
-    handle sending requests to the minio (local s3) bucket, rather than the real s3
-    bucket.
--   But right now, the requests (which actually come via db function
-    0002_aws_s3_mock.sql) are coming back saying they can't find the file on s3.
-
-TO DO:
--   There will be steps to actually update the image table, provide relevant reporting,
-    and flow through the rest of the pipeline to elastic search
--   And then I'll need to test that
-"""
-
-# from unittest import mock
+import logging
 
 import pytest
+from common.licenses import get_license_info
 from providers.provider_api_scripts import inaturalist
 
 
-# These are just record counts from the sample files
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s", level=logging.INFO
+)
+logger = logging.getLogger(__name__)
+
+
+# Below are record counts from the sample files in tests/s3-data/inaturalist-open-data
+# 33 of the photo records link to unclassified observations, so they have no title or
+# tags, so we don't load them.
 # ---> Reading file taxa.csv.gz
 # 183 records
 # ---> Reading file observations.csv.gz
@@ -42,17 +23,125 @@ from providers.provider_api_scripts import inaturalist
 # ---> Reading file photos.csv.gz
 # 36 records
 
+INAT = inaturalist.inaturalistDataIngester()
+RECORD0 = {
+    "foreign_id": 191018903,
+    "filetype": "jpg",
+    "license_url": "http://creativecommons.org/licenses/by-nc/4.0/",
+    "width": 818,
+    "height": 741,
+    "foreign_landing_url": "https://www.inaturalist.org/photos/191018903",
+    "image_url": "https://inaturalist-open-data.s3.amazonaws.com/photos/191018903/medium.jpg",
+    "creator": "tiwane",
+    "creator_url": "https://www.inaturalist.org/users/28",
+    "title": "Ranunculus occidentalis",
+    "tags": "Tracheophyta; Angiospermae; Magnoliopsida; Ranunculales; Ranunculaceae; Ranunculoideae; Ranunculeae; Ranunculus",
+}
+
+
+def test_get_next_query_params_no_prior():
+    expect = {"page_number": 0}
+    actual = INAT.get_next_query_params()
+    assert expect == actual
+
+
+def test_get_next_query_params_prior_0():
+    expect = {"page_number": 1}
+    actual = INAT.get_next_query_params({"page_number": 0})
+    assert expect == actual
+
 
 @pytest.mark.parametrize(
-    "file_name, expected",
+    "file_name, expect",
     [
         ("00_create_schema.sql", [("inaturalist",)]),
-        ("01_photos.sql", [(36,)]),
-        ("02_observations.sql", [(31,)]),
         ("03_taxa.sql", [(183,)]),
         ("04_observers.sql", [(22,)]),
     ],
 )
-def test_load_from_s3(file_name, expected):
-    actual = inaturalist.run_sql_file(file_name)
-    assert actual == expected
+def test_sql_runner(file_name, expect):
+    actual = inaturalist.sql_runner(file_name)
+    assert actual == expect
+
+
+def test_load_photos():
+    expect = [(36,)]
+    actual = inaturalist.load_photos()
+    assert actual == expect
+
+
+def test_load_observations():
+    expect = [(31,)]
+    actual = inaturalist.load_observations()
+    assert actual == expect
+
+
+def test_get_response_json():
+    expect0 = RECORD0
+    actual = INAT.get_response_json({"page_number": 0})
+    assert isinstance(actual, list)
+    assert len(actual) == 33
+    assert actual[0][0] == expect0
+
+
+def test_get_batch_data_none_response():
+    expect = None
+    actual = INAT.get_batch_data(None)
+    assert actual == expect
+
+
+def test_get_batch_data_empty_response():
+    expect = None
+    actual = INAT.get_batch_data({})
+    assert actual == expect
+
+
+def test_get_batch_data_full_response():
+    expect0 = RECORD0
+    actual = INAT.get_batch_data(INAT.get_response_json({"page_number": 0}))
+    assert isinstance(actual, list)
+    assert len(actual) == 33
+    assert isinstance(actual[0], dict)
+    assert actual[0] == expect0
+
+
+def test_get_record_data_no_license():
+    expect = None
+    record = RECORD0.copy()
+    record.pop("license_url")
+    actual = INAT.get_record_data(record)
+    assert actual == expect
+
+
+def test_get_record_data_no_foreign_id():
+    expect = None
+    record = RECORD0.copy()
+    record.pop("foreign_id")
+    actual = INAT.get_record_data(record)
+    assert actual == expect
+
+
+def test_get_record_data_full_response():
+    expect = {
+        "foreign_identifier": "191018903",
+        "filetype": "jpg",
+        "license_info": get_license_info(
+            license_url="http://creativecommons.org/licenses/by-nc/4.0/"
+        ),
+        "width": 818,
+        "height": 741,
+        "foreign_landing_url": "https://www.inaturalist.org/photos/191018903",
+        "image_url": "https://inaturalist-open-data.s3.amazonaws.com/photos/191018903/medium.jpg",
+        "creator": "tiwane",
+        "creator_url": "https://www.inaturalist.org/users/28",
+        "title": "Ranunculus occidentalis",
+        "raw_tags": "Tracheophyta; Angiospermae; Magnoliopsida; Ranunculales; Ranunculaceae; Ranunculoideae; Ranunculeae; Ranunculus",
+    }
+    actual = INAT.get_record_data(RECORD0)
+    assert actual == expect
+
+
+def test_get_media_type():
+    expect = "image"
+    actual = INAT.get_media_type(INAT.get_record_data(RECORD0))
+    assert actual == expect
