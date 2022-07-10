@@ -1,22 +1,23 @@
 /*
-********************************************************************************
+-------------------------------------------------------------------------------
 OBSERVERS
-********************************************************************************
+-------------------------------------------------------------------------------
 
-Taking DDL from https://github.com/inaturalist/inaturalist-open-data/blob/main/Metadata/structure.sql
+Taking DDL from
+https://github.com/inaturalist/inaturalist-open-data/blob/main/Metadata/structure.sql
 */
 
 DROP TABLE IF EXISTS inaturalist.observers;
-commit;
+COMMIT;
 
 CREATE TABLE inaturalist.observers (
     observer_id integer,
     login character varying(255),
     name character varying(255)
 );
-commit;
+COMMIT;
 
-select aws_s3.table_import_from_s3('inaturalist.observers',
+SELECT aws_s3.table_import_from_s3('inaturalist.observers',
     '',
     '(FORMAT ''csv'', DELIMITER E''\t'', HEADER, QUOTE E''\b'')',
     'inaturalist-open-data',
@@ -24,6 +25,6 @@ select aws_s3.table_import_from_s3('inaturalist.observers',
     'us-east-1');
 
 ALTER TABLE inaturalist.observers ADD PRIMARY KEY (observer_id);
-commit;
+COMMIT;
 
-select count(*) from inaturalist.observers;
+SELECT count(*) FROM inaturalist.observers;

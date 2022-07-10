@@ -1,14 +1,15 @@
 /*
-********************************************************************************
+-------------------------------------------------------------------------------
 TAXA
-********************************************************************************
+-------------------------------------------------------------------------------
 
-Taking DDL from https://github.com/inaturalist/inaturalist-open-data/blob/main/Metadata/structure.sql
+Taking DDL from
+https://github.com/inaturalist/inaturalist-open-data/blob/main/Metadata/structure.sql
 Plus adding a field for ancestry tags.
 */
 
 DROP TABLE IF EXISTS inaturalist.taxa;
-commit;
+COMMIT;
 
 CREATE TABLE inaturalist.taxa (
     taxon_id integer,
@@ -19,9 +20,9 @@ CREATE TABLE inaturalist.taxa (
     active boolean,
     tags text
 );
-commit;
+COMMIT;
 
-select aws_s3.table_import_from_s3('inaturalist.taxa',
+SELECT aws_s3.table_import_from_s3('inaturalist.taxa',
     'taxon_id, ancestry, rank_level, rank, name, active',
     '(FORMAT ''csv'', DELIMITER E''\t'', HEADER, QUOTE E''\b'')',
     'inaturalist-open-data',
@@ -29,30 +30,33 @@ select aws_s3.table_import_from_s3('inaturalist.taxa',
     'us-east-1');
 
 ALTER TABLE inaturalist.taxa ADD PRIMARY KEY (taxon_id);
-commit;
+COMMIT;
 
 -- Aggregate ancestry names as tags
-create temporary table unnest_ancestry as
+CREATE TEMPORARY TABLE unnest_ancestry AS
 (
     SELECT
-        unnest(string_to_array(ancestry, '/'))::int as linked_taxon_id,
-        taxon_id
+        taxon_id,
+        unnest(string_to_array(ancestry, '/'))::int AS linked_taxon_id
     FROM inaturalist.taxa
 );
 
-create temporary table taxa_tags as
+CREATE TEMPORARY TABLE taxa_tags AS
 (
-    select u.taxon_id, STRING_AGG(taxa.name, '; ') as tags
-    from unnest_ancestry as u
-        join inaturalist.taxa on u.linked_taxon_id = taxa.taxon_id
-    where taxa.rank not in ('kingdom', 'stateofmatter')
-    group by u.taxon_id
+    SELECT
+        unnest_ancestry.taxon_id,
+        string_agg(taxa.name, '; ') AS tags
+    FROM unnest_ancestry
+    INNER JOIN
+        inaturalist.taxa ON unnest_ancestry.linked_taxon_id = taxa.taxon_id
+    WHERE taxa.rank NOT IN ('kingdom', 'stateofmatter')
+    GROUP BY unnest_ancestry.taxon_id
 );
 
-update inaturalist.taxa
-set tags = taxa_tags.tags
-from taxa_tags
-where taxa_tags.taxon_id = taxa.taxon_id;
-commit;
+UPDATE inaturalist.taxa
+SET tags = taxa_tags.tags
+FROM taxa_tags
+WHERE taxa_tags.taxon_id = taxa.taxon_id;
+COMMIT;
 
-select count(*) from inaturalist.taxa;
+SELECT count(*) FROM inaturalist.taxa;
