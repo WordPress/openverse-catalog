@@ -1,3 +1,9 @@
+"""
+TODO:
+    - docstring
+    - mention which variables this uses
+    - mention the alternate connection type for local dev
+"""
 import os
 from datetime import datetime
 
@@ -15,7 +21,8 @@ from metrics.es_dashboard.dashboard_snapshots import (
 METRICS = ["cpu", "network-data"]
 BUCKET = "openverse-airflow"
 KEY_PREFIX = "metrics/elasticsearch/{{ ds }}"
-AWS_CONN_ID = os.environ.get("AWS_CONN_ID", "no_aws_conn")
+AWS_METRICS_CONN_ID = os.environ.get("AWS_METRICS_CONN_ID", "aws_default")
+S3_CONN_ID = os.environ.get("AWS_CONN_ID", "aws_default")
 
 
 @dag(
@@ -30,13 +37,13 @@ def elasticsearch_dashboard_snapshot():
     for metric in METRICS:
         with TaskGroup(group_id=f"{metric.replace('-', '_')}_metrics"):
             templated_widget = generate_widget_definition(metric)
-            png = generate_png(templated_widget)
+            png = generate_png(templated_widget, aws_conn_id=AWS_METRICS_CONN_ID)
             image_info = upload_to_s3(
                 metric=metric,
                 image_data=png,
                 bucket=BUCKET,
                 key_prefix=KEY_PREFIX,
-                aws_conn_id=AWS_CONN_ID,
+                aws_conn_id=S3_CONN_ID,
             )
             images.append(image_info)
 
