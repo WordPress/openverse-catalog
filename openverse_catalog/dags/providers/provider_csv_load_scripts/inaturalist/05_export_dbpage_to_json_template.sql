@@ -28,7 +28,7 @@ PHOTO_PAGE AS (
             SELECT ('(db_page_number,' || S.I || ')')::tid
             FROM
                 GENERATE_SERIES(
-                    DB_PAGE_NUMBER, CURRENT_SETTING('block_size')::int / 4
+                    db_page_number, CURRENT_SETTING('block_size')::int / 4
                 )
                 AS S(I)
         )
