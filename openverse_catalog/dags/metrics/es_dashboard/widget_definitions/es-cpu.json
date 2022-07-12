@@ -1,6 +1,6 @@
 {
   "end": "PT0H",
-  "height": 395,
+  "height": 265,
   "metrics": [
     [
       {
@@ -34,24 +34,6 @@
       }
     ],
     [
-      "AWS/EC2",
-      "NetworkOut",
-      "InstanceId",
-      "%(es_node_1)s",
-      {
-        "id": "out1",
-        "visible": false
-      }
-    ],
-    [
-      "...",
-      "%(es_node_2)s",
-      {
-        "id": "out2",
-        "visible": false
-      }
-    ],
-    [
       "...",
       "%(es_node_3)s",
       {
@@ -60,9 +42,9 @@
       }
     ]
   ],
-  "period": 300,
+  "period": 900,
   "stacked": false,
   "start": "-PT72H",
   "title": "Elasticsearch: CPU",
-  "width": 600
+  "width": 400
 }
