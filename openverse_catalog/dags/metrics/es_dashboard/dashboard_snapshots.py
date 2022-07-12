@@ -1,10 +1,10 @@
-import json
 import logging
 from io import BytesIO
 from pathlib import Path
 from typing import NamedTuple
 
 import boto3
+from airflow.decorators import task
 from airflow.models import Variable
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 from common import slack
@@ -18,6 +18,7 @@ class ImageData(NamedTuple):
     title: str
 
 
+@task()
 def generate_widget_definition(metric: str) -> str:
     definition_path = Path(__file__).parent / f"widget_definitions/es-{metric}.json"
     definition_text = definition_path.read_text()
@@ -25,20 +26,22 @@ def generate_widget_definition(metric: str) -> str:
     es_instance_ids = Variable.get("ES_INSTANCE_IDS")
     es_node_1, es_node_2, es_node_3 = es_instance_ids.split(",")
 
-    return definition_text.format(
-        es_node_1=es_node_1, es_node_2=es_node_2, es_node_3=es_node_3
+    return (
+        definition_text
+        % {"es_node_1": es_node_1, "es_node_2": es_node_2, "es_node_3": es_node_3}
     ).replace("\n", "")
 
 
-def generate_png(templated_widget: dict) -> bytes:
+@task()
+def generate_png(templated_widget: str) -> bytes:
     client = boto3.client("cloudwatch")
-    metric_widget = json.dumps(templated_widget)
-    widget_data = client.get_metric_widget_image(MetricWidget=metric_widget)
+    widget_data = client.get_metric_widget_image(MetricWidget=templated_widget)
     # Note that this bytes output can be quite large, but it's worth storing in XComs so
     # the correct time window of data is stored in case the upload to S3 fails
     return widget_data["MetricWidgetImage"]
 
 
+@task()
 def upload_to_s3(
     metric: str, image_data: bytes, bucket: str, key_prefix: str, aws_conn_id: str
 ) -> ImageData:
@@ -56,6 +59,7 @@ def upload_to_s3(
     return ImageData(url=url, title=f"{metric.title()} Usage")
 
 
+@task()
 def send_message(images: list[ImageData]):
     message = slack.SlackMessage(username="Cloudwatch Metrics", icon_emoji=":cloud:")
     text = "Elasticsearch metrics over the last 3 days"

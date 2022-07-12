@@ -20,7 +20,7 @@
       "AWS/EC2",
       "NetworkIn",
       "InstanceId",
-      "{es_node_1}",
+      "%(es_node_1)s",
       {
         "id": "in1",
         "visible": false
@@ -28,7 +28,7 @@
     ],
     [
       "...",
-      "{es_node_2}",
+      "%(es_node_2)s",
       {
         "id": "in2",
         "visible": false
@@ -36,7 +36,7 @@
     ],
     [
       "...",
-      "{es_node_3}",
+      "%(es_node_3)s",
       {
         "id": "in3",
         "visible": false
@@ -46,7 +46,7 @@
       "AWS/EC2",
       "NetworkOut",
       "InstanceId",
-      "{es_node_1}",
+      "%(es_node_1)s",
       {
         "id": "out1",
         "visible": false
@@ -54,7 +54,7 @@
     ],
     [
       "...",
-      "{es_node_2}",
+      "%(es_node_2)s",
       {
         "id": "out2",
         "visible": false
@@ -62,7 +62,7 @@
     ],
     [
       "...",
-      "{es_node_3}",
+      "%(es_node_3)s",
       {
         "id": "out3",
         "visible": false
