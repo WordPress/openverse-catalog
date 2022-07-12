@@ -1,12 +1,25 @@
 import json
+import logging
+from io import BytesIO
 from pathlib import Path
+from typing import NamedTuple
 
+import boto3
 from airflow.models import Variable
+from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 from common import slack
 
 
-def generate_metric_data(definition: str) -> str:
-    definition_path = Path(__file__).parent / f"widget_definitions/{definition}.json"
+log = logging.getLogger(__name__)
+
+
+class ImageData(NamedTuple):
+    url: str
+    title: str
+
+
+def generate_widget_definition(metric: str) -> str:
+    definition_path = Path(__file__).parent / f"widget_definitions/es-{metric}.json"
     definition_text = definition_path.read_text()
 
     es_instance_ids = Variable.get("ES_INSTANCE_IDS")
@@ -17,28 +30,36 @@ def generate_metric_data(definition: str) -> str:
     ).replace("\n", "")
 
 
-def generate_png(metric_data: dict, client) -> str:
-    metric_widget = json.dumps(metric_data)
+def generate_png(templated_widget: dict) -> bytes:
+    client = boto3.client("cloudwatch")
+    metric_widget = json.dumps(templated_widget)
     widget_data = client.get_metric_widget_image(MetricWidget=metric_widget)
-    return widget_data["MetricWidgetImage"].encode("utf-8")
+    # Note that this bytes output can be quite large, but it's worth storing in XComs so
+    # the correct time window of data is stored in case the upload to S3 fails
+    return widget_data["MetricWidgetImage"]
 
 
-# def generate_png(metric_data: dict, output_dir: Path, client) -> Path:
-#     widget_name = metric_data["title"].replace(":", "").lower().replace(" ", "_")
-#     widget_name += f"_{date.today().isoformat()}.png"
-#     metric_widget = json.dumps(metric_data)
-#     widget_data = client.get_metric_widget_image(MetricWidget=metric_widget)
-#     output_file = output_dir / widget_name
-#     output_file.write_bytes(base64.decodebytes(widget_data["MetricWidgetImage"]))
-#     return output_file
+def upload_to_s3(
+    metric: str, image_data: bytes, bucket: str, key_prefix: str, aws_conn_id: str
+) -> ImageData:
+    s3 = S3Hook(aws_conn_id=aws_conn_id)
+    bucket = s3.get_bucket(bucket)
+    key = f"{key_prefix}/es-{metric}.png"
+    bucket.upload_fileobj(BytesIO(image_data), key)
+    log.info(f"Uploaded image data for {metric} to s3://{bucket}/{key}")
+    url = s3.generate_presigned_url(
+        client_method="get_object",
+        params={"Bucket": bucket, "Key": key},
+        expires_in=3600 * 24 * 7,  # 7 days
+    )
+    log.info(f"Presigned URL: {url}")
+    return ImageData(url=url, title=f"{metric.title()} Usage")
 
 
-def send_message(images: list[str]):
+def send_message(images: list[ImageData]):
     message = slack.SlackMessage(username="Cloudwatch Metrics", icon_emoji=":cloud:")
-    message.add_text("Elasticsearch metrics over the last 3 days")
+    text = "Elasticsearch metrics over the last 3 days"
+    message.add_text(text)
     for image in images:
-        message.add_image(url="data:image/png;")
-
-
-def main():
-    ...
+        message.add_image(url=image.url, title=image.title)
+    message.send(notification_text=text)
