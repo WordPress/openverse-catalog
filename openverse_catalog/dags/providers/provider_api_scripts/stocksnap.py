@@ -38,6 +38,8 @@ class StockSnapDataIngester(ProviderDataIngester):
     headers = {
         "Accept": "application/json",
     }
+    license_url = "https://creativecommons.org/publicdomain/zero/1.0/"
+    license_info = get_license_info(license_url=license_url)
 
     def __init__(self):
         super(StockSnapDataIngester, self).__init__()
@@ -95,7 +97,6 @@ class StockSnapDataIngester(ProviderDataIngester):
         metadata = self._get_metadata(data)
         tags = self._get_tags(data)
         filesize = self._get_filesize(image_url)
-        lic = get_license_info("https://creativecommons.org/publicdomain/zero/1.0/")
 
         return {
             "title": title,
@@ -108,7 +109,7 @@ class StockSnapDataIngester(ProviderDataIngester):
             "filetype": "jpg",
             "height": height,
             "width": width,
-            "license_info": lic,
+            "license_info": self.license_info,
             "meta_data": metadata,
             "raw_tags": tags,
             "category": prov.DEFAULT_IMAGE_CATEGORY[PROVIDER],
