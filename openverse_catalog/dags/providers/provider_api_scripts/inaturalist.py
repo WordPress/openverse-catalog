@@ -20,6 +20,7 @@ Notes:      [The inaturalist API is not intended for data scraping.]
 """
 import logging
 import os
+from pathlib import Path
 from textwrap import dedent
 from typing import Dict
 
@@ -37,7 +38,9 @@ logger = logging.getLogger(__name__)
 
 PROVIDER = prov.INATURALIST_DEFAULT_PROVIDER
 SCRIPT_DIR = Path(__file__).parents[1] / "provider_csv_load_scripts/inaturalist"
-PG_TO_JSON_TEMPLATE = dedent((SCRIPT_DIR / "05_export_dbpage_to_json_template.sql").read_text())
+PG_TO_JSON_TEMPLATE = dedent(
+    (SCRIPT_DIR / "05_export_dbpage_to_json_template.sql").read_text()
+)
 
 
 class inaturalistDataIngester(ProviderDataIngester):
@@ -49,6 +52,10 @@ class inaturalistDataIngester(ProviderDataIngester):
     # where s.nspname='inaturalist' and t.relname='photos';
 
     providers = {"image": prov.INATURALIST_DEFAULT_PROVIDER}
+
+    def __init__(self):
+        super(inaturalistDataIngester).__init__()
+        self.pg = PostgresHook(POSTGRES_CONN_ID)
 
     def get_next_query_params(self, old_query_params=None, **kwargs):
         """Page counter"""
@@ -64,8 +71,7 @@ class inaturalistDataIngester(ProviderDataIngester):
         """
         db_page_number = str(query_params["page_number"])
         sql_string = PG_TO_JSON_TEMPLATE.replace("db_page_number", db_page_number)
-        pg = PostgresHook(POSTGRES_CONN_ID)
-        return pg.get_records(sql_string)
+        return self.pg.get_records(sql_string)
 
     def get_batch_data(self, response_json):
         if response_json:
