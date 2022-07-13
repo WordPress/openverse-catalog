@@ -146,7 +146,6 @@ class StockSnapDataIngester(ProviderDataIngester):
         """
         tags = item.get("keywords", [])[:2]
         if len(tags) > 0:
-            tags.append("Photo")
             img_title = " ".join(tags)
             return img_title.title()
 
