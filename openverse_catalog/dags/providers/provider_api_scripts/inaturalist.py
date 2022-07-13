@@ -36,13 +36,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 PROVIDER = prov.INATURALIST_DEFAULT_PROVIDER
-SCRIPT_DIR = (
-    "/usr/local/airflow/openverse_catalog/dags/providers/provider_csv_load_scripts/"
-    + "inaturalist/"
-)
-PG_TO_JSON_TEMPLATE = dedent(
-    open(os.path.join(SCRIPT_DIR, "05_export_dbpage_to_json_template.sql")).read()
-)
+SCRIPT_DIR = Path(__file__).parents[1] / "provider_csv_load_scripts/inaturalist"
+PG_TO_JSON_TEMPLATE = dedent((SCRIPT_DIR / "05_export_dbpage_to_json_template.sql").read_text())
 
 
 class inaturalistDataIngester(ProviderDataIngester):
