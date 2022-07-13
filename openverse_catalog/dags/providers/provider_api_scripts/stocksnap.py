@@ -76,7 +76,8 @@ class StockSnapDataIngester(ProviderDataIngester):
         except (TypeError, KeyError, AttributeError):
             return None
 
-        foreign_landing_url = f"https://{HOST}/photo/{foreign_id}"
+        slug = "-".join(data.get("keywords", [])[:2])
+        foreign_landing_url = f"https://{HOST}/photo/{slug}-{foreign_id}"
 
         image_url, width, height = self._get_image_info(data)
         if image_url is None:
