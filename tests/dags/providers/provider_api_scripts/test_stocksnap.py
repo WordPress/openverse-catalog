@@ -24,16 +24,6 @@ image_store = ImageStore(provider=prov.STOCKSNAP_DEFAULT_PROVIDER)
 stocksnap.media_stores = {"image": image_store}
 
 
-#     def _get_image_info(item):
-#     def _get_title(item):
-#     def _get_metadata(item):
-# def ingest_records(self, **kwargs) -> None:
-# def get_batch(self, query_params: Dict) -> Tuple[Optional[List], bool]:
-# def get_should_continue(self, response_json):
-# def get_batch_data(self, response_json):
-# def process_batch(self, media_batch):
-
-
 def _get_resource_json(json_name):
     with open(os.path.join(RESOURCES, json_name)) as f:
         resource_json = json.load(f)
