@@ -180,11 +180,11 @@ def test_get_record_data_handles_example_dict():
         actual_image_info = stocksnap.get_record_data(image_data)
     image_url = "https://cdn.stocksnap.io/img-thumbs/960w/7VAQUG1X3B.jpg"
     expected_image_info = {
-        "title": "Female Fitness Photo",
+        "title": "Female Fitness",
         "creator": "Matt Moloney",
         "creator_url": "https://mjmolo.com/",
         "foreign_identifier": "7VAQUG1X3B",
-        "foreign_landing_url": "https://stocksnap.io/photo/7VAQUG1X3B",
+        "foreign_landing_url": "https://stocksnap.io/photo/female-fitness-7VAQUG1X3B",
         "license_info": get_license_info(
             license_url="https://creativecommons.org/publicdomain/zero/1.0/"
         ),
