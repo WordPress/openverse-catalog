@@ -77,7 +77,6 @@ def test_get_object_list_return_none_if_none_json():
 
 def test_process_object_with_real_example():
     object_data = _get_resource_json("object_complete_example.json")
-    # with patch.object(fm.image_store, "add_item", return_value=100) as mock_add_item:
     data = fm.get_record_data(object_data)
 
     assert len(data) == 1
