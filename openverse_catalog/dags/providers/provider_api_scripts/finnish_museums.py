@@ -31,15 +31,15 @@ class FinnishMuseumsDataIngester(ProviderDataIngester):
             logger.info(f"Obtaining images of building {building}")
             super().ingest_records(building=building)
 
-    def get_next_query_params(self, old_query_params, **kwargs):
-        if not old_query_params:
+    def get_next_query_params(self, prev_query_params, **kwargs):
+        if not prev_query_params:
             building = kwargs.get("building")
             return {
                 "filter[]": [f'format:"{self.format_type}"', f'building:"{building}"'],
                 "limit": self.batch_limit,
                 "page": 1,
             }
-        return {**old_query_params, "page": old_query_params["page"] + 1}
+        return {**prev_query_params, "page": prev_query_params["page"] + 1}
 
     def get_media_type(self, record):
         return "image"

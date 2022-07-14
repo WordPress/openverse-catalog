@@ -39,12 +39,12 @@ def test_build_query_param_default():
 
 
 def test_build_query_param_given():
-    old_query_params = {
+    prev_query_params = {
         "filter[]": ['format:"0/Image/"', 'building:"0/Museovirasto/"'],
         "limit": 100,
         "page": 3,
     }
-    actual_param_made = fm.get_next_query_params(old_query_params)
+    actual_param_made = fm.get_next_query_params(prev_query_params)
     # Page is incremented
     expected_param = {
         "filter[]": ['format:"0/Image/"', 'building:"0/Museovirasto/"'],
