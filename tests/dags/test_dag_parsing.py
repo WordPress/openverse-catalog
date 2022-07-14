@@ -47,7 +47,7 @@ def test_dag_import_errors():
     dag_errors = []
     for filename in dagbag.import_errors.keys():
         dag_errors.append(Path(filename).name)
-    error_string = (",").join(dag_errors)
+    error_string = ",".join(dag_errors)
 
     assert (
         len(dagbag.import_errors) == 0
