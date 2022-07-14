@@ -1,6 +1,6 @@
 {
-  "end": "PT0H",
-  "height": 265,
+  "end": "%(end)s",
+  "height": %(height)s,
   "metrics": [
     [
       {
@@ -69,9 +69,9 @@
       }
     ]
   ],
-  "period": 900,
+  "period": %(period)s,
   "stacked": false,
-  "start": "-PT72H",
+  "start": "%(start)s",
   "title": "Elasticsearch: Network Data",
-  "width": 400
+  "width": %(width)s
 }

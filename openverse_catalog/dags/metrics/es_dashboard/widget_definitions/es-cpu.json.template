@@ -1,21 +1,23 @@
 {
-  "end": "PT0H",
-  "height": 265,
+  "end": "%(end)s",
+  "height": %(height)s,
   "metrics": [
     [
       {
-        "color": "#9467bd",
         "expression": "AVG(METRICS())",
         "id": "e1",
-        "label": "Average CPU",
-        "region": "us-east-1"
+        "label": "Average CPU"
       }
     ],
     [
       "AWS/EC2",
       "CPUUtilization",
       "InstanceId",
-      "%(es_node_1)s"
+      "%(es_node_1)s",
+      {
+        "id": "in1",
+        "visible": false
+      }
     ],
     [
       "...",
@@ -32,19 +34,11 @@
         "id": "in3",
         "visible": false
       }
-    ],
-    [
-      "...",
-      "%(es_node_3)s",
-      {
-        "id": "out3",
-        "visible": false
-      }
     ]
   ],
-  "period": 900,
+  "period": %(period)s,
   "stacked": false,
-  "start": "-PT72H",
+  "start": "%(start)s",
   "title": "Elasticsearch: CPU",
-  "width": 400
+  "width": %(width)s
 }
