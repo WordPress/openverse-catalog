@@ -153,7 +153,7 @@ PROVIDER_WORKFLOWS = [
     ),
     ProviderWorkflow(
         provider_script="wikimedia_commons",
-        start_date=datetime(2004, 9, 1),
+        start_date=datetime(2020, 11, 1),
         schedule_string="@daily",
         dated=True,
         execution_timeout=timedelta(hours=12),
