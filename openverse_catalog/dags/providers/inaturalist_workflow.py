@@ -12,10 +12,12 @@ import os
 # airflow DAG (necessary for Airflow to find this file)
 from airflow import DAG
 from airflow.operators.python import PythonOperator
+
+# from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 from airflow.providers.amazon.aws.sensors.s3 import S3KeySensor
 from airflow.utils.task_group import TaskGroup
 from common.constants import DAG_DEFAULT_ARGS
-from providers.provider_api_scripts import inaturalist
+from providers.provider_api_scripts.inaturalist import inaturalistDataIngester
 
 
 logging.basicConfig(
@@ -27,7 +29,26 @@ AWS_CONN_ID = os.getenv("AWS_CONN_ID", "test_conn_id")
 
 DAG_ID = "inaturalist_workflow"
 
-SOURCE_FILE_NAMES = ["observations", "observers", "photos", "taxa"]
+SOURCE_FILE_NAMES = ["photos", "observations", "taxa", "observers"]
+
+INAT = inaturalistDataIngester()
+
+# def check_if_files_updated(
+#     last_success: pendulum.DateTime | None,
+#     s3_keys: list,
+#     aws_conn_id=AWS_CONN_ID
+#     ):
+#     # if it was never run, assume the data is new
+#     if last_success is None:
+#         return
+#     s3 = S3Hook(aws_conn_id=aws_conn_id)
+#     for key in s3_keys:
+#         last_modified = s3.head_object(key)['Last-Modified']
+#         # if any file has been updated, let's pull them all
+#         if last_success < last_modified:
+#             return
+#     # If no files have been updated, skip the DAG
+#     raise AirflowSkipException("Nothing new to ingest")
 
 with DAG(
     DAG_ID,
@@ -38,53 +59,53 @@ with DAG(
     tags=["inaturalist", "provider: image"],
 ) as dag:
 
-    # Eventually, we'll probably want a function here to confirm that the files have
-    # been updated since the last time we loaded them. But for now, just trying to see
-    # if waiting to load the data might help with intermittent "file doesn't exist" in
-    # the test environment.
-    # Also, in theory s3KeySensor can handle a list of keys
-    # (https://airflow.apache.org/docs/apache-airflow-providers-amazon/stable/_api/airflow/providers/amazon/aws/sensors/s3/index.html#airflow.providers.amazon.aws.sensors.s3.S3KeySensor)
-    # but I'm getting weird type errors when I try to use it, so doing this task
-    # group instead for now.
     with TaskGroup(group_id="check_sources_exist") as check_sources_exist:
-        upstream_task = None
         for source_name in SOURCE_FILE_NAMES:
-            globals()[source_name + "_exists"] = S3KeySensor(
+            S3KeySensor(
                 task_id=source_name + "_exists",
-                bucket_key="s3://inaturalist-open-data/" + source_name + ".csv.gz",
+                bucket_key=f"s3://inaturalist-open-data/{source_name}.csv.gz",
                 aws_conn_id=AWS_CONN_ID,
-                poke_interval=5,
+                poke_interval=15,
+                mode="reschedule",
+                timeout=60,
             )
-            if upstream_task is not None:
-                globals()[source_name + "_exists"].set_upstream(upstream_task)
-            upstream_task = globals()[source_name + "_exists"]
+
+    # check_if_updated = PythonOperator(
+    #     task_id="check_if_updated",
+    #     python_callable=check_if_files_updated,
+    #     op_kwargs={
+    #         # With the templated values ({{ x }}) airflow will fill it in for us
+    #         "last_success": "{{ prev_start_date_success }}",
+    #         "s3_keys": [f"s3://inaturalist/{file}.csv.gz"
+    # for file in SOURCE_FILE_NAMES]
+    #     }
+    # )
 
     create_schema = PythonOperator(
         task_id="create_schema",
-        python_callable=inaturalist.create_schema,
+        python_callable=INAT.sql_loader,
+        op_kwargs={"file_name": "00_create_schema.sql"},
     )
 
-    # There is a much more elegant and pythonic way to generate the callables
-    # themselves too, but first let's get the basics running
-    load_callables = [
-        inaturalist.load_observations,
-        inaturalist.load_observers,
-        inaturalist.load_photos,
-        inaturalist.load_taxa,
-    ]
     with TaskGroup(group_id="load_source_files") as load_source_files:
-        upstream_task = None
-        for (source_name, load_callable) in zip(SOURCE_FILE_NAMES, load_callables):
-            globals()["load_" + source_name] = PythonOperator(
+        file_order = 0
+        for source_name in SOURCE_FILE_NAMES:
+            file_order += 1
+            file_name = str(file_order).zfill(2) + "_" + source_name + ".sql"
+            PythonOperator(
                 task_id="load_" + source_name,
-                python_callable=load_callable,
+                python_callable=INAT.sql_loader,
+                op_kwargs={"file_name": file_name},
             )
-        if upstream_task is not None:
-            globals()["load_" + source_name].set_upstream(upstream_task)
-        upstream_task = globals()["load_" + source_name]
 
     ingest_data = PythonOperator(
-        task_id="ingest_data", python_callable=inaturalist.ingest_inaturalist_data
+        task_id="ingest_data", python_callable=INAT.ingest_records
     )
 
-    (check_sources_exist >> create_schema >> load_source_files >> ingest_data)
+    (
+        check_sources_exist
+        # >> check_if_updated
+        >> create_schema
+        >> load_source_files
+        >> ingest_data
+    )

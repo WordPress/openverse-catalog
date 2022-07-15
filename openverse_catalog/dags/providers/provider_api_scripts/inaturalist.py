@@ -19,7 +19,6 @@ Notes:      [The inaturalist API is not intended for data scraping.]
             except for adding ancestry tags to the taxa table.
 """
 import logging
-import os
 from pathlib import Path
 from textwrap import dedent
 from typing import Dict
@@ -29,6 +28,9 @@ from common.constants import POSTGRES_CONN_ID
 from common.licenses import LicenseInfo, get_license_info
 from common.loader import provider_details as prov
 from providers.provider_api_scripts.provider_data_ingester import ProviderDataIngester
+
+
+# from typing import Dict
 
 
 logging.basicConfig(
@@ -45,8 +47,8 @@ PG_TO_JSON_TEMPLATE = dedent(
 
 class inaturalistDataIngester(ProviderDataIngester):
 
-    # TO DO: consider using this sql to get a max number of db pages to define a
-    # get_should_continue function
+    # if we go with the db paginated approach, consider using this sql to get a
+    # max number of db pages to define a get_should_continue function.
     # select relpages
     # from pg_class t join pg_namespace s on t.relnamespace=s.oid
     # where s.nspname='inaturalist' and t.relname='photos';
@@ -56,22 +58,41 @@ class inaturalistDataIngester(ProviderDataIngester):
     def __init__(self):
         super(inaturalistDataIngester, self).__init__()
         self.pg = PostgresHook(POSTGRES_CONN_ID)
+        self.cursor = None
+
+    def ingest_records(self):
+        with self.pg.get_cursor() as self.cursor:
+            # Explicitly set the number of results returned by fetchmany()
+            # https://www.psycopg.org/docs/cursor.html#cursor.arraysize
+            # itersize is the count fetched from postgres on the backend
+            # and it defaults to 2000, we don't need to change that
+            # https://www.psycopg.org/docs/cursor.html#cursor.itersize
+            self.cursor.arraysize = 100
+            self.cursor.connection.autocommit = True
+            super(inaturalistDataIngester, self).ingest_records()
 
     def get_next_query_params(self, old_query_params=None, **kwargs):
-        """Page counter"""
-        if old_query_params is None:
-            return {"page_number": 0}
-        else:
-            next_page = old_query_params["page_number"] + 1
-            return {"page_number": next_page}
+        return None
+        # """Page counter"""
+        # if old_query_params is None:
+        #     return {"page_number": 0}
+        # else:
+        #     next_page = old_query_params["page_number"] + 1
+        #     return {"page_number": next_page}
 
     def get_response_json(self, query_params: Dict):
-        """
-        Call the SQL to pull json from Postgres, where the raw data has been loaded.
-        """
-        db_page_number = str(query_params["page_number"])
-        sql_string = PG_TO_JSON_TEMPLATE.replace("db_page_number", db_page_number)
-        return self.pg.get_records(sql_string)
+        if self.cursor.rowcount == -1:
+            # Query has not yet been executed, need to execute for the first time
+            logger.info("Executing big view-to-tsv query on the postgres end")
+            self.cursor.execute(PG_TO_JSON_TEMPLATE)
+        # Return the next 100 results
+        return self.cursor.fetchmany()
+        # """
+        # Call the SQL to pull json from Postgres, where the raw data has been loaded.
+        # """
+        # db_page_number = str(query_params["page_number"])
+        # sql_string = PG_TO_JSON_TEMPLATE.replace("db_page_number", db_page_number)
+        # return self.pg.get_records(sql_string)
 
     def get_batch_data(self, response_json):
         if response_json:
@@ -108,55 +129,17 @@ class inaturalistDataIngester(ProviderDataIngester):
         return "image"
 
     def endpoint(self):
-        assert "Postgres DB" == "API endpoint"
+        raise NotImplementedError("Normalized TSV files from AWS S3 means no endpoint.")
 
-
-def sql_runner(file_name):
-    assert os.path.exists(os.path.join(SCRIPT_DIR, file_name))
-    assert file_name[-4:] == ".sql"
-    query = dedent(open(os.path.join(SCRIPT_DIR, file_name), "r").read())
-    pg = PostgresHook(POSTGRES_CONN_ID)
-    return pg.get_records(query)
-
-
-# defining separate python callables for separate airflow tasks.
-
-
-def create_schema():
-    logger.info("Begin: creating inaturalist schema in DB")
-    return sql_runner("00_create_schema.sql")
-
-
-def load_photos():
-    logger.info("Begin: loading iNaturalist photos table from S3")
-    return sql_runner("01_photos.sql")
-
-
-def load_observations():
-    logger.info("Begin: loading iNaturalist observations table from S3")
-    return sql_runner("02_observations.sql")
-
-
-def load_taxa():
-    logger.info("Begin: loading iNaturalist taxa table from S3")
-    return sql_runner("03_taxa.sql")
-
-
-def load_observers():
-    logger.info("Begin: loading iNaturalist observers table from S3")
-    return sql_runner("04_observers.sql")
-
-
-def ingest_inaturalist_data():
-    logger.info("Begin: iNaturalist ProviderDataIngester script")
-    ingester = inaturalistDataIngester()
-    ingester.ingest_records()
-
-
-if __name__ == "__main__":
-    create_schema()
-    load_photos()
-    load_observations()
-    load_observers()
-    load_taxa()
-    ingest_inaturalist_data()
+    def sql_loader(self, file_name):
+        """
+        This is really only intended for SQL scripts that don't return much in the way
+        of data, e.g. the load and schema creation scripts. It takes a file name which
+        must exist in SCRIPT_DIR and end with .sql.
+        """
+        if (SCRIPT_DIR / file_name).exists() and file_name[-4:] == ".sql":
+            query = dedent((SCRIPT_DIR / file_name).read_text())
+            logger.info("Begin: loading iNaturalist " + file_name)
+            return self.pg.get_records(query)
+        else:
+            raise FileExistsError(file_name + "not found or not .sql")
