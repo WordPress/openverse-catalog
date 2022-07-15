@@ -67,9 +67,9 @@ with DAG(
     # There is a much more elegant and pythonic way to generate the callables
     # themselves too, but first let's get the basics running
     load_callables = [
-        inaturalist.load_photos,
         inaturalist.load_observations,
         inaturalist.load_observers,
+        inaturalist.load_photos,
         inaturalist.load_taxa,
     ]
     with TaskGroup(group_id="load_source_files") as load_source_files:
