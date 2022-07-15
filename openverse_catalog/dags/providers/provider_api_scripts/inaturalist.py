@@ -54,7 +54,7 @@ class inaturalistDataIngester(ProviderDataIngester):
     providers = {"image": prov.INATURALIST_DEFAULT_PROVIDER}
 
     def __init__(self):
-        super(inaturalistDataIngester).__init__()
+        super(inaturalistDataIngester, self).__init__()
         self.pg = PostgresHook(POSTGRES_CONN_ID)
 
     def get_next_query_params(self, old_query_params=None, **kwargs):
