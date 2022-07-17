@@ -1,33 +1,65 @@
 """
-This is really just a one time thing I used to generate the sample files, once I had
-identified some photo IDs that I thought were worth using for testing. I'm not sure it
-actually belongs in the on-going code base at all, and if it does, it needs a bunch of
-clean-up and a better location in the file structure.
+This is a rarely used thing for generating sample files and moving them in and out of
+the github project. It is not expected to be used much, and might not belong in the
+project at all per se, but it might be useful as an FYI in future.
 """
 
 import csv
 import gzip
 import os
 from datetime import datetime as dt
+from pathlib import Path
 
 import pandas as pd
 
 
-def pull_sample_records(file_name, file_path, id_name, id_list):
+# Because this is unlikely to be reused, I didn't want to change the git ignore
+BASE_DIR = Path(__file__).parents[4]
+DATA_FOR_TESTING = BASE_DIR / "openverse-catalog/tests/s3-data/inaturalist-open-data"
+RAW_DATA = BASE_DIR / "inaturalist-june-22"
+MID_SIZE_FILE_PATH = BASE_DIR / "inaturalist-june-22/mid-sized"
+SMALL_FILE_PATH = BASE_DIR / "inaturalist-june-22/small"
+
+
+# This is just something I used in ipython to move things around
+def move_files(from_dir, to_dir, copy=False):
+    for file_name in os.listdir(from_dir):
+        if file_name[-7:] == ".csv.gz":
+            if copy:
+                print(f"Copying {file_name} from {from_dir} to {to_dir}...")
+                os.system(f"cp {from_dir}/{file_name} {to_dir}/{file_name}")
+            else:
+                print(f"Moving {file_name} from {from_dir} to {to_dir}...")
+                os.rename(f"{from_dir}/{file_name}", f"{to_dir}/{file_name}")
+
+
+move_files(SMALL_FILE_PATH, DATA_FOR_TESTING)
+
+
+def pull_sample_records(
+    file_name,
+    id_name,
+    id_list,
+    is_unique=True,
+    every_nth_record=None,
+    output_path=MID_SIZE_FILE_PATH,
+    input_path=RAW_DATA,
+):
     """
     Reads through a full gzip file and keeps just the selected ID records
+
+    This is not wildly efficient for large ID lists and large files.
     """
     # can we read the stuff? (should assert that id_name is a valid field name, but...)
     assert len(id_list) > 0
-    working_input_file = "./" + file_path + "/" + file_name
+    assert len(id_list) < 10000
+    working_input_file = input_path + "/" + file_name
     assert os.path.exists(working_input_file)
-    # set up where we'll write results
-    if file_path == ".":
-        output_file_name = "sample_records_" + file_name
-    else:
-        output_file_name = file_name
+    output_file_name = output_path + "/" + file_name
+    assert not os.path.exists(output_file_name)
     # read in the selected records
     sample_records = []
+    remaining_ids = id_list.copy()
     print(
         "Starting to read",
         working_input_file,
@@ -37,9 +69,14 @@ def pull_sample_records(file_name, file_path, id_name, id_list):
     with gzip.open(working_input_file, "rt") as in_file:
         records = csv.DictReader(in_file, delimiter="\t")
         lines_read = 0
+        keep_random = False
         for record in records:
-            if record[id_name] in id_list:
+            if every_nth_record:
+                keep_random = lines_read % every_nth_record == 0
+            if (record[id_name] in remaining_ids) or keep_random:
                 sample_records += [record]
+                if is_unique:
+                    remaining_ids.remove(record[id_name])
             lines_read += 1
             if lines_read % 10**7 == 0:
                 print(
@@ -104,44 +141,27 @@ if __name__ == "__main__":
             191024617,
         ]
     ]
-    pull_sample_records("photos.csv.gz", "full_june_2022", "photo_id", photo_ids)
+    pull_sample_records("photos.csv.gz", "photo_id", photo_ids, False, 10000)
 
     # ASSOCIATED OBSERVATIONS
-    with gzip.open("photos.csv.gz", "rt") as photo_output:
+    with gzip.open(f"{DATA_FOR_TESTING}/photos.csv.gz", "rt") as photo_output:
         sample_observations = get_sample_id_list(photo_output, "observation_uuid")
-    pull_sample_records(
-        "observations.csv.gz", "full_june_2022", "observation_uuid", sample_observations
-    )
+    pull_sample_records("observations.csv.gz", "observation_uuid", sample_observations)
 
     # ASSOCIATED OBSERVERS
-    with gzip.open("photos.csv.gz", "rt") as photo_output:
+    with gzip.open(f"{DATA_FOR_TESTING}/photos.csv.gz", "rt") as photo_output:
         sample_observers = get_sample_id_list(photo_output, "observer_id")
-    pull_sample_records(
-        "observers.csv.gz", "full_june_2022", "observer_id", sample_observers
-    )
+    pull_sample_records("observers.csv.gz", "observer_id", sample_observers)
 
     # ASSOCIATED TAXA (including ancestry for photo tags)
-    with gzip.open("observations.csv.gz", "rt") as observation_output:
+    with gzip.open(
+        f"{DATA_FOR_TESTING}/observations.csv.gz", "rt"
+    ) as observation_output:
         sample_taxa = get_sample_id_list(observation_output, "taxon_id")
     sample_taxa_with_ancestors = set(sample_taxa)
-    with gzip.open("full_june_2022/taxa.csv.gz", "rt") as all_taxa:
+    with gzip.open(f"{RAW_DATA}/taxa.csv.gz", "rt") as all_taxa:
         records = csv.DictReader(all_taxa, delimiter="\t")
         for t in records:
             if t["taxon_id"] in sample_taxa:
                 sample_taxa_with_ancestors.update(t["ancestry"].split("/"))
-    pull_sample_records(
-        "taxa.csv.gz", "full_june_2022", "taxon_id", list(sample_taxa_with_ancestors)
-    )
-
-    # PRINT RESULTS
-    for f in [
-        "photos.csv.gz",
-        "observations.csv.gz",
-        "observers.csv.gz",
-        "taxa.csv.gz",
-    ]:
-        print("=" * 80)
-        print("====> Displaying", f)
-        with gzip.open(f, "rt") as unzipped:
-            for line in unzipped:
-                print(line.strip())
+    pull_sample_records("taxa.csv.gz", "taxon_id", list(sample_taxa_with_ancestors))
