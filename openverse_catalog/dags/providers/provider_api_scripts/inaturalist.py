@@ -30,9 +30,6 @@ from common.loader import provider_details as prov
 from providers.provider_api_scripts.provider_data_ingester import ProviderDataIngester
 
 
-# from typing import Dict
-
-
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s", level=logging.INFO
 )
@@ -41,58 +38,32 @@ logger = logging.getLogger(__name__)
 PROVIDER = prov.INATURALIST_DEFAULT_PROVIDER
 SCRIPT_DIR = Path(__file__).parents[1] / "provider_csv_load_scripts/inaturalist"
 PG_TO_JSON_TEMPLATE = dedent(
-    (SCRIPT_DIR / "05_export_dbpage_to_json_template.sql").read_text()
+    (SCRIPT_DIR / "05_export_to_json_template.sql").read_text()
 )
 
 
 class inaturalistDataIngester(ProviderDataIngester):
-
-    # if we go with the db paginated approach, consider using this sql to get a
-    # max number of db pages to define a get_should_continue function.
-    # select relpages
-    # from pg_class t join pg_namespace s on t.relnamespace=s.oid
-    # where s.nspname='inaturalist' and t.relname='photos';
 
     providers = {"image": prov.INATURALIST_DEFAULT_PROVIDER}
 
     def __init__(self):
         super(inaturalistDataIngester, self).__init__()
         self.pg = PostgresHook(POSTGRES_CONN_ID)
-        self.cursor = None
-
-    def ingest_records(self):
-        with self.pg.get_cursor() as self.cursor:
-            # Explicitly set the number of results returned by fetchmany()
-            # https://www.psycopg.org/docs/cursor.html#cursor.arraysize
-            # itersize is the count fetched from postgres on the backend
-            # and it defaults to 2000, we don't need to change that
-            # https://www.psycopg.org/docs/cursor.html#cursor.itersize
-            self.cursor.arraysize = 100
-            self.cursor.connection.autocommit = True
-            super(inaturalistDataIngester, self).ingest_records()
 
     def get_next_query_params(self, old_query_params=None, **kwargs):
-        return None
-        # """Page counter"""
-        # if old_query_params is None:
-        #     return {"page_number": 0}
-        # else:
-        #     next_page = old_query_params["page_number"] + 1
-        #     return {"page_number": next_page}
+        if old_query_params is None:
+            return {"offset_num": 0}
+        else:
+            next_offset = old_query_params["offset_num"] + 100
+            return {"offset_num": next_offset}
 
     def get_response_json(self, query_params: Dict):
-        if self.cursor.rowcount == -1:
-            # Query has not yet been executed, need to execute for the first time
-            logger.info("Executing big view-to-tsv query on the postgres end")
-            self.cursor.execute(PG_TO_JSON_TEMPLATE)
-        # Return the next 100 results
-        return self.cursor.fetchmany()
-        # """
-        # Call the SQL to pull json from Postgres, where the raw data has been loaded.
-        # """
-        # db_page_number = str(query_params["page_number"])
-        # sql_string = PG_TO_JSON_TEMPLATE.replace("db_page_number", db_page_number)
-        # return self.pg.get_records(sql_string)
+        """
+        Call the SQL to pull json from Postgres, where the raw data has been loaded.
+        """
+        offset_num = str(query_params["offset_num"])
+        sql_string = PG_TO_JSON_TEMPLATE.replace("offset_num", offset_num)
+        return self.pg.get_records(sql_string)
 
     def get_batch_data(self, response_json):
         if response_json:
