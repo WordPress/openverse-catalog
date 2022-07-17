@@ -37,4 +37,9 @@ SELECT aws_s3.table_import_from_s3('inaturalist.photos',
     'photos.csv.gz',
     'us-east-1');
 
+-- Not unique, because photo id isn't unique, and it will take too long to check.
+-- btree because that is the only one that will support limit/offset without sorting.
+-- more here: https://www.postgresql.org/docs/current/indexes-ordering.html
+CREATE INDEX ON INATURALIST.PHOTOS USING btree (PHOTO_ID);
+
 SELECT count(*) FROM inaturalist.photos;
