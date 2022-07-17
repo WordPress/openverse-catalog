@@ -68,7 +68,7 @@ SELECT
             WHEN INATURALIST.PHOTOS.LICENSE = 'CC0'
                 THEN 'http://creativecommons.org/publicdomain/zero/1.0/'
             END),
-        'foreign_langing_url',
+        'foreign_landing_url',
         'https://www.inaturalist.org/photos/' || INATURALIST.PHOTOS.PHOTO_ID,
         'image_url',
         'https://inaturalist-open-data.s3.amazonaws.com/photos/'
