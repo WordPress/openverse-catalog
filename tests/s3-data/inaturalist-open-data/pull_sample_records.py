@@ -33,9 +33,6 @@ def move_files(from_dir, to_dir, copy=False):
                 os.rename(f"{from_dir}/{file_name}", f"{to_dir}/{file_name}")
 
 
-move_files(SMALL_FILE_PATH, DATA_FOR_TESTING)
-
-
 def pull_sample_records(
     file_name,
     id_name,
