@@ -11,6 +11,7 @@ import os
 
 # airflow DAG (necessary for Airflow to find this file)
 from airflow import DAG
+from airflow.models.baseoperator import chain
 from airflow.operators.python import PythonOperator
 
 # from airflow.providers.amazon.aws.hooks.s3 import S3Hook
@@ -49,7 +50,7 @@ INAT = inaturalistDataIngester()
 #             return
 #     # If no files have been updated, skip the DAG
 #     raise AirflowSkipException("Nothing new to ingest")
-
+ 
 with DAG(
     DAG_ID,
     default_args=DAG_DEFAULT_ARGS,
@@ -88,15 +89,15 @@ with DAG(
     )
 
     with TaskGroup(group_id="load_source_files") as load_source_files:
-        file_order = 0
-        for source_name in SOURCE_FILE_NAMES:
-            file_order += 1
-            file_name = str(file_order).zfill(2) + "_" + source_name + ".sql"
+        operator_list = [
             PythonOperator(
-                task_id="load_" + source_name,
+                task_id=f"load_{source_name}",
                 python_callable=INAT.sql_loader,
-                op_kwargs={"file_name": file_name},
+                op_kwargs={"file_name": str(idx + 1).zfill(2) + f"_{source_name}.sql"},
             )
+            for idx, source_name in enumerate(SOURCE_FILE_NAMES)
+        ]
+        chain(*operator_list)
 
     ingest_data = PythonOperator(
         task_id="ingest_data", python_callable=INAT.ingest_records
