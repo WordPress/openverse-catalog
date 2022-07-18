@@ -17,12 +17,20 @@ log = logging.getLogger(__name__)
 
 HEIGHT = 300
 WIDTH = 1000
-PERIOD = 900
+RESOLUTION = 900
 
 
 @task()
 def generate_widget_definition(metric: str, start: str, end: str) -> str:
-    definition_path = Path(__file__).parent / f"widget_definitions/es-{metric}.json"
+    """
+    Create the JSON widget definition required for AWS by rendering the template with
+    the provided Elasticsearch instance IDs, image height & width, metric resolution,
+    and time boundaries. The timeframe is provided by Airflow so backfills & reruns can
+    be accurately performed.
+    """
+    definition_path = (
+        Path(__file__).parent / f"widget_definitions/es-{metric}.json.template"
+    )
     definition_text = definition_path.read_text()
 
     es_instance_ids = Variable.get("ES_INSTANCE_IDS")
@@ -38,7 +46,7 @@ def generate_widget_definition(metric: str, start: str, end: str) -> str:
             "es_node_3": es_node_3,
             "height": HEIGHT,
             "width": WIDTH,
-            "period": PERIOD,
+            "period": RESOLUTION,
             "start": start,
             "end": end,
         }
@@ -47,6 +55,11 @@ def generate_widget_definition(metric: str, start: str, end: str) -> str:
 
 @task()
 def generate_png(templated_widget: str, aws_conn_id: str) -> bytes:
+    """
+    Produce a base64 encoded PNG image using the templated widget definition and the
+    provided AWS connection. The PNG is returned as bytes and is base64 encoded to
+    preserve space in the XComs.
+    """
     aws_hook = AwsBaseHook(aws_conn_id=aws_conn_id, client_type="cloudwatch")
     client = aws_hook.get_client_type()
     widget_data = client.get_metric_widget_image(MetricWidget=templated_widget)
@@ -56,8 +69,13 @@ def generate_png(templated_widget: str, aws_conn_id: str) -> bytes:
 
 
 def combine_images(image_blobs: list[bytes]) -> BytesIO:
+    """
+    Combine the provided images by stacking them vertically. This method takes base64
+    encoded image blobs and uses numpy to stack each array vertically. It returns a
+    BytesIO in-memory file pointer to the generated PNG.
+    """
     # Combine the images vertically
-    # From https://stackoverflow.com/a/30228789 via dermen CC BY-SA 4.0
+    # From https://stackoverflow.com/a/30228789 via 'dermen' CC BY-SA 4.0
     images = [
         # Decode each image from base64 then open as a Pillow Image
         Image.open(BytesIO(base64.b64decode(image_blob)))
@@ -66,7 +84,10 @@ def combine_images(image_blobs: list[bytes]) -> BytesIO:
     combined = np.vstack([np.asarray(image) for image in images])
     output = BytesIO()
     Image.fromarray(combined).save(output, format="PNG")
-    # Seek back to the beginning of the file
+    # Close all the associated image files
+    for image in images:
+        image.close()
+    # Seek back to the beginning of the file so S3 can upload it properly
     output.seek(0)
     return output
 
@@ -78,6 +99,11 @@ def upload_to_s3(
     key_prefix: str,
     aws_conn_id: str,
 ) -> str:
+    """
+    Uploads the provided base64 encoded image blobs to S3 after combining them
+    vertically. This function returns a presigned URL that can then be consumed by
+    external clients (e.g. Slack) for 7 days.
+    """
     combined_image = combine_images(image_blobs)
     s3 = S3Hook(aws_conn_id=aws_conn_id)
     s3_bucket = s3.get_bucket(bucket)
@@ -95,6 +121,9 @@ def upload_to_s3(
 
 @task()
 def send_message(image_url: str, start: str, end: str):
+    """
+    Send a message to Slack with the provided image URL.
+    """
     message = slack.SlackMessage(username="Cloudwatch Metrics", icon_emoji=":cloud:")
     text = f"Elasticsearch metrics from {start} to {end}"
     message.add_text(text)
