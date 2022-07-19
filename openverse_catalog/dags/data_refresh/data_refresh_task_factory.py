@@ -216,7 +216,7 @@ def create_data_refresh_task_group(
         # ``tasks`` contains the following tasks:
         # wait_for_data_refresh
         # └─ ingest_upstream (trigger_ingest_upstream + wait_for_ingest_upstream)
-        #    └─ point_alias (trigger_point_alias + wait_for_point_alias)
+        #    └─ promote (trigger_promote + wait_for_promote)
         chain(*tasks)
 
     return data_refresh_group
