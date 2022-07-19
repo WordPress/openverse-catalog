@@ -50,7 +50,7 @@ def report_completion(
     schedule_interval: str | None = None,
     date_range_start: str | None = None,
     date_range_end: str | None = None,
-) -> None:
+) -> str:
     """
     Send a Slack notification when the load_data task has completed.
     Messages are only sent out in production and if a Slack connection is defined.
@@ -111,3 +111,4 @@ def report_completion(
 {media_type_reports}"""
     send_message(message, username="Airflow DAG Load Data Complete")
     logger.info(message)
+    return message
