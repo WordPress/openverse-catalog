@@ -71,7 +71,7 @@ DATA_REFRESH_POOL = "data_refresh"
 
 def response_filter_stat(response: Response) -> str:
     """
-    Filter for the `get_current_stat` task, used to extract the name of the current
+    Filter for the `get_current_index` task, used to extract the name of the current
     index that the concerned alias points to. This index name will be availabe via XCom
     in the downstream tasks.
     """
@@ -157,15 +157,15 @@ def create_data_refresh_task_group(
         tasks.append(wait_for_data_refresh)
 
         # Get the index currently mapped to our target alias, to delete later.
-        get_current_stat = SimpleHttpOperator(
-            task_id="get_current_stat",
+        get_current_index = SimpleHttpOperator(
+            task_id="get_current_index",
             http_conn_id="data_refresh",
             endpoint=f"stat/{target_alias}",
             method="GET",
             response_check=lambda response: response.status_code == 200,
             response_filter=response_filter_stat,
         )
-        tasks.append(get_current_stat)
+        tasks.append(get_current_index)
 
         # Generate a UUID suffix that will be used by the newly created index.
         generate_index_suffix = PythonOperator(
@@ -224,7 +224,7 @@ def create_data_refresh_task_group(
                     "model": data_refresh.media_type,
                     "action": "DELETE_INDEX",
                     "index_suffix": XCOM_PULL_TEMPLATE.format(
-                        get_current_stat.task_id, "return_value"
+                        get_current_index.task_id, "return_value"
                     ),
                 }
             ),
@@ -234,7 +234,7 @@ def create_data_refresh_task_group(
 
         # ``tasks`` contains the following tasks and task groups:
         # wait_for_data_refresh
-        # └─ get_current_stat
+        # └─ get_current_index
         #    └─ ingest_upstream (trigger_ingest_upstream + wait_for_ingest_upstream)
         #       └─ promote (trigger_promote + wait_for_promote)
         #          └─ delete_old_index
