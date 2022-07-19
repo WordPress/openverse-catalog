@@ -37,9 +37,6 @@ logger = logging.getLogger(__name__)
 
 PROVIDER = prov.INATURALIST_DEFAULT_PROVIDER
 SCRIPT_DIR = Path(__file__).parents[1] / "provider_csv_load_scripts/inaturalist"
-PG_TO_JSON_TEMPLATE = dedent(
-    (SCRIPT_DIR / "05_export_to_json_template.sql").read_text()
-)
 
 
 class inaturalistDataIngester(ProviderDataIngester):
@@ -50,11 +47,22 @@ class inaturalistDataIngester(ProviderDataIngester):
         super(inaturalistDataIngester, self).__init__()
         self.pg = PostgresHook(POSTGRES_CONN_ID)
 
+        # adjustments to buffer limits. TO DO: try to integrate this with the dev
+        # environment logic in the base class, rather than just over-writing it.
+        self.media_stores["image"].buffer_length = 10_000
+        self.batch_limit = 10_000
+
+        self.sql_template = dedent(
+            (SCRIPT_DIR / "05_export_to_json_template.sql")
+            .read_text()
+            .replace("batch_limit", str(self.batch_limit))
+        )
+
     def get_next_query_params(self, old_query_params=None, **kwargs):
         if old_query_params is None:
             return {"offset_num": 0}
         else:
-            next_offset = old_query_params["offset_num"] + 100
+            next_offset = old_query_params["offset_num"] + self.batch_limit
             return {"offset_num": next_offset}
 
     def get_response_json(self, query_params: Dict):
@@ -62,7 +70,7 @@ class inaturalistDataIngester(ProviderDataIngester):
         Call the SQL to pull json from Postgres, where the raw data has been loaded.
         """
         offset_num = str(query_params["offset_num"])
-        sql_string = PG_TO_JSON_TEMPLATE.replace("offset_num", offset_num)
+        sql_string = self.sql_template.replace("offset_num", offset_num)
         return self.pg.get_records(sql_string)
 
     def get_batch_data(self, response_json):

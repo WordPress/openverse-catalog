@@ -28,14 +28,14 @@ RECORD0 = {
     "foreign_id": 10314159,
     "filetype": "jpg",
     "license_url": "http://creativecommons.org/licenses/by-nc/4.0/",
-    "width" : 1530,
-    "height" : 2048,
+    "width": 1530,
+    "height": 2048,
     "foreign_landing_url": "https://www.inaturalist.org/photos/10314159",
     "image_url": "https://inaturalist-open-data.s3.amazonaws.com/photos/10314159/medium.jpg",
     "creator": "akjenny",
     "creator_url": "https://www.inaturalist.org/users/615549",
-    "title" : "Trifolium hybridum",
-    "tags" : "Tracheophyta; Angiospermae; Magnoliopsida; Fabales; Fabaceae; Faboideae; Trifolieae; Trifolium",
+    "title": "Trifolium hybridum",
+    "tags": "Tracheophyta; Angiospermae; Magnoliopsida; Fabales; Fabaceae; Faboideae; Trifolieae; Trifolium",
 }
 
 
@@ -46,7 +46,7 @@ def test_get_next_query_params_no_prior():
 
 
 def test_get_next_query_params_prior_0():
-    expected = {"offset_num": 100}
+    expected = {"offset_num": INAT.batch_limit}
     actual = INAT.get_next_query_params({"offset_num": 0})
     assert expected == actual
 
@@ -114,16 +114,16 @@ def test_get_record_data_full_response():
         "foreign_identifier": "10314159",
         "filetype": "jpg",
         "license_info": get_license_info(
-                license_url="http://creativecommons.org/licenses/by-nc/4.0/"
-            ),
-        "width" : 1530,
-        "height" : 2048,
+            license_url="http://creativecommons.org/licenses/by-nc/4.0/"
+        ),
+        "width": 1530,
+        "height": 2048,
         "foreign_landing_url": "https://www.inaturalist.org/photos/10314159",
         "image_url": "https://inaturalist-open-data.s3.amazonaws.com/photos/10314159/medium.jpg",
         "creator": "akjenny",
         "creator_url": "https://www.inaturalist.org/users/615549",
-        "title" : "Trifolium hybridum",
-        "raw_tags" : "Tracheophyta; Angiospermae; Magnoliopsida; Fabales; Fabaceae; Faboideae; Trifolieae; Trifolium",
+        "title": "Trifolium hybridum",
+        "raw_tags": "Tracheophyta; Angiospermae; Magnoliopsida; Fabales; Fabaceae; Faboideae; Trifolieae; Trifolium",
     }
     actual = INAT.get_record_data(RECORD0)
     assert actual == expected

@@ -3,12 +3,12 @@
 EXPORT TO JSON
 -------------------------------------------------------------------------------
 
-    ** Please note: This SQL will not run as is! You must replace offset_num with
-    an integer representing the page you want to retrieve.
+    ** Please note: This SQL will not run as is! You must replace offset_num and
+    batch_limit with integers representing the records you want to retrieve.
 
 Joining two very large normalized tables is difficult, in any data manipulation system.
-PHOTOS has on the order of 120 million records, and OBSERVATIONS has on the order of 
-70 million records. We have to join them to get at the taxa (species) information for 
+PHOTOS has on the order of 120 million records, and OBSERVATIONS has on the order of
+70 million records. We have to join them to get at the taxa (species) information for
 any given photo. Taxa are the only descriptive text we have for inaturalist photos.
 
 The postgres query optimizer is smart enough to use limit and offset to make this like
@@ -20,17 +20,17 @@ https://www.postgresql.org/docs/current/queries-limit.html)
 This query calls for 100 records at a time to match the pace of the python ingester.
 
 Alternative approaches considered:
-- Let python do the pagination using a cursor: Joining the two full tables in one step 
-  requires working through 120 million * 70 million possible combinations, and when 
+- Let python do the pagination using a cursor: Joining the two full tables in one step
+  requires working through 120 million * 70 million possible combinations, and when
   tested with the full dataset after 13 minutes the local machine was physically hot and
   had not yet returned a single record.
 - Use database pagination instead of limit/offset: This would have avoided the need to
-  sort / index, but might have introduced data quality risks (if postgres moved 
+  sort / index, but might have introduced data quality risks (if postgres moved
   things around while the job was running) and some pages appeared empty which required
-  more complicated python logic for retries. More on this approach at: 
+  more complicated python logic for retries. More on this approach at:
   https://www.citusdata.com/blog/2016/03/30/five-ways-to-paginate/
 
-Everything on iNaturalist is holding at version 4, except CC0 which is version 1.0. 
+Everything on iNaturalist is holding at version 4, except CC0 which is version 1.0.
 License versions below are hard-coded from inaturalist
 https://github.com/inaturalist/inaturalist/blob/d338ba76d82af83d8ad0107563015364a101568c/app/models/shared/license_module.rb#L5
 */
@@ -89,5 +89,5 @@ INNER JOIN
     INATURALIST.TAXA ON
         INATURALIST.OBSERVATIONS.TAXON_ID = INATURALIST.TAXA.TAXON_ID
 ORDER BY PHOTO_ID
-LIMIT 100
+LIMIT batch_limit
 OFFSET offset_num ;
