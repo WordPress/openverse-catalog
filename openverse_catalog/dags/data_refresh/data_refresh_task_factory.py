@@ -147,67 +147,40 @@ def create_data_refresh_task_group(
 
         tasks = [wait_for_data_refresh, generate_index_suffix]
 
-        def _get_http_operator(task_id: str, post_data: dict) -> SimpleHttpOperator:
-            """
-            Get a ``SimpleHttpOperator`` instance that is configured to make a POST
-            request with the given POST data.
-
-            :param task_id: the name of the task associated with the operator
-            :param post_data: the JSON data to send to the ingestion server
-            """
-
-            return SimpleHttpOperator(
-                task_id=task_id,
-                http_conn_id="data_refresh",
-                endpoint="task",
-                method="POST",
-                headers={"Content-Type": "application/json"},
-                data=json.dumps(post_data),
-                response_check=lambda response: response.status_code == 202,
-                response_filter=response_filter_data_refresh,
-            )
-
-        def _get_http_sensor(task_id: str, endpoint: str) -> HttpSensor:
-            """
-            Get an ``HttpSensor`` instance that waits for a given  ingestion server task
-            to be completed. The trigger task status can be observed by polling an
-            endpoint.
-
-            :param task_id: the name of the task associated with the sensor
-            :endpoint: the REST endpoint for tracking the status of the triggered task
-            """
-
-            return HttpSensor(
-                task_id=task_id,
-                http_conn_id="data_refresh",
-                endpoint=endpoint,
-                method="GET",
-                response_check=response_check_wait_for_completion,
-                mode="reschedule",
-                poke_interval=poke_interval,
-                timeout=data_refresh.data_refresh_timeout,
-            )
-
         action_data_map: dict[str, dict] = {
             "ingest_upstream": {},
             "promote": {"alias": data_refresh.media_type},
         }
         for action, action_post_data in action_data_map.items():
             with TaskGroup(group_id=action) as task_group:
-                trigger = _get_http_operator(
+                trigger = SimpleHttpOperator(
                     task_id=f"trigger_{action}",
-                    post_data=action_post_data
-                    | {
-                        "model": data_refresh.media_type,
-                        "action": action.upper(),
-                        "index_suffix": XCOM_PULL_TEMPLATE.format(
-                            generate_index_suffix.task_id, "return_value"
-                        ),
-                    },
+                    http_conn_id="data_refresh",
+                    endpoint="task",
+                    method="POST",
+                    headers={"Content-Type": "application/json"},
+                    data=json.dumps(
+                        action_post_data
+                        | {
+                            "model": data_refresh.media_type,
+                            "action": action.upper(),
+                            "index_suffix": XCOM_PULL_TEMPLATE.format(
+                                generate_index_suffix.task_id, "return_value"
+                            ),
+                        }
+                    ),
+                    response_check=lambda response: response.status_code == 202,
+                    response_filter=response_filter_data_refresh,
                 )
-                waiter = _get_http_sensor(
+                waiter = HttpSensor(
                     task_id=f"wait_for_{action}",
+                    http_conn_id="data_refresh",
                     endpoint=XCOM_PULL_TEMPLATE.format(trigger.task_id, "return_value"),
+                    method="GET",
+                    response_check=response_check_wait_for_completion,
+                    mode="reschedule",
+                    poke_interval=poke_interval,
+                    timeout=data_refresh.data_refresh_timeout,
                 )
                 trigger >> waiter
 
