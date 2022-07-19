@@ -316,7 +316,7 @@ def create_provider_api_workflow(
                 "provider_name": provider_name,
                 "duration": XCOM_PULL_TEMPLATE.format(pull_data.task_id, "duration"),
                 "record_counts_by_media_type": record_counts_by_media_type,
-                "schedule_interval": dag.schedule_interval,
+                "dated": dated,
                 "date_range_start": "{{ data_interval_start | ds }}",
                 "date_range_end": "{{ data_interval_end | ds }}",
             },

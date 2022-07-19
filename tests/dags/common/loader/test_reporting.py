@@ -96,14 +96,14 @@ def _make_report_completion_contents_data(media_type: str):
     "image_data, image_expected", _make_report_completion_contents_data("image")
 )
 @pytest.mark.parametrize(
-    "schedule_interval, date_range_start, date_range_end, expected_date_range",
+    "dated, date_range_start, date_range_end, expected_date_range",
     [
-        # No schedule interval, no date range
-        (None, "2022-01-01", "2022-05-01", "all"),
-        # No schedule interval, but date range supplied
-        (None, None, None, "all"),
+        # Not dated, no date range
+        (False, "2022-01-01", "2022-05-01", "all"),
+        # Not dated, but date range supplied
+        (False, None, None, "all"),
         # Schedule interval and date range supplied
-        ("@daily", "2022-01-01", "2022-01-02", "2022-01-01 -> 2022-01-02"),
+        (True, "2022-01-01", "2022-01-02", "2022-01-01 -> 2022-01-02"),
     ],
 )
 def test_report_completion_contents(
@@ -111,7 +111,7 @@ def test_report_completion_contents(
     audio_expected,
     image_data,
     image_expected,
-    schedule_interval,
+    dated,
     date_range_start,
     date_range_end,
     expected_date_range,
@@ -121,7 +121,7 @@ def test_report_completion_contents(
             "Jamendo",
             None,
             {**audio_data, **image_data},
-            schedule_interval,
+            dated,
             date_range_start,
             date_range_end,
         )
