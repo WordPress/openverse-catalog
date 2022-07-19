@@ -156,6 +156,7 @@ def create_data_refresh_task_group(
         )
         tasks.append(wait_for_data_refresh)
 
+        # Get the index currently mapped to our target alias, to delete later.
         get_current_stat = SimpleHttpOperator(
             task_id="get_current_stat",
             http_conn_id="data_refresh",
@@ -211,6 +212,7 @@ def create_data_refresh_task_group(
 
             tasks.append(task_group)
 
+        # Delete the alias' previous target index, now unused.
         delete_old_index = SimpleHttpOperator(
             task_id="delete_old_index",
             http_conn_id="data_refresh",
