@@ -147,7 +147,7 @@ def _push_output_paths_wrapper(
         # Run the `ingest_records` function to perform ingestion.
         logger.info("Running ingestion function")
         start_time = time.perf_counter()
-        data = ingester.ingest_records(*args)
+        data = ingester.ingest_records()
         end_time = time.perf_counter()
 
     # Report duration
@@ -156,7 +156,7 @@ def _push_output_paths_wrapper(
     return data
 
 
-def create_provider_api_workflow(
+def create_provider_api_workflow_dag(
     dag_id: str,
     ingestion_callable: Callable,
     default_args: Optional[Dict] = None,
@@ -212,9 +212,6 @@ def create_provider_api_workflow(
                        (e.g. `["audio"]`, `["image", "audio"]`, etc.)
     """
     default_args = {**DAG_DEFAULT_ARGS, **(default_args or {})}
-    media_type_name = "mixed" if len(media_types) > 1 else media_types[0]
-    provider_name = dag_id.replace("_workflow", "")
-    identifier = f"{provider_name}_{{{{ ts_nodash }}}}"
 
     dag = DAG(
         dag_id=dag_id,
@@ -230,6 +227,39 @@ def create_provider_api_workflow(
     )
 
     with dag:
+        ingest_data, ingestion_metrics = create_ingestion_workflow(
+            dag_id, ingestion_callable, dated, day_shift, execution_timeout, media_types
+        )
+
+        report_load_completion = create_report_load_completion(
+            dag_id,
+            media_types,
+            ingestion_metrics,
+        )
+
+        ingest_data >> report_load_completion
+
+    return dag
+
+
+def create_ingestion_workflow(
+    dag_id,
+    ingestion_callable: Callable,
+    dated: bool = True,
+    day_shift: int = 0,
+    execution_timeout: timedelta = timedelta(hours=12),
+    media_types: Sequence[str] = ("image",),
+):
+    """
+    Creates a TaskGroup that performs the ingestion tasks, first pulling and then
+    loading data. Returns the TaskGroup, and a dictionary of reporting metrics.
+    """
+    with TaskGroup(group_id="ingest_data") as ingest_data:
+
+        media_type_name = "mixed" if len(media_types) > 1 else media_types[0]
+        provider_name = dag_id.replace("_workflow", "")
+        identifier = f"{provider_name}_{{{{ ts_nodash }}}}_{day_shift}"
+
         pull_kwargs = {
             "ingestion_callable": ingestion_callable,
             "media_types": media_types,
@@ -309,20 +339,34 @@ def create_provider_api_workflow(
                 )
                 load_tasks.append(load_data)
 
-        report_load_completion = PythonOperator(
-            task_id="report_load_completion",
-            python_callable=reporting.report_completion,
-            op_kwargs={
-                "provider_name": provider_name,
-                "duration": XCOM_PULL_TEMPLATE.format(pull_data.task_id, "duration"),
-                "record_counts_by_media_type": record_counts_by_media_type,
-            },
-            trigger_rule=TriggerRule.ALL_DONE,
-        )
+        pull_data >> load_tasks
 
-        pull_data >> load_tasks >> report_load_completion
+    ingestion_metrics = {
+        "duration": XCOM_PULL_TEMPLATE.format(pull_data.task_id, "duration"),
+        "record_counts_by_media_type": record_counts_by_media_type,
+    }
 
-    return dag
+    return ingest_data, ingestion_metrics
+
+
+def create_report_load_completion(
+    dag_id,
+    media_types,
+    ingestion_metrics,
+):
+    return PythonOperator(
+        task_id=("report_load_completion"),
+        python_callable=reporting.report_completion,
+        op_kwargs={
+            "provider_name": dag_id,
+            "media_types": media_types,
+            "duration": ingestion_metrics["duration"],
+            "record_counts_by_media_type": ingestion_metrics[
+                "record_counts_by_media_type"
+            ],
+        },
+        trigger_rule=TriggerRule.ALL_DONE,
+    )
 
 
 def create_day_partitioned_ingestion_dag(
