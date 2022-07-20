@@ -470,4 +470,6 @@ if __name__ == "__main__":
         date_obj = datetime.now() - timedelta(days=2)
         date = datetime.strftime(date_obj, "%Y-%m-%d")
 
-    main(date)
+    logger.info(f"Begin: Wikimedia Commons data ingestion for {date}")
+    ingester = WikimediaCommonsDataIngester()
+    ingester.ingest_records()
