@@ -364,14 +364,15 @@ def create_report_load_completion(
 
 def create_day_partitioned_ingestion_dag(
     dag_id: str,
-    main_function: Callable,
-    reingestion_day_list_list: list[list[int]],
+    ingestion_callable: Callable,
+    reingestion_day_list_list: List[List[int]],
     start_date: datetime = datetime(1970, 1, 1),
     max_active_runs: int = 1,
     max_active_tasks: int = 1,
     default_args: Optional[Dict] = None,
     dagrun_timeout: timedelta = timedelta(hours=23),
     ingestion_task_timeout: timedelta = timedelta(hours=2),
+    media_types: Sequence[str] = ("image",),
 ):
     """
     Given a `main_function` and `reingestion_day_list_list`, this
@@ -458,37 +459,83 @@ def create_day_partitioned_ingestion_dag(
         start_date=start_date,
         catchup=False,
         tags=["provider-reingestion"],
+        render_template_as_native_obj=True,
     )
     with dag:
-        ingest_operator_list_list = _build_ingest_operator_list_list(
-            reingestion_day_list_list, main_function, ingestion_task_timeout
+        # Generate a list of lists of ingestion TaskGroups for each day of reingestion.
+        ingest_operator_list_list, ingestion_metrics = _build_ingest_operator_list_list(
+            reingestion_day_list_list,
+            ingestion_callable,
+            ingestion_task_timeout,
+            dag_id,
+            media_types,
+            dagrun_timeout,
         )
+
+        # For each 'level', make a wait task that waits for all of the reingestion taks
+        # at that level to complete.
         for i in range(len(ingest_operator_list_list) - 1):
             wait_operator = EmptyOperator(
                 task_id=f"wait_L{i}", trigger_rule=TriggerRule.ALL_DONE
             )
+
+            # Set the waiter downstream of all ingestion TaskGroups in the ith list.
             cross_downstream(ingest_operator_list_list[i], [wait_operator])
+
+            # Set the waiter upstream of all ingestion TaskGroups in the i+1th list.
+            # This gates the tasks behind the waiter.
             wait_operator >> ingest_operator_list_list[i + 1]
         ingest_operator_list_list[-1]
+
+        # Create a single report_load_completion task, passing in the list of duration
+        # and counts data for each completed task.
+        report_load_completion = create_report_load_completion(
+            dag_id,
+            media_types,
+            ingestion_metrics,
+        )
+
+        # report_load_completion is downstream of all the ingestion TaskGroups in the
+        # final list.
+        cross_downstream(ingest_operator_list_list[-1], [report_load_completion])
 
     return dag
 
 
 def _build_ingest_operator_list_list(
-    reingestion_day_list_list, main_function, ingestion_task_timeout
+    reingestion_day_list_list,
+    ingestion_callable,
+    ingestion_task_timeout,
+    dag_id,
+    media_types,
+    dagrun_timeout,
 ):
+    # TODO: This forces the reingestion workflow to include the current date in
+    # reingestion. Should this be removed?
     if reingestion_day_list_list[0] != [0]:
         reingestion_day_list_list = [[0]] + reingestion_day_list_list
-    return [
-        [
-            PythonOperator(
-                task_id=f"ingest_{d}",
-                python_callable=main_function,
-                op_args=[DATE_RANGE_ARG_TEMPLATE.format(d)],
-                execution_timeout=ingestion_task_timeout,
-                depends_on_past=False,
+
+    operator_list_list = []
+    duration_list = []
+    record_counts_by_media_type_list = []
+
+    for L in reingestion_day_list_list:
+        operator_list = []
+        for day_shift in L:
+            ingest_data, ingestion_metrics = create_ingestion_workflow(
+                dag_id, ingestion_callable, True, day_shift, dagrun_timeout, media_types
             )
-            for d in L
-        ]
-        for L in reingestion_day_list_list
-    ]
+            operator_list.append(ingest_data)
+            duration_list.append(ingestion_metrics["duration"])
+            record_counts_by_media_type_list.append(
+                ingestion_metrics["record_counts_by_media_type"]
+            )
+
+        operator_list_list.append(operator_list)
+
+    total_ingestion_metrics = {
+        "duration": duration_list,
+        "record_counts_by_media_type": record_counts_by_media_type_list,
+    }
+
+    return operator_list_list, total_ingestion_metrics
