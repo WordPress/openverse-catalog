@@ -22,7 +22,14 @@ def test_report_completion(should_send_message):
     with mock.patch(
         "common.slack.should_send_message", return_value=should_send_message
     ):
-        report_completion("Jamendo", None, {"audio": RecordMetrics(100, 0, 0, 0)})
+        report_completion(
+            "Jamendo",
+            [
+                "audio",
+            ],
+            None,
+            {"audio": RecordMetrics(100, 0, 0, 0)},
+        )
         # Send message is only called if `should_send_message` is True.
         send_message_mock.called = should_send_message
 
@@ -99,7 +106,9 @@ def test_report_completion_contents(
     audio_data, audio_expected, image_data, image_expected
 ):
     with mock.patch("common.loader.reporting.send_message") as send_message_mock:
-        report_completion("Jamendo", None, {**audio_data, **image_data})
+        report_completion(
+            "Jamendo", ["audio", "image"], None, {**audio_data, **image_data}
+        )
         for expected in [audio_expected, image_expected]:
             assert (
                 expected in send_message_mock.call_args.args[0]
