@@ -46,16 +46,23 @@ class MediaStore(metaclass=abc.ABCMeta):
     Optional init arguments:
     provider:       String marking the provider in the `media`
                     (`image`, `audio` etc) table of the DB.
+    date:           Date String in the form YYYY-MM-DD. This is the date for
+                    which data is being stored. If provided, it will be appended to
+                    the tsv filename.
     output_file:    String giving a temporary .tsv filename (*not* the
                     full path) where the media info should be stored.
     output_dir:     String giving a path where `output_file` should be placed.
     buffer_length:  Integer giving the maximum number of media information rows
                     to store in memory before writing them to disk.
+
+    TODO: Output_file and output_dir are only used by retired DAGs as far as I can
+    tell. We should look into cleaning these up.
     """
 
     def __init__(
         self,
         provider: Optional[str] = None,
+        date: Optional[str] = None,
         output_file: Optional[str] = None,
         output_dir: Optional[str] = None,
         buffer_length: int = 100,
@@ -66,9 +73,7 @@ class MediaStore(metaclass=abc.ABCMeta):
         self.provider = provider
         self.buffer_length = buffer_length
         self.output_path = self._initialize_output_path(
-            output_dir,
-            output_file,
-            provider,
+            output_dir, output_file, provider, date=date
         )
         self.columns = None
         self._media_buffer = []
@@ -158,8 +163,9 @@ class MediaStore(metaclass=abc.ABCMeta):
         self,
         output_dir: Optional[str],
         output_file: Optional[str],
-        provider: str,
+        provider: Optional[str],
         version: Optional[str] = None,
+        date: Optional[str] = None,
     ) -> str:
         """Creates the path for the tsv file.
         If output_dir and output_file ar not given,
@@ -183,6 +189,9 @@ class MediaStore(metaclass=abc.ABCMeta):
             output_file = str(output_file)
         else:
             datetime_string = datetime.now().strftime("%Y%m%d%H%M%S")
+            # If an ingestion date is provided, append it to the filepath
+            if date is not None:
+                datetime_string += f"_{date}"
             output_file = (
                 f"{provider}_{self.media_type}_v{version}_{datetime_string}.tsv"
             )
