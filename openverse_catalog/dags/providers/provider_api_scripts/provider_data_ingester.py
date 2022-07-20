@@ -104,7 +104,7 @@ class ProviderDataIngester(ABC):
 
         # Initialize the DelayedRequester and all necessary Media Stores.
         self.delayed_requester = DelayedRequester(self.delay)
-        self.media_stores = self.init_media_stores()
+        self.media_stores = self.init_media_stores(date)
         self.date = date
 
         # dag_run configuration options
@@ -125,7 +125,7 @@ class ProviderDataIngester(ABC):
             # Create a generator to facilitate fetching the next set of query_params.
             self.override_query_params = (qp for qp in query_params_list)
 
-    def init_media_stores(self) -> dict[str, MediaStore]:
+    def init_media_stores(self, date: str = None) -> dict[str, MediaStore]:
         """
         Initialize a media store for each media type supported by this
         provider.
@@ -134,7 +134,7 @@ class ProviderDataIngester(ABC):
 
         for media_type, provider in self.providers.items():
             StoreClass = get_media_store_class(media_type)
-            media_stores[media_type] = StoreClass(provider)
+            media_stores[media_type] = StoreClass(provider, date)
 
         return media_stores
 
