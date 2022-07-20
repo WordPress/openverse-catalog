@@ -5,6 +5,9 @@ from typing import Dict, Optional, Sequence, Type
 from providers.provider_api_scripts.cleveland_museum import ClevelandDataIngester
 from providers.provider_api_scripts.provider_data_ingester import ProviderDataIngester
 from providers.provider_api_scripts.stocksnap import StockSnapDataIngester
+from providers.provider_api_scripts.wikimedia_commons import (
+    WikimediaCommonsDataIngester,
+)
 
 
 @dataclass
@@ -151,6 +154,8 @@ PROVIDER_WORKFLOWS = [
     ),
     ProviderWorkflow(
         provider_script="wikimedia_commons",
+        ingester_class=WikimediaCommonsDataIngester,
+        start_date=datetime(2020, 11, 1),
         schedule_string="@daily",
         dated=True,
         execution_timeout=timedelta(hours=12),
