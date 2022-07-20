@@ -21,6 +21,7 @@ for config in PROVIDER_INGESTION_WORKFLOWS:
     provider_script = importlib.import_module(
         f"providers.provider_api_scripts.{config.provider_script}"
     )
+    ingestion_callable = config.ingester_class or provider_script.main
 
     reingestion_days = get_reingestion_day_list_list(
         [
@@ -35,7 +36,7 @@ for config in PROVIDER_INGESTION_WORKFLOWS:
 
     globals()[config.dag_id] = create_day_partitioned_ingestion_dag(
         config.dag_id,
-        provider_script.main,
+        ingestion_callable,
         reingestion_days,
         config.start_date,
         config.max_active_runs,
@@ -43,4 +44,6 @@ for config in PROVIDER_INGESTION_WORKFLOWS:
         config.default_args,
         config.dagrun_timeout,
         config.pull_timeout,
+        config.load_timeout,
+        config.media_types,
     )

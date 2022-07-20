@@ -371,7 +371,8 @@ def create_day_partitioned_ingestion_dag(
     max_active_tasks: int = 1,
     default_args: Optional[Dict] = None,
     dagrun_timeout: timedelta = timedelta(hours=23),
-    ingestion_task_timeout: timedelta = timedelta(hours=2),
+    pull_timeout: timedelta = timedelta(hours=2),
+    load_timeout: timedelta = timedelta(hours=1),
     media_types: Sequence[str] = ("image",),
 ):
     """
@@ -397,21 +398,23 @@ def create_day_partitioned_ingestion_dag(
 
     Optional Arguments:
 
-    start_date:              datetime.datetime giving the
-                             first valid execution_date of the DAG.
-    max_active_tasks:             integer that sets the number of tasks which
-                             can run simultaneously for this DAG. It's
-                             important to keep the rate limits of the
-                             Provider API in mind when setting this
-                             parameter.
-    default_args:            dictionary which is passed to the
-                             airflow.dag.DAG __init__ method and used to
-                             optionally override the DAG_DEFAULT_ARGS.
-    dagrun_timeout:          datetime.timedelta giving the total amount
-                             of time a given dagrun may take.
-    ingestion_task_timeout:  datetime.timedelta giving the amount of
-                             time a call to the `main_function` is
-                             allowed to take.
+    start_date:       datetime.datetime giving the
+                      first valid execution_date of the DAG.
+    max_active_tasks: integer that sets the number of tasks which
+                      can run simultaneously for this DAG. It's
+                      important to keep the rate limits of the
+                      Provider API in mind when setting this
+                      parameter.
+    default_args:     dictionary which is passed to the
+                      airflow.dag.DAG __init__ method and used to
+                      optionally override the DAG_DEFAULT_ARGS.
+    dagrun_timeout:   datetime.timedelta giving the total amount
+                      of time a given dagrun may take.
+    pull_timeout:     datetime.timedelta giving the amount of
+                      time a call to the `main_function` is
+                      allowed to take.
+    load_timeout:     datetime.timedelta giving the amount of time
+                      the load_data steps are allowed to take.
 
     Calculation of ingestion dates:
 
@@ -466,7 +469,7 @@ def create_day_partitioned_ingestion_dag(
         ingest_operator_list_list, ingestion_metrics = _build_ingest_operator_list_list(
             reingestion_day_list_list,
             ingestion_callable,
-            ingestion_task_timeout,
+            pull_timeout,
             dag_id,
             media_types,
             dagrun_timeout,
@@ -505,10 +508,10 @@ def create_day_partitioned_ingestion_dag(
 def _build_ingest_operator_list_list(
     reingestion_day_list_list,
     ingestion_callable,
-    ingestion_task_timeout,
+    pull_timeout,
+    load_timeout,
     dag_id,
     media_types,
-    dagrun_timeout,
 ):
     # TODO: This forces the reingestion workflow to include the current date in
     # reingestion. Should this be removed?
@@ -523,7 +526,7 @@ def _build_ingest_operator_list_list(
         operator_list = []
         for day_shift in L:
             ingest_data, ingestion_metrics = create_ingestion_workflow(
-                dag_id, ingestion_callable, True, day_shift, dagrun_timeout, media_types
+                dag_id, ingestion_callable, True, day_shift, pull_timeout, load_timeout, media_types
             )
             operator_list.append(ingest_data)
             duration_list.append(ingestion_metrics["duration"])
