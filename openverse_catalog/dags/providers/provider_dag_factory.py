@@ -93,7 +93,7 @@ DATE_RANGE_ARG_TEMPLATE = "{{{{ macros.ds_add(ds, -{}) }}}}"
 DATE_PARTITION_ARG_TEMPLATE = "{media_type}/{provider_name}/{{{{ date_partition_for_prefix(dag.schedule_interval, dag_run.logical_date) }}}}"  # noqa
 
 
-def create_provider_api_workflow(
+def create_provider_api_workflow_dag(
     dag_id: str,
     ingestion_callable: Callable,
     default_args: Optional[Dict] = None,
@@ -158,9 +158,6 @@ def create_provider_api_workflow(
                         tables is one example.
     """
     default_args = {**DAG_DEFAULT_ARGS, **(default_args or {})}
-    media_type_name = "mixed" if len(media_types) > 1 else media_types[0]
-    provider_name = dag_id.replace("_workflow", "")
-    identifier = f"{provider_name}_{{{{ ts_nodash }}}}"
 
     dag = DAG(
         dag_id=dag_id,
@@ -177,6 +174,40 @@ def create_provider_api_workflow(
     )
 
     with dag:
+        ingest_data, ingestion_metrics = create_ingestion_workflow(
+            dag_id, ingestion_callable, dated, day_shift, pull_timeout, load_timeout, media_types
+        )
+
+        report_load_completion = create_report_load_completion(
+            dag_id,
+            media_types,
+            ingestion_metrics,
+        )
+
+        ingest_data >> report_load_completion
+
+    return dag
+
+
+def create_ingestion_workflow(
+    dag_id,
+    ingestion_callable: Callable,
+    dated: bool = True,
+    day_shift: int = 0,
+    pull_timeout: timedelta = timedelta(hours=12),
+    load_timeout: timedelta = timedelta(hours=1),
+    media_types: Sequence[str] = ("image",),
+):
+    """
+    Creates a TaskGroup that performs the ingestion tasks, first pulling and then
+    loading data. Returns the TaskGroup, and a dictionary of reporting metrics.
+    """
+    with TaskGroup(group_id="ingest_data") as ingest_data:
+
+        media_type_name = "mixed" if len(media_types) > 1 else media_types[0]
+        provider_name = dag_id.replace("_workflow", "")
+        identifier = f"{provider_name}_{{{{ ts_nodash }}}}_{day_shift}"
+
         ingestion_kwargs = {
             "ingestion_callable": ingestion_callable,
             "media_types": media_types,
@@ -276,21 +307,7 @@ def create_provider_api_workflow(
                 )
                 load_tasks.append(load_data)
 
-        report_load_completion = PythonOperator(
-            task_id="report_load_completion",
-            python_callable=reporting.report_completion,
-            op_kwargs={
-                "provider_name": provider_name,
-                "duration": XCOM_PULL_TEMPLATE.format(pull_data.task_id, "duration"),
-                "record_counts_by_media_type": record_counts_by_media_type,
-                "dated": dated,
-                "date_range_start": "{{ data_interval_start | ds }}",
-                "date_range_end": "{{ data_interval_end | ds }}",
-            },
-            trigger_rule=TriggerRule.ALL_DONE,
-        )
-
-        generate_filenames >> pull_data >> load_tasks >> report_load_completion
+        generate_filenames >> pull_data >> load_tasks
 
         if create_preingestion_tasks:
             preingestion_tasks = create_preingestion_tasks()
@@ -300,7 +317,32 @@ def create_provider_api_workflow(
             postingestion_tasks = create_postingestion_tasks()
             pull_data >> postingestion_tasks
 
-    return dag
+    ingestion_metrics = {
+        "duration": XCOM_PULL_TEMPLATE.format(pull_data.task_id, "duration"),
+        "record_counts_by_media_type": record_counts_by_media_type,
+    }
+
+    return ingest_data, ingestion_metrics
+
+
+def create_report_load_completion(
+    dag_id,
+    media_types,
+    ingestion_metrics,
+):
+    return PythonOperator(
+        task_id=("report_load_completion"),
+        python_callable=reporting.report_completion,
+        op_kwargs={
+            "provider_name": dag_id,
+            "media_types": media_types,
+            "duration": ingestion_metrics["duration"],
+            "record_counts_by_media_type": ingestion_metrics[
+                "record_counts_by_media_type"
+            ],
+        },
+        trigger_rule=TriggerRule.ALL_DONE,
+    )
 
 
 def create_day_partitioned_ingestion_dag(
