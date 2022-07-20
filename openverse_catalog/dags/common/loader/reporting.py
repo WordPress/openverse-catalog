@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import NamedTuple, Optional
+from typing import NamedTuple, Optional, Sequence
 
 from common.slack import send_message
 
@@ -26,6 +26,19 @@ class RecordMetrics(NamedTuple):
     foreign_id_dup: Optional[int]
     url_dup: Optional[int]
 
+    def _add_counts(self, a, b):
+        return (a or 0) + (b or 0)
+
+    def __add__(self, other):
+        if other is None:
+            return self
+        return RecordMetrics(
+            self._add_counts(self.upserted, other.upserted),
+            self._add_counts(self.missing_columns, other.missing_columns),
+            self._add_counts(self.foreign_id_dup, other.foreign_id_dup),
+            self._add_counts(self.url_dup, other.url_dup),
+        )
+
 
 MediaTypeRecordMetrics = dict[str, RecordMetrics]
 
@@ -43,8 +56,34 @@ def humanize_time_duration(seconds: float) -> str:
     return ", ".join(parts)
 
 
+def clean_duration(duration):
+    # If a list of duration values is provided, get the sum of all non-None values
+    if isinstance(duration, list):
+        duration = sum([x for x in duration if x])
+
+    # Truncate the duration value if it's provided
+    if isinstance(duration, float):
+        duration = humanize_time_duration(duration)
+
+    return duration
+
+
+def clean_record_counts(record_counts_by_media_type, media_types):
+    # If a list of record_counts dicts is provided, sum all of the individual values
+    if isinstance(record_counts_by_media_type, list):
+        return {
+            media_type: sum(
+                [x[media_type] for x in record_counts_by_media_type],
+                RecordMetrics(0, 0, 0, 0),
+            )
+            for media_type in media_types
+        }
+    return record_counts_by_media_type
+
+
 def report_completion(
     provider_name: str,
+    media_types: Sequence[str],
     duration: float | str | None,
     record_counts_by_media_type: MediaTypeRecordMetrics,
     dated: bool = False,
@@ -72,9 +111,10 @@ def report_completion(
         - `date_range`: The range of time this ingestion covers. If the ingestion covers
           the entire provided dataset, "all" is provided
     """
-    # Truncate the duration value if it's provided
-    if isinstance(duration, float):
-        duration = humanize_time_duration(duration)
+    duration = clean_duration(duration)
+    record_counts_by_media_type = clean_record_counts(
+        record_counts_by_media_type, media_types
+    )
 
     # List record count per media type
     media_type_reports = ""
