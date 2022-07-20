@@ -435,6 +435,12 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
         return start_timestamp, end_timestamp
 
 
+def main(date):
+    logger.info(f"Begin: Wikimedia Commons data ingestion for {date}")
+    ingester = WikimediaCommonsDataIngester()
+    ingester.ingest_records()
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Wikimedia Commons API Job",
@@ -450,6 +456,4 @@ if __name__ == "__main__":
         date_obj = datetime.now() - timedelta(days=2)
         date = datetime.strftime(date_obj, "%Y-%m-%d")
 
-    logger.info(f"Begin: Wikimedia Commons data ingestion for {date}")
-    ingester = WikimediaCommonsDataIngester()
-    ingester.ingest_records()
+    main(date)
