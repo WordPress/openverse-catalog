@@ -74,13 +74,17 @@ def test_create_day_partitioned_ingestion_dag_with_single_layer_dependencies():
         print,
         [[1, 2]],
     )
-    today_id = "ingest_0"
+    # First task in the ingestion step for today
+    today_pull_data_id = "ingest_data.pull_image_data"
+    # Last task in the ingestion step for today
+    today_drop_table_id = "ingest_data.load_image_data.drop_loading_table"
     wait0_id = "wait_L0"
-    ingest1_id = "ingest_1"
-    ingest2_id = "ingest_2"
-    today_task = dag.get_task(today_id)
-    assert today_task.upstream_task_ids == set()
-    assert today_task.downstream_task_ids == {wait0_id}
+    ingest1_id = "ingest_data_1.pull_image_data_1"
+    ingest2_id = "ingest_data_2.pull_image_data_2"
+    today_pull_task = dag.get_task(today_pull_data_id)
+    assert today_pull_task.upstream_task_ids == set()
+    wait_task = dag.get_task(wait0_id)
+    assert wait_task.upstream_task_ids == {today_drop_table_id}
     ingest1_task = dag.get_task(ingest1_id)
     assert ingest1_task.upstream_task_ids == {wait0_id}
     ingest2_task = dag.get_task(ingest2_id)
@@ -93,14 +97,14 @@ def test_create_day_partitioned_ingestion_dag_with_multi_layer_dependencies():
         print,
         [[1, 2], [3, 4, 5]],
     )
-    today_id = "ingest_0"
+    today_id = "ingest_data.pull_image_data"
     wait0_id = "wait_L0"
-    ingest1_id = "ingest_1"
-    ingest2_id = "ingest_2"
+    ingest1_id = "ingest_data_1.pull_image_data_1"
+    ingest2_id = "ingest_data_2.pull_image_data_2"
     wait1_id = "wait_L1"
-    ingest3_id = "ingest_3"
-    ingest4_id = "ingest_4"
-    ingest5_id = "ingest_5"
+    ingest3_id = "ingest_data_3.pull_image_data_3"
+    ingest4_id = "ingest_data_4.pull_image_data_4"
+    ingest5_id = "ingest_data_5.pull_image_data_5"
     today_task = dag.get_task(today_id)
     assert today_task.upstream_task_ids == set()
     ingest1_task = dag.get_task(ingest1_id)
@@ -113,3 +117,4 @@ def test_create_day_partitioned_ingestion_dag_with_multi_layer_dependencies():
     assert ingest4_task.upstream_task_ids == {wait1_id}
     ingest5_task = dag.get_task(ingest5_id)
     assert ingest5_task.upstream_task_ids == {wait1_id}
+    
