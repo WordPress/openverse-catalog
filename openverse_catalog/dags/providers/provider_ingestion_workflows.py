@@ -1,6 +1,9 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
+from providers.provider_api_scripts.wikimedia_commons import (
+    WikimediaCommonsDataIngester,
+)
 from providers.provider_workflows import ProviderWorkflow
 
 
@@ -64,6 +67,7 @@ PROVIDER_INGESTION_WORKFLOWS = [
     ProviderIngestionWorkflow(
         dag_id="wikimedia_ingestion_workflow",
         provider_script="wikimedia_commons",
+        ingester_class=WikimediaCommonsDataIngester,
         pull_timeout=timedelta(minutes=90),
         media_types=("image", "audio"),
         max_active_tasks=2,
