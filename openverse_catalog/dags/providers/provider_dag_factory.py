@@ -254,7 +254,12 @@ def create_ingestion_workflow(
     Creates a TaskGroup that performs the ingestion tasks, first pulling and then
     loading data. Returns the TaskGroup, and a dictionary of reporting metrics.
     """
-    with TaskGroup(group_id="ingest_data") as ingest_data:
+
+    def append_day_shift(id_str):
+        # Appends the day_shift to an id if it is non-zero
+        return f"{id_str}{f'_{day_shift}' if day_shift else ''}"
+
+    with TaskGroup(group_id=append_day_shift("ingest_data")) as ingest_data:
 
         media_type_name = "mixed" if len(media_types) > 1 else media_types[0]
         provider_name = dag_id.replace("_workflow", "")
@@ -268,7 +273,7 @@ def create_ingestion_workflow(
             pull_kwargs["args"] = [DATE_RANGE_ARG_TEMPLATE.format(day_shift)]
 
         pull_data = PythonOperator(
-            task_id=f"pull_{media_type_name}_data",
+            task_id=append_day_shift(f"pull_{media_type_name}_data"),
             python_callable=_push_output_paths_wrapper,
             op_kwargs=pull_kwargs,
             depends_on_past=False,
@@ -281,9 +286,11 @@ def create_ingestion_workflow(
         load_tasks = []
         record_counts_by_media_type: reporting.MediaTypeRecordMetrics = {}
         for media_type in media_types:
-            with TaskGroup(group_id=f"load_{media_type}_data") as load_data:
+            with TaskGroup(
+                group_id=append_day_shift(f"load_{media_type}_data")
+            ) as load_data:
                 create_loading_table = PythonOperator(
-                    task_id="create_loading_table",
+                    task_id=append_day_shift("create_loading_table"),
                     python_callable=sql.create_loading_table,
                     op_kwargs={
                         "postgres_conn_id": DB_CONN_ID,
@@ -295,7 +302,7 @@ def create_ingestion_workflow(
                     f"ingesting {media_type} data from a TSV",
                 )
                 copy_to_s3 = PythonOperator(
-                    task_id="copy_to_s3",
+                    task_id=append_day_shift("copy_to_s3"),
                     python_callable=s3.copy_file_to_s3,
                     op_kwargs={
                         "tsv_file_path": XCOM_PULL_TEMPLATE.format(
@@ -308,7 +315,7 @@ def create_ingestion_workflow(
                     trigger_rule=TriggerRule.NONE_SKIPPED,
                 )
                 load_from_s3 = PythonOperator(
-                    task_id="load_from_s3",
+                    task_id=append_day_shift("load_from_s3"),
                     python_callable=loader.load_from_s3,
                     op_kwargs={
                         "bucket": OPENVERSE_BUCKET,
@@ -322,7 +329,7 @@ def create_ingestion_workflow(
                     },
                 )
                 drop_loading_table = PythonOperator(
-                    task_id="drop_loading_table",
+                    task_id=append_day_shift("drop_loading_table"),
                     python_callable=sql.drop_load_table,
                     op_kwargs={
                         "postgres_conn_id": DB_CONN_ID,
