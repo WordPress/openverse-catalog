@@ -238,14 +238,6 @@ def create_provider_api_workflow(
         if dated:
             pull_kwargs["args"] = [DATE_RANGE_ARG_TEMPLATE.format(day_shift)]
 
-        if create_preingestion_tasks:
-            preingestion_tasks = create_preingestion_tasks()
-        else:
-            preingestion_tasks = EmptyOperator(
-                task_id="preingestion_tasks",
-                depends_on_past=False,
-            )
-
         pull_data = PythonOperator(
             task_id=f"pull_{media_type_name}_data",
             python_callable=_push_output_paths_wrapper,
@@ -328,7 +320,11 @@ def create_provider_api_workflow(
             trigger_rule=TriggerRule.ALL_DONE,
         )
 
-        preingestion_tasks >> pull_data >> load_tasks >> report_load_completion
+        pull_data >> load_tasks >> report_load_completion
+
+        if create_preingestion_tasks:
+            preingestion_tasks = create_preingestion_tasks()
+            preingestion_tasks >> pull_data
 
     return dag
 
