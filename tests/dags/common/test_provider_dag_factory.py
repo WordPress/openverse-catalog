@@ -1,5 +1,6 @@
 from unittest import mock
 
+import providers.factory_utils
 import pytest
 import requests
 from airflow.models import TaskInstance
@@ -41,7 +42,7 @@ def test_push_output_paths_wrapper(func, media_types, stores):
     # For fake_provider_module.main, the mock will be called with the provided value.
     func_mock = mock.MagicMock()
     value = 42
-    provider_dag_factory._push_output_paths_wrapper(
+    providers.factory_utils.pull_media_wrapper(
         func,
         media_types,
         ti_mock,
