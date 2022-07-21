@@ -24,7 +24,12 @@ from pathlib import Path
 from textwrap import dedent
 from typing import Dict
 
-from airflow.providers.amazon.aws.sensors.s3 import S3KeySensor
+import pendulum
+from airflow.exceptions import AirflowFailException, AirflowSkipException
+
+# from airflow.providers.amazon.aws.sensors.s3 import S3KeySensor
+from airflow.operators.python import PythonOperator
+from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 from airflow.utils.task_group import TaskGroup
@@ -32,9 +37,6 @@ from common.constants import POSTGRES_CONN_ID
 from common.licenses import LicenseInfo, get_license_info
 from common.loader import provider_details as prov
 from providers.provider_api_scripts.provider_data_ingester import ProviderDataIngester
-
-
-# from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 
 
 logging.basicConfig(
@@ -119,54 +121,55 @@ class inaturalistDataIngester(ProviderDataIngester):
     def endpoint(self):
         raise NotImplementedError("Normalized TSV files from AWS S3 means no endpoint.")
 
-    # # TO DO: so that this can run daily and pick up the records when the file has been
-    # # update on S3.
-    # def check_if_files_updated(
-    #     last_success: pendulum.DateTime | None,
-    #     s3_keys: list,
-    #     aws_conn_id=AWS_CONN_ID
-    #     ):
-    #     # if it was never run, assume the data is new
-    #     if last_success is None:
-    #         return
-    #     s3 = S3Hook(aws_conn_id=aws_conn_id)
-    #     for key in s3_keys:
-    #         last_modified = s3.head_object(key)['Last-Modified']
-    #         # if any file has been updated, let's pull them all
-    #         if last_success < last_modified:
-    #             return
-    #     # If no files have been updated, skip the DAG
-    #     raise AirflowSkipException("Nothing new to ingest")
+    @staticmethod
+    def compare_update_dates(
+        last_success: pendulum.DateTime | None, s3_keys: list, aws_conn_id=AWS_CONN_ID
+    ):
+        # if it was never run, assume the data is new
+        if last_success is None:
+            return
+        s3 = S3Hook(aws_conn_id=aws_conn_id)
+        for key in s3_keys:
+            try:
+                last_modified = s3.head_object(key)["Last-Modified"]
+            except Exception as e:
+                logger.error(e)
+                raise AirflowFailException(f"Can't find {key} on s3")
+            # if any file has been updated, let's pull them all
+            if last_success < last_modified:
+                return
+        # If no files have been updated, skip the DAG
+        raise AirflowSkipException("Nothing new to ingest")
 
     @staticmethod
     def create_preingestion_tasks():
 
         with TaskGroup(group_id="preingestion_tasks") as preingestion_tasks:
 
-            with TaskGroup(group_id="check_sources_exist") as check_sources_exist:
-                for source_name in SOURCE_FILE_NAMES:
-                    S3KeySensor(
-                        task_id=source_name + "_exists",
-                        bucket_key=f"s3://inaturalist-open-data/{source_name}.csv.gz",
-                        aws_conn_id=AWS_CONN_ID,
-                        poke_interval=15,
-                        mode="reschedule",
-                        timeout=60,
-                        depends_on_past=False,
-                    )
+            # with TaskGroup(group_id="check_sources_exist") as check_sources_exist:
+            #     for source_name in SOURCE_FILE_NAMES:
+            #         S3KeySensor(
+            #             task_id=source_name + "_exists",
+            #             bucket_key=f"s3://inaturalist-open-data/{source_name}.csv.gz",
+            #             aws_conn_id=AWS_CONN_ID,
+            #             poke_interval=15,
+            #             mode="reschedule",
+            #             timeout=60,
+            #             depends_on_past=False,
+            #         )
 
-            # # TO DO: so that this can run daily and pick up the records when the file
-            # # has been update on S3.
-            # check_if_updated = PythonOperator(
-            #     task_id="check_if_updated",
-            #     python_callable=check_if_files_updated,
-            #     op_kwargs={
-            #         # With the templated values ({{ x }}) airflow will fill it in
-            #         "last_success": "{{ prev_start_date_success }}",
-            #         "s3_keys": [f"s3://inaturalist/{file}.csv.gz"
-            # for file in SOURCE_FILE_NAMES]
-            #     }
-            # )
+            check_for_file_updates = PythonOperator(
+                task_id="check_for_file_updates",
+                python_callable=inaturalistDataIngester.compare_update_dates,
+                op_kwargs={
+                    # With the templated values ({{ x }}) airflow will fill it in
+                    "last_success": "{{ prev_start_date_success }}",
+                    "s3_keys": [
+                        f"s3://inaturalist-open-data/{file_name}.csv.gz"
+                        for file_name in SOURCE_FILE_NAMES
+                    ],
+                },
+            )
 
             # A prior draft had a separate python function to run the SQL and add some
             # logging, but the native airflow logging should be enough, right?
@@ -189,11 +192,6 @@ class inaturalistDataIngester(ProviderDataIngester):
                         ),
                     )
 
-            (
-                check_sources_exist
-                # >> check_if_updated
-                >> create_schema
-                >> load_source_files
-            )
+            (check_for_file_updates >> create_schema >> load_source_files)
 
         return preingestion_tasks
