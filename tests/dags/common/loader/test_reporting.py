@@ -99,9 +99,9 @@ def _make_report_completion_contents_data(media_type: str):
     "dated, date_range_start, date_range_end, expected_date_range",
     [
         # Not dated, no date range
-        (False, "2022-01-01", "2022-05-01", "all"),
-        # Not dated, but date range supplied
         (False, None, None, "all"),
+        # Not dated, but date range supplied
+        (False, "2022-01-01", "2022-05-01", "all"),
         # Schedule interval and date range supplied
         (True, "2022-01-01", "2022-01-02", "2022-01-01 -> 2022-01-02"),
     ],
