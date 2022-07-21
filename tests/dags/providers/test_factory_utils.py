@@ -50,7 +50,7 @@ def internal_func_mock():
     ],
 )
 def test_load_provider_script(func, media_types, stores):
-    actual_stores = factory_utils._load_provider_script(
+    actual_stores = factory_utils._load_provider_script_stores(
         func,
         media_types,
     )

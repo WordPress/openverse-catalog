@@ -12,11 +12,15 @@ from common.storage.media import MediaStore
 logger = logging.getLogger(__name__)
 
 
-def _load_provider_script(
+def _load_provider_script_stores(
     ingestion_callable: Callable,
     media_types: list[MediaType],
     **kwargs,
 ) -> dict[str, MediaStore]:
+    """
+    Load the stores associated with a provided ingestion callable. This callable is
+    assumed to be a legacy provider script and NOT a provider data ingestion class.
+    """
     # Stores exist at the module level, so in order to retrieve the output values we
     # must first pull the stores from the module.
     module = inspect.getmodule(ingestion_callable)
@@ -56,7 +60,7 @@ def generate_tsv_filenames(
     # TODO: This entire branch can be removed when all of the provider scripts have been
     # TODO: refactored to subclass ProviderDataIngester.
     if isinstance(ingestion_callable, FunctionType):
-        stores = _load_provider_script(ingestion_callable, media_types)
+        stores = _load_provider_script_stores(ingestion_callable, media_types)
 
     else:
         # A ProviderDataIngester class was passed instead. First we initialize the
@@ -84,13 +88,12 @@ def pull_media_wrapper(
     args: Sequence = None,
 ):
     """
-    Run the provided callable after pushing the calculated output directories
-    for each media store to XComs. Output locations are pushed under keys with
-    the format `<media-type>_tsv`. This is a temporary workaround due to the nature
-    of the current provider scripts. Once
+    Run the provided callable after pushing setting the output directories
+    for each media store using the provided values. This is a temporary workaround
+    due to the nature of the current provider scripts. Once
     https://github.com/WordPress/openverse-catalog/issues/229 is addressed and the
     provider scripts are refactored into classes, this wrapper can either be updated
-    or the XCom pushing can be moved into the provider initialization.
+    or the output filename retrieval/setting process can be altered.
     """
     args = args or []
     if len(media_types) != len(tsv_filenames):
@@ -105,7 +108,7 @@ def pull_media_wrapper(
     if isinstance(ingestion_callable, FunctionType):
         # Stores exist at the module level, so in order to set the output values we
         # must first pull the stores from the module.
-        stores = _load_provider_script(ingestion_callable, media_types)
+        stores = _load_provider_script_stores(ingestion_callable, media_types)
         run_func = ingestion_callable
     else:
         # A ProviderDataIngester class was passed instead. First we initialize the
