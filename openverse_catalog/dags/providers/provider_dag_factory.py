@@ -57,7 +57,7 @@ import os
 import time
 from datetime import datetime, timedelta
 from types import FunctionType
-from typing import Callable, Dict, List, Optional, Sequence
+from typing import Callable, Dict, Optional, Sequence
 
 from airflow import DAG
 from airflow.models import TaskInstance
@@ -66,7 +66,7 @@ from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import PythonOperator
 from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
-from common.constants import DAG_DEFAULT_ARGS, XCOM_PULL_TEMPLATE
+from common.constants import DAG_DEFAULT_ARGS, XCOM_PULL_TEMPLATE, MediaType
 from common.loader import loader, reporting, s3, sql
 
 
@@ -82,7 +82,8 @@ DATE_RANGE_ARG_TEMPLATE = "{{{{ macros.ds_add(ds, -{}) }}}}"
 
 def _push_output_paths_wrapper(
     ingestion_callable: Callable,
-    media_types: List[str],
+    media_types: list[MediaType],
+    tsv_filenames: list[str],
     ti: TaskInstance,
     args: Sequence = None,
 ):
@@ -96,10 +97,15 @@ def _push_output_paths_wrapper(
     or the XCom pushing can be moved into the provider initialization.
     """
     args = args or []
-    logger.info("Pushing available store paths to XComs")
+    if len(media_types) != len(tsv_filenames):
+        raise ValueError(
+            "Provided media types and TSV filenames don't match: "
+            f"{media_types=} {tsv_filenames=}"
+        )
+    logger.info("Setting media stores to the appropriate output filenames")
 
     # TODO: This entire branch can be removed when all of the provider scripts have been
-    # refactored to subclass ProviderDataIngester.
+    # TODO: refactored to subclass ProviderDataIngester.
     if isinstance(ingestion_callable, FunctionType):
         # Stores exist at the module level, so in order to retrieve the output values we
         # must first pull the stores from the module.
@@ -137,7 +143,7 @@ def _push_output_paths_wrapper(
         logger.info(f"Initializing ProviderIngester {ingestion_callable.__name__}")
         ingester = ingestion_callable(*args)
 
-        # Push the media store output directories to XComs.
+        # Push the media store output paths to XComs.
         for store in ingester.media_stores.values():
             logger.info(
                 f"{store.media_type.capitalize()} store location: {store.output_path}"
@@ -331,7 +337,7 @@ def create_provider_api_workflow(
 def create_day_partitioned_ingestion_dag(
     dag_id: str,
     main_function: Callable,
-    reingestion_day_list_list: List[List[int]],
+    reingestion_day_list_list: list[list[int]],
     start_date: datetime = datetime(1970, 1, 1),
     max_active_runs: int = 1,
     max_active_tasks: int = 1,
