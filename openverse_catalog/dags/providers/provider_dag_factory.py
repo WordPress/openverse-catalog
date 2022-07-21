@@ -169,6 +169,7 @@ def create_provider_api_workflow(
     execution_timeout: timedelta = timedelta(hours=12),
     doc_md: Optional[str] = "",
     media_types: Sequence[str] = ("image",),
+    create_preingestion_tasks: Optional[Callable] = None,
 ):
     """
     This factory method instantiates a DAG that will run the given
@@ -237,11 +238,18 @@ def create_provider_api_workflow(
         if dated:
             pull_kwargs["args"] = [DATE_RANGE_ARG_TEMPLATE.format(day_shift)]
 
+        if create_preingestion_tasks:
+            preingestion_tasks = create_preingestion_tasks()
+        else:
+            preingestion_tasks = EmptyOperator(
+                task_id="preingestion_tasks",
+                depends_on_past=False,
+            )
+
         pull_data = PythonOperator(
             task_id=f"pull_{media_type_name}_data",
             python_callable=_push_output_paths_wrapper,
             op_kwargs=pull_kwargs,
-            depends_on_past=False,
             execution_timeout=execution_timeout,
             # If the data pull fails, we want to load all data that's been retrieved
             # thus far before we attempt again
@@ -320,7 +328,7 @@ def create_provider_api_workflow(
             trigger_rule=TriggerRule.ALL_DONE,
         )
 
-        pull_data >> load_tasks >> report_load_completion
+        preingestion_tasks >> pull_data >> load_tasks >> report_load_completion
 
     return dag
 

@@ -1,6 +1,6 @@
 import logging
 
-import pytest
+# import pytest
 from common.licenses import get_license_info
 from providers.provider_api_scripts.inaturalist import inaturalistDataIngester
 
@@ -51,19 +51,19 @@ def test_get_next_query_params_prior_0():
     assert expected == actual
 
 
-@pytest.mark.parametrize(
-    "file_name, expected",
-    [
-        ("00_create_schema.sql", [("inaturalist",)]),
-        ("01_photos.sql", [(36,)]),
-        ("02_observations.sql", [(31,)]),
-        ("03_taxa.sql", [(183,)]),
-        ("04_observers.sql", [(22,)]),
-    ],
-)
-def test_sql_loader(file_name, expected):
-    actual = INAT.sql_loader(file_name)
-    assert actual == expected
+# @pytest.mark.parametrize(
+#     "file_name, expected",
+#     [
+#         ("00_create_schema.sql", [("inaturalist",)]),
+#         ("01_photos.sql", [(36,)]),
+#         ("02_observations.sql", [(31,)]),
+#         ("03_taxa.sql", [(183,)]),
+#         ("04_observers.sql", [(22,)]),
+#     ],
+# )
+# def test_sql_loader(file_name, expected):
+#     actual = INAT.sql_loader(file_name)
+#     assert actual == expected
 
 
 def test_get_response_json():

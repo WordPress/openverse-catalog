@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from typing import Dict, Optional, Sequence, Type
 
 from providers.provider_api_scripts.cleveland_museum import ClevelandDataIngester
+from providers.provider_api_scripts.inaturalist import inaturalistDataIngester
 from providers.provider_api_scripts.provider_data_ingester import ProviderDataIngester
 from providers.provider_api_scripts.stocksnap import StockSnapDataIngester
 
@@ -49,6 +50,9 @@ class ProviderWorkflow:
     doc_md:            string which should be used for the DAG's documentation markdown
     media_types:       list describing the media type(s) that this provider handles
                        (e.g. `["audio"]`, `["image", "audio"]`, etc.)
+    preingestion_task_creator: callable that returns an airflow task or task group to
+                        to run any necessary pre-ingestion tasks, such as loading bulk
+                        data from S3
     """
 
     provider_script: str
@@ -64,6 +68,7 @@ class ProviderWorkflow:
     execution_timeout: timedelta = timedelta(hours=24)
     doc_md: str = ""
     media_types: Sequence[str] = ("image",)
+    preingestion_task_creator: Optional[callable] = None
 
     def __post_init__(self):
         if not self.dag_id:
@@ -95,6 +100,12 @@ PROVIDER_WORKFLOWS = [
         provider_script="flickr",
         schedule_string="@daily",
         dated=True,
+    ),
+    ProviderWorkflow(
+        provider_script="inaturalist",
+        ingester_class=inaturalistDataIngester,
+        preingestion_task_creator=inaturalistDataIngester.create_preingestion_tasks,
+        schedule_string="@monthly",
     ),
     ProviderWorkflow(
         provider_script="freesound",
