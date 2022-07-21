@@ -147,7 +147,7 @@ def _push_output_paths_wrapper(
         # Run the `ingest_records` function to perform ingestion.
         logger.info("Running ingestion function")
         start_time = time.perf_counter()
-        data = ingester.ingest_records(*args)
+        data = ingester.ingest_records()
         end_time = time.perf_counter()
 
     # Report duration
@@ -156,7 +156,7 @@ def _push_output_paths_wrapper(
     return data
 
 
-def create_provider_api_workflow(
+def create_provider_api_workflow_dag(
     dag_id: str,
     ingestion_callable: Callable,
     default_args: Optional[Dict] = None,
@@ -212,9 +212,6 @@ def create_provider_api_workflow(
                        (e.g. `["audio"]`, `["image", "audio"]`, etc.)
     """
     default_args = {**DAG_DEFAULT_ARGS, **(default_args or {})}
-    media_type_name = "mixed" if len(media_types) > 1 else media_types[0]
-    provider_name = dag_id.replace("_workflow", "")
-    identifier = f"{provider_name}_{{{{ ts_nodash }}}}"
 
     dag = DAG(
         dag_id=dag_id,
@@ -230,6 +227,44 @@ def create_provider_api_workflow(
     )
 
     with dag:
+        ingest_data, ingestion_metrics = create_ingestion_workflow(
+            dag_id, ingestion_callable, dated, day_shift, execution_timeout, media_types
+        )
+
+        report_load_completion = create_report_load_completion(
+            dag_id,
+            media_types,
+            ingestion_metrics,
+        )
+
+        ingest_data >> report_load_completion
+
+    return dag
+
+
+def create_ingestion_workflow(
+    dag_id,
+    ingestion_callable: Callable,
+    dated: bool = True,
+    day_shift: int = 0,
+    execution_timeout: timedelta = timedelta(hours=12),
+    media_types: Sequence[str] = ("image",),
+):
+    """
+    Creates a TaskGroup that performs the ingestion tasks, first pulling and then
+    loading data. Returns the TaskGroup, and a dictionary of reporting metrics.
+    """
+
+    def append_day_shift(id_str):
+        # Appends the day_shift to an id if it is non-zero
+        return f"{id_str}{f'_{day_shift}' if day_shift else ''}"
+
+    with TaskGroup(group_id=append_day_shift("ingest_data")) as ingest_data:
+
+        media_type_name = "mixed" if len(media_types) > 1 else media_types[0]
+        provider_name = dag_id.replace("_workflow", "")
+        identifier = f"{provider_name}_{{{{ ts_nodash }}}}_{day_shift}"
+
         pull_kwargs = {
             "ingestion_callable": ingestion_callable,
             "media_types": media_types,
@@ -238,7 +273,7 @@ def create_provider_api_workflow(
             pull_kwargs["args"] = [DATE_RANGE_ARG_TEMPLATE.format(day_shift)]
 
         pull_data = PythonOperator(
-            task_id=f"pull_{media_type_name}_data",
+            task_id=append_day_shift(f"pull_{media_type_name}_data"),
             python_callable=_push_output_paths_wrapper,
             op_kwargs=pull_kwargs,
             depends_on_past=False,
@@ -251,9 +286,11 @@ def create_provider_api_workflow(
         load_tasks = []
         record_counts_by_media_type: reporting.MediaTypeRecordMetrics = {}
         for media_type in media_types:
-            with TaskGroup(group_id=f"load_{media_type}_data") as load_data:
+            with TaskGroup(
+                group_id=append_day_shift(f"load_{media_type}_data")
+            ) as load_data:
                 create_loading_table = PythonOperator(
-                    task_id="create_loading_table",
+                    task_id=append_day_shift("create_loading_table"),
                     python_callable=sql.create_loading_table,
                     op_kwargs={
                         "postgres_conn_id": DB_CONN_ID,
@@ -265,7 +302,7 @@ def create_provider_api_workflow(
                     f"ingesting {media_type} data from a TSV",
                 )
                 copy_to_s3 = PythonOperator(
-                    task_id="copy_to_s3",
+                    task_id=append_day_shift("copy_to_s3"),
                     python_callable=s3.copy_file_to_s3,
                     op_kwargs={
                         "tsv_file_path": XCOM_PULL_TEMPLATE.format(
@@ -278,7 +315,7 @@ def create_provider_api_workflow(
                     trigger_rule=TriggerRule.NONE_SKIPPED,
                 )
                 load_from_s3 = PythonOperator(
-                    task_id="load_from_s3",
+                    task_id=append_day_shift("load_from_s3"),
                     python_callable=loader.load_from_s3,
                     op_kwargs={
                         "bucket": OPENVERSE_BUCKET,
@@ -292,7 +329,7 @@ def create_provider_api_workflow(
                     },
                 )
                 drop_loading_table = PythonOperator(
-                    task_id="drop_loading_table",
+                    task_id=append_day_shift("drop_loading_table"),
                     python_callable=sql.drop_load_table,
                     op_kwargs={
                         "postgres_conn_id": DB_CONN_ID,
@@ -309,25 +346,39 @@ def create_provider_api_workflow(
                 )
                 load_tasks.append(load_data)
 
-        report_load_completion = PythonOperator(
-            task_id="report_load_completion",
-            python_callable=reporting.report_completion,
-            op_kwargs={
-                "provider_name": provider_name,
-                "duration": XCOM_PULL_TEMPLATE.format(pull_data.task_id, "duration"),
-                "record_counts_by_media_type": record_counts_by_media_type,
-            },
-            trigger_rule=TriggerRule.ALL_DONE,
-        )
+        pull_data >> load_tasks
 
-        pull_data >> load_tasks >> report_load_completion
+    ingestion_metrics = {
+        "duration": XCOM_PULL_TEMPLATE.format(pull_data.task_id, "duration"),
+        "record_counts_by_media_type": record_counts_by_media_type,
+    }
 
-    return dag
+    return ingest_data, ingestion_metrics
+
+
+def create_report_load_completion(
+    dag_id,
+    media_types,
+    ingestion_metrics,
+):
+    return PythonOperator(
+        task_id=("report_load_completion"),
+        python_callable=reporting.report_completion,
+        op_kwargs={
+            "provider_name": dag_id,
+            "media_types": media_types,
+            "duration": ingestion_metrics["duration"],
+            "record_counts_by_media_type": ingestion_metrics[
+                "record_counts_by_media_type"
+            ],
+        },
+        trigger_rule=TriggerRule.ALL_DONE,
+    )
 
 
 def create_day_partitioned_ingestion_dag(
     dag_id: str,
-    main_function: Callable,
+    ingestion_callable: Callable,
     reingestion_day_list_list: List[List[int]],
     start_date: datetime = datetime(1970, 1, 1),
     max_active_runs: int = 1,
@@ -335,6 +386,7 @@ def create_day_partitioned_ingestion_dag(
     default_args: Optional[Dict] = None,
     dagrun_timeout: timedelta = timedelta(hours=23),
     ingestion_task_timeout: timedelta = timedelta(hours=2),
+    media_types: Sequence[str] = ("image",),
 ):
     """
     Given a `main_function` and `reingestion_day_list_list`, this
@@ -421,37 +473,83 @@ def create_day_partitioned_ingestion_dag(
         start_date=start_date,
         catchup=False,
         tags=["provider-reingestion"],
+        render_template_as_native_obj=True,
     )
     with dag:
-        ingest_operator_list_list = _build_ingest_operator_list_list(
-            reingestion_day_list_list, main_function, ingestion_task_timeout
+        # Generate a list of lists of ingestion TaskGroups for each day of reingestion.
+        ingest_operator_list_list, ingestion_metrics = _build_ingest_operator_list_list(
+            reingestion_day_list_list,
+            ingestion_callable,
+            ingestion_task_timeout,
+            dag_id,
+            media_types,
+            dagrun_timeout,
         )
+
+        # For each 'level', make a wait task that waits for all of the reingestion taks
+        # at that level to complete.
         for i in range(len(ingest_operator_list_list) - 1):
             wait_operator = EmptyOperator(
                 task_id=f"wait_L{i}", trigger_rule=TriggerRule.ALL_DONE
             )
+
+            # Set the waiter downstream of all ingestion TaskGroups in the ith list.
             cross_downstream(ingest_operator_list_list[i], [wait_operator])
+
+            # Set the waiter upstream of all ingestion TaskGroups in the i+1th list.
+            # This gates the tasks behind the waiter.
             wait_operator >> ingest_operator_list_list[i + 1]
         ingest_operator_list_list[-1]
+
+        # Create a single report_load_completion task, passing in the list of duration
+        # and counts data for each completed task.
+        report_load_completion = create_report_load_completion(
+            dag_id,
+            media_types,
+            ingestion_metrics,
+        )
+
+        # report_load_completion is downstream of all the ingestion TaskGroups in the
+        # final list.
+        cross_downstream(ingest_operator_list_list[-1], [report_load_completion])
 
     return dag
 
 
 def _build_ingest_operator_list_list(
-    reingestion_day_list_list, main_function, ingestion_task_timeout
+    reingestion_day_list_list,
+    ingestion_callable,
+    ingestion_task_timeout,
+    dag_id,
+    media_types,
+    dagrun_timeout,
 ):
+    # TODO: This forces the reingestion workflow to include the current date in
+    # reingestion. Should this be removed?
     if reingestion_day_list_list[0] != [0]:
         reingestion_day_list_list = [[0]] + reingestion_day_list_list
-    return [
-        [
-            PythonOperator(
-                task_id=f"ingest_{d}",
-                python_callable=main_function,
-                op_args=[DATE_RANGE_ARG_TEMPLATE.format(d)],
-                execution_timeout=ingestion_task_timeout,
-                depends_on_past=False,
+
+    operator_list_list = []
+    duration_list = []
+    record_counts_by_media_type_list = []
+
+    for L in reingestion_day_list_list:
+        operator_list = []
+        for day_shift in L:
+            ingest_data, ingestion_metrics = create_ingestion_workflow(
+                dag_id, ingestion_callable, True, day_shift, dagrun_timeout, media_types
             )
-            for d in L
-        ]
-        for L in reingestion_day_list_list
-    ]
+            operator_list.append(ingest_data)
+            duration_list.append(ingestion_metrics["duration"])
+            record_counts_by_media_type_list.append(
+                ingestion_metrics["record_counts_by_media_type"]
+            )
+
+        operator_list_list.append(operator_list)
+
+    total_ingestion_metrics = {
+        "duration": duration_list,
+        "record_counts_by_media_type": record_counts_by_media_type_list,
+    }
+
+    return operator_list_list, total_ingestion_metrics
