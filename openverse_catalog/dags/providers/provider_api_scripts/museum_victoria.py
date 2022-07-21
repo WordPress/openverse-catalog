@@ -3,8 +3,6 @@ from typing import Dict, Optional, Tuple, TypedDict
 
 from common.licenses import LicenseInfo, get_license_info
 from common.loader import provider_details as prov
-from common.requester import DelayedRequester
-from common.storage.image import ImageStore
 from providers.provider_api_scripts.provider_data_ingester import ProviderDataIngester
 
 
@@ -12,16 +10,6 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s", level=logging.INFO
 )
 logger = logging.getLogger(__name__)
-
-LIMIT = 100
-DELAY = 5.0
-RETRIES = 3
-PROVIDER = prov.VICTORIA_DEFAULT_PROVIDER
-ENDPOINT = "https://collections.museumsvictoria.com.au/api/search"
-LANDING_PAGE = "https://collections.museumsvictoria.com.au/"
-
-delay_request = DelayedRequester(delay=DELAY)
-image_store = ImageStore(provider=PROVIDER)
 
 
 class ImageDetails(TypedDict, total=False):
@@ -40,15 +28,17 @@ class VictoriaDataIngester(ProviderDataIngester):
     providers = {"image": prov.VICTORIA_DEFAULT_PROVIDER}
     endpoint = "https://collections.museumsvictoria.com.au/api/search"
     headers = {"User-Agent": prov.UA_STRING, "Accept": "application/json"}
-    batch_limit = 1000
+    batch_limit = 100
     delay = 5
-    RECORDS_IDS = []
+    # This set is used to prevent duplicate images of the same items
+    RECORDS_IDS = set()
+    LANDING_PAGE = "https://collections.museumsvictoria.com.au/"
     LICENSE_LIST = [
-        "cc by-nc-nd",
-        "cc by",
         "public domain",
+        "cc by",
         "cc by-nc",
         "cc by-nc-sa",
+        "cc by-nc-nd",
         "cc by-sa",
     ]
 
@@ -63,7 +53,6 @@ class VictoriaDataIngester(ProviderDataIngester):
 
     def get_next_query_params(self, old_query_params: Optional[Dict], **kwargs) -> Dict:
         if not old_query_params:
-            # Return default query params on the first request
             return {
                 "hasimages": "yes",
                 "perpage": self.batch_limit,
@@ -71,19 +60,17 @@ class VictoriaDataIngester(ProviderDataIngester):
                 "page": 0,
             }
         else:
-            # Increment `page`
             return {
                 **old_query_params,
                 "page": old_query_params["page"] + 1,
             }
 
     def get_record_data(self, data: Dict):
-        record_images = []
         object_id = data.get("id")
         if object_id in self.RECORDS_IDS:
             return None
-        self.RECORDS_IDS.append(object_id)
-        foreign_landing_url = f"{LANDING_PAGE}{object_id}"
+        self.RECORDS_IDS.add(object_id)
+        foreign_landing_url = f"{self.LANDING_PAGE}{object_id}"
 
         if (media_data := data.get("media")) is None:
             return None
@@ -97,6 +84,8 @@ class VictoriaDataIngester(ProviderDataIngester):
             "title": title,
             "meta_data": meta_data,
         }
+
+        record_images = []
         for image in images:
             image.update(image_data)
             record_images.append(image)
@@ -167,7 +156,7 @@ class VictoriaDataIngester(ProviderDataIngester):
             "category": obj.get("category"),
             "description": obj.get("physicalDescription"),
             "keywords": join_string_list("keywords", obj),
-            "classification": join_string_list("classification", obj),
+            "classifications": join_string_list("classifications", obj),
         }
 
         return {key: value for key, value in meta_data.items() if value is not None}
