@@ -6,9 +6,6 @@ from common.loader import provider_details as prov
 from providers.provider_api_scripts.provider_data_ingester import ProviderDataIngester
 
 
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s", level=logging.INFO
-)
 logger = logging.getLogger(__name__)
 
 
