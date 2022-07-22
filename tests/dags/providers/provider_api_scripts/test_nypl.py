@@ -1,13 +1,13 @@
 import json
 import logging
-import os
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import requests
 from providers.provider_api_scripts import nypl as np
 
 
-RESOURCES = os.path.join(os.path.abspath(os.path.dirname(__file__)), "resources/nypl")
+RESOURCES = Path(__file__).parent.resolve() / "resources/nypl"
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s", level=logging.DEBUG
@@ -15,7 +15,7 @@ logging.basicConfig(
 
 
 def _get_resource_json(json_name):
-    with open(os.path.join(RESOURCES, json_name)) as f:
+    with open(RESOURCES / json_name) as f:
         resource_json = json.load(f)
     return resource_json
 
@@ -59,7 +59,7 @@ def test_request_handler_itemdetail_success():
     r.json = MagicMock(return_value=response_itemdetails_success)
     with patch.object(np.delay_request, "get", return_value=r) as mock_call:
         actual_response = np._request_handler(
-            endpoint=np.METADATA_ENDPOINT + ("0cabe3d0-3d50-0134-a8e0-00505686a51c"),
+            endpoint=np.METADATA_ENDPOINT + "0cabe3d0-3d50-0134-a8e0-00505686a51c",
         )
 
     expected_response = response_itemdetails_success.get("nyplAPI", {}).get("response")
@@ -82,19 +82,21 @@ def test_request_handler_failure():
 
 def test_get_images_success():
     images = _get_resource_json("images.json")
-    actual_image_url = np._get_image_url(images)
+    actual_image_url, actual_filetype = np._get_image_data(images)
 
     assert actual_image_url == (
         "http://images.nypl.org/index.php?id=56738462&t=g&suffix=0cabe3d0-"
         "3d50-0134-a8e0-00505686a51c.001"
     )
+    assert actual_filetype == "jpeg"
 
 
 def test_get_image_failure():
     images = []
-    actual_image_url = np._get_image_url(images)
+    actual_image_url, actual_filetype = np._get_image_data(images)
 
     assert actual_image_url is None
+    assert actual_filetype is None
 
 
 def test_get_title_success():
