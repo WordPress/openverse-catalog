@@ -185,13 +185,12 @@ class ScienceMuseumDataIngester(ProviderDataIngester):
     @staticmethod
     def _get_metadata(attributes):
         metadata = {}
-        for item in [
+        for attr_key, metadata_key in [
             ("identifier", "accession number"),
             ("name", "name"),
             ("categories", "category"),
             ("description", "description"),
         ]:
-            attr_key, metadata_key = item
             val = ScienceMuseumDataIngester._get_first_list_value(attr_key, attributes)
             if val is not None:
                 metadata[metadata_key] = val
