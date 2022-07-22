@@ -119,7 +119,9 @@ class ProviderDataIngester(ABC):
         self.commit_records()
 
     @abstractmethod
-    def get_next_query_params(self, old_query_params: Optional[Dict], **kwargs) -> Dict:
+    def get_next_query_params(
+        self, prev_query_params: Optional[Dict], **kwargs
+    ) -> Dict:
         """
         Given the last set of query params, return the query params
         for the next request. Depending on the API, this may involve incrementing

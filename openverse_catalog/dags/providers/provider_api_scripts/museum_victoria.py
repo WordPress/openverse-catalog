@@ -40,14 +40,16 @@ class VictoriaDataIngester(ProviderDataIngester):
     ]
 
     def ingest_records(self, **kwargs):
-        for license_ in VictoriaDataIngester.LICENSE_LIST:
+        for license_ in self.LICENSE_LIST:
             super().ingest_records(license_=license_)
 
     def get_batch_data(self, response_json):
         return response_json or None
 
-    def get_next_query_params(self, old_query_params: Optional[Dict], **kwargs) -> Dict:
-        if not old_query_params:
+    def get_next_query_params(
+        self, prev_query_params: Optional[Dict], **kwargs
+    ) -> Dict:
+        if not prev_query_params:
             return {
                 "hasimages": "yes",
                 "perpage": self.batch_limit,
@@ -56,8 +58,8 @@ class VictoriaDataIngester(ProviderDataIngester):
             }
         else:
             return {
-                **old_query_params,
-                "page": old_query_params["page"] + 1,
+                **prev_query_params,
+                "page": prev_query_params["page"] + 1,
             }
 
     def get_record_data(self, data: Dict):
@@ -69,10 +71,10 @@ class VictoriaDataIngester(ProviderDataIngester):
 
         if (media_data := data.get("media")) is None:
             return None
-        images = VictoriaDataIngester._get_images(media_data)
+        images = self._get_images(media_data)
         if len(images) == 0:
             return None
-        meta_data = VictoriaDataIngester._get_metadata(data)
+        meta_data = self._get_metadata(data)
         title = data.get("displayTitle")
         image_data = {
             "foreign_landing_url": foreign_landing_url,
@@ -141,17 +143,20 @@ class VictoriaDataIngester(ProviderDataIngester):
         return creators
 
     @staticmethod
-    def _get_metadata(obj):
-        def join_string_list(object_key, obj):
-            data = obj.get(object_key)
-            return ",".join(data) if isinstance(data, list) else None
+    def join_string_list(object_key, obj):
+        data = obj.get(object_key)
+        return ",".join(data) if isinstance(data, list) else None
 
+    @staticmethod
+    def _get_metadata(obj):
         meta_data = {
             "datemodified": obj.get("dateModified"),
             "category": obj.get("category"),
             "description": obj.get("physicalDescription"),
-            "keywords": join_string_list("keywords", obj),
-            "classifications": join_string_list("classifications", obj),
+            "keywords": VictoriaDataIngester.join_string_list("keywords", obj),
+            "classifications": VictoriaDataIngester.join_string_list(
+                "classifications", obj
+            ),
         }
 
         return {key: value for key, value in meta_data.items() if value is not None}

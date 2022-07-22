@@ -4,7 +4,7 @@ from pathlib import Path
 
 from common.licenses import LicenseInfo, get_license_info
 from common.loader import provider_details as prov
-from common.storage.image import ImageStore
+from common.storage.image import MockImageStore
 from providers.provider_api_scripts.museum_victoria import VictoriaDataIngester
 
 
@@ -15,7 +15,7 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s", level=logging.DEBUG
 )
 mv = VictoriaDataIngester()
-image_store = ImageStore(provider=prov.VICTORIA_DEFAULT_PROVIDER)
+image_store = MockImageStore(provider=prov.VICTORIA_DEFAULT_PROVIDER)
 mv.media_stores = {"image": image_store}
 
 
@@ -86,6 +86,14 @@ def test_get_record_data():
     }
 
     assert actual_image_data[0] == expected_image_data
+
+
+def test_filetype_gets_added_by_image_store():
+    media = _get_resource_json("record_data.json")
+    mv.process_batch([media])
+
+    actual_image = image_store.media_buffer[0]
+    assert "jpg" == actual_image.filetype
 
 
 def test_no_duplicate_records():
