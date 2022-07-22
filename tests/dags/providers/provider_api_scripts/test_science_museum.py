@@ -7,10 +7,7 @@ import pytest
 from common.licenses import LicenseInfo
 from common.loader import provider_details as prov
 from common.storage.image import ImageStore
-from providers.provider_api_scripts.science_museum import (
-    YEAR_RANGES,
-    ScienceMuseumDataIngester,
-)
+from providers.provider_api_scripts.science_museum import ScienceMuseumDataIngester
 
 
 _license_info = (
@@ -59,7 +56,7 @@ default_params = {
 
 
 def test_get_query_param_default():
-    actual_param = sm.get_next_query_params({}, **{"year_range": YEAR_RANGES[0]})
+    actual_param = sm.get_next_query_params({}, **{"year_range": (0, 1500)})
     expected_param = default_params | {
         "page[number]": 0,
         "date[from]": 0,

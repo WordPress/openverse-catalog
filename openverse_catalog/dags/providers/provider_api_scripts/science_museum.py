@@ -34,16 +34,16 @@ class ScienceMuseumDataIngester(ProviderDataIngester):
     batch_limit = 1000
     delay = 5
     headers = {"Accept": "application/json"}
-    RECORD_IDS = []  # class variable to keep track of records pulled
-    # I set this to 10 so that it stops right after the first year_range is processed
+    RECORD_IDS = set()  # class variable to keep track of records pulled
 
     def ingest_records(self, **kwargs):
         for year_range in YEAR_RANGES:
+            logger.info(f"==Starting on year range: {year_range}==")
             super().ingest_records(year_range=year_range)
 
-    def get_next_query_params(self, old_query_params, **kwargs):
+    def get_next_query_params(self, prev_query_params, **kwargs):
         from_, to_ = kwargs["year_range"]
-        if not old_query_params:
+        if not prev_query_params:
             # Return default query params on the first request
             return {
                 "has_image": 1,
@@ -56,10 +56,10 @@ class ScienceMuseumDataIngester(ProviderDataIngester):
         else:
             # Increment `skip` by the batch limit.
             return {
-                **old_query_params,
+                **prev_query_params,
                 "date[from]": from_,
                 "date[to]": to_,
-                "page[number]": old_query_params["page[number]"] + 1,
+                "page[number]": prev_query_params["page[number]"] + 1,
             }
 
     def get_media_type(self, record):
@@ -73,9 +73,9 @@ class ScienceMuseumDataIngester(ProviderDataIngester):
 
     def get_record_data(self, record):
         id_ = record.get("id")
-        if id_ in ScienceMuseumDataIngester.RECORD_IDS:
+        if id_ in self.RECORD_IDS:
             return None
-        ScienceMuseumDataIngester.RECORD_IDS.append(id_)
+        self.RECORD_IDS.add(id_)
         foreign_landing_url = record.get("links", {}).get("self")
         if foreign_landing_url is None:
             return None
@@ -100,7 +100,7 @@ class ScienceMuseumDataIngester(ProviderDataIngester):
                 height,
                 width,
                 filetype,
-            ) = ScienceMuseumDataIngester._get_image_info(processed)
+            ) = self._get_image_info(processed)
             if image_url is None:
                 continue
 
