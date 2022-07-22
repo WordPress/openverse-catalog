@@ -135,7 +135,7 @@ class VictoriaDataIngester(ProviderDataIngester):
 
     @staticmethod
     def _get_creator(media) -> str | None:
-        creators = media.get("creators", None)
+        creators = media.get("creators")
         if isinstance(creators, list):
             creators = ",".join(media.get("creators"))
         return creators
