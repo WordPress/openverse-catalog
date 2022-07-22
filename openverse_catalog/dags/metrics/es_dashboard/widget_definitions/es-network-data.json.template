@@ -1,0 +1,77 @@
+{
+  "end": "%(end)s",
+  "height": %(height)s,
+  "metrics": [
+    [
+      {
+        "expression": "AVG(METRICS(\"in\"))",
+        "id": "e1",
+        "label": "Bytes in"
+      }
+    ],
+    [
+      {
+        "expression": "AVG(METRICS(\"out\"))",
+        "id": "e2",
+        "label": "Bytes out"
+      }
+    ],
+    [
+      "AWS/EC2",
+      "NetworkIn",
+      "InstanceId",
+      "%(es_node_1)s",
+      {
+        "id": "in1",
+        "visible": false
+      }
+    ],
+    [
+      "...",
+      "%(es_node_2)s",
+      {
+        "id": "in2",
+        "visible": false
+      }
+    ],
+    [
+      "...",
+      "%(es_node_3)s",
+      {
+        "id": "in3",
+        "visible": false
+      }
+    ],
+    [
+      "AWS/EC2",
+      "NetworkOut",
+      "InstanceId",
+      "%(es_node_1)s",
+      {
+        "id": "out1",
+        "visible": false
+      }
+    ],
+    [
+      "...",
+      "%(es_node_2)s",
+      {
+        "id": "out2",
+        "visible": false
+      }
+    ],
+    [
+      "...",
+      "%(es_node_3)s",
+      {
+        "id": "out3",
+        "visible": false
+      }
+    ]
+  ],
+  "period": %(period)s,
+  "stacked": false,
+  "start": "%(start)s",
+  "title": "Elasticsearch: Network Data",
+  "width": %(width)s
+}

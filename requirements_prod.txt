@@ -1,5 +1,6 @@
 apache-airflow[amazon,postgres,http]==2.3.0
 lxml
+pillow==9.2.0
 psycopg2-binary
 requests-file==1.5.1
 requests-oauthlib
