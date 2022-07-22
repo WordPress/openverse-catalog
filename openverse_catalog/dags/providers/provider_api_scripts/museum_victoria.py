@@ -44,9 +44,7 @@ class VictoriaDataIngester(ProviderDataIngester):
             super().ingest_records(license_=license_)
 
     def get_batch_data(self, response_json):
-        if response_json:
-            return response_json
-        return None
+        return response_json or None
 
     def get_next_query_params(self, old_query_params: Optional[Dict], **kwargs) -> Dict:
         if not old_query_params:
