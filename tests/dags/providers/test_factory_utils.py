@@ -6,6 +6,9 @@ from airflow.models import TaskInstance
 from providers import factory_utils
 
 from tests.dags.common.test_resources import fake_provider_module
+from tests.dags.common.test_resources.fake_provider_data_ingester import (
+    FakeDataIngester,
+)
 
 
 @pytest.fixture
@@ -20,6 +23,31 @@ def internal_func_mock():
     For fake_provider_module.main, the mock will be called with the provided value.
     """
     return mock.MagicMock()
+
+
+fdi = FakeDataIngester()
+
+
+def _set_up_ingester(mock_func, value):
+    """
+    Set up ingest records as a proxy for calling the mock function, then return
+    the instance. This is necessary because the args are only handed in during
+    instance initialization, *not* while calling ingest_records.
+
+    This also effectively checks that ingest_records does not receive the `*args` passed
+    into pull_media_wrapper, since this lambda doesn't accept any arguments!
+    """
+    fdi.ingest_records = lambda: mock_func(value)
+    return fdi
+
+
+# We have to pass a class down into the various functions, but we want to access
+# entities inside the produced object (e.g. stores) in order to test that they
+# were altered correctly. Best way to do that is to set up a mock that just returns
+# the class when called.
+FakeDataIngesterClass = mock.MagicMock()
+FakeDataIngesterClass.__name__ = "FakeDataIngesterClass"
+FakeDataIngesterClass.side_effect = _set_up_ingester
 
 
 @pytest.mark.parametrize(
@@ -60,6 +88,9 @@ def test_load_provider_script(func, media_types, stores):
 @pytest.mark.parametrize(
     "func, media_types, stores",
     [
+        ##################################################
+        # Function-based
+        ##################################################
         # Happy path
         (fake_provider_module.main, ["image"], [fake_provider_module.image_store]),
         # Multiple types
@@ -70,6 +101,13 @@ def test_load_provider_script(func, media_types, stores):
         ),
         # Empty case, no media types provided
         (fake_provider_module.main, [], []),
+        ##################################################
+        # Class-based
+        ##################################################
+        # Happy path
+        (FakeDataIngesterClass, ["image", "audio"], list(fdi.media_stores.values())),
+        # No media types provided, ingester class still supplies stores
+        (FakeDataIngesterClass, 2, list(fdi.media_stores.values())),
     ],
 )
 def test_generate_tsv_filenames(func, media_types, stores, ti_mock, internal_func_mock):
@@ -81,7 +119,8 @@ def test_generate_tsv_filenames(func, media_types, stores, ti_mock, internal_fun
         args=[internal_func_mock, value],
     )
     # There should be one call to xcom_push for each provided store
-    expected_xcoms = len(media_types)
+    # If the media_types value is an int, use that for the expected xcoms test
+    expected_xcoms = len(media_types) if isinstance(media_types, list) else media_types
     actual_xcoms = ti_mock.xcom_push.call_count
     assert (
         actual_xcoms == expected_xcoms
@@ -96,6 +135,9 @@ def test_generate_tsv_filenames(func, media_types, stores, ti_mock, internal_fun
 @pytest.mark.parametrize(
     "func, media_types, tsv_filenames, stores",
     [
+        ##################################################
+        # Function-based
+        ##################################################
         # Happy path
         (
             fake_provider_module.main,
@@ -132,6 +174,16 @@ def test_generate_tsv_filenames(func, media_types, stores, ti_mock, internal_fun
                 exception=ValueError,
                 match="Provided media types and TSV filenames don't match.*",
             ),
+        ),
+        ##################################################
+        # Class-based
+        ##################################################
+        # Happy path
+        (
+            FakeDataIngesterClass,
+            ["image", "audio"],
+            ["image_file_000.tsv", "audio_file_111.tsv"],
+            list(fdi.media_stores.values()),
         ),
     ],
 )
