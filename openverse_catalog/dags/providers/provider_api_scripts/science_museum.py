@@ -42,8 +42,7 @@ class ScienceMuseumDataIngester(ProviderDataIngester):
             super().ingest_records(year_range=year_range)
 
     def get_next_query_params(self, old_query_params, **kwargs):
-        from_ = kwargs["year_range"][0]
-        to_ = kwargs["year_range"][1]
+        from_, to_ = kwargs["year_range"]
         if not old_query_params:
             # Return default query params on the first request
             return {
