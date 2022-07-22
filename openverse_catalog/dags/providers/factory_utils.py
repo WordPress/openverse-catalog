@@ -117,6 +117,9 @@ def pull_media_wrapper(
         ingester = ingestion_callable(*args)
         stores = ingester.media_stores
         run_func = ingester.ingest_records
+        # args have already been passed into the ingester, we don't need them passed
+        # in again to the ingest_records function, so we clear the list
+        args = []
 
     for store, tsv_filename in zip(stores.values(), tsv_filenames):
         logger.info(
