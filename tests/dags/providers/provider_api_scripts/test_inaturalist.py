@@ -1,9 +1,28 @@
 import logging
+from ast import literal_eval
+from pathlib import Path
 
-# import pytest
 from common.licenses import get_license_info
-from providers.provider_api_scripts.inaturalist import inaturalistDataIngester
+from providers.provider_api_scripts import inaturalist
 
+
+# This file supports testing of the customized functions within the provider ingestion
+# class. It does not cover the pre-ingestion steps or sqls. To test those, instantiate
+# the local dev environment, with the inaturalist-open-data bucket on the minio docker.
+# (`just recreate` should do the trick.) Then manually kick off the Airflow DAG, and
+# inspect the logs and the data saved to openverse s3 on minio.
+
+# Based on the small sample files in /tests/s3-data/inaturalist-open-data, expect:
+# taxa.csv.gz --> 183 records
+# observations.csv.gz ---> 31 records
+# observers.csv.gz ---> 22 records
+# photos.csv.gz ---> 36 records
+# 3 of the photo records link to unclassified observations, so they have no title or
+# tags and we don't load them.
+# 10 of the remaining photo ids appear on multiple records, load one per photo_id.
+# The expected response to the database query for transformed data is a list of tuples
+# (not technically json, though the first value in each tuple is a dict) in
+# ./resources/inaturalist/full_db_response.txt
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s", level=logging.INFO
@@ -11,32 +30,10 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-# Below are record counts from the sample files in tests/s3-data/inaturalist-open-data
-# 3 of the photo records link to unclassified observations, so they have no title or
-# tags, so we don't load them.
-# ---> Reading file taxa.csv.gz
-# 183 records
-# ---> Reading file observations.csv.gz
-# 31 records
-# ---> Reading file observers.csv.gz
-# 22 records
-# ---> Reading file photos.csv.gz
-# 36 records
-
-INAT = inaturalistDataIngester()
-RECORD0 = {
-    "foreign_id": 10314159,
-    "filetype": "jpg",
-    "license_url": "http://creativecommons.org/licenses/by-nc/4.0/",
-    "width": 1530,
-    "height": 2048,
-    "foreign_landing_url": "https://www.inaturalist.org/photos/10314159",
-    "image_url": "https://inaturalist-open-data.s3.amazonaws.com/photos/10314159/medium.jpg",
-    "creator": "akjenny",
-    "creator_url": "https://www.inaturalist.org/users/615549",
-    "title": "Trifolium hybridum",
-    "tags": "Tracheophyta; Angiospermae; Magnoliopsida; Fabales; Fabaceae; Faboideae; Trifolieae; Trifolium",
-}
+INAT = inaturalist.inaturalistDataIngester()
+RESOURCE_DIR = Path(__file__).parent / "resources/inaturalist"
+FULL_DB_RESPONSE = literal_eval((RESOURCE_DIR / "full_db_response.txt").read_text())
+RECORD0 = FULL_DB_RESPONSE[0][0]
 
 
 def test_get_next_query_params_no_prior():
@@ -49,28 +46,6 @@ def test_get_next_query_params_prior_0():
     expected = {"offset_num": INAT.batch_limit}
     actual = INAT.get_next_query_params({"offset_num": 0})
     assert expected == actual
-
-
-# @pytest.mark.parametrize(
-#     "file_name, expected",
-#     [
-#         ("00_create_schema.sql", [("inaturalist",)]),
-#         ("01_photos.sql", [(36,)]),
-#         ("02_observations.sql", [(31,)]),
-#         ("03_taxa.sql", [(183,)]),
-#         ("04_observers.sql", [(22,)]),
-#     ],
-# )
-# def test_sql_loader(file_name, expected):
-#     actual = INAT.sql_loader(file_name)
-#     assert actual == expected
-
-
-def test_get_response_json():
-    actual = INAT.get_response_json({"offset_num": 0})
-    assert isinstance(actual, list)
-    assert len(actual) == 33
-    assert actual[0][0] == RECORD0
 
 
 def test_get_batch_data_none_response():
@@ -86,7 +61,7 @@ def test_get_batch_data_empty_response():
 
 
 def test_get_batch_data_full_response():
-    actual = INAT.get_batch_data(INAT.get_response_json({"offset_num": 0}))
+    actual = INAT.get_batch_data(FULL_DB_RESPONSE)
     assert isinstance(actual, list)
     assert len(actual) == 33
     assert isinstance(actual[0], dict)
