@@ -2,6 +2,7 @@ import logging
 from ast import literal_eval
 from pathlib import Path
 
+import pytest
 from common.licenses import get_license_info
 from providers.provider_api_scripts import inaturalist
 
@@ -48,16 +49,10 @@ def test_get_next_query_params_prior_0():
     assert expected == actual
 
 
-def test_get_batch_data_none_response():
-    expected = None
-    actual = INAT.get_batch_data(None)
-    assert actual == expected
-
-
-def test_get_batch_data_empty_response():
-    expected = None
-    actual = INAT.get_batch_data({})
-    assert actual == expected
+@pytest.mark.parametrize("value", [None, {}])
+def test_get_batch_data_returns_none(value):
+    actual = INAT.get_batch_data(value)
+    assert actual is None
 
 
 def test_get_batch_data_full_response():
