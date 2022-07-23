@@ -105,7 +105,7 @@ PROVIDER_WORKFLOWS = [
         provider_script="inaturalist",
         ingester_class=inaturalistDataIngester,
         preingestion_task_creator=inaturalistDataIngester.create_preingestion_tasks,
-        schedule_string="@daily",
+        schedule_string="@monthly",
     ),
     ProviderWorkflow(
         provider_script="freesound",

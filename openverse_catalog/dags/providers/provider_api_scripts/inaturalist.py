@@ -129,9 +129,12 @@ class inaturalistDataIngester(ProviderDataIngester):
         if last_success is None:
             return
         s3 = S3Hook(aws_conn_id=aws_conn_id)
+        s3_client = s3.get_client_type()
         for key in s3_keys:
             try:
-                last_modified = s3.head_object(key)["Last-Modified"]
+                last_modified = s3_client.head_object(
+                    Bucket="inaturalist-open-data", Key=key
+                )["LastModified"]
             except Exception as e:
                 logger.error(e)
                 raise AirflowFailException(f"Can't find {key} on s3")
@@ -146,18 +149,6 @@ class inaturalistDataIngester(ProviderDataIngester):
 
         with TaskGroup(group_id="preingestion_tasks") as preingestion_tasks:
 
-            # with TaskGroup(group_id="check_sources_exist") as check_sources_exist:
-            #     for source_name in SOURCE_FILE_NAMES:
-            #         S3KeySensor(
-            #             task_id=source_name + "_exists",
-            #             bucket_key=f"s3://inaturalist-open-data/{source_name}.csv.gz",
-            #             aws_conn_id=AWS_CONN_ID,
-            #             poke_interval=15,
-            #             mode="reschedule",
-            #             timeout=60,
-            #             depends_on_past=False,
-            #         )
-
             check_for_file_updates = PythonOperator(
                 task_id="check_for_file_updates",
                 python_callable=inaturalistDataIngester.compare_update_dates,
@@ -165,8 +156,7 @@ class inaturalistDataIngester(ProviderDataIngester):
                     # With the templated values ({{ x }}) airflow will fill it in
                     "last_success": "{{ prev_start_date_success }}",
                     "s3_keys": [
-                        f"s3://inaturalist-open-data/{file_name}.csv.gz"
-                        for file_name in SOURCE_FILE_NAMES
+                        f"{file_name}.csv.gz" for file_name in SOURCE_FILE_NAMES
                     ],
                 },
             )
