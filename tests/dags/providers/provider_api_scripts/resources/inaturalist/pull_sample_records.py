@@ -1,6 +1,6 @@
 """
 This is a rarely used thing for generating sample files and moving them in and out of
-the github project. 
+the github project.
 """
 
 import csv
