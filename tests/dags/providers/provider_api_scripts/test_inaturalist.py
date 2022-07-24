@@ -93,7 +93,10 @@ def test_get_record_data_full_response():
         "creator": "akjenny",
         "creator_url": "https://www.inaturalist.org/users/615549",
         "title": "Trifolium hybridum",
-        "raw_tags": "Tracheophyta; Angiospermae; Magnoliopsida; Fabales; Fabaceae; Faboideae; Trifolieae; Trifolium",
+        "raw_tags": [
+            "Tracheophyta", "Angiospermae", "Magnoliopsida", "Fabales", 
+            "Fabaceae", "Faboideae", "Trifolieae", "Trifolium"
+            ],
     }
     actual = INAT.get_record_data(RECORD0)
     assert actual == expected

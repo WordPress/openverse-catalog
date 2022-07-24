@@ -110,7 +110,7 @@ class inaturalistDataIngester(ProviderDataIngester):
             "license_info": license_info,
             "filetype": data.get("filetype"),
             "creator_url": data.get("creator_url"),
-            "raw_tags": data.get("tags"),
+            "raw_tags": data.get("tags").split("; "),
         }
 
     def get_media_type(self, record):
