@@ -34,7 +34,12 @@ class ScienceMuseumDataIngester(ProviderDataIngester):
     batch_limit = 1000
     delay = 5
     headers = {"Accept": "application/json"}
-    RECORD_IDS = set()  # class variable to keep track of records pulled
+
+    def __init__(self):
+
+        super().__init__()
+        # instance variable to prevent duplicate records
+        self.RECORD_IDS = set()
 
     def ingest_records(self, **kwargs):
         for year_range in YEAR_RANGES:

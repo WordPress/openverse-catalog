@@ -2,6 +2,7 @@ import json
 import logging
 import os
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 from common.licenses import LicenseInfo
@@ -10,15 +11,20 @@ from common.storage.image import ImageStore
 from providers.provider_api_scripts.science_museum import ScienceMuseumDataIngester
 
 
-_license_info = (
+BY_NC_SA = LicenseInfo(
     "by-nc-sa",
     "4.0",
     "https://creativecommons.org/licenses/by-nc-sa/4.0/",
     None,
 )
-license_info = LicenseInfo(*_license_info)
+BY_SA = LicenseInfo(
+    license="by-sa",
+    version="4.0",
+    url="https://creativecommons.org/licenses/by-sa/4.0/",
+    raw_url=None,
+)
 sm = ScienceMuseumDataIngester()
-image_store = ImageStore(provider=prov.CLEVELAND_DEFAULT_PROVIDER)
+image_store = ImageStore(provider=prov.SCIENCE_DEFAULT_PROVIDER)
 sm.media_stores = {"image": image_store}
 RESOURCES = Path(__file__).parent / "resources/sciencemuseum"
 
@@ -26,6 +32,12 @@ RESOURCES = Path(__file__).parent / "resources/sciencemuseum"
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s", level=logging.DEBUG
 )
+
+
+@pytest.fixture(autouse=True)
+def after_test():
+    yield
+    sm.RECORDS_IDS = set()
 
 
 def _get_resource_json(json_name):
@@ -91,12 +103,7 @@ def test_get_record_data_success(object_data):
         "height": 1151,
         "width": 1536,
         "filetype": "jpeg",
-        "license_info": LicenseInfo(
-            license="by-sa",
-            version="4.0",
-            url="https://creativecommons.org/licenses/by-sa/4.0/",
-            raw_url=None,
-        ),
+        "license_info": BY_SA,
         "creator": "Galileo Galilei",
         "title": "Telescope by Galileo (replica) (telescope - Galilean; telescope - refracting; replica)",
         "meta_data": {
@@ -111,6 +118,13 @@ def test_get_record_data_success(object_data):
     for key, value in expected_image_data.items():
         assert key and value == actual_image_data[key]
     assert actual_image_data == expected_image_data
+
+
+def test_save_item_adds_filetype(single_image_data):
+    with patch.object(sm.media_stores["image"], "save_item") as mock_save:
+        sm.process_batch([single_image_data])
+    actual_image = mock_save.call_args[0][0]
+    assert "jpg" == actual_image.filetype
 
 
 def test_creator_info_success(object_data):
