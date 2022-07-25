@@ -283,6 +283,7 @@ def create_provider_api_workflow(
                 load_from_s3 = PythonOperator(
                     task_id="load_from_s3",
                     execution_timeout=load_timeout,
+                    retries=1,
                     python_callable=loader.load_from_s3,
                     op_kwargs={
                         "bucket": OPENVERSE_BUCKET,
