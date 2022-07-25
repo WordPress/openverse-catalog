@@ -27,8 +27,6 @@ class VictoriaDataIngester(ProviderDataIngester):
     headers = {"User-Agent": prov.UA_STRING, "Accept": "application/json"}
     batch_limit = 100
     delay = 5
-    # This set is used to prevent duplicate images of the same items
-    RECORDS_IDS = set()
     LANDING_PAGE = "https://collections.museumsvictoria.com.au/"
     LICENSE_LIST = [
         "public domain",
@@ -38,6 +36,13 @@ class VictoriaDataIngester(ProviderDataIngester):
         "cc by-nc-nd",
         "cc by-sa",
     ]
+
+    def __init__(self):
+
+        super().__init__()
+
+        # This set is used to prevent duplicate images of the same items
+        self.RECORDS_IDS = set()
 
     def ingest_records(self, **kwargs):
         for license_ in self.LICENSE_LIST:

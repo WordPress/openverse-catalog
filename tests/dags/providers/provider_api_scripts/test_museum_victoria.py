@@ -3,6 +3,7 @@ import logging
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
 from common.licenses import LicenseInfo, get_license_info
 from common.loader import provider_details as prov
 from common.storage.image import ImageStore
@@ -18,6 +19,12 @@ logging.basicConfig(
 mv = VictoriaDataIngester()
 image_store = ImageStore(provider=prov.VICTORIA_DEFAULT_PROVIDER)
 mv.media_stores = {"image": image_store}
+
+
+@pytest.fixture(autouse=True)
+def after_test():
+    yield
+    mv.RECORDS_IDS = set()
 
 
 def _get_resource_json(json_name):
