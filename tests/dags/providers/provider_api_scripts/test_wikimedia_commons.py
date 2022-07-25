@@ -27,12 +27,12 @@ def test_derive_timestamp_pair():
     assert actual_end_ts == "1516060800"
 
 
-def test_get_image_pages_returns_correctly_with_continue():
+def test_get_media_pages_returns_correctly_with_continue():
     with open(RESOURCES / "response_small_with_continue.json") as f:
         resp_dict = json.load(f)
 
     expect_result = {"84798633": {"pageid": 84798633, "title": "File:Ambassade1.jpg"}}
-    actual_result = wmc.get_image_pages(resp_dict)
+    actual_result = wmc.get_media_pages(resp_dict)
     assert actual_result == expect_result
 
 
@@ -208,14 +208,11 @@ def test_get_record_data_handles_example_dict():
     with open(RESOURCES / "image_data_example.json") as f:
         media_data = json.load(f)
 
-    # with patch.object(wmc.image_store, "add_item", return_value=1) as mock_add:
     record_data = wmc.get_record_data(media_data)
 
     expected_license_info = get_license_info(
         license_url="https://creativecommons.org/licenses/by-sa/4.0"
     )
-    # assert mock_add.call_count == 1
-    # assert mock_add.call_args == call(
     assert record_data == {
         "foreign_landing_url": (
             "https://commons.wikimedia.org/w/index.php?curid=81754323"

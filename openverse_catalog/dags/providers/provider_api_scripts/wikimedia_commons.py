@@ -56,7 +56,7 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
     # the exact limit may not be respected.
     batch_limit = 250
 
-    def __init__(self, date: str = None):
+    def __init__(self, date: str | None = None):
         self.start_timestamp, self.end_timestamp = self.derive_timestamp_pair(date)
         self.continue_token = {}
 
@@ -122,12 +122,12 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
         return self.continue_token
 
     def get_batch_data(self, response_json):
-        image_pages = self.get_image_pages(response_json)
+        image_pages = self.get_media_pages(response_json)
         if image_pages is not None:
             return image_pages.values()
         return None
 
-    def get_image_pages(self, response_json):
+    def get_media_pages(self, response_json):
         if response_json is not None:
             image_pages = response_json.get("query", {}).get("pages")
             if image_pages is not None:
@@ -394,8 +394,8 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
         if left_json is None:
             return right_json
 
-        left_pages = self.get_image_pages(left_json)
-        right_pages = self.get_image_pages(right_json)
+        left_pages = self.get_media_pages(left_json)
+        right_pages = self.get_media_pages(right_json)
 
         if (
             left_pages is None
@@ -407,7 +407,7 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
         else:
             merged_json = deepcopy(left_json)
             merged_json.update(right_json)
-            merged_pages = self.get_image_pages(merged_json)
+            merged_pages = self.get_media_pages(merged_json)
             merged_pages.update(
                 {
                     k: self.merge_image_pages(left_pages[k], right_pages[k])
