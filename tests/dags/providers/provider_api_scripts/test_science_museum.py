@@ -37,7 +37,7 @@ logging.basicConfig(
 @pytest.fixture(autouse=True)
 def after_test():
     yield
-    sm.RECORDS_IDS = set()
+    sm.RECORD_IDS = set()
 
 
 def _get_resource_json(json_name):
