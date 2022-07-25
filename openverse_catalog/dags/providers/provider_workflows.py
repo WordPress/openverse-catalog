@@ -92,7 +92,8 @@ PROVIDER_WORKFLOWS = [
     ProviderWorkflow(
         provider_script="finnish_museums",
         start_date=datetime(2020, 9, 1),
-        pull_timeout=timedelta(days=3),
+        pull_timeout=timedelta(days=5),
+        load_timeout=timedelta(days=5),
     ),
     ProviderWorkflow(
         provider_script="flickr",
