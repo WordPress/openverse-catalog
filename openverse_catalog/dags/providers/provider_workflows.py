@@ -9,6 +9,7 @@ from providers.provider_api_scripts.finnish_museums import FinnishMuseumsDataIng
 from providers.provider_api_scripts.inaturalist import INaturalistDataIngester
 from providers.provider_api_scripts.metropolitan_museum import MetMuseumDataIngester
 from providers.provider_api_scripts.museum_victoria import VictoriaDataIngester
+from providers.provider_api_scripts.nypl import NyplDataIngester
 from providers.provider_api_scripts.provider_data_ingester import ProviderDataIngester
 from providers.provider_api_scripts.science_museum import ScienceMuseumDataIngester
 from providers.provider_api_scripts.smk import SmkDataIngester
@@ -170,6 +171,7 @@ PROVIDER_WORKFLOWS = [
     ),
     ProviderWorkflow(
         provider_script="nypl",
+        ingester_class=NyplDataIngester,
         start_date=datetime(2020, 1, 1),
     ),
     ProviderWorkflow(
