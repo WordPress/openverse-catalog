@@ -81,7 +81,7 @@ class NyplDataIngester(ProviderDataIngester):
             return None
         if not isinstance(captures, list):
             captures = [captures]
-
+        images = []
         for img in captures:
             image_id = img.get("imageID", {}).get("$")
             if image_id is None:
@@ -106,7 +106,8 @@ class NyplDataIngester(ProviderDataIngester):
                 "category": category,
                 "meta_data": metadata,
             }
-            return image_data
+            images.append(image_data)
+        return images or None
 
     @staticmethod
     def _get_filetype(description: str):
