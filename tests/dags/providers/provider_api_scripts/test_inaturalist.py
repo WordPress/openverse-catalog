@@ -63,18 +63,11 @@ def test_get_batch_data_full_response():
     assert actual[0] == RECORD0
 
 
-def test_get_record_data_no_license():
+@pytest.mark.parametrize("field", ["license_url", "foreign_id"])
+def test_get_record_data_missing_necessarly_fields(field):
     expected = None
     record = RECORD0.copy()
-    record.pop("license_url")
-    actual = INAT.get_record_data(record)
-    assert actual == expected
-
-
-def test_get_record_data_no_foreign_id():
-    expected = None
-    record = RECORD0.copy()
-    record.pop("foreign_id")
+    record.pop(field)
     actual = INAT.get_record_data(record)
     assert actual == expected
 
