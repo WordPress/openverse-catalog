@@ -1,6 +1,9 @@
 """
 This is a rarely used thing for generating sample files and moving them in and out of
 the github project.
+
+This is used exclusively for local development and is not intended to be run
+as part of a production workflow.
 """
 
 import csv
