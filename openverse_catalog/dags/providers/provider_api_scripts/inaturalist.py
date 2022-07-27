@@ -67,11 +67,11 @@ class iNaturalistDataIngester(ProviderDataIngester):
             .replace("batch_limit", str(self.batch_limit))
         )
 
-    def get_next_query_params(self, old_query_params=None, **kwargs):
-        if old_query_params is None:
+    def get_next_query_params(self, prev_query_params=None, **kwargs):
+        if prev_query_params is None:
             return {"offset_num": 0}
         else:
-            next_offset = old_query_params["offset_num"] + self.batch_limit
+            next_offset = prev_query_params["offset_num"] + self.batch_limit
             return {"offset_num": next_offset}
 
     def get_response_json(self, query_params: Dict):
