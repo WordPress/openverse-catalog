@@ -8,6 +8,8 @@ from airflow.utils.session import create_session
 from pendulum import now
 from providers import provider_dag_factory
 
+from tests.conftest import mark_extended
+
 
 DAG_ID = "test_provider_dag_factory"
 
@@ -32,6 +34,7 @@ def _generate_tsv_mock(ingestion_callable, media_types, ti, **kwargs):
         )
 
 
+@mark_extended
 @pytest.mark.parametrize(
     "side_effect",
     [
