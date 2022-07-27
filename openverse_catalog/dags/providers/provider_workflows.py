@@ -88,6 +88,7 @@ PROVIDER_WORKFLOWS = [
     ),
     ProviderWorkflow(
         provider_script="europeana",
+        start_date=datetime(2011, 9, 1),
         schedule_string="@daily",
         dated=True,
     ),
@@ -98,6 +99,7 @@ PROVIDER_WORKFLOWS = [
     ),
     ProviderWorkflow(
         provider_script="flickr",
+        start_date=datetime(2004, 2, 1),
         schedule_string="@daily",
         dated=True,
     ),
@@ -117,6 +119,7 @@ PROVIDER_WORKFLOWS = [
     ),
     ProviderWorkflow(
         provider_script="metropolitan_museum",
+        start_date=datetime(2016, 9, 1),
         schedule_string="@daily",
         dated=True,
         execution_timeout=timedelta(hours=12),
@@ -131,6 +134,7 @@ PROVIDER_WORKFLOWS = [
     ),
     ProviderWorkflow(
         provider_script="phylopic",
+        start_date=datetime(2011, 1, 1),
         schedule_string="@weekly",
         dated=True,
         execution_timeout=timedelta(hours=12),
@@ -162,6 +166,7 @@ PROVIDER_WORKFLOWS = [
     ),
     ProviderWorkflow(
         provider_script="wikimedia_commons",
+        start_date=datetime(2020, 11, 1),
         schedule_string="@daily",
         dated=True,
         execution_timeout=timedelta(hours=12),
