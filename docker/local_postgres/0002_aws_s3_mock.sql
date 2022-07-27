@@ -24,7 +24,7 @@ AS $$
     temp_location = f"/tmp/pg_load_{dt.now().timestamp()}_{file_path.split('/')[-1]}"
     s3_obj.download_file(temp_location)
     if file_path[-3:]=='.gz':
-        copy_from = "PROGRAM 'gzip -dc "+temp_location+"'"
+        copy_from = f"PROGRAM 'gzip -dc {temp_location}'"
     else:
         copy_from = plpy.quote_literal(temp_location)
     with open(temp_location) as f:
