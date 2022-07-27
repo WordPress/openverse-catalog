@@ -282,7 +282,7 @@ def test_get_metadata():
 
 
 def test_handle_obj_data_none(object_data):
-    object_data["multimedia"] = []
+    object_data["attributes"]["multimedia"] = []
     actual_images = sm.get_record_data(object_data)
 
     assert actual_images is None

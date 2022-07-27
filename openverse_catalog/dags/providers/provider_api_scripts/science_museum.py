@@ -92,7 +92,7 @@ class ScienceMuseumDataIngester(ProviderDataIngester):
 
         metadata = self._get_metadata(attributes)
         multimedia = attributes.get("multimedia")
-        if multimedia is None:
+        if not multimedia:
             return None
         images = []
         for image_data in multimedia:
