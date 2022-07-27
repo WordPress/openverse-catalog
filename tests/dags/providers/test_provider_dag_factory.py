@@ -1,7 +1,7 @@
 from unittest import mock
 
 import pytest
-from airflow.exceptions import AirflowSkipException
+from airflow.exceptions import AirflowSkipException, BackfillUnfinished
 from airflow.executors.debug_executor import DebugExecutor
 from airflow.models import DagRun, TaskInstance
 from airflow.utils.session import create_session
@@ -38,8 +38,15 @@ def _generate_tsv_mock(ingestion_callable, media_types, ti, **kwargs):
 @pytest.mark.parametrize(
     "side_effect",
     [
-        # lambda **x: None,
+        # Simple "pull_data" function, no issues raised
+        lambda **x: None,
+        # Simulated pull_data function skips
         AirflowSkipException("Sample Skip"),
+        # Simulated pull_data function raises an exception
+        pytest.param(
+            ValueError("Oops, something went wrong in ingestion"),
+            marks=pytest.mark.raises(exception=BackfillUnfinished),
+        ),
     ],
 )
 def test_skipped_pull_data_runs_successfully(side_effect, clean_db):
