@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from typing import Dict, Optional, Sequence, Type
 
 from providers.provider_api_scripts.cleveland_museum import ClevelandDataIngester
-from providers.provider_api_scripts.inaturalist import inaturalistDataIngester
+from providers.provider_api_scripts.inaturalist import iNaturalistDataIngester
 from providers.provider_api_scripts.provider_data_ingester import ProviderDataIngester
 from providers.provider_api_scripts.stocksnap import StockSnapDataIngester
 
@@ -103,8 +103,8 @@ PROVIDER_WORKFLOWS = [
     ),
     ProviderWorkflow(
         provider_script="inaturalist",
-        ingester_class=inaturalistDataIngester,
-        preingestion_task_creator=inaturalistDataIngester.create_preingestion_tasks,
+        ingester_class=iNaturalistDataIngester,
+        preingestion_task_creator=iNaturalistDataIngester.create_preingestion_tasks,
         schedule_string="@monthly",
     ),
     ProviderWorkflow(

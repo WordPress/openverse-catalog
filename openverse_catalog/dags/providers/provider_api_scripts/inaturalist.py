@@ -3,7 +3,7 @@ Provider:   iNaturalist
 
 Output:     TSV file containing the media metadata.
 
-Notes:      [The inaturalist API is not intended for data scraping.]
+Notes:      [The iNaturalist API is not intended for data scraping.]
             (https://api.inaturalist.org/v1/docs/)
 
             [But there is a full dump intended for sharing on S3.]
@@ -26,8 +26,6 @@ from typing import Dict
 
 import pendulum
 from airflow.exceptions import AirflowFailException, AirflowSkipException
-
-# from airflow.providers.amazon.aws.sensors.s3 import S3KeySensor
 from airflow.operators.python import PythonOperator
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 from airflow.providers.postgres.hooks.postgres import PostgresHook
@@ -50,12 +48,12 @@ SCRIPT_DIR = Path(__file__).parents[1] / "provider_csv_load_scripts/inaturalist"
 SOURCE_FILE_NAMES = ["photos", "observations", "taxa", "observers"]
 
 
-class inaturalistDataIngester(ProviderDataIngester):
+class iNaturalistDataIngester(ProviderDataIngester):
 
     providers = {"image": prov.INATURALIST_DEFAULT_PROVIDER}
 
     def __init__(self, *kwargs):
-        super(inaturalistDataIngester, self).__init__()
+        super(iNaturalistDataIngester, self).__init__()
         self.pg = PostgresHook(POSTGRES_CONN_ID)
 
         # adjustments to buffer limits. TO DO: try to integrate this with the dev
@@ -151,7 +149,7 @@ class inaturalistDataIngester(ProviderDataIngester):
 
             check_for_file_updates = PythonOperator(
                 task_id="check_for_file_updates",
-                python_callable=inaturalistDataIngester.compare_update_dates,
+                python_callable=iNaturalistDataIngester.compare_update_dates,
                 op_kwargs={
                     # With the templated values ({{ x }}) airflow will fill it in
                     "last_success": "{{ prev_start_date_success }}",

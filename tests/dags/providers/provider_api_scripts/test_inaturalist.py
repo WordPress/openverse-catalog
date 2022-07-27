@@ -31,7 +31,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-INAT = inaturalist.inaturalistDataIngester()
+INAT = inaturalist.iNaturalistDataIngester()
 RESOURCE_DIR = Path(__file__).parent / "resources/inaturalist"
 FULL_DB_RESPONSE = literal_eval((RESOURCE_DIR / "full_db_response.txt").read_text())
 RECORD0 = FULL_DB_RESPONSE[0][0]
