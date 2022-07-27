@@ -88,7 +88,7 @@ class iNaturalistDataIngester(ProviderDataIngester):
         return None
 
     def get_record_data(self, data):
-        license_url = data.get("license_url", None)
+        license_url = data.get("license_url")
         license_info = get_license_info(license_url=license_url)
         if license_info == LicenseInfo(None, None, None, None):
             return None
