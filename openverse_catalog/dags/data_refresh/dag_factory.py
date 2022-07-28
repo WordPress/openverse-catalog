@@ -37,6 +37,7 @@ from typing import Sequence
 from airflow import DAG
 from airflow.models.dagrun import DagRun
 from airflow.operators.python import BranchPythonOperator
+from airflow.providers.postgres.operators.postgres import PostgresOperator
 from airflow.settings import SASession
 from airflow.utils.session import provide_session
 from airflow.utils.state import State
@@ -64,6 +65,7 @@ REFRESH_POPULARITY_METRICS_TASK_ID = (
     f"{REFRESH_POPULARITY_METRICS_GROUP_ID}"
     f".{UPDATE_MEDIA_POPULARITY_METRICS_TASK_ID}"
 )
+API_DB_CONN_ID = "postgres_openledger_api"
 
 
 @provide_session
@@ -151,6 +153,20 @@ def create_data_refresh_dag(data_refresh: DataRefresh, external_dag_ids: Sequenc
     )
 
     with dag:
+        # Count estimate SQL for determining the number of rows in the API table. While
+        # this query is not exact, it is close to accurate since the API media table
+        # does not receive many (if any) updates/insertions/deletions once the data
+        # refresh is complete. In testing this was shown to be accurate and fast
+        # (~0.000002% off and 1/14000th of the execution time). However, the reality is
+        # that this count is *not* exact, so we show it as an estimate in reports.
+        count_sql = f"""
+        SELECT c.reltuples::bigint AS estimate
+        FROM   pg_class c
+        JOIN   pg_namespace n ON n.oid = c.relnamespace
+        WHERE  c.relname = '{data_refresh.media_type}'
+        AND    n.nspname = 'public';
+        """
+
         # Check if this is the first DagRun of the month for this DAG.
         month_check = BranchPythonOperator(
             task_id="month_check",
@@ -158,6 +174,13 @@ def create_data_refresh_dag(data_refresh: DataRefresh, external_dag_ids: Sequenc
             op_kwargs={
                 "dag_id": data_refresh.dag_id,
             },
+        )
+
+        # Get the current number of records in the target API table
+        before_record_count = PostgresOperator(
+            task_id="get_before_record_count",
+            postgres_conn_id=API_DB_CONN_ID,
+            sql=count_sql,
         )
 
         # Refresh underlying popularity tables. This is required infrequently in order
@@ -177,9 +200,18 @@ def create_data_refresh_dag(data_refresh: DataRefresh, external_dag_ids: Sequenc
             data_refresh, external_dag_ids
         )
 
+        # Get the final number of records in the API table after the refresh
+        after_record_count = PostgresOperator(
+            task_id="get_after_record_count",
+            postgres_conn_id=API_DB_CONN_ID,
+            sql=count_sql,
+        )
+
         # Set up task dependencies
         month_check >> [refresh_popularity_metrics, refresh_matview]
+        month_check >> before_record_count >> data_refresh_group
         refresh_popularity_metrics >> refresh_matview >> data_refresh_group
+        data_refresh_group >> after_record_count
 
     return dag
 
