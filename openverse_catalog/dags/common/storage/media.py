@@ -147,8 +147,6 @@ class MediaStore(metaclass=abc.ABCMeta):
         if not media_data["category"]:
             if provider_category := prov.DEFAULT_IMAGE_CATEGORY.get(self.provider):
                 media_data["category"] = provider_category
-        elif media_data["category"] == "UNKNOWN":
-            media_data["category"] = None
         return media_data
 
     def commit(self):
