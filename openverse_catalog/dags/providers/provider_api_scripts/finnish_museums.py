@@ -53,7 +53,7 @@ class FinnishMuseumsDataIngester(ProviderDataIngester):
         ):
             return None
 
-        return response_json.get("records")
+        return response_json["records"]
 
     def get_record_data(self, data):
         records = []
