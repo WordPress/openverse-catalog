@@ -54,11 +54,8 @@ class INaturalistDataIngester(ProviderDataIngester):
         # environment logic in the base class, rather than just over-writing it.
         self.media_stores["image"].buffer_length = 10_000
         self.batch_limit = 10_000
-
         self.sql_template = dedent(
-            (SCRIPT_DIR / "05_export_to_json_template.sql")
-            .read_text()
-            .replace("batch_limit", str(self.batch_limit))
+            (SCRIPT_DIR / "05_export_to_json.template.sql").read_text()
         )
 
     def get_next_query_params(self, prev_query_params=None, **kwargs):
@@ -72,8 +69,9 @@ class INaturalistDataIngester(ProviderDataIngester):
         """
         Call the SQL to pull json from Postgres, where the raw data has been loaded.
         """
-        offset_num = str(query_params["offset_num"])
-        sql_string = self.sql_template.replace("offset_num", offset_num)
+        sql_string = self.sql_template.format(
+            batch_limit=self.batch_limit, offset_num=query_params["offset_num"]
+        )
         return self.pg.get_records(sql_string)
 
     def get_batch_data(self, response_json):
