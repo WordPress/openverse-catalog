@@ -63,13 +63,19 @@ class FinnishMuseumsDataIngester(ProviderDataIngester):
             return None
 
         foreign_identifier = data.get("id")
+        if foreign_identifier is None:
+            return None
         title = data.get("title")
         building = data.get("buildings")[0].get("value")
         source = next(
             (s for s in SUB_PROVIDERS if building in SUB_PROVIDERS[s]), PROVIDER
         )
-        foreign_landing_url = self._get_landing(data)
-        raw_tags = self._get_raw_tags(data)
+        foreign_landing_url = LANDING_URL + foreign_identifier
+
+        raw_tags = None
+        tag_lists = data.get("subjects")
+        if tag_lists is not None:
+            raw_tags = list(chain(*tag_lists))
 
         image_list = data.get("images")
         for img in image_list:
@@ -97,20 +103,6 @@ class FinnishMuseumsDataIngester(ProviderDataIngester):
         # (eg `licenses/by/4.0/deed.fi`), but the license validation logic expects
         # links to the license page (eg `license/by/4.0`).
         return license_url.removesuffix("deed.fi")
-
-    @staticmethod
-    def _get_raw_tags(obj):
-        tag_lists = obj.get("subjects")
-        if tag_lists is None:
-            return None
-        return list(chain(*tag_lists))
-
-    @staticmethod
-    def _get_landing(obj, landing_url=LANDING_URL):
-        id_ = obj.get("id")
-        if id_ is None:
-            return None
-        return landing_url + id_
 
     @staticmethod
     def _get_image_url(img, image_url=API_URL):
