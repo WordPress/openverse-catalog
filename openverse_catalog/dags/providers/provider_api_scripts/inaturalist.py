@@ -92,7 +92,7 @@ class INaturalistDataIngester(ProviderDataIngester):
             return None
 
         return {
-            "foreign_identifier": f"{foreign_id}",
+            "foreign_identifier": foreign_id,
             "foreign_landing_url": data.get("foreign_landing_url"),
             "title": data.get("title"),
             "creator": data.get("creator"),

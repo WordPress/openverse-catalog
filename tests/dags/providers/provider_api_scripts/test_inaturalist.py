@@ -68,7 +68,7 @@ def test_get_record_data_missing_necessarly_fields(field):
 
 def test_get_record_data_full_response():
     expected = {
-        "foreign_identifier": "10314159",
+        "foreign_identifier": 10314159,
         "filetype": "jpg",
         "license_info": get_license_info(
             license_url="http://creativecommons.org/licenses/by-nc/4.0/"
