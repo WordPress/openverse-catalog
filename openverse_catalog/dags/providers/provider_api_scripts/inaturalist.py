@@ -18,14 +18,13 @@ Notes:      [The iNaturalist API is not intended for data scraping.]
             (https://github.com/inaturalist/inaturalist-open-data/blob/main/Metadata/structure.sql)
             except for adding ancestry tags to the taxa table.
 """
-import logging
 import os
 from pathlib import Path
 from textwrap import dedent
 from typing import Dict
 
 import pendulum
-from airflow.exceptions import AirflowFailException, AirflowSkipException
+from airflow.exceptions import AirflowSkipException
 from airflow.operators.python import PythonOperator
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 from airflow.providers.postgres.hooks.postgres import PostgresHook
@@ -36,11 +35,6 @@ from common.licenses import LicenseInfo, get_license_info
 from common.loader import provider_details as prov
 from providers.provider_api_scripts.provider_data_ingester import ProviderDataIngester
 
-
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s", level=logging.INFO
-)
-logger = logging.getLogger(__name__)
 
 AWS_CONN_ID = os.getenv("AWS_CONN_ID", "test_conn_id")
 PROVIDER = prov.INATURALIST_DEFAULT_PROVIDER

@@ -1,4 +1,3 @@
-import logging
 from ast import literal_eval
 from pathlib import Path
 
@@ -24,11 +23,6 @@ from providers.provider_api_scripts import inaturalist
 # The expected response to the database query for transformed data is a list of tuples
 # (not technically json, though the first value in each tuple is a dict) in
 # ./resources/inaturalist/full_db_response.txt
-
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s", level=logging.INFO
-)
-logger = logging.getLogger(__name__)
 
 
 INAT = inaturalist.iNaturalistDataIngester()
