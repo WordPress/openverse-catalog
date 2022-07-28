@@ -140,6 +140,7 @@ PROVIDER_WORKFLOWS = [
         provider_script="smithsonian",
         start_date=datetime(2020, 1, 1),
         schedule_string="@weekly",
+        load_timeout=timedelta(hours=4),
     ),
     ProviderWorkflow(
         provider_script="smk",
