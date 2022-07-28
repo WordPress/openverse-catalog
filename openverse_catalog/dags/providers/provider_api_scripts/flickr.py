@@ -395,6 +395,8 @@ def _get_category(image_data):
     """
     if "content_type" in image_data and image_data["content_type"] == "0":
         return prov.DEFAULT_IMAGE_CATEGORY[PROVIDER]
+    else:
+        return "UNKNOWN"
 
 
 if __name__ == "__main__":

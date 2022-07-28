@@ -100,9 +100,14 @@ class ImageStore(MediaStore):
                              in this dictionary, and `license_url` is
                              given as an argument, the argument will
                              replace the one given in the dictionary.
-        raw_tags:            List of tags associated with the image
-        watermarked:         A boolean, or 't' or 'f' string; whether or
-                             not the image has a noticeable watermark.
+        raw_tags:            List of tags associated with the image.
+        category:            The image category. `None` will be replaced
+                             with the default category for provider. If you
+                             don't want to use the default, pass the string
+                             `UNKNOWN`, which will be replaced with None
+                             in the database. @see Flickr script for example usage.
+        watermarked:         A boolean, or 't' or 'f' string; whether
+                             the image has a noticeable watermark.
         source:              If different from the provider.  This might
                              be the case when we get information from
                              some aggregation of images.  In this case,
