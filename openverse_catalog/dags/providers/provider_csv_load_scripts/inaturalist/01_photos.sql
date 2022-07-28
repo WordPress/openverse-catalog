@@ -2,10 +2,7 @@
 -------------------------------------------------------------------------------
 PHOTOS
 -------------------------------------------------------------------------------
---  not using an FK constraint on observer_id to save load time, but the
-    5/30/2022 dataset does have complete observer ids
---  not using an FK constraint on observation_uuid to save load time, but the
-    5/30/2022 dataset does have complete observer ids
+--  despite the 2022-05-30 data set having complete observer IDs, we do not use an FK constraint on observer_id in order to save load time
 --  photo_id is not unique. There are ~130,000 photo_ids that appear more than
     once, maybe because an earlier version of the photo was deleted (unclear),
     but for now assuming that will be taken care of later in the processing.
