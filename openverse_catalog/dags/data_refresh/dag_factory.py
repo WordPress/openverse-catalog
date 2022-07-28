@@ -36,14 +36,15 @@ from typing import Sequence
 
 from airflow import DAG
 from airflow.models.dagrun import DagRun
-from airflow.operators.python import BranchPythonOperator
-from airflow.providers.postgres.operators.postgres import PostgresOperator
+from airflow.operators.python import BranchPythonOperator, PythonOperator
 from airflow.settings import SASession
 from airflow.utils.session import provide_session
 from airflow.utils.state import State
-from common.constants import DAG_DEFAULT_ARGS
+from common.constants import DAG_DEFAULT_ARGS, XCOM_PULL_TEMPLATE
+from common.operators.postgres_result import PostgresResultOperator
 from data_refresh.data_refresh_task_factory import create_data_refresh_task_group
 from data_refresh.data_refresh_types import DATA_REFRESH_CONFIGS, DataRefresh
+from data_refresh.record_reporting import report_record_difference
 from data_refresh.refresh_popularity_metrics_task_factory import (
     GROUP_ID as REFRESH_POPULARITY_METRICS_GROUP_ID,
 )
@@ -66,6 +67,14 @@ REFRESH_POPULARITY_METRICS_TASK_ID = (
     f".{UPDATE_MEDIA_POPULARITY_METRICS_TASK_ID}"
 )
 API_DB_CONN_ID = "postgres_openledger_api"
+
+
+def _single_value(cursor):
+    try:
+        row = cursor.fetchone()
+        return row[0]
+    except Exception as e:
+        raise ValueError("Unable to extract expected row data from cursor") from e
 
 
 @provide_session
@@ -150,6 +159,7 @@ def create_data_refresh_dag(data_refresh: DataRefresh, external_dag_ids: Sequenc
         catchup=False,
         doc_md=__doc__,
         tags=["data_refresh"],
+        render_template_as_native_obj=True,
     )
 
     with dag:
@@ -177,10 +187,11 @@ def create_data_refresh_dag(data_refresh: DataRefresh, external_dag_ids: Sequenc
         )
 
         # Get the current number of records in the target API table
-        before_record_count = PostgresOperator(
+        before_record_count = PostgresResultOperator(
             task_id="get_before_record_count",
             postgres_conn_id=API_DB_CONN_ID,
             sql=count_sql,
+            handler=_single_value,
         )
 
         # Refresh underlying popularity tables. This is required infrequently in order
@@ -201,17 +212,33 @@ def create_data_refresh_dag(data_refresh: DataRefresh, external_dag_ids: Sequenc
         )
 
         # Get the final number of records in the API table after the refresh
-        after_record_count = PostgresOperator(
+        after_record_count = PostgresResultOperator(
             task_id="get_after_record_count",
             postgres_conn_id=API_DB_CONN_ID,
             sql=count_sql,
+            handler=_single_value,
+        )
+
+        # Report the count difference to Slack
+        report_counts = PythonOperator(
+            task_id="report_record_counts",
+            python_callable=report_record_difference,
+            op_kwargs={
+                "before": XCOM_PULL_TEMPLATE.format(
+                    before_record_count.task_id, "return_value"
+                ),
+                "after": XCOM_PULL_TEMPLATE.format(
+                    after_record_count.task_id, "return_value"
+                ),
+                "media_type": data_refresh.media_type,
+            },
         )
 
         # Set up task dependencies
         month_check >> [refresh_popularity_metrics, refresh_matview]
-        month_check >> before_record_count >> data_refresh_group
+        before_record_count >> data_refresh_group
         refresh_popularity_metrics >> refresh_matview >> data_refresh_group
-        data_refresh_group >> after_record_count
+        data_refresh_group >> after_record_count >> report_counts
 
     return dag
 
