@@ -25,7 +25,7 @@ from providers.provider_api_scripts import inaturalist
 # ./resources/inaturalist/full_db_response.txt
 
 
-INAT = inaturalist.iNaturalistDataIngester()
+INAT = inaturalist.INaturalistDataIngester()
 RESOURCE_DIR = Path(__file__).parent / "resources/inaturalist"
 FULL_DB_RESPONSE = literal_eval((RESOURCE_DIR / "full_db_response.txt").read_text())
 RECORD0 = FULL_DB_RESPONSE[0][0]

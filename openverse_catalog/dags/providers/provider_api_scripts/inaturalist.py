@@ -42,12 +42,12 @@ SCRIPT_DIR = Path(__file__).parents[1] / "provider_csv_load_scripts/inaturalist"
 SOURCE_FILE_NAMES = ["photos", "observations", "taxa", "observers"]
 
 
-class iNaturalistDataIngester(ProviderDataIngester):
+class INaturalistDataIngester(ProviderDataIngester):
 
     providers = {"image": prov.INATURALIST_DEFAULT_PROVIDER}
 
     def __init__(self, *kwargs):
-        super(iNaturalistDataIngester, self).__init__()
+        super(INaturalistDataIngester, self).__init__()
         self.pg = PostgresHook(POSTGRES_CONN_ID)
 
         # adjustments to buffer limits. TO DO: try to integrate this with the dev
@@ -141,7 +141,7 @@ class iNaturalistDataIngester(ProviderDataIngester):
 
             check_for_file_updates = PythonOperator(
                 task_id="check_for_file_updates",
-                python_callable=iNaturalistDataIngester.compare_update_dates,
+                python_callable=INaturalistDataIngester.compare_update_dates,
                 op_kwargs={
                     # With the templated values ({{ x }}) airflow will fill it in
                     "last_success": "{{ prev_start_date_success }}",
