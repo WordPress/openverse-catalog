@@ -129,13 +129,11 @@ class iNaturalistDataIngester(ProviderDataIngester):
         s3 = S3Hook(aws_conn_id=aws_conn_id)
         s3_client = s3.get_client_type()
         for key in s3_keys:
-            try:
-                last_modified = s3_client.head_object(
-                    Bucket="inaturalist-open-data", Key=key
-                )["LastModified"]
-            except Exception as e:
-                logger.error(e)
-                raise AirflowFailException(f"Can't find {key} on s3")
+            # this will error out if the files don't exist, and bubble up as an
+            # informative failure
+            last_modified = s3_client.head_object(
+                Bucket="inaturalist-open-data", Key=key
+            )["LastModified"]
             # if any file has been updated, let's pull them all
             if last_success < last_modified:
                 return
