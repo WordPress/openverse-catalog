@@ -17,8 +17,8 @@ def report_record_difference(before: str, after: str, media_type: str):
     # '.' - number is a float
     message = f"""
 _Note: All values are row estimates and are not (but nearly) exact_
-**Record count difference for `{media_type}`**: {before:,} → {after:,}
-**Change**: {count_diff:+,} ({percent_diff:+}% Δ)
+*Record count difference for `{media_type}`*: {before:,} → {after:,}
+*Change*: {count_diff:+,} ({percent_diff:+}% Δ)
 """
     log.info(message)
     if slack.should_send_message():
