@@ -1,10 +1,18 @@
 """
-This is a rarely used thing for generating sample files and moving them in and out of
-the github project.
+Some hacky code to pull sample data from large TSV files from inaturalist.
 
-This is used exclusively for local development and is not intended to be run
-as part of a production workflow.
+First download the full datasets from aws s3://inaturalist-open-data/, and adjust
+RAW_DATA to fit where you saved them.
+Assumes that large files are saved outside of the Openverse repo to take pressure off
+git and linting.
 """
+
+# this should only ever be run in local dev environments, where pytest_socket exists,
+# not production where it does not.
+try:
+    import pytest_socket
+except ImportError:
+    exit()
 
 import csv
 import gzip
@@ -16,7 +24,7 @@ import pandas as pd
 
 
 # Because this is unlikely to be reused, I didn't want to change the git ignore
-BASE_DIR = Path(__file__).parents[4]
+BASE_DIR = Path(__file__).parents[7]
 DATA_FOR_TESTING = BASE_DIR / "openverse-catalog/tests/s3-data/inaturalist-open-data"
 RAW_DATA = BASE_DIR / "inaturalist-june-22"
 MID_SIZE_FILE_PATH = BASE_DIR / "inaturalist-june-22/mid-sized"
@@ -52,10 +60,9 @@ def pull_sample_records(
     # can we read the stuff? (should assert that id_name is a valid field name, but...)
     assert len(id_list) > 0
     assert len(id_list) < 10000
-    working_input_file = input_path + "/" + file_name
+    working_input_file = input_path / file_name
     assert os.path.exists(working_input_file)
-    output_file_name = output_path + "/" + file_name
-    assert not os.path.exists(output_file_name)
+    output_file_name = output_path / file_name
     # read in the selected records
     sample_records = []
     remaining_ids = id_list.copy()
@@ -138,19 +145,41 @@ if __name__ == "__main__":
             191028942,
             191028931,
             191024617,
+            200352737,
         ]
     ]
-    pull_sample_records("photos.csv.gz", "photo_id", photo_ids, False, 10000)
+    pull_sample_records(
+        file_name="photos.csv.gz",
+        id_name="photo_id",
+        id_list=photo_ids,
+        is_unique=False,
+        every_nth_record=None,
+        output_path=DATA_FOR_TESTING,
+    )
 
     # ASSOCIATED OBSERVATIONS
     with gzip.open(f"{DATA_FOR_TESTING}/photos.csv.gz", "rt") as photo_output:
         sample_observations = get_sample_id_list(photo_output, "observation_uuid")
-    pull_sample_records("observations.csv.gz", "observation_uuid", sample_observations)
+    pull_sample_records(
+        "observations.csv.gz",
+        "observation_uuid",
+        sample_observations,
+        False,
+        None,
+        DATA_FOR_TESTING,
+    )
 
     # ASSOCIATED OBSERVERS
     with gzip.open(f"{DATA_FOR_TESTING}/photos.csv.gz", "rt") as photo_output:
         sample_observers = get_sample_id_list(photo_output, "observer_id")
-    pull_sample_records("observers.csv.gz", "observer_id", sample_observers)
+    pull_sample_records(
+        "observers.csv.gz",
+        "observer_id",
+        sample_observers,
+        False,
+        None,
+        DATA_FOR_TESTING,
+    )
 
     # ASSOCIATED TAXA (including ancestry for photo tags)
     with gzip.open(
@@ -163,4 +192,11 @@ if __name__ == "__main__":
         for t in records:
             if t["taxon_id"] in sample_taxa:
                 sample_taxa_with_ancestors.update(t["ancestry"].split("/"))
-    pull_sample_records("taxa.csv.gz", "taxon_id", list(sample_taxa_with_ancestors))
+    pull_sample_records(
+        "taxa.csv.gz",
+        "taxon_id",
+        list(sample_taxa_with_ancestors),
+        False,
+        None,
+        DATA_FOR_TESTING,
+    )

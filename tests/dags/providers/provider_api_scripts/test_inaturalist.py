@@ -56,7 +56,7 @@ def test_get_batch_data_returns_none(value):
 def test_get_batch_data_full_response():
     actual = INAT.get_batch_data(JSON_RESPONSE)
     assert isinstance(actual, list)
-    assert len(actual) == 33
+    assert len(actual) == 34
     assert isinstance(actual[0], dict)
     assert actual[0] == RECORD0
 
