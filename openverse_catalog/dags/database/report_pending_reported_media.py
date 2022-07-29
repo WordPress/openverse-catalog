@@ -123,7 +123,6 @@ The following media have been reported and require manual review:
 {media_type_reports}
 """
 
-    logger.info(message)
     slack.send_alert(message, username="Reported Media Requires Review")
 
 

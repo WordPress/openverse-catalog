@@ -222,6 +222,7 @@ def send_message(
     http_conn_id: str = SLACK_NOTIFICATIONS_CONN_ID,
 ) -> None:
     """Send a simple slack message, convenience message for short/simple messages."""
+    log.info(text)
     if not should_send_message(http_conn_id):
         return
 
