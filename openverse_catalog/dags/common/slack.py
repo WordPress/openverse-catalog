@@ -255,6 +255,7 @@ def should_send_message(http_conn_id=SLACK_NOTIFICATIONS_CONN_ID):
 
 def send_alert(
     text: str,
+    dag_id: str | None = None,
     username: str = "Airflow Alert",
     icon_emoji: str = ":airflow:",
     markdown: bool = True,
@@ -263,6 +264,14 @@ def send_alert(
     Wrapper for send_message that allows sending a message to the configured alerts
     channel instead of the default notification channel.
     """
+
+    known_failures = Variable.get(
+        "silenced_slack_alerts", default_var={}, deserialize_json=True
+    )
+    if dag_id in known_failures:
+        log.info(f"Skipping Slack alert for {dag_id}: {text}")
+        return
+
     send_message(
         text, username, icon_emoji, markdown, http_conn_id=SLACK_ALERTS_CONN_ID
     )
@@ -274,6 +283,7 @@ def on_failure_callback(context: dict) -> None:
     Errors are only sent out in production and if a Slack connection is defined.
     """
     # Get relevant info
+    dag = context["dag"]
     ti = context["task_instance"]
     execution_date = context["execution_date"]
     exception: Optional[Exception] = context.get("exception")
@@ -296,6 +306,4 @@ def on_failure_callback(context: dict) -> None:
 *Log*: {ti.log_url}
 {exception_message}
 """
-    send_message(
-        message, username="Airflow DAG Failure", http_conn_id=SLACK_ALERTS_CONN_ID
-    )
+    send_alert(message, dag_id=dag.dag_id, username="Airflow DAG Failure")
