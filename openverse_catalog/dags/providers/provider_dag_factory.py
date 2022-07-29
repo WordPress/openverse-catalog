@@ -79,7 +79,7 @@ AWS_CONN_ID = os.getenv("AWS_CONN_ID", "no_aws_conn_id")
 OPENVERSE_BUCKET = os.getenv("OPENVERSE_BUCKET")
 OUTPUT_DIR_PATH = os.path.realpath(os.getenv("OUTPUT_DIR", "/tmp/"))
 DATE_RANGE_ARG_TEMPLATE = "{{{{ macros.ds_add(ds, -{}) }}}}"
-DATE_PARTITION_ARG_TEMPLATE = "{}/{}/{{{{ date_partition_for_prefix(dag.schedule_interval, dag_run.logical_date) }}}}"  # noqa
+DATE_PARTITION_ARG_TEMPLATE = "{media_type}/{provider_type}/{{{{ date_partition_for_prefix(dag.schedule_interval, dag_run.logical_date) }}}}"  # noqa
 
 
 def create_provider_api_workflow(
@@ -215,7 +215,8 @@ def create_provider_api_workflow(
                         ),
                         "s3_bucket": OPENVERSE_BUCKET,
                         "s3_prefix": DATE_PARTITION_ARG_TEMPLATE.format(
-                            media_type, provider_name
+                            media_type=media_type,
+                            provider_name=provider_name,
                         ),
                         "aws_conn_id": AWS_CONN_ID,
                     },
