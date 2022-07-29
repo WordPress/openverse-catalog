@@ -6,7 +6,9 @@ from common import slack
 log = logging.getLogger(__name__)
 
 
-def report_record_difference(before: int, after: int, media_type: str):
+def report_record_difference(before: str, after: str, media_type: str):
+    before = int(before)
+    after = int(after)
     count_diff = after - before
     percent_diff = (count_diff / before) * 100
     # Note for formatting:

@@ -159,7 +159,6 @@ def create_data_refresh_dag(data_refresh: DataRefresh, external_dag_ids: Sequenc
         catchup=False,
         doc_md=__doc__,
         tags=["data_refresh"],
-        render_template_as_native_obj=True,
     )
 
     with dag:
