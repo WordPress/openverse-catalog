@@ -35,59 +35,53 @@ License versions below are hard-coded from inaturalist
 https://github.com/inaturalist/inaturalist/blob/d338ba76d82af83d8ad0107563015364a101568c/app/models/shared/license_module.rb#L5
 */
 
-SELECT
-    json_build_object(
-        'foreign_id',
-        INATURALIST.PHOTOS.PHOTO_ID,
-        'width',
-        INATURALIST.PHOTOS.WIDTH,
-        'height',
-        INATURALIST.PHOTOS.HEIGHT,
-        'title',
-        INATURALIST.TAXA.NAME,
-        'tags',
-        INATURALIST.TAXA.TAGS,
-        'filetype',
-        LOWER(INATURALIST.PHOTOS.EXTENSION),
-        'license_url',
-        (CASE
-            WHEN INATURALIST.PHOTOS.LICENSE = 'CC-BY-NC-SA'
-                THEN 'http://creativecommons.org/licenses/by-nc-sa/4.0/'
-            WHEN INATURALIST.PHOTOS.LICENSE = 'CC-BY-NC'
-                THEN 'http://creativecommons.org/licenses/by-nc/4.0/'
-            WHEN INATURALIST.PHOTOS.LICENSE = 'CC-BY-NC-ND'
-                THEN 'http://creativecommons.org/licenses/by-nc-nd/4.0/'
-            WHEN INATURALIST.PHOTOS.LICENSE = 'CC-BY'
-                THEN 'http://creativecommons.org/licenses/by/4.0/'
-            WHEN INATURALIST.PHOTOS.LICENSE = 'CC-BY-SA'
-                THEN 'http://creativecommons.org/licenses/by-sa/4.0/'
-            WHEN INATURALIST.PHOTOS.LICENSE = 'CC-BY-ND'
-                THEN 'http://creativecommons.org/licenses/by-nd/4.0/'
-            WHEN INATURALIST.PHOTOS.LICENSE = 'PD'
-                THEN 'http://en.wikipedia.org/wiki/Public_domain'
-            WHEN INATURALIST.PHOTOS.LICENSE = 'CC0'
-                THEN 'http://creativecommons.org/publicdomain/zero/1.0/'
-            END),
-        'foreign_landing_url',
-        'https://www.inaturalist.org/photos/' || INATURALIST.PHOTOS.PHOTO_ID,
-        'image_url',
-        'https://inaturalist-open-data.s3.amazonaws.com/photos/'
-        || INATURALIST.PHOTOS.PHOTO_ID || '/medium.' || INATURALIST.PHOTOS.EXTENSION,
-        'creator',
-        COALESCE(INATURALIST.OBSERVERS.LOGIN, INATURALIST.PHOTOS.OBSERVER_ID::text),
-        'creator_url',
-        'https://www.inaturalist.org/users/' || INATURALIST.PHOTOS.OBSERVER_ID
-    )
-FROM INATURALIST.PHOTOS
-INNER JOIN
-    INATURALIST.OBSERVATIONS ON
-        INATURALIST.PHOTOS.OBSERVATION_UUID = INATURALIST.OBSERVATIONS.OBSERVATION_UUID
-INNER JOIN
-    INATURALIST.OBSERVERS ON
-        INATURALIST.PHOTOS.OBSERVER_ID = INATURALIST.OBSERVERS.OBSERVER_ID
-INNER JOIN
-    INATURALIST.TAXA ON
-        INATURALIST.OBSERVATIONS.TAXON_ID = INATURALIST.TAXA.TAXON_ID
-ORDER BY PHOTO_ID
-LIMIT {batch_limit}
-OFFSET {offset_num};
+select json_agg(records)
+from (
+        SELECT
+            INATURALIST.PHOTOS.PHOTO_ID as foreign_identifier,
+            INATURALIST.PHOTOS.WIDTH,
+            INATURALIST.PHOTOS.HEIGHT,
+            INATURALIST.TAXA.NAME as title,
+            array_to_json(INATURALIST.TAXA.ancestor_names) as raw_tags,
+            LOWER(INATURALIST.PHOTOS.EXTENSION) as filetype,
+            (CASE
+                WHEN INATURALIST.PHOTOS.LICENSE = 'CC-BY-NC-SA'
+                    THEN 'http://creativecommons.org/licenses/by-nc-sa/4.0/'
+                WHEN INATURALIST.PHOTOS.LICENSE = 'CC-BY-NC'
+                    THEN 'http://creativecommons.org/licenses/by-nc/4.0/'
+                WHEN INATURALIST.PHOTOS.LICENSE = 'CC-BY-NC-ND'
+                    THEN 'http://creativecommons.org/licenses/by-nc-nd/4.0/'
+                WHEN INATURALIST.PHOTOS.LICENSE = 'CC-BY'
+                    THEN 'http://creativecommons.org/licenses/by/4.0/'
+                WHEN INATURALIST.PHOTOS.LICENSE = 'CC-BY-SA'
+                    THEN 'http://creativecommons.org/licenses/by-sa/4.0/'
+                WHEN INATURALIST.PHOTOS.LICENSE = 'CC-BY-ND'
+                    THEN 'http://creativecommons.org/licenses/by-nd/4.0/'
+                WHEN INATURALIST.PHOTOS.LICENSE = 'PD'
+                    THEN 'http://en.wikipedia.org/wiki/Public_domain'
+                WHEN INATURALIST.PHOTOS.LICENSE = 'CC0'
+                    THEN 'http://creativecommons.org/publicdomain/zero/1.0/'
+                END) as license_url,
+            'https://www.inaturalist.org/photos/' || INATURALIST.PHOTOS.PHOTO_ID
+                as foreign_landing_url,
+            'https://inaturalist-open-data.s3.amazonaws.com/photos/'
+            || INATURALIST.PHOTOS.PHOTO_ID || '/medium.' || INATURALIST.PHOTOS.EXTENSION
+                as image_url,
+            COALESCE(INATURALIST.OBSERVERS.LOGIN, INATURALIST.PHOTOS.OBSERVER_ID::text)
+                as creator,
+            'https://www.inaturalist.org/users/' || INATURALIST.PHOTOS.OBSERVER_ID
+                as creator_url
+    FROM INATURALIST.PHOTOS
+    INNER JOIN
+        INATURALIST.OBSERVATIONS ON
+            INATURALIST.PHOTOS.OBSERVATION_UUID = INATURALIST.OBSERVATIONS.OBSERVATION_UUID
+    INNER JOIN
+        INATURALIST.OBSERVERS ON
+            INATURALIST.PHOTOS.OBSERVER_ID = INATURALIST.OBSERVERS.OBSERVER_ID
+    INNER JOIN
+        INATURALIST.TAXA ON
+            INATURALIST.OBSERVATIONS.TAXON_ID = INATURALIST.TAXA.TAXON_ID
+    ORDER BY PHOTO_ID
+    LIMIT {batch_limit}
+    OFFSET {offset_num}
+) as records;

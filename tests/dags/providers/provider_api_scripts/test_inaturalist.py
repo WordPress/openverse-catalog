@@ -27,8 +27,12 @@ from providers.provider_api_scripts import inaturalist
 
 INAT = inaturalist.INaturalistDataIngester()
 RESOURCE_DIR = Path(__file__).parent / "resources/inaturalist"
+# postgres always returns a list of tuples, which is not a valid json format
 FULL_DB_RESPONSE = literal_eval((RESOURCE_DIR / "full_db_response.txt").read_text())
-RECORD0 = FULL_DB_RESPONSE[0][0]
+# in this case, it's a list containing a single tuple with a single value that is a
+# valid json array of records for processing as if they came from a regular API.
+JSON_RESPONSE = FULL_DB_RESPONSE[0][0]
+RECORD0 = JSON_RESPONSE[0]
 
 
 def test_get_next_query_params_no_prior():
@@ -50,14 +54,14 @@ def test_get_batch_data_returns_none(value):
 
 
 def test_get_batch_data_full_response():
-    actual = INAT.get_batch_data(FULL_DB_RESPONSE)
+    actual = INAT.get_batch_data(JSON_RESPONSE)
     assert isinstance(actual, list)
     assert len(actual) == 33
     assert isinstance(actual[0], dict)
     assert actual[0] == RECORD0
 
 
-@pytest.mark.parametrize("field", ["license_url", "foreign_id"])
+@pytest.mark.parametrize("field", ["license_url", "foreign_identifier"])
 def test_get_record_data_missing_necessarly_fields(field):
     expected = None
     record = RECORD0.copy()
@@ -81,14 +85,16 @@ def test_get_record_data_full_response():
         "creator_url": "https://www.inaturalist.org/users/615549",
         "title": "Trifolium hybridum",
         "raw_tags": [
-            "Tracheophyta",
-            "Angiospermae",
-            "Magnoliopsida",
-            "Fabales",
             "Fabaceae",
+            "Fabales",
+            "Magnoliopsida",
+            "Angiospermae",
+            "Plantae",
+            "Life",
+            "Trifolium",
+            "Tracheophyta",
             "Faboideae",
             "Trifolieae",
-            "Trifolium",
         ],
     }
     actual = INAT.get_record_data(RECORD0)

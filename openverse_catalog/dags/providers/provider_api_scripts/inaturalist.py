@@ -18,6 +18,7 @@ Notes:      [The iNaturalist API is not intended for data scraping.]
             (https://github.com/inaturalist/inaturalist-open-data/blob/main/Metadata/structure.sql)
             except for adding ancestry tags to the taxa table.
 """
+
 import os
 from pathlib import Path
 from textwrap import dedent
@@ -72,36 +73,25 @@ class INaturalistDataIngester(ProviderDataIngester):
         sql_string = self.sql_template.format(
             batch_limit=self.batch_limit, offset_num=query_params["offset_num"]
         )
-        return self.pg.get_records(sql_string)
+        sql_result = self.pg.get_records(sql_string)
+        # Postgres returns a a list of tuples, even if it's one tuple with one item.
+        return sql_result[0][0]
 
     def get_batch_data(self, response_json):
         if response_json:
-            return [dict(item[0]) for item in response_json]
+            return response_json
         return None
 
     def get_record_data(self, data):
+        if data.get("foreign_identifier") is None:
+            return None
         license_url = data.get("license_url")
         license_info = get_license_info(license_url=license_url)
         if license_info == LicenseInfo(None, None, None, None):
             return None
-
-        foreign_id = data.get("foreign_id")
-        if foreign_id is None:
-            return None
-
-        return {
-            "foreign_identifier": foreign_id,
-            "foreign_landing_url": data.get("foreign_landing_url"),
-            "title": data.get("title"),
-            "creator": data.get("creator"),
-            "image_url": data.get("image_url"),
-            "width": data.get("width"),
-            "height": data.get("height"),
-            "license_info": license_info,
-            "filetype": data.get("filetype"),
-            "creator_url": data.get("creator_url"),
-            "raw_tags": data.get("tags").split("; "),
-        }
+        record_data = {k: data[k] for k in data.keys() if k != "license_url"}
+        record_data["license_info"] = license_info
+        return record_data
 
     def get_media_type(self, record):
         # This provider only supports Images via S3, though they have some audio files

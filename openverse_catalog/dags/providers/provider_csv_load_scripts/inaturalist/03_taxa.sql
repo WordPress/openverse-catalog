@@ -18,7 +18,7 @@ CREATE TABLE inaturalist.taxa (
     rank character varying(255),
     name character varying(255),
     active boolean,
-    tags text
+    ancestor_names varchar[]
 );
 COMMIT;
 
@@ -32,31 +32,21 @@ SELECT aws_s3.table_import_from_s3('inaturalist.taxa',
 ALTER TABLE inaturalist.taxa ADD PRIMARY KEY (taxon_id);
 COMMIT;
 
--- Aggregate ancestry names as tags
-CREATE TEMPORARY TABLE unnest_ancestry AS
+WITH aggregated AS
 (
-    SELECT
-        taxon_id,
-        unnest(string_to_array(ancestry, '/'))::int AS linked_taxon_id
-    FROM inaturalist.taxa
-);
-
-CREATE TEMPORARY TABLE taxa_tags AS
-(
-    SELECT
-        unnest_ancestry.taxon_id,
-        string_agg(taxa.name, '; ') AS tags
-    FROM unnest_ancestry
-    INNER JOIN
-        inaturalist.taxa ON unnest_ancestry.linked_taxon_id = taxa.taxon_id
-    WHERE taxa.rank NOT IN ('kingdom', 'stateofmatter')
-    GROUP BY unnest_ancestry.taxon_id
-);
-
+    select
+        child.taxon_id,
+        array_agg(ancestors.name) as ancestor_names
+    from
+        inaturalist.taxa ancestors,
+        inaturalist.taxa child
+    where ancestors.taxon_id = ANY (string_to_array(child.ancestry, '/')::int[])
+    group by child.taxon_id
+)
 UPDATE inaturalist.taxa
-SET tags = taxa_tags.tags
-FROM taxa_tags
-WHERE taxa_tags.taxon_id = taxa.taxon_id;
+SET ancestor_names = aggregated.ancestor_names
+from aggregated
+where taxa.taxon_id = aggregated.taxon_id;
 COMMIT;
 
 SELECT count(*) FROM inaturalist.taxa;
