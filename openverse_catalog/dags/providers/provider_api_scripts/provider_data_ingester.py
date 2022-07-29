@@ -128,9 +128,9 @@ class ProviderDataIngester(ABC):
         an `offset` or `page` param, for example.
 
         Required arguments:
-        old_query_params: Dictionary of query string params used in the previous
-                          request. If None, this is the first request.
-        **kwargs:         Optional kwargs passed through from `ingest_records`.
+        prev_query_params: Dictionary of query string params used in the previous
+                           request. If None, this is the first request.
+        **kwargs:          Optional kwargs passed through from `ingest_records`.
 
         """
         pass

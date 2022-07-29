@@ -51,16 +51,12 @@ https://github.com/creativecommons/cccatalog/issues/333)
 - [DB Loader should take data from S3, rather than EC2 to load into PostgreSQL](
 https://github.com/creativecommons/cccatalog/issues/334)
 """
-import inspect
 import logging
 import os
-import time
 from datetime import datetime, timedelta
-from types import FunctionType
-from typing import Callable, Dict, List, Optional, Sequence
+from typing import Callable, Dict, Optional, Sequence
 
 from airflow import DAG
-from airflow.models import TaskInstance
 from airflow.models.baseoperator import cross_downstream
 from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import PythonOperator
@@ -68,6 +64,7 @@ from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
 from common.constants import DAG_DEFAULT_ARGS, XCOM_PULL_TEMPLATE
 from common.loader import loader, reporting, s3, sql
+from providers.factory_utils import generate_tsv_filenames, pull_media_wrapper
 
 
 logger = logging.getLogger(__name__)
@@ -80,82 +77,6 @@ OUTPUT_DIR_PATH = os.path.realpath(os.getenv("OUTPUT_DIR", "/tmp/"))
 DATE_RANGE_ARG_TEMPLATE = "{{{{ macros.ds_add(ds, -{}) }}}}"
 
 
-def _push_output_paths_wrapper(
-    ingestion_callable: Callable,
-    media_types: List[str],
-    ti: TaskInstance,
-    args: Sequence = None,
-):
-    """
-    Run the provided callable after pushing the calculated output directories
-    for each media store to XComs. Output locations are pushed under keys with
-    the format `<media-type>_tsv`. This is a temporary workaround due to the nature
-    of the current provider scripts. Once
-    https://github.com/WordPress/openverse-catalog/issues/229 is addressed and the
-    provider scripts are refactored into classes, this wrapper can either be updated
-    or the XCom pushing can be moved into the provider initialization.
-    """
-    args = args or []
-    logger.info("Pushing available store paths to XComs")
-
-    # TODO: This entire branch can be removed when all of the provider scripts have been
-    # refactored to subclass ProviderDataIngester.
-    if isinstance(ingestion_callable, FunctionType):
-        # Stores exist at the module level, so in order to retrieve the output values we
-        # must first pull the stores from the module.
-        module = inspect.getmodule(ingestion_callable)
-        stores = {}
-        for media_type in media_types:
-            store = getattr(module, f"{media_type}_store", None)
-            if not store:
-                continue
-            stores[media_type] = store
-
-        if len(stores) != len(media_types):
-            raise ValueError(
-                f"Expected stores in {module.__name__} were missing: "
-                f"{list(set(media_types) - set(stores))}"
-            )
-
-        for media_type, store in stores.items():
-            logger.info(
-                f"{media_type.capitalize()} store location: {store.output_path}"
-            )
-            ti.xcom_push(key=f"{media_type}_tsv", value=store.output_path)
-
-        logger.info("Running provider function")
-
-        start_time = time.perf_counter()
-        # Not passing kwargs here because Airflow throws a bunch of stuff in there that
-        # none of our provider scripts are expecting.
-        data = ingestion_callable(*args)
-        end_time = time.perf_counter()
-
-    else:
-        # A ProviderDataIngester class was passed instead. First we initialize the
-        # class, which will initialize the media stores and DelayedRequester.
-        logger.info(f"Initializing ProviderIngester {ingestion_callable.__name__}")
-        ingester = ingestion_callable(*args)
-
-        # Push the media store output directories to XComs.
-        for store in ingester.media_stores.values():
-            logger.info(
-                f"{store.media_type.capitalize()} store location: {store.output_path}"
-            )
-            ti.xcom_push(key=f"{store.media_type}_tsv", value=store.output_path)
-
-        # Run the `ingest_records` function to perform ingestion.
-        logger.info("Running ingestion function")
-        start_time = time.perf_counter()
-        data = ingester.ingest_records(*args)
-        end_time = time.perf_counter()
-
-    # Report duration
-    duration = end_time - start_time
-    ti.xcom_push(key="duration", value=duration)
-    return data
-
-
 def create_provider_api_workflow(
     dag_id: str,
     ingestion_callable: Callable,
@@ -166,7 +87,8 @@ def create_provider_api_workflow(
     schedule_string: str = "@daily",
     dated: bool = True,
     day_shift: int = 0,
-    execution_timeout: timedelta = timedelta(hours=12),
+    pull_timeout: timedelta = timedelta(hours=12),
+    load_timeout: timedelta = timedelta(hours=1),
     doc_md: Optional[str] = "",
     media_types: Sequence[str] = ("image",),
 ):
@@ -205,8 +127,10 @@ def create_provider_api_workflow(
     day_shift:         integer giving the number of days before the
                        current execution date the `main_function` should
                        be run (if `dated=True`).
-    execution_timeout: datetime.timedelta giving the amount of time a given data
+    pull_timeout:      datetime.timedelta giving the amount of time a given data
                        pull may take.
+    load_timeout:      datetime.timedelta giving the amount of time a given load_data
+                       task may take.
     doc_md:            string which should be used for the DAG's documentation markdown
     media_types:       list describing the media type(s) that this provider handles
                        (e.g. `["audio"]`, `["image", "audio"]`, etc.)
@@ -223,26 +147,41 @@ def create_provider_api_workflow(
         max_active_runs=max_active_runs,
         start_date=start_date,
         schedule_interval=schedule_string,
-        catchup=False,
+        catchup=dated,  # catchup is turned on for dated DAGs to allow backfilling
         doc_md=doc_md,
         tags=["provider"] + [f"provider: {media_type}" for media_type in media_types],
         render_template_as_native_obj=True,
     )
 
     with dag:
-        pull_kwargs = {
+        ingestion_kwargs = {
             "ingestion_callable": ingestion_callable,
             "media_types": media_types,
         }
         if dated:
-            pull_kwargs["args"] = [DATE_RANGE_ARG_TEMPLATE.format(day_shift)]
+            ingestion_kwargs["args"] = [DATE_RANGE_ARG_TEMPLATE.format(day_shift)]
+
+        generate_filenames = PythonOperator(
+            task_id=f"generate_{media_type_name}_filename",
+            python_callable=generate_tsv_filenames,
+            op_kwargs=ingestion_kwargs,
+        )
 
         pull_data = PythonOperator(
             task_id=f"pull_{media_type_name}_data",
-            python_callable=_push_output_paths_wrapper,
-            op_kwargs=pull_kwargs,
+            python_callable=pull_media_wrapper,
+            op_kwargs={
+                **ingestion_kwargs,
+                # Note: this is assumed to match the order of media_types exactly
+                "tsv_filenames": [
+                    XCOM_PULL_TEMPLATE.format(
+                        generate_filenames.task_id, f"{media_type}_tsv"
+                    )
+                    for media_type in media_types
+                ],
+            },
             depends_on_past=False,
-            execution_timeout=execution_timeout,
+            execution_timeout=pull_timeout,
             # If the data pull fails, we want to load all data that's been retrieved
             # thus far before we attempt again
             retries=0,
@@ -269,7 +208,7 @@ def create_provider_api_workflow(
                     python_callable=s3.copy_file_to_s3,
                     op_kwargs={
                         "tsv_file_path": XCOM_PULL_TEMPLATE.format(
-                            pull_data.task_id, f"{media_type}_tsv"
+                            generate_filenames.task_id, f"{media_type}_tsv"
                         ),
                         "s3_bucket": OPENVERSE_BUCKET,
                         "s3_prefix": f"{media_type}/{provider_name}",
@@ -279,6 +218,8 @@ def create_provider_api_workflow(
                 )
                 load_from_s3 = PythonOperator(
                     task_id="load_from_s3",
+                    execution_timeout=load_timeout,
+                    retries=1,
                     python_callable=loader.load_from_s3,
                     op_kwargs={
                         "bucket": OPENVERSE_BUCKET,
@@ -316,11 +257,14 @@ def create_provider_api_workflow(
                 "provider_name": provider_name,
                 "duration": XCOM_PULL_TEMPLATE.format(pull_data.task_id, "duration"),
                 "record_counts_by_media_type": record_counts_by_media_type,
+                "dated": dated,
+                "date_range_start": "{{ data_interval_start | ds }}",
+                "date_range_end": "{{ data_interval_end | ds }}",
             },
             trigger_rule=TriggerRule.ALL_DONE,
         )
 
-        pull_data >> load_tasks >> report_load_completion
+        generate_filenames >> pull_data >> load_tasks >> report_load_completion
 
     return dag
 
@@ -328,7 +272,7 @@ def create_provider_api_workflow(
 def create_day_partitioned_ingestion_dag(
     dag_id: str,
     main_function: Callable,
-    reingestion_day_list_list: List[List[int]],
+    reingestion_day_list_list: list[list[int]],
     start_date: datetime = datetime(1970, 1, 1),
     max_active_runs: int = 1,
     max_active_tasks: int = 1,
