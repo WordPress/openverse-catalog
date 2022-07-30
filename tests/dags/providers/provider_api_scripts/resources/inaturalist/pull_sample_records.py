@@ -7,12 +7,6 @@ Assumes that large files are saved outside of the Openverse repo to take pressur
 git and linting.
 """
 
-# this should only ever be run in local dev environments, where pytest_socket exists,
-# not production where it does not.
-try:
-    import pytest_socket
-except ImportError:
-    exit()
 
 import csv
 import gzip
