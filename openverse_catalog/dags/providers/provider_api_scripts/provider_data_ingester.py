@@ -121,8 +121,8 @@ class ProviderDataIngester(ABC):
                     should_continue = False
         finally:
             logger.info("======Something went wrong!! But that's OK I'm exiting======")
-
-        self.commit_records()
+            total = self.commit_records()
+            logger.info(f"Committed {total} records")
 
     @abstractmethod
     def get_next_query_params(
@@ -259,6 +259,8 @@ class ProviderDataIngester(ABC):
         """
         pass
 
-    def commit_records(self):
+    def commit_records(self) -> int:
+        total = 0
         for store in self.media_stores.values():
-            store.commit()
+            total += store.commit()
+        return total
