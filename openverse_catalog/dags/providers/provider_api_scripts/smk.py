@@ -72,7 +72,7 @@ def _get_batch_items(
             if "items" in response_json.keys():
                 items = response_json.get("items")
                 break
-        except (JSONDecodeError, ValueError, TypeError) as e:
+        except (AttributeError, JSONDecodeError, ValueError, TypeError) as e:
             logger.error(f"errored due to {e}")
     return items
 

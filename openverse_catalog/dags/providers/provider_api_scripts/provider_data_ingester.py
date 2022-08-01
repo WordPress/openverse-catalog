@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Tuple
 
 from airflow.models import Variable
-from common.requester import DelayedRequester
+from common.requester import DelayedRequester, RetriesExceeded
 from common.storage.media import MediaStore
 from common.storage.util import get_media_store_class
 from requests.exceptions import JSONDecodeError, RequestException
@@ -169,7 +169,13 @@ class ProviderDataIngester(ABC):
             # this will return True and ingestion continues.
             should_continue = self.get_should_continue(response_json)
 
-        except (RequestException, JSONDecodeError, ValueError, TypeError) as e:
+        except (
+            RequestException,
+            RetriesExceeded,
+            JSONDecodeError,
+            ValueError,
+            TypeError,
+        ) as e:
             logger.error(f"Error due to {e}")
 
         return batch, should_continue

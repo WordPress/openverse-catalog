@@ -20,6 +20,14 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
+class RetriesExceeded(Exception):
+    """
+    Custom exception for when the number of allowed retries has been exceeded.
+    """
+
+    pass
+
+
 class DelayedRequester:
     """
     Provides a method `get` that is a wrapper around `get` from the
@@ -91,7 +99,7 @@ class DelayedRequester:
 
         if retries < 0:
             logger.error("No retries remaining.  Failure.")
-            raise Exception("Retries exceeded")
+            raise RetriesExceeded("Retries exceeded")
 
         response = self.get(endpoint, params=query_params, **kwargs)
         if response is not None and response.status_code == 200:

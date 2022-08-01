@@ -73,7 +73,13 @@ def _get_object_json(
             if response_json and response_json.get("message", "").lower() == "success.":
                 data = response_json.get("data")
                 break
-        except (RequestException, JSONDecodeError, ValueError, TypeError) as e:
+        except (
+            RequestException,
+            AttributeError,
+            JSONDecodeError,
+            ValueError,
+            TypeError,
+        ) as e:
             logger.error(f"Error due to {e}")
     return data
 
