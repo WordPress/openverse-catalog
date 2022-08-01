@@ -344,6 +344,18 @@ def test_send_alert():
         )
 
 
+def test_send_alert_skips_when_silenced():
+    mock_silenced_dags = {
+        "silenced_dag_id": "https://github.com/WordPress/openverse/issues/1"
+    }
+    with mock.patch("common.slack.send_message") as send_message_mock, mock.patch(
+        "common.slack.Variable"
+    ) as MockVariable:
+        MockVariable.get.side_effect = [mock_silenced_dags]
+        send_alert("Sample text", dag_id="silenced_dag_id")
+        send_message_mock.assert_not_called()
+
+
 @pytest.mark.parametrize(
     "silenced_errors, alert, should_send",
     [
