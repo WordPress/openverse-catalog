@@ -6,6 +6,7 @@ from airflow.models import Variable
 from common.requester import DelayedRequester
 from common.storage.media import MediaStore
 from common.storage.util import get_media_store_class
+from requests.exceptions import JSONDecodeError, RequestException
 
 
 logger = logging.getLogger(__name__)
@@ -100,21 +101,26 @@ class ProviderDataIngester(ABC):
 
         logger.info(f"Begin ingestion for {self.__class__.__name__}")
 
-        while should_continue:
-            query_params = self.get_next_query_params(query_params, **kwargs)
+        # Note, exceptions by the requester are just swallowed and would eventually be
+        # killed by the `killed_task_cleanup_time` option
+        try:
+            while should_continue:
+                query_params = self.get_next_query_params(query_params, **kwargs)
 
-            batch, should_continue = self.get_batch(query_params)
+                batch, should_continue = self.get_batch(query_params)
 
-            if batch and len(batch) > 0:
-                record_count += self.process_batch(batch)
-                logger.info(f"{record_count} records ingested so far.")
-            else:
-                logger.info("Batch complete.")
-                should_continue = False
+                if batch and len(batch) > 0:
+                    record_count += self.process_batch(batch)
+                    logger.info(f"{record_count} records ingested so far.")
+                else:
+                    logger.info("Batch complete.")
+                    should_continue = False
 
-            if self.limit and record_count >= self.limit:
-                logger.info(f"Ingestion limit of {self.limit} has been reached.")
-                should_continue = False
+                if self.limit and record_count >= self.limit:
+                    logger.info(f"Ingestion limit of {self.limit} has been reached.")
+                    should_continue = False
+        finally:
+            logger.info("======Something went wrong!! But that's OK I'm exiting======")
 
         self.commit_records()
 
@@ -163,7 +169,7 @@ class ProviderDataIngester(ABC):
             # this will return True and ingestion continues.
             should_continue = self.get_should_continue(response_json)
 
-        except Exception as e:
+        except (RequestException, JSONDecodeError, ValueError, TypeError) as e:
             logger.error(f"Error due to {e}")
 
         return batch, should_continue

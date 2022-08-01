@@ -3,6 +3,8 @@ import time
 
 import oauth2
 import requests
+from airflow.exceptions import AirflowException
+from requests.exceptions import JSONDecodeError
 
 
 # pytest_socket will not be available in production, so we must create a shim for
@@ -65,6 +67,12 @@ class DelayedRequester:
             # This exception will only be raised during testing, and it *must*
             # be re-raised and bubbled up the stack
             raise
+        except (AirflowException, KeyboardInterrupt):
+            # These exceptions are raised by task managers and should be respected &
+            # re-raised. Airflow runs its tasks in a separate thread, so if this
+            # exception is received, typically it means that the task has been
+            # sent a SIGTERM, which means that the task should be stopped.
+            raise
         except Exception as e:
             logger.error(f"Error with the request for URL: {url}.")
             logger.info(f"{type(e).__name__}: {e}")
@@ -89,7 +97,7 @@ class DelayedRequester:
         if response is not None and response.status_code == 200:
             try:
                 response_json = response.json()
-            except Exception as e:
+            except JSONDecodeError as e:
                 logger.warning(f"Could not get response_json.\n{e}")
                 response_json = None
 
