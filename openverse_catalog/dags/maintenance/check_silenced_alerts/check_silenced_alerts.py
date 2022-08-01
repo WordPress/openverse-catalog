@@ -28,7 +28,7 @@ def check_configuration(github_pat: str):
         " or assign a new issue."
     )
     for (dag, issue) in dags_to_reenable:
-        message += f"\n  - {dag}: _{issue}_"
+        message += f"\n  - <{issue}|{dag}>"
     send_alert(message, username="Silenced DAG Check")
     return message
 
