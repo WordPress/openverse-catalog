@@ -80,10 +80,17 @@ def make_requested_reviewer(login: str) -> dict:
     return requested_reviewer
 
 
+_comment_count = 1
+
+
 def make_pr_comment(
     is_reminder: bool, created_at: Optional[datetime.datetime] = None
 ) -> dict:
+    global _comment_count
+
     comment = _read_fixture("comment")
+    comment["id"] = _comment_count
+    _comment_count += 1
 
     if is_reminder:
         comment["user"]["login"] = "openverse-bot"

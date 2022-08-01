@@ -190,14 +190,14 @@ def test_does_reping_past_due_if_reminder_is_outdated(github, urgency):
         make_requested_reviewer(f"reviewer-not-due-{i}") for i in range(2)
     ]
     github["pulls"] += [past_due_pull, not_due_pull]
-    github["pull_comments"][past_due_pull["number"]].append(
-        make_outdated_pr_comment(past_due_pull)
-    )
+    reminder_comment = make_outdated_pr_comment(past_due_pull)
+    github["pull_comments"][past_due_pull["number"]].append(reminder_comment)
 
     post_reminders("not_set", dry_run=False)
 
     assert past_due_pull["number"] in github["posted_comments"]
     assert not_due_pull["number"] not in github["posted_comments"]
+    assert reminder_comment["id"] in github["deleted_comments"]
 
 
 UNAPPROVED_REVIEW_STATES = ("CHANGES_REQUESTED", "COMMENTED")
