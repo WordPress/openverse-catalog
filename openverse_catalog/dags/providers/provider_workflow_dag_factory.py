@@ -34,4 +34,5 @@ for provider_workflow in PROVIDER_WORKFLOWS:
         provider_script.__doc__,
         provider_workflow.media_types,
         provider_workflow.preingestion_task_creator,
+        provider_workflow.postingestion_task_creator,
     )

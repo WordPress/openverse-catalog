@@ -139,10 +139,8 @@ class INaturalistDataIngester(ProviderDataIngester):
                 },
             )
 
-            # A prior draft had a separate python function to run the SQL and add some
-            # logging, but the native airflow logging should be enough, right?
-            create_schema = PostgresOperator(
-                task_id="create_schema",
+            create_inaturalist_schema = PostgresOperator(
+                task_id="create_inaturalist_schema",
                 postgres_conn_id=POSTGRES_CONN_ID,
                 sql=dedent((SCRIPT_DIR / "00_create_schema.sql").read_text()),
             )
@@ -160,6 +158,15 @@ class INaturalistDataIngester(ProviderDataIngester):
                         ),
                     )
 
-            (check_for_file_updates >> create_schema >> load_source_files)
+            (check_for_file_updates >> create_inaturalist_schema >> load_source_files)
 
         return preingestion_tasks
+
+    @staticmethod
+    def create_postingestion_tasks():
+        drop_inaturalist_schema = PostgresOperator(
+            task_id="drop_inaturalist_schema",
+            postgres_conn_id=POSTGRES_CONN_ID,
+            sql="DROP SCHEMA IF EXISTS inaturalist CASCADE",
+        )
+        return drop_inaturalist_schema

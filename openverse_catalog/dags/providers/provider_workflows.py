@@ -75,6 +75,7 @@ class ProviderWorkflow:
     doc_md: str = ""
     media_types: Sequence[str] = ("image",)
     preingestion_task_creator: Optional[callable] = None
+    postingestion_task_creator: Optional[callable] = None
 
     def __post_init__(self):
         if not self.dag_id:
@@ -115,6 +116,7 @@ PROVIDER_WORKFLOWS = [
         provider_script="inaturalist",
         ingester_class=INaturalistDataIngester,
         preingestion_task_creator=INaturalistDataIngester.create_preingestion_tasks,
+        postingestion_task_creator=INaturalistDataIngester.create_postingestion_tasks,
         schedule_string="@monthly",
     ),
     ProviderWorkflow(

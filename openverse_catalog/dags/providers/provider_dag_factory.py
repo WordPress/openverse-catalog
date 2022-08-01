@@ -92,6 +92,7 @@ def create_provider_api_workflow(
     doc_md: Optional[str] = "",
     media_types: Sequence[str] = ("image",),
     create_preingestion_tasks: Optional[Callable] = None,
+    create_postingestion_tasks: Optional[Callable] = None,
 ):
     """
     This factory method instantiates a DAG that will run the given
@@ -270,6 +271,10 @@ def create_provider_api_workflow(
         if create_preingestion_tasks:
             preingestion_tasks = create_preingestion_tasks()
             preingestion_tasks >> pull_data
+
+        if create_postingestion_tasks:
+            postingestion_tasks = create_postingestion_tasks()
+            pull_data >> postingestion_tasks
 
     return dag
 
