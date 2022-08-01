@@ -11,23 +11,14 @@ logger = logging.getLogger(__name__)
 
 
 def check_configuration(github_pat: str):
-    gh = GitHubAPI(github_pat)
-
     silenced_dags = Variable.get("silenced_slack_alerts", {}, deserialize_json=True)
 
-    dags_to_reenable = []
-    for dag_id, issue_url in silenced_dags.items():
-        owner, repo, issue_number = get_issue_info(issue_url)
-        github_issue = gh.get_issue(repo, issue_number, owner)
-
-        if github_issue.get("state") == "closed":
-            # If the associated issue has been closed, this DAG can have
-            # alerting reenabled.
-            dags_to_reenable.append((dag_id, issue_url))
+    dags_to_reenable = get_dags_with_closed_issues(github_pat, silenced_dags)
 
     if not dags_to_reenable:
         logger.info(
             "All DAGs configured to silence alerts have work still in progress."
+            " No configuration updates needed."
         )
         return
 
@@ -39,6 +30,22 @@ def check_configuration(github_pat: str):
     for (dag, issue) in dags_to_reenable:
         message += f"\n  - {dag}: _{issue}_"
     send_alert(message, username="Silenced DAG Check")
+    return message
+
+
+def get_dags_with_closed_issues(github_pat, silenced_dags):
+    gh = GitHubAPI(github_pat)
+
+    dags_to_reenable = []
+    for dag_id, issue_url in silenced_dags.items():
+        owner, repo, issue_number = get_issue_info(issue_url)
+        github_issue = gh.get_issue(repo, issue_number, owner)
+
+        if github_issue.get("state") == "closed":
+            # If the associated issue has been closed, this DAG can have
+            # alerting reenabled.
+            dags_to_reenable.append((dag_id, issue_url))
+    return dags_to_reenable
 
 
 def get_issue_info(issue_url: str) -> Tuple[str, str, str]:
