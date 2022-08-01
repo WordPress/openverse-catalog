@@ -101,8 +101,6 @@ class ProviderDataIngester(ABC):
 
         logger.info(f"Begin ingestion for {self.__class__.__name__}")
 
-        # Note, exceptions by the requester are just swallowed and would eventually be
-        # killed by the `killed_task_cleanup_time` option
         try:
             while should_continue:
                 query_params = self.get_next_query_params(query_params, **kwargs)
@@ -120,7 +118,6 @@ class ProviderDataIngester(ABC):
                     logger.info(f"Ingestion limit of {self.limit} has been reached.")
                     should_continue = False
         finally:
-            logger.info("======Something went wrong!! But that's OK I'm exiting======")
             total = self.commit_records()
             logger.info(f"Committed {total} records")
 
