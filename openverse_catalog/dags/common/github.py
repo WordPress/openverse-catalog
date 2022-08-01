@@ -53,3 +53,16 @@ class GitHubAPI:
             "GET",
             f"repos/{owner}/{repo}/issues/{issue_number}/comments",
         )
+
+    def delete_issue_comment(
+        self, repo: str, comment_id: int, owner: str = "WordPress"
+    ):
+        return self._make_request(
+            "DELETE", f"repos/{owner}/{repo}/issues/comments/{comment_id}"
+        )
+
+    def get_pull_reviews(self, repo: str, pull_number: int, owner: str = "WordPress"):
+        return self._make_request(
+            "GET",
+            f"repos/{owner}/{repo}/pulls/{pull_number}/reviews",
+        )
