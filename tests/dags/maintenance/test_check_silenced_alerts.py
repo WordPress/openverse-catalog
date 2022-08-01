@@ -54,7 +54,7 @@ def test_check_configuration(silenced_dags, dags_to_reenable, should_send_alert)
 
         # Called with correct dag_ids
         for dag_id, issue_url in dags_to_reenable:
-            assert f"{dag_id}: _{issue_url}_" in message
+            assert f"<{issue_url}|{dag_id}>" in message
 
 
 @pytest.mark.parametrize(
