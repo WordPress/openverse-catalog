@@ -1,31 +1,22 @@
+import os
 from ast import literal_eval
 from pathlib import Path
 
+import psycopg2
 import pytest
 from common.licenses import get_license_info
 from providers.provider_api_scripts import inaturalist
 
 
-# This file supports testing of the customized functions within the provider ingestion
-# class. It does not cover the pre-ingestion steps or sqls. To test those, instantiate
-# the local dev environment, with the inaturalist-open-data bucket on the minio docker.
-# (`just recreate` should do the trick.) Then manually kick off the Airflow DAG, and
-# inspect the logs and the data saved to openverse s3 on minio.
-
-# Based on the small sample files in /tests/s3-data/inaturalist-open-data, expect:
-# taxa.csv.gz --> 183 records
-# observations.csv.gz ---> 31 records
-# observers.csv.gz ---> 22 records
-# photos.csv.gz ---> 36 records
-# 3 of the photo records link to unclassified observations, so they have no title or
-# tags and we don't load them.
-# 10 of the remaining photo ids appear on multiple records, load one per photo_id.
-# The expected response to the database query for transformed data is a list of tuples
-# (not technically json, though the first value in each tuple is a dict) in
-# ./resources/inaturalist/full_db_response.txt
+# Sample data included in the tests below covers the following weird cases:
+#  - 3 of the photo records link to unclassified observations, so they have no title or
+#    tags and we don't load them.
+#  - 10 of the remaining photo ids appear on multiple records, load one per photo_id.
+#  - One of the photos has a taxon without any ancestors in the source table.
 
 
 INAT = inaturalist.INaturalistDataIngester()
+CONNECTION_ID = os.getenv("AIRFLOW_CONN_POSTGRES_OPENLEDGER_TESTING")
 RESOURCE_DIR = Path(__file__).parent / "resources/inaturalist"
 # postgres always returns a list of tuples, which is not a valid json format
 FULL_DB_RESPONSE = literal_eval((RESOURCE_DIR / "full_db_response.txt").read_text())
@@ -35,6 +26,32 @@ JSON_RESPONSE = FULL_DB_RESPONSE[0][0]
 RECORD0 = JSON_RESPONSE[0]
 
 
+def test_load_data():
+    # Based on the small sample files in /tests/s3-data/inaturalist-open-data and on
+    # minio in the test environment
+    # Just checking raw record counts, assume that the contents load correctly as only
+    # taxa has any logic outside literally loading the table using postgres existing
+    # copy command.
+    SQL_SCRIPT_DIR = (
+        Path(__file__).parents[4]
+        / "openverse_catalog/dags/providers/provider_csv_load_scripts/inaturalist"
+    )
+    LOAD_STEPS = [
+        ("00_create_schema.sql", [("inaturalist",)]),
+        ("01_photos.sql", [(37,)]),
+        ("02_observations.sql", [(32,)]),
+        ("03_taxa.sql", [(183,)]),
+        ("04_observers.sql", [(23,)]),
+    ]
+    db = psycopg2.connect(CONNECTION_ID)
+    cursor = db.cursor()
+    for (sql_script, expected) in LOAD_STEPS:
+        sql_string = (SQL_SCRIPT_DIR / sql_script).read_text()
+        cursor.execute(sql_string)
+        actual = cursor.fetchall()
+        assert actual == expected
+
+
 def test_get_next_query_params_no_prior():
     expected = {"offset_num": 0}
     actual = INAT.get_next_query_params()
@@ -42,7 +59,7 @@ def test_get_next_query_params_no_prior():
 
 
 def test_get_next_query_params_prior_0():
-    expected = {"offset_num": INAT.batch_limit}
+    expected = {"offset_num": 10_000}
     actual = INAT.get_next_query_params({"offset_num": 0})
     assert expected == actual
 
@@ -51,6 +68,12 @@ def test_get_next_query_params_prior_0():
 def test_get_batch_data_returns_none(value):
     actual = INAT.get_batch_data(value)
     assert actual is None
+
+
+def test_get_response_json():
+    expected = JSON_RESPONSE
+    actual = INAT.get_response_json({"offset_num": 0})
+    assert actual == expected
 
 
 def test_get_batch_data_full_response():
