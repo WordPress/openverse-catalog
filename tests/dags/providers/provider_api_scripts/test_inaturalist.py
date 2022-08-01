@@ -113,7 +113,6 @@ def test_get_record_data_full_response():
             "Magnoliopsida",
             "Angiospermae",
             "Plantae",
-            "Life",
             "Trifolium",
             "Tracheophyta",
             "Faboideae",
