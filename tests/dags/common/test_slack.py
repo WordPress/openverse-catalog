@@ -369,10 +369,12 @@ def test_on_failure_callback(
         "task_instance": mock.Mock(),
         "execution_date": datetime.now(),
         "exception": exception,
+        "dag": mock.Mock(),
     }
     env_vars = {
         "environment": environment,
         "slack_message_override": slack_message_override,
+        "silenced_slack_alerts": [],
     }
 
     # Mock env variables
