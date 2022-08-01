@@ -41,6 +41,7 @@ WITH aggregated AS
         inaturalist.taxa ancestors,
         inaturalist.taxa child
     where ancestors.taxon_id = ANY (string_to_array(child.ancestry, '/')::int[])
+        and ancestors.rank not in ('stateofmatter','epifamily','zoosection')
     group by child.taxon_id
 )
 UPDATE inaturalist.taxa
