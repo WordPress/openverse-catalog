@@ -144,7 +144,9 @@ class MediaStore(metaclass=abc.ABCMeta):
 
         media_data.pop("license_info", None)
         media_data["provider"] = self.provider
-        media_data["category"] = media_date["category"] or prov.DEFAULT_IMAGE_CATEGORY.get(self.provider)
+        media_data["category"] = media_data[
+            "category"
+        ] or prov.DEFAULT_IMAGE_CATEGORY.get(self.provider)
         return media_data
 
     def commit(self):
