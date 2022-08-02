@@ -2,7 +2,7 @@ from unittest import mock
 
 import pytest
 from airflow.exceptions import AirflowException
-from maintenance.check_silenced_alerts.check_silenced_alerts import (
+from maintenance.check_silenced_dags.check_silenced_dags import (
     check_configuration,
     get_dags_with_closed_issues,
     get_issue_info,
@@ -40,15 +40,15 @@ from tests.factories.github import make_issue
 )
 def test_check_configuration(silenced_dags, dags_to_reenable, should_send_alert):
     with mock.patch(
-        "maintenance.check_silenced_alerts.check_silenced_alerts.Variable",
+        "maintenance.check_silenced_dags.check_silenced_dags.Variable",
         return_value=silenced_dags,
     ), mock.patch(
-        "maintenance.check_silenced_alerts.check_silenced_alerts.get_dags_with_closed_issues",
+        "maintenance.check_silenced_dags.check_silenced_dags.get_dags_with_closed_issues",
         return_value=dags_to_reenable,
     ) as get_dags_with_closed_issues_mock, mock.patch(
-        "maintenance.check_silenced_alerts.check_silenced_alerts.send_alert"
+        "maintenance.check_silenced_dags.check_silenced_dags.send_alert"
     ) as send_alert_mock:
-        message = check_configuration("not_set")
+        message = check_configuration("not_set", "silenced_slack_alerts")
         assert send_alert_mock.called == should_send_alert
         assert get_dags_with_closed_issues_mock.called_with("not_set", silenced_dags)
 
@@ -97,7 +97,7 @@ def test_get_dags_with_closed_issues(open_issues, closed_issues):
         return make_issue("closed")
 
     with mock.patch(
-        "maintenance.check_silenced_alerts.check_silenced_alerts.GitHubAPI.get_issue",
+        "maintenance.check_silenced_dags.check_silenced_dags.GitHubAPI.get_issue",
     ) as MockGetIssue:
         MockGetIssue.side_effect = mock_get_issue
 

@@ -22,13 +22,13 @@ from datetime import datetime, timedelta
 from airflow.models import DAG, Variable
 from airflow.operators.python import PythonOperator
 from common.constants import DAG_DEFAULT_ARGS
-from maintenance.check_silenced_alerts import check_silenced_alerts
+from maintenance.check_silenced_dags import check_silenced_dags
 
 
 logger = logging.getLogger(__name__)
 
 
-DAG_ID = "check_silenced_alerts"
+DAG_ID = "check_silenced_dags"
 MAX_ACTIVE_TASKS = 1
 GITHUB_PAT = Variable.get("GITHUB_API_KEY", default_var="not_set")
 
@@ -52,6 +52,9 @@ dag = DAG(
 with dag:
     PythonOperator(
         task_id="check_silenced_alert_configuration",
-        python_callable=check_silenced_alerts.check_configuration,
-        op_kwargs={"github_pat": GITHUB_PAT},
+        python_callable=check_silenced_dags.check_configuration,
+        op_kwargs={
+            "github_pat": GITHUB_PAT,
+            "airflow_variable": "silenced_slack_alerts",
+        },
     )

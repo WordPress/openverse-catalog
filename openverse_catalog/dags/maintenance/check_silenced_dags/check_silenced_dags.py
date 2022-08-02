@@ -10,21 +10,20 @@ from common.slack import send_alert
 logger = logging.getLogger(__name__)
 
 
-def check_configuration(github_pat: str):
-    silenced_dags = Variable.get("silenced_slack_alerts", {}, deserialize_json=True)
-
+def check_configuration(github_pat: str, airflow_variable: str):
+    silenced_dags = Variable.get(airflow_variable, {}, deserialize_json=True)
     dags_to_reenable = get_dags_with_closed_issues(github_pat, silenced_dags)
 
     if not dags_to_reenable:
         logger.info(
-            "All DAGs configured to silence alerts have work still in progress."
+            "All DAGs configured to silence messages have work still in progress."
             " No configuration updates needed."
         )
         return
 
     message = (
-        "The following DAGs have Slack alerts silenced, but the associated issue is"
-        " closed. Please remove them from the `silenced_slack_alerts` Airflow variable"
+        "The following DAGs have Slack messages silenced, but the associated issue is"
+        f" closed. Please remove them from the `{airflow_variable}` Airflow variable"
         " or assign a new issue."
     )
     for (dag, issue) in dags_to_reenable:
