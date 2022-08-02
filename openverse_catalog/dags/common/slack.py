@@ -216,6 +216,7 @@ class SlackMessage:
 
 def send_message(
     text: str,
+    dag_id: str | None = None,
     username: str = "Airflow",
     icon_emoji: str = ":airflow:",
     markdown: bool = True,
@@ -225,7 +226,7 @@ def send_message(
 ) -> None:
     """Send a simple slack message, convenience message for short/simple messages."""
     log.info(text)
-    if not should_send_message(http_conn_id):
+    if not should_send_message(http_conn_id, dag_id):
         return
 
     environment = Variable.get("environment", default_var="dev")
@@ -240,7 +241,7 @@ def send_message(
     s.send(text)
 
 
-def should_send_message(http_conn_id=SLACK_NOTIFICATIONS_CONN_ID):
+def should_send_message(http_conn_id=SLACK_NOTIFICATIONS_CONN_ID, dag_id=None):
     """
     Returns true if a Slack connection is defined and we are in production (or
     the message override is set).
@@ -252,10 +253,18 @@ def should_send_message(http_conn_id=SLACK_NOTIFICATIONS_CONN_ID):
     except AirflowNotFoundException:
         return False
 
+    # Exit early if this DAG is configured to skip Slack messaging
+    silenced_dags = Variable.get(
+        "silenced_slack_notifications", default_var={}, deserialize_json=True
+    )
+    if dag_id in silenced_dags:
+        log.info(f"Skipping Slack notification for {dag_id}.")
+        return False
+
     # Exit early if we aren't on production or if force alert is not set
     environment = Variable.get("environment", default_var="dev")
     force_message = Variable.get(
-        "slack_message_override", default_var=False, deserialize_json=True
+        "slack_message_override", default_var={}, deserialize_json=True
     )
     return environment == "prod" or force_message
 
@@ -285,6 +294,7 @@ def send_alert(
 
     send_message(
         text,
+        dag_id,
         username,
         icon_emoji,
         markdown,
