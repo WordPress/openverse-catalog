@@ -132,6 +132,7 @@ DEFAULT_IMAGE_CATEGORY = {
     "deviantart": ImageCategory.DIGITIZED_ARTWORK.value,
     "digitaltmuseum": ImageCategory.DIGITIZED_ARTWORK.value,
     "floraon": ImageCategory.PHOTOGRAPH.value,
+    "inaturalist": ImageCategory.PHOTOGRAPH.value,
     "mccordmuseum": ImageCategory.DIGITIZED_ARTWORK.value,
     "met": ImageCategory.DIGITIZED_ARTWORK.value,
     "museumsvictoria": ImageCategory.DIGITIZED_ARTWORK.value,
