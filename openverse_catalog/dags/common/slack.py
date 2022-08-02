@@ -216,7 +216,7 @@ class SlackMessage:
 
 def send_message(
     text: str,
-    dag_id: str | None = None,
+    dag_id: str,
     username: str = "Airflow",
     icon_emoji: str = ":airflow:",
     markdown: bool = True,
@@ -226,7 +226,7 @@ def send_message(
 ) -> None:
     """Send a simple slack message, convenience message for short/simple messages."""
     log.info(text)
-    if not should_send_message(http_conn_id, dag_id):
+    if not should_send_message(dag_id, http_conn_id):
         return
 
     environment = Variable.get("environment", default_var="dev")
@@ -241,7 +241,7 @@ def send_message(
     s.send(text)
 
 
-def should_send_message(http_conn_id=SLACK_NOTIFICATIONS_CONN_ID, dag_id=None):
+def should_send_message(dag_id, http_conn_id=SLACK_NOTIFICATIONS_CONN_ID):
     """
     Returns true if a Slack connection is defined and we are in production (or
     the message override is set).
@@ -271,7 +271,7 @@ def should_send_message(http_conn_id=SLACK_NOTIFICATIONS_CONN_ID, dag_id=None):
 
 def send_alert(
     text: str,
-    dag_id: str | None = None,
+    dag_id: str,
     username: str = "Airflow Alert",
     icon_emoji: str = ":airflow:",
     markdown: bool = True,

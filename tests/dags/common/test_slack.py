@@ -333,7 +333,7 @@ def test_should_send_message(
 
 def test_should_send_message_is_false_without_hook(http_hook_mock):
     http_hook_mock.get_conn.side_effect = AirflowNotFoundException("nope")
-    assert not should_send_message()
+    assert not should_send_message(dag_id="test_workflow")
 
 
 @pytest.mark.parametrize("environment", ["dev", "prod"])
@@ -342,7 +342,7 @@ def test_send_message(environment, http_hook_mock):
         "common.slack.Variable"
     ) as MockVariable:
         MockVariable.get.side_effect = [environment]
-        send_message("Sample text", username="DifferentUser")
+        send_message("Sample text", dag_id="test_workflow", username="DifferentUser")
         http_hook_mock.run.assert_called_with(
             endpoint=None,
             data=f'{{"username": "DifferentUser | {environment}", "unfurl_links": true, "unfurl_media": true,'
@@ -355,16 +355,16 @@ def test_send_message(environment, http_hook_mock):
 
 def test_send_message_does_not_send_if_checks_fail(http_hook_mock):
     with mock.patch("common.slack.should_send_message", return_value=False):
-        send_message("Sample text", username="DifferentUser")
+        send_message("Sample text", dag_id="test_workflow", username="DifferentUser")
         http_hook_mock.run.assert_not_called()
 
 
 def test_send_alert():
     with mock.patch("common.slack.send_message") as send_message_mock:
-        send_alert("Sample text", username="DifferentUser")
+        send_alert("Sample text", dag_id="test_workflow", username="DifferentUser")
         send_message_mock.assert_called_with(
             "Sample text",
-            None,
+            "test_workflow",
             "DifferentUser",
             ":airflow:",
             True,
