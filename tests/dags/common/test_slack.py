@@ -287,19 +287,48 @@ def test_send_fails(http_hook_mock):
 
 
 @pytest.mark.parametrize(
-    "environment, slack_message_override, expected_result",
+    "environment, slack_message_override, notifications_silenced, expected_result",
     [
-        ("dev", False, False),
-        ("dev", True, True),
-        ("prod", False, True),
-        ("prod", True, True),
+        # Dev
+        # Message is not sent by default. It is only sent if the override is enabled,
+        # AND notifications are not silenced.
+        # Default
+        ("dev", False, False, False),
+        # Override is not enabled AND notifications are silenced
+        ("dev", False, True, False),
+        # Pverride is enabled AND notifications NOT silenced
+        ("dev", True, False, True),
+        # Override is enabled but notifications are silenced
+        ("dev", True, True, False),
+        # prod
+        # Message is sent by default; the override has no effect, but messages are
+        # not sent when notifications are silenced.
+        # Default
+        ("prod", False, False, True),
+        # Override not enabled, notifications ARE silenced
+        ("prod", False, True, False),
+        # Override enabled, notifications are NOT silenced
+        ("prod", True, False, True),
+        # Override enabled, notifications ARE silenced
+        ("prod", True, True, False),
     ],
 )
-def test_should_send_message(environment, slack_message_override, expected_result):
+def test_should_send_message(
+    environment, slack_message_override, notifications_silenced, expected_result
+):
+    # Mock silenced_slack_notifications Variable
+    silenced_dags = {}
+    if notifications_silenced:
+        silenced_dags["mock_dag_id"] = "https://github.com/WordPress/openverse/issues/1"
+
     with mock.patch("common.slack.Variable") as MockVariable:
         # Mock the calls to Variable.get, in order
-        MockVariable.get.side_effect = [environment, slack_message_override]
-        assert should_send_message() == expected_result
+        MockVariable.get.side_effect = [
+            silenced_dags,
+            environment,
+            slack_message_override,
+        ]
+        assert should_send_message(dag_id="mock_dag_id") == expected_result
 
 
 def test_should_send_message_is_false_without_hook(http_hook_mock):
@@ -335,6 +364,7 @@ def test_send_alert():
         send_alert("Sample text", username="DifferentUser")
         send_message_mock.assert_called_with(
             "Sample text",
+            None,
             "DifferentUser",
             ":airflow:",
             True,
@@ -445,6 +475,7 @@ def test_on_failure_callback(
         "environment": environment,
         "slack_message_override": slack_message_override,
         "silenced_slack_alerts": [],
+        "silenced_slack_notifications": [],
     }
 
     # Mock env variables
