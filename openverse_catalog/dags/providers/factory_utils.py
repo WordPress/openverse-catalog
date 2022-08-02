@@ -155,12 +155,13 @@ def date_partition_for_prefix(
         - Daily -> `year=YYYY/month=MM`
         - None/yearly/monthly/weekly/other -> `year=YYYY`
     """
-    # Always partition by year
-    prefix = f"year={logical_date.year}"
     hourly_airflow = "@hourly"
     hourly_cron = cron_presets[hourly_airflow]
     daily_airflow = "@daily"
     daily_cron = cron_presets[daily_airflow]
+
+    # Always partition by year
+    prefix = f"year={logical_date.year}"
 
     # Add month in daily/hourly cases
     if schedule_interval in {hourly_airflow, hourly_cron, daily_airflow, daily_cron}:
