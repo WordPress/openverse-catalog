@@ -117,6 +117,11 @@ _Note: this document is auto-generated and should not be manually edited_
 This document describes the DAGs available along with pertinent DAG information and
 the DAG's documentation.
 
+The DAGs are shown in two forms:
+
+ - [DAGs by Type](#dags-by-type)
+ - [Individual DAG documentation](#dag-documentation)
+
 # DAGs by Type
 
 The following are DAGs grouped by their primary tag.
@@ -155,7 +160,7 @@ The following is documentation associated with each DAG (where available)
 
     text += "\n" + "".join(dag_docs)
 
-    return text
+    return text.strip() + "\n"
 
 
 def write_dag_doc(path: Path = DAG_MD_PATH) -> None:
