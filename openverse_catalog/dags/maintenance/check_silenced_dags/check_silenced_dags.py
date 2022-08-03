@@ -1,7 +1,7 @@
 import logging
 from typing import Tuple
 
-from airflow.exceptions import AirflowException
+from airflow.exceptions import AirflowException, AirflowSkipException
 from airflow.models import Variable
 from common.github import GitHubAPI
 from common.slack import send_alert
@@ -15,11 +15,10 @@ def check_configuration(github_pat: str, airflow_variable: str):
     dags_to_reenable = get_dags_with_closed_issues(github_pat, silenced_dags)
 
     if not dags_to_reenable:
-        logger.info(
+        raise AirflowSkipException(
             "All DAGs configured to silence messages have work still in progress."
             " No configuration updates needed."
         )
-        return
 
     message = (
         "The following DAGs have Slack messages silenced, but the associated issue is"
