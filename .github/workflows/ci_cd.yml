@@ -81,11 +81,6 @@ jobs:
           just build
           just test --extended
 
-      - name: Print logs
-        if: failure()
-        run: just logs
-
-
   push:
     name: Publish Docker images
     runs-on: ubuntu-latest
