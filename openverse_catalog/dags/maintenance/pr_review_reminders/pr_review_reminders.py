@@ -1,5 +1,6 @@
 import datetime
 import logging
+from collections import defaultdict
 from dataclasses import dataclass
 from typing import Optional
 
@@ -133,6 +134,29 @@ def base_repo_name(pr: dict):
     return pr["base"]["repo"]["name"]
 
 
+branch_protection_cache = defaultdict(dict)
+
+
+def get_branch_protection(gh: GitHubAPI, pr: dict) -> dict:
+    global branch_protection_cache
+
+    repo = base_repo_name(pr)
+    branch_name = pr["base"]["ref"]
+    if branch_name not in branch_protection_cache[repo]:
+        branch_protection_cache[repo][branch_name] = gh.get_branch_protection(
+            repo, branch_name
+        )
+
+    return branch_protection_cache[repo][branch_name]
+
+
+def get_min_required_approvals(gh: GitHubAPI, pr: dict) -> int:
+    branch_protection_rules = get_branch_protection(gh, pr)
+    return branch_protection_rules["required_pull_request_reviews"][
+        "required_approving_review_count"
+    ]
+
+
 def post_reminders(github_pat: str, dry_run: bool):
     gh = GitHubAPI(github_pat)
 
@@ -188,7 +212,7 @@ def post_reminders(github_pat: str, dry_run: bool):
         existing_reviews = gh.get_pull_reviews(base_repo_name(pr), pr["number"])
 
         approved_reviews = [r for r in existing_reviews if r["state"] == "APPROVED"]
-        if len(approved_reviews) == 2:
+        if len(approved_reviews) >= get_min_required_approvals(gh, pr):
             # if PR already has sufficient reviews to be merged, do not ping
             # the requested reviewers.
             continue

@@ -66,3 +66,9 @@ class GitHubAPI:
             "GET",
             f"repos/{owner}/{repo}/pulls/{pull_number}/reviews",
         )
+
+    def get_branch_protection(self, repo: str, branch: str, owner: str = "WordPress"):
+        return self._make_request(
+            "GET",
+            f"repos/{owner}/{repo}/branches/{branch}/protection",
+        )

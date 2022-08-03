@@ -137,3 +137,13 @@ def make_review(state: Literal["APPROVED", "CHANGES_REQUESTED", "COMMENTED"]):
     review["state"] = state
 
     return review
+
+
+def make_branch_protection(required_reviewers: int = 2) -> dict:
+    branch_protection = _read_fixture("branch_protection")
+
+    branch_protection["required_pull_request_reviews"][
+        "required_approving_review_count"
+    ] = required_reviewers
+
+    return branch_protection

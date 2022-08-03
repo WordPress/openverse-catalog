@@ -55,7 +55,7 @@ lint:
 # Mount the tests directory and run a particular command
 @_mount-tests command: (up "postgres s3")
     # The test directory is mounted into the container only during testing
-    docker-compose {{ DOCKER_FILES }} run \
+    docker-compose {{ DOCKER_FILES }} run -it \
         -v {{ justfile_directory() }}/tests:/usr/local/airflow/tests/ \
         -v {{ justfile_directory() }}/pytest.ini:/usr/local/airflow/pytest.ini \
         --rm \
