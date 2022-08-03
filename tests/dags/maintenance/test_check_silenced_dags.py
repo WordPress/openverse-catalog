@@ -39,15 +39,19 @@ from tests.factories.github import make_issue
     ),
 )
 def test_check_configuration(silenced_dags, dags_to_reenable, should_send_alert):
-    with mock.patch(
-        "maintenance.check_silenced_dags.check_silenced_dags.Variable",
-        return_value=silenced_dags,
-    ), mock.patch(
-        "maintenance.check_silenced_dags.check_silenced_dags.get_dags_with_closed_issues",
-        return_value=dags_to_reenable,
-    ) as get_dags_with_closed_issues_mock, mock.patch(
-        "maintenance.check_silenced_dags.check_silenced_dags.send_alert"
-    ) as send_alert_mock:
+    with (
+        mock.patch(
+            "maintenance.check_silenced_dags.check_silenced_dags.Variable",
+            return_value=silenced_dags,
+        ),
+        mock.patch(
+            "maintenance.check_silenced_dags.check_silenced_dags.get_dags_with_closed_issues",
+            return_value=dags_to_reenable,
+        ) as get_dags_with_closed_issues_mock,
+        mock.patch(
+            "maintenance.check_silenced_dags.check_silenced_dags.send_alert"
+        ) as send_alert_mock,
+    ):
         message = check_configuration("not_set", "silenced_slack_alerts")
         assert send_alert_mock.called == should_send_alert
         assert get_dags_with_closed_issues_mock.called_with("not_set", silenced_dags)
