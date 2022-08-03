@@ -58,6 +58,9 @@ class ProviderWorkflow:
     preingestion_task_creator: callable that returns an airflow task or task group to
                         to run any necessary pre-ingestion tasks, such as loading bulk
                         data from S3
+    postingestion_task_creator: callable that returns an airflow task or task group to
+                        to run any necessary post-ingestion tasks, such as dropping data
+                        loaded during pre-ingestion
     """
 
     provider_script: str
