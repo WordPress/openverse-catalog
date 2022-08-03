@@ -41,7 +41,7 @@ class PostgresResultOperator(PostgresOperator):
 
     def execute(self, context: "Context"):
         """
-        This almost exactly mirrors PostgresOperator::execute, except that allows
+        This almost exactly mirrors PostgresOperator::execute, except that it allows
         passing a handler into the hook.
         """
         self.hook = PostgresHook(
