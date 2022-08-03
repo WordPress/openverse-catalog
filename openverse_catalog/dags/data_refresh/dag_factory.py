@@ -40,7 +40,11 @@ from airflow.operators.python import BranchPythonOperator, PythonOperator
 from airflow.settings import SASession
 from airflow.utils.session import provide_session
 from airflow.utils.state import State
-from common.constants import DAG_DEFAULT_ARGS, XCOM_PULL_TEMPLATE
+from common.constants import (
+    DAG_DEFAULT_ARGS,
+    OPENLEDGER_API_CONN_ID,
+    XCOM_PULL_TEMPLATE,
+)
 from common.operators.postgres_result import PostgresResultOperator
 from data_refresh.data_refresh_task_factory import create_data_refresh_task_group
 from data_refresh.data_refresh_types import DATA_REFRESH_CONFIGS, DataRefresh
@@ -66,7 +70,6 @@ REFRESH_POPULARITY_METRICS_TASK_ID = (
     f"{REFRESH_POPULARITY_METRICS_GROUP_ID}"
     f".{UPDATE_MEDIA_POPULARITY_METRICS_TASK_ID}"
 )
-API_DB_CONN_ID = "postgres_openledger_api"
 
 
 def _single_value(cursor):
@@ -188,7 +191,7 @@ def create_data_refresh_dag(data_refresh: DataRefresh, external_dag_ids: Sequenc
         # Get the current number of records in the target API table
         before_record_count = PostgresResultOperator(
             task_id="get_before_record_count",
-            postgres_conn_id=API_DB_CONN_ID,
+            postgres_conn_id=OPENLEDGER_API_CONN_ID,
             sql=count_sql,
             handler=_single_value,
         )
@@ -213,7 +216,7 @@ def create_data_refresh_dag(data_refresh: DataRefresh, external_dag_ids: Sequenc
         # Get the final number of records in the API table after the refresh
         after_record_count = PostgresResultOperator(
             task_id="get_after_record_count",
-            postgres_conn_id=API_DB_CONN_ID,
+            postgres_conn_id=OPENLEDGER_API_CONN_ID,
             sql=count_sql,
             handler=_single_value,
         )
