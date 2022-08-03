@@ -15,10 +15,9 @@ from airflow.models import DAG, DagBag
 from providers.provider_workflows import PROVIDER_WORKFLOWS, ProviderWorkflow
 
 
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s", level=logging.INFO
-)
 log = logging.getLogger(__name__)
+# Silence noisy modules
+logging.getLogger("common.storage.media").setLevel(logging.WARNING)
 
 # Constants
 DAG_MD_PATH = Path(__file__).parent / "DAGs.md"
@@ -55,7 +54,7 @@ def get_dag_info(dags: DagMapping) -> list[DagInfo]:
     dags_info = []
     provider_workflows = get_provider_workflows()
     for dag_id, dag in dags.items():
-        doc = dag.doc_md or "_No documentation provided._"
+        doc = dag.doc_md
         dated = dag.catchup
         # Infer dag type from the first available tag
         type_ = dag.tags[0] if dag.tags else "other"
@@ -86,13 +85,25 @@ def generate_section(name: str, dags_info: list[DagInfo], is_provider: bool) -> 
     text += "| " + " | ".join(["---"] * column_count) + " |"
 
     for dag in dags_info:
-        text += f"\n| `{dag.dag_id}` | `{dag.schedule}` |"
+        dag_id = f"`{dag.dag_id}`"
+        if dag.doc:
+            dag_id = f"[{dag_id}](#{dag.dag_id})"
+        text += f"\n| {dag_id} | `{dag.schedule}` |"
         if is_provider:
             text += f" `{dag.dated}` | {', '.join(dag.provider_workflow.media_types)} |"
 
     text += "\n\n"
 
     return text
+
+
+def generate_documentation(dag: DagInfo) -> str:
+    return f"""
+## `{dag.dag_id}`
+
+{dag.doc}
+
+"""
 
 
 def generate_dag_doc(dag_folder: Path = DAG_FOLDER) -> str:
@@ -105,6 +116,8 @@ This document describes the DAGs available along with pertinent DAG information 
 the DAG's documentation.
 
 # DAGs by Type
+
+The following are DAGs grouped by their primary tag.
 
 """
 
@@ -124,6 +137,21 @@ the DAG's documentation.
         dag_sections.append(generate_section(name, dags, is_provider))
 
     text += "\n" + "\n\n".join(dag_sections)
+
+    text += """
+# DAG documentation
+
+The following is documentation associated with each DAG (where available)
+
+"""
+    dag_docs = []
+    for dag in sorted(dags_info, key=lambda d: d.dag_id):
+        if not dag.doc:
+            continue
+        text += f" 1. [`{dag.dag_id}`](#{dag.dag_id})\n"
+        dag_docs.append(generate_documentation(dag))
+
+    text += "\n" + "".join(dag_docs)
 
     return text
 
