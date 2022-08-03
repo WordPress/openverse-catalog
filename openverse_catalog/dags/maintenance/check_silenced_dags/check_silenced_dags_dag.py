@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 
 DAG_ID = "check_silenced_dags"
-MAX_ACTIVE_TASKS = 1
+MAX_ACTIVE = 1
 GITHUB_PAT = Variable.get("GITHUB_API_KEY", default_var="not_set")
 
 
@@ -41,8 +41,8 @@ dag = DAG(
     },
     start_date=datetime(2022, 7, 29),
     schedule_interval="@weekly",
-    max_active_tasks=MAX_ACTIVE_TASKS,
-    max_active_runs=MAX_ACTIVE_TASKS,
+    max_active_tasks=MAX_ACTIVE,
+    max_active_runs=MAX_ACTIVE,
     catchup=False,
     # Use the docstring at the top of the file as md docs in the UI
     doc_md=__doc__,
