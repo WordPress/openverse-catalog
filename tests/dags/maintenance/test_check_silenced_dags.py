@@ -1,7 +1,7 @@
 from unittest import mock
 
 import pytest
-from airflow.exceptions import AirflowException
+from airflow.exceptions import AirflowException, AirflowSkipException
 from maintenance.check_silenced_dags.check_silenced_dags import (
     check_configuration,
     get_dags_with_closed_issues,
@@ -14,8 +14,13 @@ from tests.factories.github import make_issue
 @pytest.mark.parametrize(
     "silenced_dags, dags_to_reenable, should_send_alert",
     (
-        # No Dags to reenable, don't alert
-        ({}, [], False),
+        # No Dags to reenable, task should skip
+        pytest.param(
+            {},
+            [],
+            False,
+            marks=pytest.mark.raises(exception=AirflowSkipException),
+        ),
         # One DAG to reenable
         (
             {"dag_a_id": "https://github.com/WordPress/openverse/issues/1"},
