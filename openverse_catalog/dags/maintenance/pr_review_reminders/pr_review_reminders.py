@@ -185,7 +185,7 @@ def post_reminders(github_pat: str, dry_run: bool):
         ]
 
         # While this version of the DAG will only ever allow a single
-        # cyrrent reminder comment to exist, we still need to split this out
+        # current reminder comment to exist, we still need to split this out
         # so that comments left by previous iterations will still get picked
         # up, read as current or not, and also recorded for deletion by the
         # script so that the final step can delete all but the most recently
