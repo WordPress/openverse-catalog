@@ -20,9 +20,5 @@ _Note: All values are row estimates and are not (but nearly) exact_
 *Record count difference for `{media_type}`*: {before:,} → {after:,}
 *Change*: {count_diff:+,} ({percent_diff:+}% Δ)
 """
-    log.info(message)
-    if slack.should_send_message():
-        slack.send_message(text=message, username="Data refresh record difference")
-    else:
-        # Return value for testing
-        return message
+    slack.send_message(text=message, username="Data refresh record difference")
+    return message
