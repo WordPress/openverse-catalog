@@ -91,36 +91,30 @@ COMMENT_MARKER = (
     "This reminder is being automatically generated due to the urgency configuration."
 )
 
-# The formatting of this string is kind of annoying, but GitHub interprets comment
-# bodies sent to it via the API strictly and single returns get inserted as hard
-# breaks even if they don't have trailing spaces. Therefore, the string below
-# concatenates into a single "flat" string and the explicit newline characters are
-# there to make it easier to see the intended visual presentation of it... while
-# still keeping flake8 at bay about string line lengths.
+
 COMMENT_TEMPLATE = (
-    "Based on the {urgency_label} urgency of this PR, the following "
-    "reviewers are being gently reminded to review this PR:"
-    "\n"
-    "\n"
-    "{user_logins}"
-    "\n"
-    "\n"
+    """\
+Based on the {urgency_label} urgency of this PR, the following reviewers are being \
+gently reminded to review this PR:
+
+{user_logins}
+"""
     f"{COMMENT_MARKER}"
-    "\n"
-    "\n"
-    "Ignoring weekend[^1] days, this PR was updated {days_since_update} day(s) ago. "
-    "PRs labelled with {urgency_label} urgency are expected to be reviewed within "
-    "{urgency_days} weekday(s)[^2]."
-    "\n"
-    "\n"
-    "@{pr_author}, if this PR is not ready for a review, please draft it to "
-    "prevent reviewers from getting further unnecessary pings."
-    "\n"
-    "[^1]: Specifically, Saturday and Sunday.\n"
-    "[^2]: For the purpose of these reminders we treat Monday - Friday as weekdays. "
-    "Please note that the that generates these reminders runs at midnight "
-    "UTC on Monday - Friday. This means that depending on your timezone, "
-    "you may be pinged outside of the expected range."
+    """
+
+Ignoring weekend[^1] days, this PR was updated {days_since_update} day(s) ago. \
+PRs labelled with {urgency_label} urgency are expected to be reviewed within \
+{urgency_days} weekday(s)[^2].
+
+@{pr_author}, if this PR is not ready for a review, please draft it to \
+prevent reviewers from getting further unnecessary pings.
+
+[^1]: Specifically, Saturday and Sunday.
+[^2]: For the purpose of these reminders we treat Monday - Friday as weekdays. \
+Please note that the that generates these reminders runs at midnight \
+UTC on Monday - Friday. This means that depending on your timezone, \
+you may be pinged outside of the expected range.
+"""
 )
 
 
