@@ -4,12 +4,19 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+from common.licenses import LicenseInfo
 from common.loader import provider_details as prov
 from common.storage.image import ImageStore
 from providers.provider_api_scripts.nypl import NyplDataIngester
 
 
 RESOURCES = Path(__file__).parent / "resources/nypl"
+CC0 = LicenseInfo(
+    license="cc0",
+    version="1.0",
+    url="https://creativecommons.org/publicdomain/zero/1.0",
+    raw_url="https://creativecommons.org/publicdomain/zero/1.0/",
+)
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s", level=logging.DEBUG
@@ -18,7 +25,7 @@ logging.basicConfig(
 
 @pytest.fixture(autouse=True)
 def validate_url_string():
-    with patch("common.urls.validate_url_string") as mock_validate_url_string:
+    with patch("common.urls.rewrite_redirected_url") as mock_validate_url_string:
         mock_validate_url_string.side_effect = lambda x: x
         yield
 
@@ -116,6 +123,28 @@ def test_get_record_data_success():
     with patch.object(nypl, "get_detail_json", return_value=item_response):
         images = nypl.get_record_data(result)
     assert len(images) == 7
+    expected_image = {
+        "category": None,
+        "creator": "Hillman, Barbara",
+        "filetype": "jpeg",
+        "foreign_identifier": "56738462",
+        "foreign_landing_url": "http://digitalcollections.nypl.org/items/0cabe3d0-3d50-0134-a8e0-00505686a51c",
+        "image_url": "https://images.nypl.org/index.php?id=56738462&t=g&suffix=0cabe3d0-3d50-0134-a8e0-00505686a51c.001",
+        "meta_data": {
+            "date_issued": "1981",
+            "genre": "Maps",
+            "publisher": "New York Public Library, Local History and Genealogy Division",
+            "topics": "Census districts",
+            "type_of_resource": "cartographic",
+            "physical_description": "4 polyester film encapsulations, some containing 2 sheets back-to-back. "
+            "Accompanying text formatted as 1 large sheet (46 x 59 cm), in one of "
+            "the encapsulations.",
+        },
+        "title": "1900 census enumeration districts, Manhattan and Bronx",
+        "license_info": CC0,
+    }
+    for key, value in expected_image.items():
+        assert images[0][key] == value
 
 
 def test_get_record_data_failure():
