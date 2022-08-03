@@ -102,7 +102,7 @@ class ImageStore(MediaStore):
                              replace the one given in the dictionary.
         raw_tags:            List of tags associated with the image.
         category:            The image category, defaults to the default
-                             category for provider from
+                             category for the provider from
                              common/loader/provider_details.py.
         watermarked:         A boolean, or 't' or 'f' string; whether
                              the image has a noticeable watermark.
