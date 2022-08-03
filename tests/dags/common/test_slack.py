@@ -338,6 +338,8 @@ def test_send_alert():
             "DifferentUser",
             ":airflow:",
             True,
+            True,
+            True,
             http_conn_id=SLACK_ALERTS_CONN_ID,
         )
 
