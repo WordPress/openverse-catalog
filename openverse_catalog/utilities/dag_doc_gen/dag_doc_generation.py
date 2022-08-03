@@ -73,12 +73,10 @@ def get_dag_info(dags: DagMapping) -> list[DagInfo]:
     return dags_info
 
 
-def generate_section(type_: str, dags_info: list[DagInfo]) -> str:
-    log.info(f"Building section for '{type_}'")
-    name = type_.replace("_", " ").replace("-", " ").title()
+def generate_section(name: str, dags_info: list[DagInfo], is_provider: bool) -> str:
+    log.info(f"Building section for '{name}'")
     text = f"## {name}\n\n"
     header = "| DAG ID | Schedule Interval |"
-    is_provider = type_ == "provider"
     if is_provider:
         header += " Dated | Media Type(s) |"
 
@@ -106,18 +104,26 @@ _Note: this document is auto-generated and should not be manually edited_
 This document describes the DAGs available along with pertinent DAG information and
 the DAG's documentation.
 
-# Available DAGs
+# DAGs by Type
+
 """
 
     dags = load_dags(str(dag_folder))
     dags_info = get_dag_info(dags)
+
+    dag_sections = []
 
     dags_by_section: dict[str, list[DagInfo]] = defaultdict(list)
     for dag in dags_info:
         dags_by_section[dag.type_].append(dag)
 
     for section, dags in sorted(dags_by_section.items()):
-        text += generate_section(section, dags)
+        name = section.replace("_", " ").replace("-", " ").title()
+        is_provider = section == "provider"
+        text += f" 1. [{name}](#{section})\n"
+        dag_sections.append(generate_section(name, dags, is_provider))
+
+    text += "\n" + "\n\n".join(dag_sections)
 
     return text
 

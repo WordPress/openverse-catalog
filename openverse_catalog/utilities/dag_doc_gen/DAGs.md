@@ -5,7 +5,16 @@ _Note: this document is auto-generated and should not be manually edited_
 This document describes the DAGs available along with pertinent DAG information and
 the DAG's documentation.
 
-# Available DAGs
+# DAGs by Type
+
+ 1. [Commoncrawl](#commoncrawl)
+ 1. [Data Refresh](#data_refresh)
+ 1. [Database](#database)
+ 1. [Maintenance](#maintenance)
+ 1. [Oauth](#oauth)
+ 1. [Provider](#provider)
+ 1. [Provider Reingestion](#provider-reingestion)
+
 ## Commoncrawl
 
 | DAG ID | Schedule Interval |
@@ -13,12 +22,16 @@ the DAG's documentation.
 | `sync_commoncrawl_workflow` | `0 16 15 * *` |
 | `commoncrawl_etl_workflow` | `0 0 * * 1` |
 
+
+
 ## Data Refresh
 
 | DAG ID | Schedule Interval |
 | --- | --- |
 | `image_data_refresh` | `@weekly` |
 | `audio_data_refresh` | `@weekly` |
+
+
 
 ## Database
 
@@ -30,6 +43,8 @@ the DAG's documentation.
 | `image_expiration_workflow` | `None` |
 | `tsv_to_postgres_loader` | `None` |
 
+
+
 ## Maintenance
 
 | DAG ID | Schedule Interval |
@@ -37,12 +52,16 @@ the DAG's documentation.
 | `airflow_log_cleanup` | `@weekly` |
 | `pr_review_reminders` | `0 0 * * 1-5` |
 
+
+
 ## Oauth
 
 | DAG ID | Schedule Interval |
 | --- | --- |
 | `oauth2_token_refresh` | `0 */12 * * *` |
 | `oauth2_authorization` | `None` |
+
+
 
 ## Provider
 
@@ -67,6 +86,8 @@ the DAG's documentation.
 | `walters_workflow` | `@monthly` | `False` | image |
 | `wikimedia_commons_workflow` | `@daily` | `True` | image, audio |
 | `wordpress_workflow` | `@monthly` | `False` | image |
+
+
 
 ## Provider Reingestion
 
