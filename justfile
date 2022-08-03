@@ -90,3 +90,7 @@ run *args: (up "postgres s3")
 # Launch a pgcli shell on the postgres container (defaults to openledger) use "airflow" for airflow metastore
 db-shell args="openledger": up
     docker-compose {{ DOCKER_FILES }} exec postgres pgcli {{ args }}
+
+# Generate the DAG documentation
+generate-dag-docs:
+    @just run python openverse_catalog/utilities/dag_doc_gen/dag_doc_generation.py
