@@ -52,5 +52,5 @@ def check_configuration(github_pat: str, airflow_variable: str):
     )
     for (dag, issue) in dags_to_reenable:
         message += f"\n  - <{issue}|{dag}>"
-    send_alert(message, username="Silenced DAG Check")
+    send_alert(message, username="Silenced DAG Check", unfurl_links=False)
     return message
