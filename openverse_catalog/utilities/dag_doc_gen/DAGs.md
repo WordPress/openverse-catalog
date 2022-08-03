@@ -152,8 +152,7 @@ airflow dags trigger --conf
 
 ## `audio_data_refresh`
 
-
-# Data Refresh DAG Factory
+### Data Refresh DAG Factory
 This file generates our data refresh DAGs using a factory function.
 For the given media type these DAGs will first refresh the popularity data,
 then initiate a data refresh on the data refresh server and await the
@@ -184,7 +183,6 @@ issues and related PRs:
 https://github.com/WordPress/openverse-catalog/issues/353)
 - [[Feature] Merge popularity calculations and data refresh into a single DAG](
 https://github.com/WordPress/openverse-catalog/issues/453)
-
 
 
 ## `europeana_workflow`
@@ -233,8 +231,7 @@ Notes:                  https://freesound.org/apiv2/search/text'
 
 ## `image_data_refresh`
 
-
-# Data Refresh DAG Factory
+### Data Refresh DAG Factory
 This file generates our data refresh DAGs using a factory function.
 For the given media type these DAGs will first refresh the popularity data,
 then initiate a data refresh on the data refresh server and await the
@@ -265,7 +262,6 @@ issues and related PRs:
 https://github.com/WordPress/openverse-catalog/issues/353)
 - [[Feature] Merge popularity calculations and data refresh into a single DAG](
 https://github.com/WordPress/openverse-catalog/issues/453)
-
 
 
 ## `jamendo_workflow`
@@ -306,8 +302,7 @@ Notes:                  https://metmuseum.github.io/
 
 ## `oauth2_authorization`
 
-
-# OAuth Provider Authorization
+### OAuth Provider Authorization
 
 **Author**: Madison Swain-Bowden
 
@@ -325,12 +320,9 @@ will create an access/refresh token pair in the `OAUTH2_ACCESS_TOKENS` Variable.
 - Freesound
 
 
-
-
 ## `oauth2_token_refresh`
 
-
-# OAuth Provider Token Refresh
+### OAuth Provider Token Refresh
 
 **Author**: Madison Swain-Bowden
 
@@ -344,8 +336,6 @@ update the tokens stored in the Variable upon successful refresh.
 **Current Providers**:
 
 - Freesound
-
-
 
 
 ## `phylopic_workflow`
@@ -417,8 +407,7 @@ SQL code is deployed for the calculation.
 
 ## `report_pending_reported_media`
 
-
-# Report Pending Reported Media DAG
+### Report Pending Reported Media DAG
 This DAG checks for any user-reported media pending manual review, and alerts
 via Slack.
 
@@ -427,7 +416,6 @@ example. Once reported, these require manual review through the Django Admin to
 determine whether further action (such as deindexing the record) needs to be
 taken. If a record has been reported multiple times, it only needs to be
 reviewed once and so is only counted once in the reporting by this DAG.
-
 
 
 ## `smithsonian_workflow`

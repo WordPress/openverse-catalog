@@ -55,6 +55,8 @@ def get_dag_info(dags: DagMapping) -> list[DagInfo]:
     provider_workflows = get_provider_workflows()
     for dag_id, dag in dags.items():
         doc = dag.doc_md
+        if doc and doc.strip().startswith("# "):
+            doc = "### " + doc.strip()[2:]
         dated = dag.catchup
         # Infer dag type from the first available tag
         type_ = dag.tags[0] if dag.tags else "other"
