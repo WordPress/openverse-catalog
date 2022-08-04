@@ -61,8 +61,8 @@ jobs:
           name: catalog
           path: /tmp/catalog.tar
 
-  test:
-    name: Run tests
+  check:
+    name: Run tests/checks
     runs-on: ubuntu-latest
     needs:
       - lint
@@ -74,19 +74,23 @@ jobs:
       - name: Change permissions for Docker steps
         run: chmod -R 777 openverse_catalog/ tests/
 
-      - name: Test
+      - name: Build dev container
         # The containers must be rebuilt here because we need the dev dependencies
         # rather than the production ones
-        run: |
-          just build
-          just test --extended
+        run: just build
+
+      - name: Check DAG documentation
+        run: just generate-dag-docs true
+
+      - name: Test
+        run: just test --extended
 
   push:
     name: Publish Docker images
     runs-on: ubuntu-latest
     if: github.event_name == 'release' && github.event.action == 'published'
     needs:
-      - test
+      - check
     permissions:
       packages: write
       contents: read
