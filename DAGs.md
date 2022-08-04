@@ -1,1 +1,0 @@
-openverse_catalog/utilities/dag_doc_gen/DAGs.md
