@@ -26,8 +26,8 @@ The following are DAGs grouped by their primary tag.
 
 | DAG ID | Schedule Interval |
 | --- | --- |
-| `sync_commoncrawl_workflow` | `0 16 15 * *` |
 | `commoncrawl_etl_workflow` | `0 0 * * 1` |
+| `sync_commoncrawl_workflow` | `0 16 15 * *` |
 
 
 
@@ -35,8 +35,8 @@ The following are DAGs grouped by their primary tag.
 
 | DAG ID | Schedule Interval |
 | --- | --- |
-| [`image_data_refresh`](#image_data_refresh) | `@weekly` |
 | [`audio_data_refresh`](#audio_data_refresh) | `@weekly` |
+| [`image_data_refresh`](#image_data_refresh) | `@weekly` |
 
 
 
@@ -44,10 +44,10 @@ The following are DAGs grouped by their primary tag.
 
 | DAG ID | Schedule Interval |
 | --- | --- |
+| `image_expiration_workflow` | `None` |
 | [`recreate_audio_popularity_calculation`](#recreate_audio_popularity_calculation) | `None` |
 | [`recreate_image_popularity_calculation`](#recreate_image_popularity_calculation) | `None` |
 | [`report_pending_reported_media`](#report_pending_reported_media) | `@weekly` |
-| `image_expiration_workflow` | `None` |
 | [`tsv_to_postgres_loader`](#tsv_to_postgres_loader) | `None` |
 
 
@@ -65,8 +65,8 @@ The following are DAGs grouped by their primary tag.
 
 | DAG ID | Schedule Interval |
 | --- | --- |
-| [`oauth2_token_refresh`](#oauth2_token_refresh) | `0 */12 * * *` |
 | [`oauth2_authorization`](#oauth2_authorization) | `None` |
+| [`oauth2_token_refresh`](#oauth2_token_refresh) | `0 */12 * * *` |
 
 
 

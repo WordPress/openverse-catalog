@@ -94,3 +94,5 @@ db-shell args="openledger": up
 # Generate the DAG documentation
 generate-dag-docs:
     @just run python openverse_catalog/utilities/dag_doc_gen/dag_doc_generation.py
+    # Move the file to the top level, since that level is not mounted into the container
+    mv openverse_catalog/utilities/dag_doc_gen/DAGs.md DAGs.md
