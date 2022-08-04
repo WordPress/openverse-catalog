@@ -1,5 +1,5 @@
 """
-# Data Refresh DAG Factory :)
+# Data Refresh DAG Factory
 This file generates our data refresh DAGs using a factory function.
 For the given media type these DAGs will first refresh the popularity data,
 then initiate a data refresh on the data refresh server and await the
