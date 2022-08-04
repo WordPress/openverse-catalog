@@ -60,7 +60,7 @@ def test_get_next_query_params_no_prior():
 
 
 def test_get_next_query_params_prior_0():
-    expected = {"offset_num": 10_000}
+    expected = {"offset_num": INAT.batch_limit}
     actual = INAT.get_next_query_params({"offset_num": 0})
     assert expected == actual
 
