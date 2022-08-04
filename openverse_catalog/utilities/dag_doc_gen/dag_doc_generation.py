@@ -1,8 +1,5 @@
 """
 Notes
-- Pair with provider workflows in order to get media type and any other info
-- Display media type in provider dag section
-- Link to DAG documentation using ## or something so it plays nice with github
 - symlink to top level file
 """
 import logging
@@ -37,6 +34,10 @@ class DagInfo(NamedTuple):
 
 
 def load_dags(dag_folder: str) -> DagMapping:
+    """
+    Load and return the DAGs in the provided dag folder. Execution will stop if any DAGs
+    could not be imported.
+    """
     dag_bag = DagBag(dag_folder=dag_folder, include_examples=False)
     if dag_bag.import_errors:
         raise ValueError(
@@ -47,14 +48,24 @@ def load_dags(dag_folder: str) -> DagMapping:
 
 
 def get_provider_workflows() -> dict[str, ProviderWorkflow]:
+    """
+    Extract the provider workflows from the PROVIDER_WORKFLOWS list and create a mapping
+    from DAG ID to workflow.
+    """
     return {workflow.dag_id: workflow for workflow in PROVIDER_WORKFLOWS}
 
 
-def get_dag_info(dags: DagMapping) -> list[DagInfo]:
+def get_dags_info(dags: DagMapping) -> list[DagInfo]:
+    """
+    Convert the provided DAG ID -> DAG mapping into a list of DagInfo instances.
+    Provider information is added where available.
+    """
     dags_info = []
     provider_workflows = get_provider_workflows()
     for dag_id, dag in dags.items():
         doc = dag.doc_md
+        # Convert the initial H1 header level to H3 if it exists, for better formatting
+        # within the document
         if doc and doc.strip().startswith("# "):
             doc = "### " + doc.strip()[2:]
         dated = dag.catchup
@@ -75,19 +86,30 @@ def get_dag_info(dags: DagMapping) -> list[DagInfo]:
 
 
 def generate_section(name: str, dags_info: list[DagInfo], is_provider: bool) -> str:
+    """
+    Generate the documentation for a "DAGs by type" section.
+    """
     log.info(f"Building section for '{name}'")
     text = f"## {name}\n\n"
+    # Columns for all DAGs
     header = "| DAG ID | Schedule Interval |"
+    # Conditionally add the other columns for the provider-specific DAGs
     if is_provider:
         header += " Dated | Media Type(s) |"
 
-    column_count = len(header.split("|")) - 2
-    log.info(f"Total columns: {column_count + 1}")
+    # In order to create a table of the appropriate width, we need the number of columns
+    # to complete the second row of the header (the "---" columns). There are
+    # columns + 1 pipe characters, so stripping the pipes on both ends then splitting
+    # gives us the appropriate number of columns.
+    column_count = len(header.strip("|").split("|"))
+    log.info(f"Total columns: {column_count}")
     text += header + "\n"
     text += "| " + " | ".join(["---"] * column_count) + " |"
 
     for dag in dags_info:
         dag_id = f"`{dag.dag_id}`"
+        # If we have documentation for the DAG, we'll want to link to it within the
+        # markdown, so we reference it using the heading text (the DAG ID)
         if dag.doc:
             dag_id = f"[{dag_id}](#{dag.dag_id})"
         text += f"\n| {dag_id} | `{dag.schedule}` |"
@@ -99,7 +121,10 @@ def generate_section(name: str, dags_info: list[DagInfo], is_provider: bool) -> 
     return text
 
 
-def generate_documentation(dag: DagInfo) -> str:
+def generate_single_documentation(dag: DagInfo) -> str:
+    """
+    Generate the documentation for a single DAG.
+    """
     return f"""
 ## `{dag.dag_id}`
 
@@ -109,6 +134,10 @@ def generate_documentation(dag: DagInfo) -> str:
 
 
 def generate_dag_doc(dag_folder: Path = DAG_FOLDER) -> str:
+    """
+    Generate the DAG documentation markdown file using the DAGs available in the
+    folder provided.
+    """
     text = """\
 # DAGs
 
@@ -129,17 +158,23 @@ The following are DAGs grouped by their primary tag.
 """
 
     dags = load_dags(str(dag_folder))
-    dags_info = get_dag_info(dags)
+    dags_info = get_dags_info(dags)
 
     dag_sections = []
 
+    # DAGs come out of the DagBag ordered by DAG ID, this groups them into sub-lists by
+    # DAG "type", which is determined by the first available DAG tag.
     dags_by_section: dict[str, list[DagInfo]] = defaultdict(list)
     for dag in dags_info:
         dags_by_section[dag.type_].append(dag)
 
     for section, dags in sorted(dags_by_section.items()):
+        # Create a more human-readable name
         name = section.replace("_", " ").replace("-", " ").title()
+        # Special case for provider tables since they have extra information
         is_provider = section == "provider"
+        # We add the section here as part of a table of contents, and defer adding
+        # the generated section itself until all the sections are made.
         text += f" 1. [{name}](#{section})\n"
         dag_sections.append(generate_section(name, dags, is_provider))
 
@@ -153,17 +188,26 @@ The following is documentation associated with each DAG (where available)
 """
     dag_docs = []
     for dag in sorted(dags_info, key=lambda d: d.dag_id):
+        # This section only contains subsections for DAGs where we have documentation
         if not dag.doc:
             continue
+        # Similar to the DAGs-by-type section, we add the reference to a table of
+        # contents first, and then defer adding all the generated individual docs until
+        # the very end.
         text += f" 1. [`{dag.dag_id}`](#{dag.dag_id})\n"
-        dag_docs.append(generate_documentation(dag))
+        dag_docs.append(generate_single_documentation(dag))
 
     text += "\n" + "".join(dag_docs)
 
+    # Normalize the newlines at the end of the file and add one more to make sure
+    # our pre-commit checks are happy!
     return text.strip() + "\n"
 
 
 def write_dag_doc(path: Path = DAG_MD_PATH) -> None:
+    """
+    Generate the DAG documentation and write it to a file.
+    """
     doc_text = generate_dag_doc()
     log.info(f"Writing DAG doc to {path}")
     path.write_text(doc_text)
