@@ -1,6 +1,15 @@
 """
-Notes
-- symlink to top level file
+This script generates a markdown documentation file which aggregates various pieces
+of information about all of our DAGs. The generated document has two sections: "DAGs
+by type" and "individual DAG documentation". Both sections have a small table of
+contents.
+
+The DAGs-by-type section shows DAG ID and schedule interval for all DAGS, and also shows
+dated & media type info for provider DAGs. Where possible, the DAG IDs link to
+individual documentation sections further in the document.
+
+The individual DAG documentation section pulls the DAG's `doc_md` section and renders
+it within the document.
 """
 import logging
 from collections import defaultdict
