@@ -167,12 +167,14 @@ The following are DAGs grouped by their primary tag.
 """
 
     dags = load_dags(str(dag_folder))
-    dags_info = get_dags_info(dags)
+    # DAGs come out of the DagBag in seemingly random order, so sort them by DAG ID
+    # before any operations are run on them.
+    dags_info = sorted(get_dags_info(dags), key=lambda x: x.dag_id)
 
     dag_sections = []
 
-    # DAGs come out of the DagBag ordered by DAG ID, this groups them into sub-lists by
-    # DAG "type", which is determined by the first available DAG tag.
+    # Group DAGs them into sub-lists by DAG "type", which is determined by the first
+    # available DAG tag.
     dags_by_section: dict[str, list[DagInfo]] = defaultdict(list)
     for dag in dags_info:
         dags_by_section[dag.type_].append(dag)
