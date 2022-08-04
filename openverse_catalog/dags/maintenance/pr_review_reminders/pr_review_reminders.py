@@ -134,20 +134,18 @@ def base_repo_name(pr: dict):
     return pr["base"]["repo"]["name"]
 
 
-branch_protection_cache = defaultdict(dict)
+_BRANCH_PROTECTION_CACHE = defaultdict(dict)
 
 
 def get_branch_protection(gh: GitHubAPI, pr: dict) -> dict:
-    global branch_protection_cache
-
     repo = base_repo_name(pr)
     branch_name = pr["base"]["ref"]
-    if branch_name not in branch_protection_cache[repo]:
-        branch_protection_cache[repo][branch_name] = gh.get_branch_protection(
+    if branch_name not in _BRANCH_PROTECTION_CACHE[repo]:
+        _BRANCH_PROTECTION_CACHE[repo][branch_name] = gh.get_branch_protection(
             repo, branch_name
         )
 
-    return branch_protection_cache[repo][branch_name]
+    return _BRANCH_PROTECTION_CACHE[repo][branch_name]
 
 
 def get_min_required_approvals(gh: GitHubAPI, pr: dict) -> int:
