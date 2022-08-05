@@ -16,7 +16,6 @@ from collections import defaultdict
 from pathlib import Path
 from typing import NamedTuple
 
-import click
 from airflow.models import DAG, DagBag
 from providers.provider_workflows import PROVIDER_WORKFLOWS, ProviderWorkflow
 
@@ -28,6 +27,30 @@ logging.getLogger("common.storage.media").setLevel(logging.WARNING)
 # Constants
 DAG_MD_PATH = Path(__file__).parent / "DAGs.md"
 DAG_FOLDER = Path(__file__).parents[2] / "dags"
+PREAMBLE = """\
+# DAGs
+
+_Note: this document is auto-generated and should not be manually edited_
+
+This document describes the DAGs available along with pertinent DAG information and
+the DAG's documentation.
+
+The DAGs are shown in two forms:
+
+ - [DAGs by Type](#dags-by-type)
+ - [Individual DAG documentation](#dag-documentation)
+
+# DAGs by Type
+
+The following are DAGs grouped by their primary tag.
+
+"""
+MIDAMBLE = """
+# DAG documentation
+
+The following is documentation associated with each DAG (where available)
+
+"""
 
 # Typing
 DagMapping = dict[str, DAG]
@@ -147,25 +170,7 @@ def generate_dag_doc(dag_folder: Path = DAG_FOLDER) -> str:
     Generate the DAG documentation markdown file using the DAGs available in the
     folder provided.
     """
-    text = """\
-# DAGs
-
-_Note: this document is auto-generated and should not be manually edited_
-
-This document describes the DAGs available along with pertinent DAG information and
-the DAG's documentation.
-
-The DAGs are shown in two forms:
-
- - [DAGs by Type](#dags-by-type)
- - [Individual DAG documentation](#dag-documentation)
-
-# DAGs by Type
-
-The following are DAGs grouped by their primary tag.
-
-"""
-
+    text = PREAMBLE
     dags = load_dags(str(dag_folder))
     # DAGs come out of the DagBag in seemingly random order, so sort them by DAG ID
     # before any operations are run on them.
@@ -191,12 +196,7 @@ The following are DAGs grouped by their primary tag.
 
     text += "\n" + "\n\n".join(dag_sections)
 
-    text += """
-# DAG documentation
-
-The following is documentation associated with each DAG (where available)
-
-"""
+    text += MIDAMBLE
     dag_docs = []
     for dag in sorted(dags_info, key=lambda d: d.dag_id):
         # This section only contains subsections for DAGs where we have documentation
@@ -224,10 +224,5 @@ def write_dag_doc(path: Path = DAG_MD_PATH) -> None:
     path.write_text(doc_text)
 
 
-@click.command()
-def cli():
-    write_dag_doc()
-
-
 if __name__ == "__main__":
-    cli()
+    write_dag_doc()
