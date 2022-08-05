@@ -6,7 +6,6 @@ import pytest
 from airflow.exceptions import AirflowException
 from common.storage.audio import AudioStore, MockAudioStore
 from common.storage.image import ImageStore, MockImageStore
-from providers.provider_api_scripts.provider_data_ingester import IngestionError
 
 from tests.dags.providers.provider_api_scripts.resources.provider_data_ingester.mock_provider_data_ingester import (
     AUDIO_PROVIDER,
@@ -254,18 +253,14 @@ def test_ingest_records_raises_IngestionError():
             (EXPECTED_BATCH_DATA, True),  # Second batch should not be reached
         ]
 
-        with pytest.raises(IngestionError) as error:
+        with pytest.raises(Exception) as error:
             ingester.ingest_records()
 
         # By default, `skip_ingestion_errors` is False and get_batch_data
         # is no longer called after encountering an error
         assert get_batch_mock.call_count == 1
 
-        assert str(error.value) == (
-            "Mock exception message\n"
-            '    query_params: {"has_image": 1, "page": 1}\n'
-            '    next_query_params: {"has_image": 1, "page": 1}'
-        )
+        assert str(error.value) == "Mock exception message"
 
 
 def test_ingest_records_with_skip_ingestion_errors():
