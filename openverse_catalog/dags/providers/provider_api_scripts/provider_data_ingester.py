@@ -1,7 +1,9 @@
+import json
 import logging
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Tuple
 
+from airflow.exceptions import AirflowException
 from airflow.models import Variable
 from common.requester import DelayedRequester, RetriesExceeded
 from common.storage.media import MediaStore
@@ -10,6 +12,24 @@ from requests.exceptions import JSONDecodeError, RequestException
 
 
 logger = logging.getLogger(__name__)
+
+
+class IngestionError(Exception):
+    """
+    Custom exception which includes information about the query_params that
+    were being used when the error was encountered.
+    """
+
+    def __init__(self, error, query_params, next_query_params):
+        self.error = error
+        self.query_params = query_params
+        self.next_query_params = next_query_params
+
+    def __str__(self):
+        # Append query_param info to error message
+        return f"""{self.error}
+    query_params: {json.dumps(self.query_params)}
+    next_query_params: {json.dumps(self.next_query_params)}"""
 
 
 class ProviderDataIngester(ABC):
@@ -51,9 +71,10 @@ class ProviderDataIngester(ABC):
         """
         pass
 
-    def __init__(self, date: str = None):
+    def __init__(self, conf: dict = None, date: str = None):
         """
         Optional Arguments:
+        conf: The configuration dict for the running DagRun
         date: Date String in the form YYYY-MM-DD. This is the date for
               which running the script will pull data
         """
@@ -74,6 +95,10 @@ class ProviderDataIngester(ABC):
         self.delayed_requester = DelayedRequester(self.delay)
         self.media_stores = self.init_media_stores()
         self.date = date
+
+        # Keep track of ingestion errors
+        self.conf = conf or {}
+        self.ingestion_errors = []
 
     def init_media_stores(self) -> dict[str, MediaStore]:
         """
@@ -97,14 +122,16 @@ class ProviderDataIngester(ABC):
         """
         should_continue = True
         record_count = 0
-        query_params = None
+
+        # Get initial query_params
+        query_params = self.conf.get("initial_query_params")
+        if not query_params:
+            query_params = self.get_next_query_params(None, **kwargs)
 
         logger.info(f"Begin ingestion for {self.__class__.__name__}")
 
-        try:
-            while should_continue:
-                query_params = self.get_next_query_params(query_params, **kwargs)
-
+        while should_continue:
+            try:
                 batch, should_continue = self.get_batch(query_params)
 
                 if batch and len(batch) > 0:
@@ -114,12 +141,37 @@ class ProviderDataIngester(ABC):
                     logger.info("Batch complete.")
                     should_continue = False
 
-                if self.limit and record_count >= self.limit:
-                    logger.info(f"Ingestion limit of {self.limit} has been reached.")
-                    should_continue = False
-        finally:
-            total = self.commit_records()
-            logger.info(f"Committed {total} records")
+            except Exception as e:
+                next_query_params = self.get_next_query_params(query_params, **kwargs)
+                ingestion_error = IngestionError(e, query_params, next_query_params)
+
+                if self.conf.get("skip_ingestion_errors", False):
+                    # Add this to the errors list but continue processing
+                    self.ingestion_errors.append(ingestion_error)
+                    query_params = next_query_params
+                    continue
+
+                # Commit whatever records we were able to process, and rethrow the
+                # exception so the taskrun fails.
+                self.commit_records()
+                raise ingestion_error
+
+            if self.limit and record_count >= self.limit:
+                logger.info(f"Ingestion limit of {self.limit} has been reached.")
+                should_continue = False
+
+            # Update query_params before iterating
+            query_params = self.get_next_query_params(query_params, **kwargs)
+
+        # Commit whatever records we were able to process
+        self.commit_records()
+
+        # If errors were caught during processing, raise them now
+        if self.ingestion_errors:
+            errors_str = ("\n").join(str(e) for e in self.ingestion_errors)
+            raise AirflowException(
+                f"The following errors were encountered during ingestion:\n{errors_str}"
+            )
 
     @abstractmethod
     def get_next_query_params(
@@ -260,4 +312,5 @@ class ProviderDataIngester(ABC):
         total = 0
         for store in self.media_stores.values():
             total += store.commit()
+        logger.info(f"Committed {total} records")
         return total
