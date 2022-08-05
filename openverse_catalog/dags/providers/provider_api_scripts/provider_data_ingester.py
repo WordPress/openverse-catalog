@@ -154,7 +154,7 @@ class ProviderDataIngester(ABC):
                 # Commit whatever records we were able to process, and rethrow the
                 # exception so the taskrun fails.
                 self.commit_records()
-                raise ingestion_error
+                raise e from ingestion_error
 
             if self.limit and record_count >= self.limit:
                 logger.info(f"Ingestion limit of {self.limit} has been reached.")
