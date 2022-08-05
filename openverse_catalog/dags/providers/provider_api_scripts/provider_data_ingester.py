@@ -209,26 +209,16 @@ class ProviderDataIngester(ABC):
         batch = None
         should_continue = True
 
-        try:
-            # Get the API response
-            response_json = self.get_response_json(query_params)
+        # Get the API response
+        response_json = self.get_response_json(query_params)
 
-            # Build a list of records from the response
-            batch = self.get_batch_data(response_json)
+        # Build a list of records from the response
+        batch = self.get_batch_data(response_json)
 
-            # Optionally, apply some logic to the response to determine whether
-            # ingestion should continue or if should be short-circuited. By default
-            # this will return True and ingestion continues.
-            should_continue = self.get_should_continue(response_json)
-
-        except (
-            RequestException,
-            RetriesExceeded,
-            JSONDecodeError,
-            ValueError,
-            TypeError,
-        ) as e:
-            logger.error(f"Error getting next query parameters due to {e}")
+        # Optionally, apply some logic to the response to determine whether
+        # ingestion should continue or if should be short-circuited. By default
+        # this will return True and ingestion continues.
+        should_continue = self.get_should_continue(response_json)
 
         return batch, should_continue
 
