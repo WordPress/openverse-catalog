@@ -128,7 +128,10 @@ class ProviderDataIngester(ABC):
         if not query_params:
             query_params = self.get_next_query_params(None, **kwargs)
 
-        logger.info(f"Begin ingestion for {self.__class__.__name__}")
+        logger.info(
+            f"Begin ingestion for {self.__class__.__name__}"
+            f" using initial query params: {query_params}"
+        )
 
         while should_continue:
             try:
