@@ -99,7 +99,10 @@ generate-dag-docs fail_on_diff="false":
     # Move the file to the top level, since that level is not mounted into the container
     mv openverse_catalog/utilities/dag_doc_gen/DAGs.md DAGs.md
     if {{ fail_on_diff }}; then
-      git diff --exit-code DAGs.md || \
-      printf "\n\n\e[31m!! Changes found in DAG documentation, please run 'just generate-dag-docs' locally and commit difference !!\n\n" && \
-      exit 1
+      set +e
+      git diff --exit-code DAGs.md
+      if [ $? -ne 0 ]; then
+          printf "\n\n\e[31m!! Changes found in DAG documentation, please run 'just generate-dag-docs' locally and commit difference !!\n\n"
+          exit 1
+      fi
     fi
