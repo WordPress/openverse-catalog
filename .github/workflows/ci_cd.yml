@@ -61,8 +61,8 @@ jobs:
           name: catalog
           path: /tmp/catalog.tar
 
-  check:
-    name: Run tests/checks
+  test:
+    name: Run tests
     runs-on: ubuntu-latest
     needs:
       - lint
@@ -90,7 +90,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'release' && github.event.action == 'published'
     needs:
-      - check
+      - test
     permissions:
       packages: write
       contents: read
