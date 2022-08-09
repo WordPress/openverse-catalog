@@ -1,5 +1,6 @@
 import json
 import logging
+import traceback
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Tuple
 
@@ -20,8 +21,9 @@ class IngestionError(Exception):
     were being used when the error was encountered.
     """
 
-    def __init__(self, error, query_params, next_query_params):
+    def __init__(self, error, traceback, query_params, next_query_params):
         self.error = error
+        self.traceback = traceback
         self.query_params = query_params
         self.next_query_params = next_query_params
 
@@ -30,6 +32,11 @@ class IngestionError(Exception):
         return f"""{self.error}
     query_params: {json.dumps(self.query_params)}
     next_query_params: {json.dumps(self.next_query_params)}"""
+
+    def print_with_traceback(self):
+        # Append traceback
+        return f"""{str(self)}
+    {self.traceback}"""
 
 
 class ProviderDataIngester(ABC):
@@ -144,14 +151,17 @@ class ProviderDataIngester(ABC):
                     logger.info("Batch complete.")
                     should_continue = False
 
-            except Exception as e:
+            except Exception as error:
                 next_query_params = self.get_next_query_params(query_params, **kwargs)
-                ingestion_error = IngestionError(e, query_params, next_query_params)
+
+                ingestion_error = IngestionError(
+                    error, traceback.format_exc(), query_params, next_query_params
+                )
 
                 if self.conf.get("skip_ingestion_errors", False):
                     # Add this to the errors list but continue processing
                     self.ingestion_errors.append(ingestion_error)
-                    logger.info(f"Skipping ingestion error: {e}")
+                    logger.error(f"Skipping ingestion error: {error}")
 
                     query_params = next_query_params
                     continue
@@ -159,7 +169,7 @@ class ProviderDataIngester(ABC):
                 # Commit whatever records we were able to process, and rethrow the
                 # exception so the taskrun fails.
                 self.commit_records()
-                raise e from ingestion_error
+                raise error from ingestion_error
 
             if self.limit and record_count >= self.limit:
                 logger.info(f"Ingestion limit of {self.limit} has been reached.")
@@ -173,7 +183,9 @@ class ProviderDataIngester(ABC):
 
         # If errors were caught during processing, raise them now
         if self.ingestion_errors:
-            errors_str = ("\n").join(str(e) for e in self.ingestion_errors)
+            errors_str = ("\n").join(
+                e.print_with_traceback() for e in self.ingestion_errors
+            )
             raise AirflowException(
                 f"The following errors were encountered during ingestion:\n{errors_str}"
             )
