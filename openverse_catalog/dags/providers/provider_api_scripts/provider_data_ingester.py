@@ -151,6 +151,8 @@ class ProviderDataIngester(ABC):
                 if self.conf.get("skip_ingestion_errors", False):
                     # Add this to the errors list but continue processing
                     self.ingestion_errors.append(ingestion_error)
+                    logger.info(f"Skipping ingestion error: {e}")
+
                     query_params = next_query_params
                     continue
 
