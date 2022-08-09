@@ -40,11 +40,11 @@ RECORD0 = JSON_RESPONSE[0]
 @pytest.mark.parametrize(
     "file_name, expected",
     [
-        ("00_create_schema.sql", [("inaturalist",)]),
-        ("01_photos.sql", [(37,)]),
-        ("02_observations.sql", [(32,)]),
-        ("03_taxa.sql", [(183,)]),
-        ("04_observers.sql", [(23,)]),
+        ("create_schema.sql", [("inaturalist",)]),
+        ("photos.sql", [(37,)]),
+        ("observations.sql", [(32,)]),
+        ("taxa.sql", [(183,)]),
+        ("observers.sql", [(23,)]),
     ],
 )
 def test_load_data(file_name, expected):

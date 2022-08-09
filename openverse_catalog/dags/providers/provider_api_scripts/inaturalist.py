@@ -21,7 +21,6 @@ Notes:      [The iNaturalist API is not intended for data scraping.]
 
 import os
 from pathlib import Path
-from textwrap import dedent
 from typing import Dict
 
 import pendulum
@@ -55,9 +54,7 @@ class INaturalistDataIngester(ProviderDataIngester):
         # environment logic in the base class, rather than just over-writing it.
         self.media_stores["image"].buffer_length = 10_000
         self.batch_limit = 10_000
-        self.sql_template = dedent(
-            (SCRIPT_DIR / "05_export_to_json.template.sql").read_text()
-        )
+        self.sql_template = (SCRIPT_DIR / "export_to_json.template.sql").read_text()
 
     def get_next_query_params(self, prev_query_params=None, **kwargs):
         if prev_query_params is None:
@@ -142,21 +139,16 @@ class INaturalistDataIngester(ProviderDataIngester):
             create_inaturalist_schema = PostgresOperator(
                 task_id="create_inaturalist_schema",
                 postgres_conn_id=POSTGRES_CONN_ID,
-                sql=dedent((SCRIPT_DIR / "00_create_schema.sql").read_text()),
+                sql=(SCRIPT_DIR / "create_schema.sql").read_text(),
             )
 
             with TaskGroup(group_id="load_source_files") as load_source_files:
-                for idx, source_name in enumerate(SOURCE_FILE_NAMES):
+                for source_name in SOURCE_FILE_NAMES:
                     PostgresOperator(
                         task_id=f"load_{source_name}",
                         postgres_conn_id=POSTGRES_CONN_ID,
-                        sql=dedent(
-                            (
-                                SCRIPT_DIR
-                                / (str(idx + 1).zfill(2) + f"_{source_name}.sql")
-                            ).read_text()
-                        ),
-                    )
+                        sql=(SCRIPT_DIR / f"{source_name}.sql").read_text(),
+                    ),
 
             (check_for_file_updates >> create_inaturalist_schema >> load_source_files)
 
