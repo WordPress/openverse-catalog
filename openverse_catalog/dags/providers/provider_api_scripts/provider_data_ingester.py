@@ -210,7 +210,11 @@ class ProviderDataIngester(ABC):
         should_continue = True
 
         # Get the API response
-        response_json = self.get_response_json(query_params)
+        try:
+            response_json = self.get_response_json(query_params)
+        except Exception as e:
+            logger.error(f"Error getting response due to {e}")
+            response_json = None
 
         # Build a list of records from the response
         batch = self.get_batch_data(response_json)
