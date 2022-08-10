@@ -14,7 +14,7 @@ CC0_LICENSE = get_license_info(license_="cc0", license_version="1.0")
 class ClevelandDataIngester(ProviderDataIngester):
     providers = {"image": prov.CLEVELAND_DEFAULT_PROVIDER}
     endpoint = "http://openaccess-api.clevelandart.org/api/artworks/"
-    batch_limit = 100
+    batch_limit = 1000
     delay = 5
 
     def get_next_query_params(self, prev_query_params, **kwargs):
