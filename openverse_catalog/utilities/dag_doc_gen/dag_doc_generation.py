@@ -42,7 +42,7 @@ The DAGs are shown in two forms:
 
 # DAGs by Type
 
-The following are DAGs grouped by their primary tag.
+The following are DAGs grouped by their primary tag:
 
 """
 MIDAMBLE = """
