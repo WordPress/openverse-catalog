@@ -103,9 +103,22 @@ class ProviderDataIngester(ABC):
         self.media_stores = self.init_media_stores()
         self.date = date
 
-        # Keep track of ingestion errors
-        self.conf = conf or {}
-        self.ingestion_errors = []
+        # dag_run configuration options
+        conf = conf or {}
+
+        # Used to skip over errors and continue ingestion. When enabled, errors
+        # are not reported until ingestion has completed.
+        self.skip_ingestion_errors = conf.get("skip_ingestion_errors", False)
+        self.ingestion_errors: List[IngestionError] = []  # Keep track of errors
+
+        # An optional set of initial query params from which to begin ingestion.
+        self.initial_query_params = conf.get("initial_query_params")
+
+        # An optional list of `query_params`. When provided, ingestion will be run for
+        # just these sets of params.
+        self.override_query_params = None
+        if query_params_list := conf.get("query_params_list"):
+            self.override_query_params = (qp for qp in query_params_list)
 
     def init_media_stores(self) -> dict[str, MediaStore]:
         """
@@ -131,17 +144,20 @@ class ProviderDataIngester(ABC):
         record_count = 0
 
         # Get initial query_params
-        query_params = self.conf.get("initial_query_params")
-        if not query_params:
-            query_params = self.get_next_query_params(None, **kwargs)
+        if query_params := self.initial_query_params:
+            logger.info(f"Using initial_query_params from dag_run conf: {query_params}")
+        else:
+            query_params = self.get_query_params(None, **kwargs)
 
-        logger.info(
-            f"Begin ingestion for {self.__class__.__name__}"
-            f" using initial query params: {query_params}"
-        )
+        logger.info(f"Begin ingestion for {self.__class__.__name__}")
 
         while should_continue:
             try:
+                # Break out of ingestion if no query_params are supplied. This can
+                # happen when the final `manual_query_params` is processed.
+                if query_params is None:
+                    break
+
                 batch, should_continue = self.get_batch(query_params)
 
                 if batch and len(batch) > 0:
@@ -152,13 +168,13 @@ class ProviderDataIngester(ABC):
                     should_continue = False
 
             except Exception as error:
-                next_query_params = self.get_next_query_params(query_params, **kwargs)
+                next_query_params = self.get_query_params(query_params, **kwargs)
 
                 ingestion_error = IngestionError(
                     error, traceback.format_exc(), query_params, next_query_params
                 )
 
-                if self.conf.get("skip_ingestion_errors", False):
+                if self.skip_ingestion_errors:
                     # Add this to the errors list but continue processing
                     self.ingestion_errors.append(ingestion_error)
                     logger.error(f"Skipping ingestion error: {error}")
@@ -171,12 +187,12 @@ class ProviderDataIngester(ABC):
                 self.commit_records()
                 raise error from ingestion_error
 
+            # Update query params before iterating
+            query_params = self.get_query_params(query_params, **kwargs)
+
             if self.limit and record_count >= self.limit:
                 logger.info(f"Ingestion limit of {self.limit} has been reached.")
                 should_continue = False
-
-            # Update query_params before iterating
-            query_params = self.get_next_query_params(query_params, **kwargs)
 
         # Commit whatever records we were able to process
         self.commit_records()
@@ -189,6 +205,24 @@ class ProviderDataIngester(ABC):
             raise AirflowException(
                 f"The following errors were encountered during ingestion:\n{errors_str}"
             )
+
+    def get_query_params(
+        self, prev_query_params: Optional[Dict], **kwargs
+    ) -> Optional[Dict]:
+        """
+        Returns the next set of query_params for the next request. If a
+        `query_params_list` has been provided in the dag_run conf, it will fetch
+        the next set of query_params from that list. If not, it just passes through
+        to the class implementation of `get_next_query_params`.
+        """
+        if self.override_query_params:
+            next_params = next(self.override_query_params, None)
+            logger.info(f"Using query params from dag_run conf: {next_params}")
+            return next_params
+
+        # Default behavior when no conf options are provided; build the next
+        # set of query params, given the previous.
+        return self.get_next_query_params(prev_query_params, **kwargs)
 
     @abstractmethod
     def get_next_query_params(
