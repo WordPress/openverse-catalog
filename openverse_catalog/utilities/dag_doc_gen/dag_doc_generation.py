@@ -48,7 +48,7 @@ The following are DAGs grouped by their primary tag:
 MIDAMBLE = """
 # DAG documentation
 
-The following is documentation associated with each DAG (where available)
+The following is documentation associated with each DAG (where available):
 
 """
 
