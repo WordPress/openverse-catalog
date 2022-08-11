@@ -23,7 +23,7 @@ jobs:
 
       - name: Get Python version
         id: python-version
-        run: echo "::set-output value::$(just py-version)"
+        run: echo "::set-output name=value::$(just py-version)"
 
       - name: Setup Python
         uses: actions/setup-python@v2
