@@ -173,7 +173,7 @@ class ProviderDataIngester(ABC):
             ValueError,
             TypeError,
         ) as e:
-            logger.error(f"Error due to {e}")
+            logger.error(f"Error getting next query parameters due to {e}")
 
         return batch, should_continue
 
