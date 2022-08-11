@@ -123,8 +123,8 @@ def test_get_dags_info(
         ),
     ],
 )
-def test_generate_section(dag_info, is_provider, expected):
-    actual = dag_doc_generation.generate_section(
+def test_generate_type_subsection(dag_info, is_provider, expected):
+    actual = dag_doc_generation.generate_type_subsection(
         "Special Name", [dag_info], is_provider
     )
     assert actual.strip() == expected.strip()

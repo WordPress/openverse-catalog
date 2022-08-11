@@ -6,9 +6,9 @@ contents.
 
 The DAGs-by-type section shows DAG ID and schedule interval for all DAGS, and also shows
 dated & media type info for provider DAGs. Where possible, the DAG IDs link to
-individual documentation sections further in the document.
+individual documentation subsections further in the document.
 
-The individual DAG documentation section pulls the DAG's `doc_md` section and renders
+The individual DAG documentation section pulls the DAG's `doc_md` blurb and renders
 it within the document.
 """
 import logging
@@ -117,11 +117,13 @@ def get_dags_info(dags: DagMapping) -> list[DagInfo]:
     return dags_info
 
 
-def generate_section(name: str, dags_info: list[DagInfo], is_provider: bool) -> str:
+def generate_type_subsection(
+    name: str, dags_info: list[DagInfo], is_provider: bool
+) -> str:
     """
-    Generate the documentation for a "DAGs by type" section.
+    Generate the documentation for a "DAGs by type" subsection.
     """
-    log.info(f"Building section for '{name}'")
+    log.info(f"Building subsection for '{name}'")
     text = f"## {name}\n\n"
     # Columns for all DAGs
     header = "| DAG ID | Schedule Interval |"
@@ -176,25 +178,26 @@ def generate_dag_doc(dag_folder: Path = DAG_FOLDER) -> str:
     # before any operations are run on them.
     dags_info = sorted(get_dags_info(dags), key=lambda x: x.dag_id)
 
-    dag_sections = []
+    dag_types = []
 
     # Group DAGs them into sub-lists by DAG "type", which is determined by the first
     # available DAG tag.
-    dags_by_section: dict[str, list[DagInfo]] = defaultdict(list)
+    dags_by_type: dict[str, list[DagInfo]] = defaultdict(list)
     for dag in dags_info:
-        dags_by_section[dag.type_].append(dag)
+        dags_by_type[dag.type_].append(dag)
 
-    for section, dags in sorted(dags_by_section.items()):
+    for type_, dags in sorted(dags_by_type.items()):
         # Create a more human-readable name
-        name = section.replace("_", " ").replace("-", " ").title()
+        name = type_.replace("_", " ").replace("-", " ").title()
         # Special case for provider tables since they have extra information
-        is_provider = section == "provider"
-        # We add the section here as part of a table of contents, and defer adding
-        # the generated section itself until all the sections are made.
-        text += f" 1. [{name}](#{section})\n"
-        dag_sections.append(generate_section(name, dags, is_provider))
+        is_provider = type_ == "provider"
+        # For each type we generate a sub-list of DAGs. We add a link to each generated
+        # sub-list as part of a table of contents, but defer adding the sub-lists until
+        # all are generated.
+        text += f" 1. [{name}](#{type_})\n"
+        dag_types.append(generate_type_subsection(name, dags, is_provider))
 
-    text += "\n" + "\n\n".join(dag_sections)
+    text += "\n" + "\n\n".join(dag_types)
 
     text += MIDAMBLE
     dag_docs = []
