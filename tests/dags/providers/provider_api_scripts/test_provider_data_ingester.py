@@ -237,6 +237,7 @@ def test_ingest_records_uses_initial_query_params_from_dagrun_conf():
         {"initial_query_params": {"has_image": 1, "page": 5}}
     )
 
+    # Mock get_batch to halt ingestion after a single batch
     with (
         patch.object(ingester, "get_batch", return_value=([], False)) as get_batch_mock,
     ):
@@ -244,6 +245,38 @@ def test_ingest_records_uses_initial_query_params_from_dagrun_conf():
 
         # get_batch is called with the query_params supplied in the conf
         get_batch_mock.assert_called_with({"has_image": 1, "page": 5})
+
+
+def test_ingest_records_uses_query_params_list_from_dagrun_conf():
+    # Initialize the ingester with a conf
+    ingester = MockProviderDataIngester(
+        {
+            "query_params_list": [
+                {"has_image": 1, "page": 5},
+                {"has_image": 1, "page": 12},
+                {"has_image": 1, "page": 142},
+            ]
+        }
+    )
+
+    with (
+        patch.object(
+            ingester, "get_batch", return_value=(EXPECTED_BATCH_DATA, True)
+        ) as get_batch_mock,
+        patch.object(ingester, "process_batch", return_value=3),
+    ):
+        ingester.ingest_records()
+
+        # get_batch is called only three times, for each set of query_params
+        # in the list, even though `should_continue` is still True
+        assert get_batch_mock.call_count == 3
+        get_batch_mock.assert_has_calls(
+            [
+                call({"has_image": 1, "page": 5}),
+                call({"has_image": 1, "page": 12}),
+                call({"has_image": 1, "page": 142}),
+            ]
+        )
 
 
 def test_ingest_records_raises_IngestionError():
