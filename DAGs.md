@@ -12,7 +12,7 @@ The DAGs are shown in two forms:
 
 # DAGs by Type
 
-The following are DAGs grouped by their primary tag.
+The following are DAGs grouped by their primary tag:
 
  1. [Commoncrawl](#commoncrawl)
  1. [Data Refresh](#data_refresh)
@@ -57,6 +57,7 @@ The following are DAGs grouped by their primary tag.
 | DAG ID | Schedule Interval |
 | --- | --- |
 | [`airflow_log_cleanup`](#airflow_log_cleanup) | `@weekly` |
+| [`check_silenced_dags`](#check_silenced_dags) | `@weekly` |
 | [`pr_review_reminders`](#pr_review_reminders) | `0 0 * * 1-5` |
 
 
@@ -107,10 +108,11 @@ The following are DAGs grouped by their primary tag.
 
 # DAG documentation
 
-The following is documentation associated with each DAG (where available)
+The following is documentation associated with each DAG (where available):
 
  1. [`airflow_log_cleanup`](#airflow_log_cleanup)
  1. [`audio_data_refresh`](#audio_data_refresh)
+ 1. [`check_silenced_dags`](#check_silenced_dags)
  1. [`europeana_workflow`](#europeana_workflow)
  1. [`flickr_workflow`](#flickr_workflow)
  1. [`freesound_workflow`](#freesound_workflow)
@@ -188,6 +190,27 @@ issues and related PRs:
 https://github.com/WordPress/openverse-catalog/issues/353)
 - [[Feature] Merge popularity calculations and data refresh into a single DAG](
 https://github.com/WordPress/openverse-catalog/issues/453)
+
+
+## `check_silenced_dags`
+
+
+Checks for DAGs that have silenced Slack alerts which may need to be turned back
+on.
+
+When a DAG has known failures, it can be ommitted from Slack error reporting by adding
+an entry to the `silenced_slack_alerts` Airflow variable. This is a dictionary where the
+key is the `dag_id` of the affected DAG, and the value is the URL of a GitHub issue
+tracking the error.
+
+The `check_silenced_alert` DAG iterates over the entries in the `silenced_slack_alerts`
+configuration and verifies that the associated GitHub issues are still open. If an issue
+has been closed, it is assumed that the DAG should have Slack reporting reenabled, and
+an alert is sent to prompt manual update of the configuration. This prevents developers
+from forgetting to reenable Slack reporting after the issue has been resolved.
+
+The DAG runs weekly.
+
 
 
 ## `europeana_workflow`
