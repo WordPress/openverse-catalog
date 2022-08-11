@@ -24,12 +24,12 @@ class IngestionError(Exception):
     def __init__(self, error, traceback, query_params):
         self.error = error
         self.traceback = traceback
-        self.query_params = query_params
+        self.query_params = json.dumps(query_params)
 
     def __str__(self):
         # Append query_param info to error message
         return f"""{self.error}
-    query_params: {json.dumps(self.query_params)}"""
+    query_params: {self.query_params}"""
 
     def print_with_traceback(self):
         # Append traceback
@@ -186,7 +186,15 @@ class ProviderDataIngester(ABC):
 
         # If errors were caught during processing, raise them now
         if self.ingestion_errors:
-            errors_str = ("\n").join(
+            # Log the affected query_params
+            bad_query_params = ", \n".join(
+                [f"{e.query_params}" for e in self.ingestion_errors]
+            )
+            logger.info(
+                "The following query_params resulted in errors: \n"
+                f"{bad_query_params}"
+            )
+            errors_str = "\n".join(
                 e.print_with_traceback() for e in self.ingestion_errors
             )
             raise AirflowException(
@@ -204,7 +212,7 @@ class ProviderDataIngester(ABC):
         # have been set, return them.
         if prev_query_params is None and self.initial_query_params:
             logger.info(
-                "Using initial_query_params from dag_runconf:"
+                "Using initial_query_params from dag_run conf:"
                 f" {self.initial_query_params}"
             )
             return self.initial_query_params
