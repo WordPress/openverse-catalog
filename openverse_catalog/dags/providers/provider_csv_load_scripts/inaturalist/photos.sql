@@ -2,10 +2,14 @@
 -------------------------------------------------------------------------------
 PHOTOS
 -------------------------------------------------------------------------------
---  despite the 2022-05-30 data set having complete observer IDs, we do not use an FK constraint on observer_id in order to save load time
---  photo_id is not unique. There are ~130,000 photo_ids that appear more than
-    once, maybe because an earlier version of the photo was deleted (unclear),
-    but for now assuming that will be taken care of later in the processing.
+--  despite the 2022-05-30 data set having complete observer IDs, we do not use an FK 
+    constraint on observer_id in order to save load time
+--  photo_id is not unique. There are ~130,000 duplicate photo_ids (~0.1% of photos).
+    Both records are saved to the TSV and only one is loaded back into to postgres.
+--  TO DO: [One duplicate photo id](https://www.inaturalist.org/photos/190995604) is in
+    two observations, because the photo contains two species. If observation uuid is
+    the only difference across all photo_id duplicates, we could group by other
+    attributes and aggregate the taxa accordingly in export_to_json.template.sql
 
 Taking DDL from
 https://github.com/inaturalist/inaturalist-open-data/blob/main/Metadata/structure.sql
