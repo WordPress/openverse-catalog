@@ -306,7 +306,7 @@ def create_audioset_view_query():
     """
     return dedent(
         f"""
-        CREATE VIEW public.{AUDIOSET_VIEW_NAME}
+        CREATE VIEW public.{AUDIO_VIEW_NAME}
         AS
           -- DISTINCT clause exists to ensure that only one record is present for a given
           -- foreign identifier/provider pair. This exists as a hard constraint in the API table
@@ -325,7 +325,7 @@ def create_audioset_view_query():
             ((audio_set ->> 'filetype'::text))::character varying(80) AS filetype,
             ((audio_set ->> 'thumbnail'::text))::character varying(1000) AS thumbnail,
             provider
-          FROM public.{AUDIOSET_VIEW_NAME}
+          FROM public.{AUDIO_VIEW_NAME}
           WHERE (audio_set IS NOT NULL)
           ORDER BY audio_set ->> 'foreign_identifier', provider, updated_on DESC;
         """  # noqa: E501
