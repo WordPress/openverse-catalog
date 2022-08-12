@@ -196,13 +196,11 @@ def test_ingest_records_stops_after_reaching_limit():
             assert process_batch_mock.call_count == 1
 
 
-def test_ingest_records_commits_on_exception(self):
+def test_ingest_records_commits_on_exception():
     with (
-        patch.object(self.ingester, "get_batch") as get_batch_mock,
-        patch.object(
-            self.ingester, "process_batch", return_value=3
-        ) as process_batch_mock,
-        patch.object(self.ingester, "commit_records") as commit_mock,
+        patch.object(ingester, "get_batch") as get_batch_mock,
+        patch.object(ingester, "process_batch", return_value=3) as process_batch_mock,
+        patch.object(ingester, "commit_records") as commit_mock,
     ):
         get_batch_mock.side_effect = [
             (EXPECTED_BATCH_DATA, True),  # First batch
@@ -212,7 +210,7 @@ def test_ingest_records_commits_on_exception(self):
         ]
 
         with pytest.raises(ValueError, match="Whoops :C"):
-            self.ingester.ingest_records()
+            ingester.ingest_records()
 
         # Check that get batch was only called thrice
         assert get_batch_mock.call_count == 3
@@ -286,14 +284,12 @@ def test_ingest_records_raises_IngestionError():
             (EXPECTED_BATCH_DATA, True),  # Second batch should not be reached
         ]
 
-        with pytest.raises(Exception) as error:
+        with pytest.raises(Exception, match="Mock exception message"):
             ingester.ingest_records()
 
         # By default, `skip_ingestion_errors` is False and get_batch_data
         # is no longer called after encountering an error
         assert get_batch_mock.call_count == 1
-
-        assert str(error.value) == "Mock exception message"
 
 
 def test_ingest_records_with_skip_ingestion_errors():
