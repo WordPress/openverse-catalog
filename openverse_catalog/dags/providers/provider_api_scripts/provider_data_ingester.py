@@ -28,13 +28,11 @@ class IngestionError(Exception):
 
     def __str__(self):
         # Append query_param info to error message
-        return f"""{self.error}
-    query_params: {self.query_params}"""
+        return f"{self.error}\nquery_params: {self.query_params}"
 
-    def print_with_traceback(self):
+    def repr_with_traceback(self):
         # Append traceback
-        return f"""{str(self)}
-    {self.traceback}"""
+        return f"{str(self)}\n{self.traceback}"
 
 
 class ProviderDataIngester(ABC):
@@ -116,6 +114,7 @@ class ProviderDataIngester(ABC):
         # just these sets of params.
         self.override_query_params = None
         if query_params_list := conf.get("query_params_list"):
+            # Create a generator to facilitate fetching the next set of query_params.
             self.override_query_params = (qp for qp in query_params_list)
 
     def init_media_stores(self) -> dict[str, MediaStore]:
@@ -148,7 +147,7 @@ class ProviderDataIngester(ABC):
             query_params = self.get_query_params(query_params, **kwargs)
             if query_params is None:
                 # Break out of ingestion if no query_params are supplied. This can
-                # happen when the final `manual_query_params` is processed.
+                # happen when the final `override_query_params` is processed.
                 break
 
             try:
@@ -195,7 +194,7 @@ class ProviderDataIngester(ABC):
                 f"{bad_query_params}"
             )
             errors_str = "\n".join(
-                e.print_with_traceback() for e in self.ingestion_errors
+                e.repr_with_traceback() for e in self.ingestion_errors
             )
             raise AirflowException(
                 f"The following errors were encountered during ingestion:\n{errors_str}"
