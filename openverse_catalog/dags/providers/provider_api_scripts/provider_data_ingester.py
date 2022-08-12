@@ -266,7 +266,13 @@ class ProviderDataIngester(ABC):
         # Get the API response
         try:
             response_json = self.get_response_json(query_params)
-        except Exception as e:
+        except (
+            RequestException,
+            RetriesExceeded,
+            JSONDecodeError,
+            ValueError,
+            TypeError,
+        ) as e:
             logger.error(f"Error getting response due to {e}")
             response_json = None
 
