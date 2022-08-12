@@ -103,7 +103,7 @@ gently reminded to review this PR:
     f"{COMMENT_MARKER}"
     """
 
-Ignoring weekend[^1] days, this PR was updated {days_since_update} day(s) ago. \
+Excluding weekend[^1] days, this PR was updated {days_since_update} day(s) ago. \
 PRs labelled with {urgency_label} urgency are expected to be reviewed within \
 {urgency_days} weekday(s)[^2].
 
