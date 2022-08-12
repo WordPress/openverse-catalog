@@ -136,6 +136,10 @@ def create_provider_api_workflow(
     doc_md:            string which should be used for the DAG's documentation markdown
     media_types:       list describing the media type(s) that this provider handles
                        (e.g. `["audio"]`, `["image", "audio"]`, etc.)
+    create_preingestion_tasks and create_postingestion_tasks: callable which creates a
+                        task or task group to be run before or after (respectively) the
+                        rest of the provider workflow. Loading and dropping temporary
+                        tables is one example.
     """
     default_args = {**DAG_DEFAULT_ARGS, **(default_args or {})}
     media_type_name = "mixed" if len(media_types) > 1 else media_types[0]
