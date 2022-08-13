@@ -122,7 +122,6 @@ class ImageCategory(Enum):
 
 # Default image category by source
 DEFAULT_IMAGE_CATEGORY = {
-    "flickr": ImageCategory.PHOTOGRAPH.value,
     "stocksnap": ImageCategory.PHOTOGRAPH.value,
     # Remains to be assigned
     "animaldiversity": ImageCategory.PHOTOGRAPH.value,
