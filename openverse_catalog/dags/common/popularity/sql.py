@@ -306,7 +306,7 @@ def create_audioset_view_query():
     """
     return dedent(
         f"""
-        CREATE VIEW public.{AUDIO_VIEW_NAME}
+        CREATE VIEW public.{AUDIOSET_VIEW_NAME}
         AS
           -- DISTINCT clause exists to ensure that only one record is present for a given
           -- foreign identifier/provider pair. This exists as a hard constraint in the API table
