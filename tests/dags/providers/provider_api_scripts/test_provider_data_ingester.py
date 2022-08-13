@@ -292,19 +292,52 @@ def test_ingest_records_raises_IngestionError():
         assert get_batch_mock.call_count == 1
 
 
-def test_ingest_records_with_skip_ingestion_errors():
+@pytest.mark.parametrize(
+    "batches, expected_call_count, error_messages",
+    [
+        # Multiple errors are skipped
+        (
+            [
+                Exception("Mock exception 1"),
+                (EXPECTED_BATCH_DATA, True),  # First error
+                Exception("Mock exception 2"),
+                (EXPECTED_BATCH_DATA, False),  # Second error, `should_continue` False
+            ],
+            4,  # get_batch is called until `should_continue` is False, ignoring errors
+            ["Mock exception 1", "Mock exception 2"],
+        ),
+        # An AirflowException should not be skipped
+        (
+            [
+                (EXPECTED_BATCH_DATA, True),
+                AirflowException("An Airflow exception"),  # Second batch, should raise
+                (EXPECTED_BATCH_DATA, True),  # This batch should not be reached
+            ],
+            2,  # The final batch should not be reached
+            ["An Airflow exception"],
+        ),
+        # An AirflowException is raised, but there were already other ingestion errors
+        (
+            [
+                Exception("Some other exception"),  # First batch, should be skipped
+                AirflowException("An Airflow exception"),  # Second batch, should raise
+                (EXPECTED_BATCH_DATA, True),  # This batch should not be reached
+            ],
+            2,  # The final batch should not be reached
+            ["Some other exception"],  # Ingestion errors reported
+        ),
+    ],
+)
+def test_ingest_records_with_skip_ingestion_errors(
+    batches, expected_call_count, error_messages
+):
     ingester = MockProviderDataIngester({"skip_ingestion_errors": True})
 
     with (
         patch.object(ingester, "get_batch") as get_batch_mock,
         patch.object(ingester, "process_batch", return_value=10),
     ):
-        get_batch_mock.side_effect = [
-            Exception("Mock exception 1"),  # First batch
-            (EXPECTED_BATCH_DATA, True),  # Second batch
-            Exception("Mock exception 2"),  # Third batch
-            (EXPECTED_BATCH_DATA, False),  # Final batch
-        ]
+        get_batch_mock.side_effect = batches
 
         # ingest_records ultimately raises an exception
         with pytest.raises(AirflowException) as error:
@@ -312,11 +345,11 @@ def test_ingest_records_with_skip_ingestion_errors():
 
         # get_batch was called four times before the exception was thrown,
         # despite errors being raised
-        assert get_batch_mock.call_count == 4
+        assert get_batch_mock.call_count == expected_call_count
 
         # All errors are summarized in the exception thrown at the end
-        assert "Mock exception 1" in str(error)
-        assert "Mock exception 2" in str(error)
+        for error_message in error_messages:
+            assert error_message in str(error)
 
 
 def test_commit_commits_all_stores():

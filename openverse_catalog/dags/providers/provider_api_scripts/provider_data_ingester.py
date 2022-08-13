@@ -160,6 +160,16 @@ class ProviderDataIngester(ABC):
                     logger.info("Batch complete.")
                     should_continue = False
 
+            except AirflowException as error:
+                # AirflowExceptions should not be caught, as execution should not
+                # continue when the task is being stopped by Airflow.
+
+                # If errors have already been caught during processing, raise them
+                # as well.
+                if error_summary := self.get_ingestion_errors():
+                    raise error_summary from error
+                raise
+
             except Exception as error:
                 ingestion_error = IngestionError(
                     error, traceback.format_exc(), query_params
@@ -184,6 +194,16 @@ class ProviderDataIngester(ABC):
         self.commit_records()
 
         # If errors were caught during processing, raise them now
+        if error_summary := self.get_ingestion_errors():
+            raise error_summary
+
+    def get_ingestion_errors(self) -> AirflowException | None:
+        """ "
+        If any errors were skipped during ingestion, returns an AirflowException
+        with a summary of all errors.
+
+        It there are no errors to report, returns None.
+        """
         if self.ingestion_errors:
             # Log the affected query_params
             bad_query_params = ", \n".join(
@@ -196,9 +216,10 @@ class ProviderDataIngester(ABC):
             errors_str = "\n".join(
                 e.repr_with_traceback() for e in self.ingestion_errors
             )
-            raise AirflowException(
+            return AirflowException(
                 f"The following errors were encountered during ingestion:\n{errors_str}"
             )
+        return None
 
     def get_query_params(
         self, prev_query_params: Optional[Dict], **kwargs
