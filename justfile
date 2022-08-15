@@ -16,7 +16,7 @@ export PROJECT_PY_VERSION := `grep '# PYTHON' requirements_prod.txt | awk -F= '{
 @py-version:
     echo $PROJECT_PY_VERSION
 
-# Check the installed Python version matchese the required Python version and fail if not
+# Check the installed Python version matches the required Python version and fail if not
 check-py-version:
     #! /usr/bin/env sh
     installed_python_version=`python -c 'import sys; print(f"{sys.version_info[0]}.{sys.version_info[1]}")'`
