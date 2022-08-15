@@ -6,6 +6,9 @@ import pytest
 from airflow.exceptions import AirflowException
 from common.storage.audio import AudioStore, MockAudioStore
 from common.storage.image import ImageStore, MockImageStore
+from providers.provider_api_scripts.provider_data_ingester import (
+    AggregateIngestionError,
+)
 
 from tests.dags.providers.provider_api_scripts.resources.provider_data_ingester.mock_provider_data_ingester import (
     AUDIO_PROVIDER,
@@ -293,7 +296,7 @@ def test_ingest_records_raises_IngestionError():
 
 
 @pytest.mark.parametrize(
-    "batches, expected_call_count, error_messages",
+    "batches, expected_call_count, expected_error",
     [
         # Multiple errors are skipped
         (
@@ -304,7 +307,7 @@ def test_ingest_records_raises_IngestionError():
                 (EXPECTED_BATCH_DATA, False),  # Second error, `should_continue` False
             ],
             4,  # get_batch is called until `should_continue` is False, ignoring errors
-            ["Mock exception 1", "Mock exception 2"],
+            AggregateIngestionError,
         ),
         # An AirflowException should not be skipped
         (
@@ -314,7 +317,7 @@ def test_ingest_records_raises_IngestionError():
                 (EXPECTED_BATCH_DATA, True),  # This batch should not be reached
             ],
             2,  # The final batch should not be reached
-            ["An Airflow exception"],
+            AirflowException,
         ),
         # An AirflowException is raised, but there were already other ingestion errors
         (
@@ -324,12 +327,12 @@ def test_ingest_records_raises_IngestionError():
                 (EXPECTED_BATCH_DATA, True),  # This batch should not be reached
             ],
             2,  # The final batch should not be reached
-            ["Some other exception"],  # Ingestion errors reported
+            AggregateIngestionError,  # Ingestion errors reported
         ),
     ],
 )
 def test_ingest_records_with_skip_ingestion_errors(
-    batches, expected_call_count, error_messages
+    batches, expected_call_count, expected_error
 ):
     ingester = MockProviderDataIngester({"skip_ingestion_errors": True})
 
@@ -340,16 +343,12 @@ def test_ingest_records_with_skip_ingestion_errors(
         get_batch_mock.side_effect = batches
 
         # ingest_records ultimately raises an exception
-        with pytest.raises(AirflowException) as error:
+        with pytest.raises(expected_error):
             ingester.ingest_records()
 
         # get_batch was called four times before the exception was thrown,
         # despite errors being raised
         assert get_batch_mock.call_count == expected_call_count
-
-        # All errors are summarized in the exception thrown at the end
-        for error_message in error_messages:
-            assert error_message in str(error)
 
 
 def test_commit_commits_all_stores():

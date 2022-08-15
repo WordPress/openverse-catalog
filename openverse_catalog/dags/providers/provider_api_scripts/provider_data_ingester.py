@@ -15,6 +15,15 @@ from requests.exceptions import JSONDecodeError, RequestException
 logger = logging.getLogger(__name__)
 
 
+class AggregateIngestionError(Exception):
+    """
+    Custom exception when multiple ingestion errors are skipped and then
+    raised in aggregate at the end of ingestion.
+    """
+
+    pass
+
+
 class IngestionError(Exception):
     """
     Custom exception which includes information about the query_params that
@@ -197,10 +206,10 @@ class ProviderDataIngester(ABC):
         if error_summary := self.get_ingestion_errors():
             raise error_summary
 
-    def get_ingestion_errors(self) -> AirflowException | None:
-        """ "
-        If any errors were skipped during ingestion, returns an AirflowException
-        with a summary of all errors.
+    def get_ingestion_errors(self) -> AggregateIngestionError | None:
+        """
+        If any errors were skipped during ingestion, log them as well as the
+        associated query parameters. Then return an AggregateIngestionError.
 
         It there are no errors to report, returns None.
         """
@@ -216,8 +225,12 @@ class ProviderDataIngester(ABC):
             errors_str = "\n".join(
                 e.repr_with_traceback() for e in self.ingestion_errors
             )
-            return AirflowException(
+            logger.error(
                 f"The following errors were encountered during ingestion:\n{errors_str}"
+            )
+            return AggregateIngestionError(
+                f"{len(self.ingestion_errors)} errors were skipped during ingestion "
+                " using the `skip_ingestion_errors` flag. See the log for more details."
             )
         return None
 
