@@ -246,7 +246,7 @@ class ProviderDataIngester(ABC):
         if prev_query_params is None and self.initial_query_params:
             logger.info(
                 "Using initial_query_params from dag_run conf:"
-                f" {self.initial_query_params}"
+                f" {json.dumps(self.initial_query_params)}"
             )
             return self.initial_query_params
 
