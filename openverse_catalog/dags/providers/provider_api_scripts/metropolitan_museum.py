@@ -47,7 +47,6 @@ class MetMuseumDataIngester(ProviderDataIngester):
     endpoint = "https://collectionapi.metmuseum.org/public/collection/v1/objects"
     DEFAULT_LICENSE_INFO = get_license_info(license_="cc0", license_version="1.0")
 
-
     def __init__(self, date: str = None):
         super(MetMuseumDataIngester, self).__init__(date=date)
         self.retries = 5
@@ -60,7 +59,7 @@ class MetMuseumDataIngester(ProviderDataIngester):
         self.object_ids_retrieved = 0
         self.non_cc0_objects = 0
 
-    def get_next_query_params(self, prev_query_params = None):
+    def get_next_query_params(self, prev_query_params=None):
         return self.query_param
 
     def get_batch_data(self, response_json):
@@ -108,11 +107,10 @@ class MetMuseumDataIngester(ProviderDataIngester):
             for img in image_list
         ]
 
-
-    def _build_foreign_id(self, object_id:int, image_url:str):
+    def _build_foreign_id(self, object_id: int, image_url: str):
         unique_identifier = image_url.split("/")[-1].split(".")[0]
         return f"{object_id}-{unique_identifier}"
-    
+
     def _create_meta_data(self, object_json):
         meta_data = None
         if object_json.get("accessionNumber") is not None:

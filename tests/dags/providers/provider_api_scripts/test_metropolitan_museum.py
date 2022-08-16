@@ -46,10 +46,7 @@ CC0 = LicenseInfo(
 
 @pytest.mark.parametrize(
     "test_date, expected",
-    [
-        ("2022-07-01", {"metadataDate": "2022-07-01"}),
-        (None, None)
-    ],
+    [("2022-07-01", {"metadataDate": "2022-07-01"}), (None, None)],
 )
 def test_get_next_query_params(test_date, expected):
     ingester = MetMuseumDataIngester(test_date)
@@ -61,7 +58,7 @@ def test_get_next_query_params(test_date, expected):
     "response_json, expected",
     [
         ({"total": 4, "objectIDs": [153, 1578, 465, 546]}, [153, 1578, 465, 546]),
-        (None, None)
+        (None, None),
     ],
 )
 def test_get_batch_data(response_json, expected):
@@ -72,7 +69,11 @@ def test_get_batch_data(response_json, expected):
 @pytest.mark.parametrize(
     "case_name, response_json, expected",
     [
-        ("single image", single_object_response, single_expected_data[0].get("meta_data")),
+        (
+            "single image",
+            single_object_response,
+            single_expected_data[0].get("meta_data"),
+        ),
         ("multi images", full_object_response, full_expected_data[0].get("meta_data")),
     ],
 )
@@ -84,7 +85,11 @@ def test_create_meta_data(case_name, response_json, expected):
 @pytest.mark.parametrize(
     "case_name, response_json, expected",
     [
-        ("single image", single_object_response, single_expected_data[0].get("raw_tags")),
+        (
+            "single image",
+            single_object_response,
+            single_expected_data[0].get("raw_tags"),
+        ),
         ("multi images", full_object_response, full_expected_data[0].get("raw_tags")),
     ],
 )
@@ -115,16 +120,14 @@ def test_get_record_data_with_non_ok():
     [
         ("single image", single_object_response, single_expected_data),
         ("multi image", full_object_response, full_expected_data),
-        ("not cc0", ineligible_response, None)
+        ("not cc0", ineligible_response, None),
     ],
 )
 def test_get_record_data_returns_response_json_when_all_ok(
     case_name, response_json, expected, monkeypatch
 ):
     monkeypatch.setattr(
-        mma.delayed_requester, 
-        "get_response_json", 
-        lambda x, y: response_json
+        mma.delayed_requester, "get_response_json", lambda x, y: response_json
     )
     actual = mma.get_record_data(response_json.get("objectID"))
 
