@@ -229,8 +229,9 @@ class ProviderDataIngester(ABC):
                 f"The following errors were encountered during ingestion:\n{errors_str}"
             )
             return AggregateIngestionError(
-                f"{len(self.ingestion_errors)} errors were skipped during ingestion "
-                " using the `skip_ingestion_errors` flag. See the log for more details."
+                f"{len(self.ingestion_errors)} query batches were skipped due to "
+                "errors during ingestion using the `skip_ingestion_errors` flag. "
+                "See the log for more details."
             )
         return None
 
