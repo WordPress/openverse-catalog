@@ -8,136 +8,147 @@ Output:                 TSV file containing the image, their respective
 
 Notes:                  https://metmuseum.github.io/
                         No rate limit specified.
+                        https://metmuseum.github.io/#search
+                        Please limit requests to 80 requests per second, which we
+                        certainly do, but maybe there are additional constraints we
+                        should be aware of.
+
+                        There is also a csv file on github, which might be useful.
+                        https://github.com/metmuseum/openaccess
 """
 
 import argparse
 import logging
 
 from common.licenses import get_license_info
-from common.requester import DelayedRequester
-from common.storage.image import ImageStore
+from common.loader import provider_details as prov
+from provider_data_ingester import ProviderDataIngester
 
-
-DELAY = 1.0  # time delay (in seconds)
-PROVIDER = "met"
-ENDPOINT = "https://collectionapi.metmuseum.org/public/collection/v1/objects"
-DEFAULT_LICENSE_INFO = get_license_info(license_="cc0", license_version="1.0")
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s", level=logging.INFO
 )
 logger = logging.getLogger(__name__)
 
-delayed_requester = DelayedRequester(DELAY)
-image_store = ImageStore(provider=PROVIDER)
+# get a list of object IDs for this week:
+# https://collectionapi.metmuseum.org/public/collection/v1/objects?metadataDate=2022-08-10
+# get a specific object:
+# https://collectionapi.metmuseum.org/public/collection/v1/objects/1027
+# I wish that we could filter on license in the first call, but seems like we can't.
+# The search functionality requires a specific query (term search) in addition to date
+# and public domain. It seems like it won't connect with just date and license.
+# https://collectionapi.metmuseum.org/public/collection/v1/search?isPublicDomain=true&metadataDate=2022-08-07
+# https://collectionapi.metmuseum.org/public/collection/v1/search?isPublicDomain=true&metadataDate=2022-08-07
+# https://collectionapi.metmuseum.org/public/collection/v1/search?departmentId=1&isPublicDomain=true&metadataDate=2021-08-01
 
 
-def main(date=None):
-    """
-    This script pulls the data for a given date from the Metropolitan
-    Museum of Art API, and writes it into a .TSV file to be eventually
-    read into our DB.
-
-    Required Arguments:
-
-    date:  Date String in the form YYYY-MM-DD.  This is the date for
-           which running the script will pull data.
-    """
-
-    logger.info(f"Begin: Met Museum API requests for date: {date}")
-
-    fetch_the_object_id = _get_object_ids(date)
-    if fetch_the_object_id:
-        logger.info(f"Total object found {fetch_the_object_id[0]}")
-        _extract_the_data(fetch_the_object_id[1])
-
-    total_images = image_store.commit()
-    logger.info(f"Total CC0 images received {total_images}")
+class MetMuseumDataIngester(ProviderDataIngester):
+    providers = {"image": prov.MET_MUSEUM_DEFAULT_PROVIDER}
+    endpoint = "https://collectionapi.metmuseum.org/public/collection/v1/objects"
+    DEFAULT_LICENSE_INFO = get_license_info(license_="cc0", license_version="1.0")
 
 
-def _get_object_ids(date, endpoint=ENDPOINT):
-    query_params = ""
-    if date:
-        query_params = {"metadataDate": date}
+    def __init__(self, date: str = None):
+        super(MetMuseumDataIngester, self).__init__(date=date)
+        self.retries = 5
 
-    response = _get_response_json(query_params, endpoint)
+        self.query_param = None
+        if self.date:
+            self.query_param = {"metadataDate": date}
 
-    if response:
-        total_object_ids = response["total"]
-        object_ids = response["objectIDs"]
-    else:
-        logger.warning("No content available")
-        return None
-    return [total_object_ids, object_ids]
+        # this seems like useful information to track, rather than logging individually
+        self.object_ids_retrieved = 0
+        self.non_cc0_objects = 0
 
+    def get_next_query_params(self, prev_query_params = None):
+        return self.query_param
 
-def _get_response_json(
-    query_params,
-    endpoint,
-    retries=5,
-):
-    response_json = delayed_requester.get_response_json(
-        endpoint, query_params=query_params, retries=retries
-    )
+    def get_batch_data(self, response_json):
+        if response_json:
+            self.object_ids_retrieved = response_json["total"]
+            logger.info(f"Total objects found {self.object_ids_retrieved}")
+            object_ids = response_json["objectIDs"]
+        else:
+            logger.warning("No content available")
+            return None
+        return object_ids
 
-    return response_json
+    def get_record_data(self, object_id):
 
-
-def _extract_the_data(object_ids):
-    for i in object_ids:
-        _get_data_for_image(i)
-
-
-def _get_data_for_image(object_id):
-    object_json = _get_and_validate_object_json(object_id)
-    if not object_json:
-        logger.warning(f"Could not retrieve object_json for object_id: {object_id}")
-        return
-
-    main_image = object_json.get("primaryImage")
-    other_images = object_json.get("additionalImages", [])
-    image_list = [main_image] + other_images
-
-    meta_data = _create_meta_data(object_json)
-
-    for img in image_list:
-        foreign_id = _build_foreign_id(object_id, img)
-        image_store.add_item(
-            foreign_landing_url=object_json.get("objectURL"),
-            image_url=img,
-            license_info=DEFAULT_LICENSE_INFO,
-            foreign_identifier=foreign_id,
-            creator=object_json.get("artistDisplayName"),
-            title=object_json.get("title"),
-            meta_data=meta_data,
+        object_endpoint = f"{self.endpoint}/{object_id}"
+        object_json = self.delayed_requester.get_response_json(
+            object_endpoint, self.retries
         )
 
+        if object_json.get("isPublicDomain") is False:
+            self.non_cc0_objects += 1
+            if self.non_cc0_objects % self.batch_limit == 0:
+                logger.info(f"Retrieved {self.non_cc0_objects} non-CC0 records.")
+            return None
 
-def _get_and_validate_object_json(object_id, endpoint=ENDPOINT):
-    object_endpoint = f"{endpoint}/{object_id}"
-    object_json = _get_response_json(None, object_endpoint)
-    if not object_json.get("isPublicDomain"):
-        logger.warning("CC0 license not detected")
-        object_json = None
-    return object_json
+        main_image = object_json.get("primaryImage")
+        other_images = object_json.get("additionalImages", [])
+        image_list = [main_image] + other_images
+
+        meta_data = self._create_meta_data(object_json)
+        raw_tags = self._create_tag_list(object_json)
+
+        return [
+            {
+                "foreign_landing_url": object_json.get("objectURL"),
+                "image_url": img,
+                "license_info": self.DEFAULT_LICENSE_INFO,
+                "foreign_identifier": self._build_foreign_id(object_id, img),
+                "creator": object_json.get("artistDisplayName"),
+                "title": object_json.get("title"),
+                "meta_data": meta_data,
+                "filetype": img.split(".")[-1],
+                "raw_tags": raw_tags,
+            }
+            for img in image_list
+        ]
 
 
-def _build_foreign_id(object_id, image_url):
-    unique_identifier = image_url.split("/")[-1].split(".")[0]
-    return f"{object_id}-{unique_identifier}"
+    def _build_foreign_id(self, object_id:int, image_url:str):
+        unique_identifier = image_url.split("/")[-1].split(".")[0]
+        return f"{object_id}-{unique_identifier}"
+    
+    def _create_meta_data(self, object_json):
+        meta_data = None
+        if object_json.get("accessionNumber") is not None:
+            meta_data = {
+                "accession_number": object_json.get("accessionNumber"),
+            }
+        return meta_data
+
+    def _create_tag_list(self, object_json):
+        tag_list = [
+            tag
+            for tag in [
+                object_json.get("department"),
+                object_json.get("medium"),
+                object_json.get("culture"),
+                object_json.get("objectName"),
+                object_json.get("artistDisplayName"),
+                object_json.get("classification"),
+                object_json.get("objectDate"),
+                object_json.get("creditLine"),
+            ]
+            if tag is not None and tag != ""
+        ]
+        if object_json.get("tags") is not None and object_json.get("tags") != "":
+            tag_list += [tag["term"] for tag in object_json.get("tags")]
+        return tag_list
+
+    def get_media_type(self, record):
+        # This provider only supports Images.
+        return "image"
 
 
-def _create_meta_data(object_json):
-    meta_data = {
-        "accession_number": object_json.get("accessionNumber"),
-        "classification": object_json.get("classification"),
-        "culture": object_json.get("culture"),
-        "date": object_json.get("objectDate"),
-        "medium": object_json.get("medium"),
-        "credit_line": object_json.get("creditLine"),
-    }
-    meta_data = {k: v for k, v in meta_data.items() if v is not None}
-    return meta_data
+def main(date: str):
+    logger.info("Begin: Metropolitan Museum data ingestion")
+    ingester = MetMuseumDataIngester(date)
+    ingester.ingest_records()
 
 
 if __name__ == "__main__":

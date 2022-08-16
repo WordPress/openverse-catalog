@@ -4,6 +4,7 @@ from typing import Dict, Optional, Sequence, Type
 
 from providers.provider_api_scripts.cleveland_museum import ClevelandDataIngester
 from providers.provider_api_scripts.finnish_museums import FinnishMuseumsDataIngester
+from providers.provider_api_scripts.metropolitan_museum import MetMuseumDataIngester
 from providers.provider_api_scripts.museum_victoria import VictoriaDataIngester
 from providers.provider_api_scripts.provider_data_ingester import ProviderDataIngester
 from providers.provider_api_scripts.science_museum import ScienceMuseumDataIngester
@@ -116,7 +117,10 @@ PROVIDER_WORKFLOWS = [
     ),
     ProviderWorkflow(
         provider_script="metropolitan_museum",
-        start_date=datetime(2016, 9, 1),
+        ingester_class=MetMuseumDataIngester,
+        # changed for testing
+        # start_date=datetime(2016, 9, 1),
+        start_date=datetime(2022, 8, 8),
         schedule_string="@daily",
         dated=True,
         pull_timeout=timedelta(hours=12),
