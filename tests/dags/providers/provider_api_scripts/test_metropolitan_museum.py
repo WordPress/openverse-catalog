@@ -33,11 +33,6 @@ full_expected_data = json.loads(
     (RESOURCES / "sample_additional_image_data.json").read_text()
 )
 
-# Not CC0
-ineligible_response = json.loads(
-    (RESOURCES / "sample_response_1027_not_cc0.json").read_text()
-)
-
 
 CC0 = LicenseInfo(
     "cc0", "1.0", "https://creativecommons.org/publicdomain/zero/1.0/", None
@@ -77,8 +72,8 @@ def test_get_batch_data(response_json, expected):
         ("multi images", full_object_response, full_expected_data[0].get("meta_data")),
     ],
 )
-def test_create_meta_data(case_name, response_json, expected):
-    actual = mma._create_meta_data(response_json)
+def test_get_meta_data(case_name, response_json, expected):
+    actual = mma._get_meta_data(response_json)
     assert expected == actual
 
 
@@ -93,8 +88,8 @@ def test_create_meta_data(case_name, response_json, expected):
         ("multi images", full_object_response, full_expected_data[0].get("raw_tags")),
     ],
 )
-def test_create_tag_list(case_name, response_json, expected):
-    actual = mma._create_tag_list(response_json)
+def test_get_tag_list(case_name, response_json, expected):
+    actual = mma._get_tag_list(response_json)
     assert expected == actual
 
 
@@ -106,8 +101,22 @@ def test_create_tag_list(case_name, response_json, expected):
         ({"title": "", "objectName": "Yes, empty title"}, "Yes, empty title"),
     ],
 )
-def test_create_title(response_json, expected):
-    actual = mma._create_title(response_json)
+def test_get_title(response_json, expected):
+    actual = mma._get_title(response_json)
+    assert actual == expected
+
+
+@pytest.mark.parametrize(
+    "response_json, expected",
+    [
+        ({}, None),
+        ({"artistDisplayName": "Unidentified"}, None),
+        ({"artistDisplayName": "Unidentified artist"}, None),
+        ({"artistDisplayName": "Unidentified flying obj"}, "Unidentified flying obj"),
+    ],
+)
+def test_get_artist_name(response_json, expected):
+    actual = mma._get_artist_name(response_json)
     assert actual == expected
 
 
@@ -133,7 +142,11 @@ def test_get_record_data_with_non_ok():
     [
         ("single image", single_object_response, single_expected_data),
         ("multi image", full_object_response, full_expected_data),
-        ("not cc0", ineligible_response, None),
+        (
+            "not cc0",
+            json.loads('{"isPublicDomain": false, "otherData": "is here too"}'),
+            None,
+        ),
     ],
 )
 def test_get_record_data_returns_response_json_when_all_ok(

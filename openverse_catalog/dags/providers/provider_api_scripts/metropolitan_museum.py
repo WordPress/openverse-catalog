@@ -51,9 +51,11 @@ class MetMuseumDataIngester(ProviderDataIngester):
         if self.date:
             self.query_param = {"metadataDate": date}
 
-        # this seems like useful information to track, rather than logging individually
-        self.object_ids_retrieved = 0
-        self.non_cc0_objects = 0
+        # this seems like useful information to track for context on the existing load
+        # metrics, but just adding them to the log in aggregate for now rather than
+        # logging each record individually or doing something fancier in airflow.
+        self.object_ids_retrieved = 0  # total object IDs based on date
+        self.non_cc0_objects = 0  # number checked and ignored because of licensing
 
     def get_next_query_params(self, prev_query_params=None):
         return self.query_param
@@ -68,7 +70,6 @@ class MetMuseumDataIngester(ProviderDataIngester):
             return None
 
     def get_record_data(self, object_id):
-
         object_endpoint = f"{self.endpoint}/{object_id}"
         object_json = self.delayed_requester.get_response_json(
             object_endpoint, self.retries
@@ -84,17 +85,25 @@ class MetMuseumDataIngester(ProviderDataIngester):
         other_images = object_json.get("additionalImages", [])
         image_list = [main_image] + other_images
 
-        meta_data = self._create_meta_data(object_json)
-        raw_tags = self._create_tag_list(object_json)
+        meta_data = self._get_meta_data(object_json)
+        raw_tags = self._get_tag_list(object_json)
+        title = self._get_title(object_json)
+        artist = self._get_artist_name(object_json)
+
+        # We aren't currently populating creator_url. In theory we could url encode
+        # f"https://collectionapi.metmuseum.org/public/collection/v1/search?artistOrCulture={artist}"
+        # per API guide here: https://metmuseum.github.io/#search
+        # but it seems fairly buggy (i.e. nonresponsive), at least when tested with
+        # "Chelsea Porcelain Manufactory" and "Minton(s)" and "Jean Pucelle"
 
         return [
             {
                 "foreign_landing_url": object_json.get("objectURL"),
                 "image_url": img,
                 "license_info": self.DEFAULT_LICENSE_INFO,
-                "foreign_identifier": self._build_foreign_id(object_id, img),
-                "creator": object_json.get("artistDisplayName"),
-                "title": self._create_title(object_json),
+                "foreign_identifier": self._get_foreign_id(object_id, img),
+                "creator": artist,
+                "title": title,
                 "meta_data": meta_data,
                 "filetype": img.split(".")[-1],
                 "raw_tags": raw_tags,
@@ -102,11 +111,11 @@ class MetMuseumDataIngester(ProviderDataIngester):
             for img in image_list
         ]
 
-    def _build_foreign_id(self, object_id: int, image_url: str):
+    def _get_foreign_id(self, object_id: int, image_url: str):
         unique_identifier = image_url.split("/")[-1].split(".")[0]
         return f"{object_id}-{unique_identifier}"
 
-    def _create_meta_data(self, object_json):
+    def _get_meta_data(self, object_json):
         meta_data = None
         if object_json.get("accessionNumber") is not None:
             meta_data = {
@@ -114,7 +123,7 @@ class MetMuseumDataIngester(ProviderDataIngester):
             }
         return meta_data
 
-    def _create_tag_list(self, object_json):
+    def _get_tag_list(self, object_json):
         tag_list = [
             tag
             for tag in [
@@ -122,22 +131,33 @@ class MetMuseumDataIngester(ProviderDataIngester):
                 object_json.get("medium"),
                 object_json.get("culture"),
                 object_json.get("objectName"),
-                object_json.get("artistDisplayName"),
+                self._get_artist_name(object_json),
                 object_json.get("classification"),
                 object_json.get("objectDate"),
                 object_json.get("creditLine"),
+                object_json.get("period"),
             ]
-            if tag is not None and tag != ""
+            if tag
         ]
-        if object_json.get("tags") is not None and object_json.get("tags") != "":
+        if object_json.get("tags"):
             tag_list += [tag["term"] for tag in object_json.get("tags")]
         return tag_list
 
-    def _create_title(self, record):
+    def _get_title(self, record):
         if record.get("title"):
             return record.get("title")
         else:
             return record.get("objectName")
+
+    def _get_artist_name(self, record):
+        artist = record.get("artistDisplayName")
+        # Treating "unidentified" the same as missing, but maybe it would be useful in
+        # in search? Maybe in the art world it has a more specific outsider art
+        # connotation?
+        if artist in ["Unidentified", "Unidentified artist"]:
+            return None
+        else:
+            return artist
 
     def get_media_type(self, record):
         # This provider only supports Images.
