@@ -98,6 +98,19 @@ def test_create_tag_list(case_name, response_json, expected):
     assert expected == actual
 
 
+@pytest.mark.parametrize(
+    "response_json, expected",
+    [
+        ({"title": "Yes, regular case", "objectName": "Wrong"}, "Yes, regular case"),
+        ({"objectName": "Yes, no title at all"}, "Yes, no title at all"),
+        ({"title": "", "objectName": "Yes, empty title"}, "Yes, empty title"),
+    ],
+)
+def test_create_title(response_json, expected):
+    actual = mma._create_title(response_json)
+    assert actual == expected
+
+
 def test_get_record_data_with_none_response():
     with patch.object(mma.delayed_requester, "get", return_value=None) as mock_get:
         with pytest.raises(Exception):

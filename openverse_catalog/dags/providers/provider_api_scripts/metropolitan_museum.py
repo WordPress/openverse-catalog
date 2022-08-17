@@ -6,15 +6,13 @@ ETL Process:            Use the API to identify all CC0 artworks.
 Output:                 TSV file containing the image, their respective
                         meta-data.
 
-Notes:                  https://metmuseum.github.io/
-                        No rate limit specified.
-                        https://metmuseum.github.io/#search
-                        Please limit requests to 80 requests per second, which we
-                        certainly do, but maybe there are additional constraints we
-                        should be aware of.
+Notes:                  https://metmuseum.github.io/#search
+                        "Please limit requests to 80 requests per second." Changing
+                        delay to 3 seconds, because of blocking encountered during
+                        development.
 
-                        There is also a csv file on github, which might be useful.
-                        https://github.com/metmuseum/openaccess
+                        Some analysis to improve data quality was conducted using a
+                        separate csv file here: https://github.com/metmuseum/openaccess
 """
 
 import argparse
@@ -34,12 +32,9 @@ logger = logging.getLogger(__name__)
 # https://collectionapi.metmuseum.org/public/collection/v1/objects?metadataDate=2022-08-10
 # get a specific object:
 # https://collectionapi.metmuseum.org/public/collection/v1/objects/1027
-# I wish that we could filter on license in the first call, but seems like we can't.
 # The search functionality requires a specific query (term search) in addition to date
 # and public domain. It seems like it won't connect with just date and license.
 # https://collectionapi.metmuseum.org/public/collection/v1/search?isPublicDomain=true&metadataDate=2022-08-07
-# https://collectionapi.metmuseum.org/public/collection/v1/search?isPublicDomain=true&metadataDate=2022-08-07
-# https://collectionapi.metmuseum.org/public/collection/v1/search?departmentId=1&isPublicDomain=true&metadataDate=2021-08-01
 
 
 class MetMuseumDataIngester(ProviderDataIngester):
@@ -50,6 +45,7 @@ class MetMuseumDataIngester(ProviderDataIngester):
     def __init__(self, date: str = None):
         super(MetMuseumDataIngester, self).__init__(date=date)
         self.retries = 5
+        self.delayed_requester._DELAY = 3
 
         self.query_param = None
         if self.date:
@@ -66,11 +62,10 @@ class MetMuseumDataIngester(ProviderDataIngester):
         if response_json:
             self.object_ids_retrieved = response_json["total"]
             logger.info(f"Total objects found {self.object_ids_retrieved}")
-            object_ids = response_json["objectIDs"]
+            return response_json["objectIDs"]
         else:
             logger.warning("No content available")
             return None
-        return object_ids
 
     def get_record_data(self, object_id):
 
@@ -99,7 +94,7 @@ class MetMuseumDataIngester(ProviderDataIngester):
                 "license_info": self.DEFAULT_LICENSE_INFO,
                 "foreign_identifier": self._build_foreign_id(object_id, img),
                 "creator": object_json.get("artistDisplayName"),
-                "title": object_json.get("title"),
+                "title": self._create_title(object_json),
                 "meta_data": meta_data,
                 "filetype": img.split(".")[-1],
                 "raw_tags": raw_tags,
@@ -137,6 +132,12 @@ class MetMuseumDataIngester(ProviderDataIngester):
         if object_json.get("tags") is not None and object_json.get("tags") != "":
             tag_list += [tag["term"] for tag in object_json.get("tags")]
         return tag_list
+
+    def _create_title(self, record):
+        if record.get("title"):
+            return record.get("title")
+        else:
+            return record.get("objectName")
 
     def get_media_type(self, record):
         # This provider only supports Images.
