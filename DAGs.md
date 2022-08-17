@@ -323,15 +323,13 @@ ETL Process:            Use the API to identify all CC0 artworks.
 Output:                 TSV file containing the image, their respective
                         meta-data.
 
-Notes:                  https://metmuseum.github.io/
-                        No rate limit specified.
-                        https://metmuseum.github.io/#search
-                        Please limit requests to 80 requests per second, which we
-                        certainly do, but maybe there are additional constraints we
-                        should be aware of.
+Notes:                  https://metmuseum.github.io/#search
+                        "Please limit requests to 80 requests per second." Changing
+                        delay to 3 seconds, because of blocking encountered during
+                        development.
 
-                        There is also a csv file on github, which might be useful.
-                        https://github.com/metmuseum/openaccess
+                        Some analysis to improve data quality was conducted using a
+                        separate csv file here: https://github.com/metmuseum/openaccess
 
 
 
