@@ -325,6 +325,13 @@ Output:                 TSV file containing the image, their respective
 
 Notes:                  https://metmuseum.github.io/
                         No rate limit specified.
+                        https://metmuseum.github.io/#search
+                        Please limit requests to 80 requests per second, which we
+                        certainly do, but maybe there are additional constraints we
+                        should be aware of.
+
+                        There is also a csv file on github, which might be useful.
+                        https://github.com/metmuseum/openaccess
 
 
 
