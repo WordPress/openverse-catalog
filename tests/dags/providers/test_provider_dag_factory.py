@@ -1,3 +1,4 @@
+from datetime import datetime
 from unittest import mock
 
 import pytest
@@ -5,7 +6,6 @@ from airflow.exceptions import AirflowSkipException, BackfillUnfinished
 from airflow.executors.debug_executor import DebugExecutor
 from airflow.models import DagRun, TaskInstance
 from airflow.utils.session import create_session
-from pendulum import now
 from providers import provider_dag_factory
 
 from tests.conftest import mark_extended
@@ -64,7 +64,7 @@ def test_skipped_pull_data_runs_successfully(side_effect, clean_db):
             schedule_string="@once",
             dated=False,
         )
-        dag.run(start_date=now(), executor=DebugExecutor())
+        dag.run(start_date=datetime.now(), executor=DebugExecutor())
 
 
 def test_create_day_partitioned_ingestion_dag_with_single_layer_dependencies():
