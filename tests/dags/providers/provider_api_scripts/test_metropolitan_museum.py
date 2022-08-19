@@ -53,6 +53,7 @@ def test_get_next_query_params(test_date, expected):
     [
         ({"total": 4, "objectIDs": [153, 1578, 465, 546]}, [153, 1578, 465, 546]),
         (None, None),
+        ({}, None),
     ],
 )
 def test_get_batch_data(response_json, expected):
@@ -63,8 +64,16 @@ def test_get_batch_data(response_json, expected):
 @pytest.mark.parametrize(
     "response_json, expected",
     [
-        (single_object_response, single_expected_data[0].get("meta_data")),
-        (full_object_response, full_expected_data[0].get("meta_data")),
+        pytest.param(
+            single_object_response,
+            single_expected_data[0].get("meta_data"),
+            id="single_image",
+        ),
+        pytest.param(
+            full_object_response,
+            full_expected_data[0].get("meta_data"),
+            id="full_object",
+        ),
         ({}, None),
         (None, None),
     ],
@@ -77,8 +86,16 @@ def test_get_meta_data(response_json, expected):
 @pytest.mark.parametrize(
     "response_json, expected",
     [
-        (single_object_response, single_expected_data[0].get("raw_tags")),
-        (full_object_response, full_expected_data[0].get("raw_tags")),
+        pytest.param(
+            single_object_response,
+            single_expected_data[0].get("raw_tags"),
+            id="single_image",
+        ),
+        pytest.param(
+            full_object_response,
+            full_expected_data[0].get("raw_tags"),
+            id="full_object",
+        ),
         ({}, []),
         (None, None),
     ],
@@ -136,9 +153,13 @@ def test_get_record_data_with_non_ok():
 @pytest.mark.parametrize(
     "response_json, expected",
     [
-        (single_object_response, single_expected_data),
-        (full_object_response, full_expected_data),
-        (json.loads('{"isPublicDomain": false, "otherData": "is here too"}'), None),
+        pytest.param(single_object_response, single_expected_data, id="single_image"),
+        pytest.param(full_object_response, full_expected_data, id="full_object"),
+        pytest.param(
+            json.loads('{"isPublicDomain": false, "otherData": "is here too"}'),
+            None,
+            id="not_cc0",
+        ),
     ],
 )
 def test_get_record_data_returns_response_json_when_all_ok(
