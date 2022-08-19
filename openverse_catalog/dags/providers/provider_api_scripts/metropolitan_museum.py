@@ -118,14 +118,16 @@ class MetMuseumDataIngester(ProviderDataIngester):
         return f"{object_id}-{unique_identifier}"
 
     def _get_meta_data(self, object_json):
-        meta_data = None
-        if object_json.get("accessionNumber") is not None:
-            meta_data = {
+        if object_json is None:
+            return
+        if object_json.get("accessionNumber"):
+            return {
                 "accession_number": object_json.get("accessionNumber"),
             }
-        return meta_data
 
     def _get_tag_list(self, object_json):
+        if object_json is None:
+            return
         tag_list = [
             tag
             for tag in [
@@ -146,21 +148,18 @@ class MetMuseumDataIngester(ProviderDataIngester):
         return tag_list
 
     def _get_title(self, record):
+        if record is None:
+            return
         # Use if/else here to skip false-y (empty) titles: ""
-        if record.get("title"):
+        elif record.get("title"):
             return record.get("title")
         else:
             return record.get("objectName")
 
     def _get_artist_name(self, record):
-        artist = record.get("artistDisplayName")
-        # Treating "unidentified" the same as missing, but maybe it would be useful in
-        # in search? Maybe in the art world it has a more specific outsider art
-        # connotation?
-        if artist in {"Unidentified", "Unidentified artist"}:
-            return None
-        else:
-            return artist
+        if record is None:
+            return
+        return record.get("artistDisplayName")
 
     def get_media_type(self, record):
         # This provider only supports Images.

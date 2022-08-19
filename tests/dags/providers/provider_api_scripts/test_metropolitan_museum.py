@@ -61,33 +61,29 @@ def test_get_batch_data(response_json, expected):
 
 
 @pytest.mark.parametrize(
-    "case_name, response_json, expected",
+    "response_json, expected",
     [
-        (
-            "single image",
-            single_object_response,
-            single_expected_data[0].get("meta_data"),
-        ),
-        ("multi images", full_object_response, full_expected_data[0].get("meta_data")),
+        (single_object_response, single_expected_data[0].get("meta_data")),
+        (full_object_response, full_expected_data[0].get("meta_data")),
+        ({}, None),
+        (None, None),
     ],
 )
-def test_get_meta_data(case_name, response_json, expected):
+def test_get_meta_data(response_json, expected):
     actual = mma._get_meta_data(response_json)
     assert expected == actual
 
 
 @pytest.mark.parametrize(
-    "case_name, response_json, expected",
+    "response_json, expected",
     [
-        (
-            "single image",
-            single_object_response,
-            single_expected_data[0].get("raw_tags"),
-        ),
-        ("multi images", full_object_response, full_expected_data[0].get("raw_tags")),
+        (single_object_response, single_expected_data[0].get("raw_tags")),
+        (full_object_response, full_expected_data[0].get("raw_tags")),
+        ({}, []),
+        (None, None),
     ],
 )
-def test_get_tag_list(case_name, response_json, expected):
+def test_get_tag_list(response_json, expected):
     actual = mma._get_tag_list(response_json)
     assert expected == actual
 
@@ -98,6 +94,8 @@ def test_get_tag_list(case_name, response_json, expected):
         ({"title": "Yes, regular case", "objectName": "Wrong"}, "Yes, regular case"),
         ({"objectName": "Yes, no title at all"}, "Yes, no title at all"),
         ({"title": "", "objectName": "Yes, empty title"}, "Yes, empty title"),
+        ({}, None),
+        (None, None),
     ],
 )
 def test_get_title(response_json, expected):
@@ -109,8 +107,7 @@ def test_get_title(response_json, expected):
     "response_json, expected",
     [
         ({}, None),
-        ({"artistDisplayName": "Unidentified"}, None),
-        ({"artistDisplayName": "Unidentified artist"}, None),
+        (None, None),
         ({"artistDisplayName": "Unidentified flying obj"}, "Unidentified flying obj"),
     ],
 )
@@ -137,19 +134,15 @@ def test_get_record_data_with_non_ok():
 
 
 @pytest.mark.parametrize(
-    "case_name, response_json, expected",
+    "response_json, expected",
     [
-        ("single image", single_object_response, single_expected_data),
-        ("multi image", full_object_response, full_expected_data),
-        (
-            "not cc0",
-            json.loads('{"isPublicDomain": false, "otherData": "is here too"}'),
-            None,
-        ),
+        (single_object_response, single_expected_data),
+        (full_object_response, full_expected_data),
+        (json.loads('{"isPublicDomain": false, "otherData": "is here too"}'), None),
     ],
 )
 def test_get_record_data_returns_response_json_when_all_ok(
-    case_name, response_json, expected, monkeypatch
+    response_json, expected, monkeypatch
 ):
     monkeypatch.setattr(
         mma.delayed_requester, "get_response_json", lambda x, y: response_json
