@@ -160,9 +160,9 @@ def test_get_record_data_returns_response_json_when_all_ok(
         assert actual is None
     else:
         assert len(actual) == len(expected)
-        for i in range(len(actual)):
-            for key, value in expected[i].items():
+        for actual_result, expected_result in zip(actual, expected):
+            for key, value in expected_result.items():
                 if key == "license_info":
-                    assert actual[i].get(key) == CC0
+                    assert actual_result.get(key) == CC0
                 else:
-                    assert actual[i].get(key) == value
+                    assert actual_result.get(key) == value
