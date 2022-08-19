@@ -155,7 +155,7 @@ class MetMuseumDataIngester(ProviderDataIngester):
         # Treating "unidentified" the same as missing, but maybe it would be useful in
         # in search? Maybe in the art world it has a more specific outsider art
         # connotation?
-        if artist in ["Unidentified", "Unidentified artist"]:
+        if artist in {"Unidentified", "Unidentified artist"}:
             return None
         else:
             return artist
