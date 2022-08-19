@@ -118,9 +118,7 @@ PROVIDER_WORKFLOWS = [
     ProviderWorkflow(
         provider_script="metropolitan_museum",
         ingester_class=MetMuseumDataIngester,
-        # changed for testing
-        # start_date=datetime(2016, 9, 1),
-        start_date=datetime(2022, 8, 8),
+        start_date=datetime(2016, 9, 1),
         schedule_string="@daily",
         dated=True,
         pull_timeout=timedelta(hours=12),
