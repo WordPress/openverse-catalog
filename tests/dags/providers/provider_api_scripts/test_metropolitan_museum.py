@@ -17,7 +17,6 @@ logger = logging.getLogger(__name__)
 mma = MetMuseumDataIngester()
 
 RESOURCES = Path(__file__).parent / "resources/metropolitan_museum_of_art"
-print(RESOURCES)
 
 # abbreviated response without other images 45733
 single_object_response = json.loads(
