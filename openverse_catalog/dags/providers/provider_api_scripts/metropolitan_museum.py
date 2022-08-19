@@ -13,6 +13,16 @@ Notes:                  https://metmuseum.github.io/#search
 
                         Some analysis to improve data quality was conducted using a
                         separate csv file here: https://github.com/metmuseum/openaccess
+
+                        Get a list of object IDs:
+                        https://collectionapi.metmuseum.org/public/collection/v1/objects?metadataDate=2022-08-10
+                        Get a specific object:
+                        https://collectionapi.metmuseum.org/public/collection/v1/objects/1027
+                        The search functionality requires a specific query (term search)
+                        in addition to date and public domain. It seems like it won't
+                        connect with just date and license.
+                        https://collectionapi.metmuseum.org/public/collection/v1/search?isPublicDomain=true&metadataDate=2022-08-07
+
 """
 
 import argparse
@@ -27,14 +37,6 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s", level=logging.INFO
 )
 logger = logging.getLogger(__name__)
-
-# get a list of object IDs for this week:
-# https://collectionapi.metmuseum.org/public/collection/v1/objects?metadataDate=2022-08-10
-# get a specific object:
-# https://collectionapi.metmuseum.org/public/collection/v1/objects/1027
-# The search functionality requires a specific query (term search) in addition to date
-# and public domain. It seems like it won't connect with just date and license.
-# https://collectionapi.metmuseum.org/public/collection/v1/search?isPublicDomain=true&metadataDate=2022-08-07
 
 
 class MetMuseumDataIngester(ProviderDataIngester):
