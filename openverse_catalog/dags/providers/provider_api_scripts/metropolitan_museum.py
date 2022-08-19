@@ -105,7 +105,6 @@ class MetMuseumDataIngester(ProviderDataIngester):
                 "creator": artist,
                 "title": title,
                 "meta_data": meta_data,
-                "filetype": img.split(".")[-1],
                 "raw_tags": raw_tags,
             }
             for img in image_list
