@@ -146,10 +146,7 @@ class MetMuseumDataIngester(ProviderDataIngester):
         return tag_list
 
     def _get_title(self, record):
-        if record.get("title"):
-            return record.get("title")
-        else:
-            return record.get("objectName")
+        return record.get("title", record.get("objectName"))
 
     def _get_artist_name(self, record):
         artist = record.get("artistDisplayName")
