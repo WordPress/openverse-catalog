@@ -52,6 +52,7 @@ class INaturalistDataIngester(ProviderDataIngester):
 
         # adjustments to buffer limits. TO DO: try to integrate this with the dev
         # environment logic in the base class, rather than just over-writing it.
+        # See https://github.com/WordPress/openverse-catalog/issues/682
         self.media_stores["image"].buffer_length = 10_000
         self.batch_limit = 10_000
         self.sql_template = (SCRIPT_DIR / "export_to_json.template.sql").read_text()
@@ -81,6 +82,8 @@ class INaturalistDataIngester(ProviderDataIngester):
 
     def get_record_data(self, data):
         if data.get("foreign_identifier") is None:
+            # TO DO: maybe raise an error here or after a certain number of these?
+            # more info in https://github.com/WordPress/openverse-catalog/issues/684
             return None
         license_url = data.get("license_url")
         license_info = get_license_info(license_url=license_url)
@@ -128,7 +131,6 @@ class INaturalistDataIngester(ProviderDataIngester):
                 task_id="check_for_file_updates",
                 python_callable=INaturalistDataIngester.compare_update_dates,
                 op_kwargs={
-                    # With the templated values ({{ x }}) airflow will fill it in
                     "last_success": "{{ prev_start_date_success }}",
                     "s3_keys": [
                         f"{file_name}.csv.gz" for file_name in SOURCE_FILE_NAMES
