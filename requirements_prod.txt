@@ -1,4 +1,5 @@
-apache-airflow[amazon,postgres,http]==2.3.0
+# PYTHON=3.10
+apache-airflow[amazon,postgres,http]==2.3.3
 lxml
 psycopg2-binary
 requests-file==1.5.1

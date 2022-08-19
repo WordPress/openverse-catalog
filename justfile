@@ -10,9 +10,24 @@ DOCKER_FILES := "--file=docker-compose.yml" + (
 )
 SERVICE := "webserver"
 
+export PROJECT_PY_VERSION := `grep '# PYTHON' requirements_prod.txt | awk -F= '{print $2}'`
+
+# Print the required Python version
+@py-version:
+    echo $PROJECT_PY_VERSION
+
+# Check the installed Python version matches the required Python version and fail if not
+check-py-version:
+    #! /usr/bin/env sh
+    installed_python_version=`python -c 'import sys; print(f"{sys.version_info[0]}.{sys.version_info[1]}")'`
+    if [ "$PROJECT_PY_VERSION" != "$installed_python_version" ]
+    then
+        printf "Detected Python version $installed_python_version but $PROJECT_PY_VERSION is required.\n" > /dev/stderr
+        exit 1
+    fi
 
 # Install dependencies into the current environment
-install:
+install: check-py-version
     pip install -r requirements.txt -r requirements_dev.txt
     pre-commit install
 
@@ -52,8 +67,12 @@ deploy:
 lint:
     pre-commit run --all-files
 
+# Load any dependencies necessary for actions on the stack without running the webserver
+_deps:
+    @just up "postgres s3 load_to_s3"
+
 # Mount the tests directory and run a particular command
-@_mount-tests command: (up "postgres s3")
+@_mount-tests command: _deps
     # The test directory is mounted into the container only during testing
     docker-compose {{ DOCKER_FILES }} run \
         -v {{ justfile_directory() }}/tests:/usr/local/airflow/tests/ \
@@ -75,7 +94,7 @@ shell: up
     docker-compose {{ DOCKER_FILES }} exec {{ SERVICE }} /bin/bash
 
 # Launch an IPython REPL using the webserver image
-ipython: (up "postgres s3")
+ipython: _deps
     docker-compose {{ DOCKER_FILES }} run \
         --rm \
         -w /usr/local/airflow/openverse_catalog/dags \
@@ -84,7 +103,7 @@ ipython: (up "postgres s3")
         /usr/local/airflow/.local/bin/ipython
 
 # Run a given command using the webserver image
-run *args: (up "postgres s3")
+run *args: _deps
     docker-compose {{ DOCKER_FILES }} run --rm {{ SERVICE }} {{ args }}
 
 # Launch a pgcli shell on the postgres container (defaults to openledger) use "airflow" for airflow metastore
