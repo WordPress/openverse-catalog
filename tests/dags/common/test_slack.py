@@ -364,6 +364,14 @@ def test_send_alert():
             "Error triggering data refresh",
             False,
         ),
+        # error matches are case-insensitive
+        (
+            [
+                "kEYeRROR",
+            ],
+            "KeyError: 'image'",
+            False,
+        ),
         # none of the silenced errors matches alert string
         (
             ["Authorization failed", "data refresh", "No unit codes"],
