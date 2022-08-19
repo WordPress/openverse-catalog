@@ -72,7 +72,7 @@ class INaturalistDataIngester(ProviderDataIngester):
             batch_limit=self.batch_limit, offset_num=query_params["offset_num"]
         )
         sql_result = self.pg.get_records(sql_string)
-        # Postgres returns a a list of tuples, even if it's one tuple with one item.
+        # Postgres returns a list of tuples, even if it's one tuple with one item.
         return sql_result[0][0]
 
     def get_batch_data(self, response_json):
