@@ -95,6 +95,8 @@ class MetMuseumDataIngester(ProviderDataIngester):
         # per API guide here: https://metmuseum.github.io/#search
         # but it seems fairly buggy (i.e. nonresponsive), at least when tested with
         # "Chelsea Porcelain Manufactory" and "Minton(s)" and "Jean Pucelle"
+        # Should we use artistWikidata_URL or artistULAN_URL? They're populated approx
+        # 65% of the time.
 
         return [
             {

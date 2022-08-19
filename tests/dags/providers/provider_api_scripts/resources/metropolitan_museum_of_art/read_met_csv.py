@@ -36,8 +36,8 @@ raw_data = pd.read_csv(
         "Tags",
         "Period",
         "Object Date",
-        "artistWikidata_URL",
-        "artistULAN_URL",
+        "Artist Wikidata URL",
+        "Artist ULAN URL",
     ],
 )
 
@@ -103,6 +103,10 @@ print("--> Licensing:", raw_data.is_public_domain.value_counts(dropna=False), se
 raw_data.set_index("object_id", inplace=True)
 raw_data.drop(raw_data[raw_data["is_public_domain"] == 0].index, inplace=True)
 raw_data.drop(["is_public_domain"], axis=1, inplace=True)
+
+raw_data["possible_creator_url"] = raw_data.artist_ulan_url.fillna(
+    raw_data.artist_wikidata_url
+)
 
 total_records = len(raw_data)
 print(f"--> Total CC0 records: {total_records}")
