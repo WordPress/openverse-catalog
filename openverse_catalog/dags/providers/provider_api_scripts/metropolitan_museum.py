@@ -7,9 +7,9 @@ Output:                 TSV file containing the image, their respective
                         meta-data.
 
 Notes:                  https://metmuseum.github.io/#search
-                        "Please limit requests to 80 requests per second." Changing
-                        delay to 3 seconds, because of blocking encountered during
-                        development.
+                        "Please limit requests to 80 requests per second." May need to
+                        bump up the delay (e.g. to 3 seconds), to avoid of blocking
+                        during local development testing.
 
                         Some analysis to improve data quality was conducted using a
                         separate csv file here: https://github.com/metmuseum/openaccess
@@ -47,7 +47,6 @@ class MetMuseumDataIngester(ProviderDataIngester):
     def __init__(self, date: str = None):
         super(MetMuseumDataIngester, self).__init__(date=date)
         self.retries = 5
-        self.delayed_requester._DELAY = 3
 
         self.query_param = None
         if self.date:
