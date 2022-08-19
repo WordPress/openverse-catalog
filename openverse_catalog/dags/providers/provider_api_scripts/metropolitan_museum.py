@@ -148,13 +148,9 @@ class MetMuseumDataIngester(ProviderDataIngester):
         return tag_list
 
     def _get_title(self, record):
-        if record is None:
-            return
-        # Use if/else here to skip false-y (empty) titles: ""
-        elif record.get("title"):
-            return record.get("title")
-        else:
-            return record.get("objectName")
+        if record is not None:
+            # Use or to skip false-y (empty) titles: ""
+            return record.get("title") or record.get("objectName")
 
     def _get_artist_name(self, record):
         if record is None:
