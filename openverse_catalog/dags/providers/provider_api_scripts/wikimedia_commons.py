@@ -56,11 +56,11 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
     # the exact limit may not be respected.
     batch_limit = 250
 
-    def __init__(self, date: str | None = None):
+    def __init__(self, conf: dict = None, date: str | None = None):
         self.start_timestamp, self.end_timestamp = self.derive_timestamp_pair(date)
         self.continue_token = {}
 
-        super().__init__(date)
+        super().__init__(conf, date)
 
     def get_next_query_params(self, prev_query_params, **kwargs):
         return {
