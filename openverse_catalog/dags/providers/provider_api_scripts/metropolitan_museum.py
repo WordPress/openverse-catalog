@@ -40,7 +40,7 @@ logger = logging.getLogger(__name__)
 
 
 class MetMuseumDataIngester(ProviderDataIngester):
-    providers = {"image": prov.MET_MUSEUM_DEFAULT_PROVIDER}
+    providers = {"image": prov.METROPOLITAN_MUSEUM_DEFAULT_PROVIDER}
     endpoint = "https://collectionapi.metmuseum.org/public/collection/v1/objects"
     DEFAULT_LICENSE_INFO = get_license_info(license_="cc0", license_version="1.0")
 
