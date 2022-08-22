@@ -43,7 +43,7 @@ CC0 = LicenseInfo(
     [("2022-07-01", {"metadataDate": "2022-07-01"}), (None, None)],
 )
 def test_get_next_query_params(test_date, expected):
-    ingester = MetMuseumDataIngester(test_date)
+    ingester = MetMuseumDataIngester(date=test_date)
     actual = ingester.get_next_query_params()
     assert actual == expected
 
