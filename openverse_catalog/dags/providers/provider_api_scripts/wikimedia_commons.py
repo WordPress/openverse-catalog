@@ -222,18 +222,19 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
     def parse_audio_file_meta_data(self, media_info):
         """Parse out audio file metadata"""
         metadata = media_info.get("metadata", [])
+
         streams = self.get_value_by_name(metadata, "streams")
-        try:
-            if not streams:
-                audio = self.get_value_by_name(metadata, "audio")
-                streams = self.get_value_by_name(audio, "streams")
-            streams_data = [stream["value"] for stream in streams][0]
+        if not streams:
+            audio = self.get_value_by_name(metadata, "audio")
+            streams = self.get_value_by_name(audio, "streams")
+
+        if streams:
+            streams_data = streams[0].get("value", [])
             file_data = self.get_value_by_name(streams_data, "header")
-            if not file_data:
-                file_data = streams_data
-        except (IndexError, TypeError):
-            file_data = []
-        return file_data
+            # Fall back to streams_data
+            return file_data or streams_data
+
+        return []
 
     def get_media_info_dict(self, media_data):
         media_info_list = media_data.get("imageinfo")
@@ -245,7 +246,10 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
 
     def get_value_by_name(self, key_value_list: list, prop_name: str):
         """Gets the first value for the given `prop_name` in a list of
-        key value pairs"""
+        key value pairs."""
+        if key_value_list is None:
+            key_value_list = []
+
         prop_list = [
             key_value_pair
             for key_value_pair in key_value_list
