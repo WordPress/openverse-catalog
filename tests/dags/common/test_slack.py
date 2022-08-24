@@ -364,6 +364,11 @@ def test_send_alert_skips_when_silenced():
         (ValueError("Whoops!"), "dev", True, True),
         (ValueError("Whoops!"), "prod", False, True),
         (ValueError("Whoops!"), "prod", True, True),
+        # Strings should also be allowed
+        ("task marked as failed externally", "dev", False, False),
+        ("task marked as failed externally", "dev", True, True),
+        ("task marked as failed externally", "prod", False, True),
+        ("task marked as failed externally", "prod", True, True),
         # Message without exception
         (None, "dev", False, False),
         (None, "dev", True, True),
