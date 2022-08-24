@@ -48,7 +48,7 @@ class BrooklynMuseumDataIngester(ProviderDataIngester):
         return bool(self._get_data_from_response(response_json))
 
     def get_batch_data(self, response_json) -> list | None:
-        return self._get_data_from_response(response_json) or []
+        return self._get_data_from_response(response_json)
 
     @staticmethod
     def _get_license_url(rights_info):
