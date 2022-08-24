@@ -123,8 +123,8 @@ def test_report_completion_contents(
     date_range_end,
     expected_date_range,
 ):
-    with mock.patch("common.loader.reporting.send_message") as send_message_mock:
-        report_completion(
+    with mock.patch("common.loader.reporting.send_message"):
+        message = report_completion(
             "Jamendo",
             ["audio", "image"],
             None,

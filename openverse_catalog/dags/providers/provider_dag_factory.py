@@ -231,7 +231,7 @@ def create_ingestion_workflow(
             ingestion_kwargs["args"] = [DATE_RANGE_ARG_TEMPLATE.format(day_shift)]
 
         generate_filenames = PythonOperator(
-            task_id=f"generate_{media_type_name}_filename",
+            task_id=append_day_shift(f"generate_{media_type_name}_filename"),
             python_callable=generate_tsv_filenames,
             op_kwargs=ingestion_kwargs,
         )

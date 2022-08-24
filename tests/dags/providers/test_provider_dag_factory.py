@@ -75,12 +75,12 @@ def test_create_day_partitioned_ingestion_dag_with_single_layer_dependencies():
         [[1, 2]],
     )
     # First task in the ingestion step for today
-    today_pull_data_id = "ingest_data.pull_image_data"
+    today_pull_data_id = "ingest_data.generate_image_filename"
     # Last task in the ingestion step for today
     today_drop_table_id = "ingest_data.load_image_data.drop_loading_table"
     wait0_id = "wait_L0"
-    ingest1_id = "ingest_data_1.pull_image_data_1"
-    ingest2_id = "ingest_data_2.pull_image_data_2"
+    ingest1_id = "ingest_data_1.generate_image_filename_1"
+    ingest2_id = "ingest_data_2.generate_image_filename_2"
     today_pull_task = dag.get_task(today_pull_data_id)
     assert today_pull_task.upstream_task_ids == set()
     wait_task = dag.get_task(wait0_id)
@@ -97,14 +97,14 @@ def test_create_day_partitioned_ingestion_dag_with_multi_layer_dependencies():
         print,
         [[1, 2], [3, 4, 5]],
     )
-    today_id = "ingest_data.pull_image_data"
+    today_id = "ingest_data.generate_image_filename"
     wait0_id = "wait_L0"
-    ingest1_id = "ingest_data_1.pull_image_data_1"
-    ingest2_id = "ingest_data_2.pull_image_data_2"
+    ingest1_id = "ingest_data_1.generate_image_filename_1"
+    ingest2_id = "ingest_data_2.generate_image_filename_2"
     wait1_id = "wait_L1"
-    ingest3_id = "ingest_data_3.pull_image_data_3"
-    ingest4_id = "ingest_data_4.pull_image_data_4"
-    ingest5_id = "ingest_data_5.pull_image_data_5"
+    ingest3_id = "ingest_data_3.generate_image_filename_3"
+    ingest4_id = "ingest_data_4.generate_image_filename_4"
+    ingest5_id = "ingest_data_5.generate_image_filename_5"
     today_task = dag.get_task(today_id)
     assert today_task.upstream_task_ids == set()
     ingest1_task = dag.get_task(ingest1_id)
@@ -117,4 +117,3 @@ def test_create_day_partitioned_ingestion_dag_with_multi_layer_dependencies():
     assert ingest4_task.upstream_task_ids == {wait1_id}
     ingest5_task = dag.get_task(ingest5_id)
     assert ingest5_task.upstream_task_ids == {wait1_id}
-    
