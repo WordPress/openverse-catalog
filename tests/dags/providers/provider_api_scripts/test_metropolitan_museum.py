@@ -108,11 +108,23 @@ def test_get_tag_list(response_json, expected):
 @pytest.mark.parametrize(
     "response_json, expected",
     [
-        ({"title": "Yes, regular case", "objectName": "Wrong"}, "Yes, regular case"),
-        ({"objectName": "Yes, no title at all"}, "Yes, no title at all"),
-        ({"title": "", "objectName": "Yes, empty title"}, "Yes, empty title"),
-        ({}, None),
-        (None, None),
+        pytest.param(
+            {"title": "Yes, regular case", "objectName": "Wrong"},
+            "Yes, regular case",
+            id="happy_path",
+        ),
+        pytest.param(
+            {"objectName": "Yes, no title at all"},
+            "Yes, no title at all",
+            id="no_title",
+        ),
+        pytest.param(
+            {"title": "", "objectName": "Yes, empty title"},
+            "Yes, empty title",
+            id="empty_string_title",
+        ),
+        pytest.param({}, None, id="empty_json"),
+        pytest.param(None, None, id="None"),
     ],
 )
 def test_get_title(response_json, expected):

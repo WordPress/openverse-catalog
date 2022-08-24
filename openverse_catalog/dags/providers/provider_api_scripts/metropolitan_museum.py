@@ -65,6 +65,9 @@ class MetMuseumDataIngester(ProviderDataIngester):
     def get_batch_data(self, response_json):
         if response_json:
             self.object_ids_retrieved = response_json["total"]
+            # A single objet d'art may have more than one image (and therefore more
+            # than one record) associated with it, but there are generally on the order
+            # of 10 or fewer records per object.
             logger.info(f"Total objects found {self.object_ids_retrieved}")
             return response_json["objectIDs"]
         else:
@@ -80,7 +83,7 @@ class MetMuseumDataIngester(ProviderDataIngester):
         if object_json.get("isPublicDomain") is False:
             self.non_cc0_objects += 1
             if self.non_cc0_objects % self.batch_limit == 0:
-                logger.info(f"Retrieved {self.non_cc0_objects} non-CC0 records.")
+                logger.info(f"Retrieved {self.non_cc0_objects} non-CC0 objects.")
             return None
 
         main_image = object_json.get("primaryImage")
@@ -148,17 +151,17 @@ class MetMuseumDataIngester(ProviderDataIngester):
             tag_list += [tag["term"] for tag in object_json.get("tags")]
         return tag_list
 
-    def _get_title(self, record):
-        if record is not None:
+    def _get_title(self, object_json):
+        if object_json is not None:
             # Use or to skip false-y (empty) titles: ""
-            return record.get("title") or record.get("objectName")
+            return object_json.get("title") or object_json.get("objectName")
 
-    def _get_artist_name(self, record):
-        if record is None:
+    def _get_artist_name(self, object_json):
+        if object_json is None:
             return
-        return record.get("artistDisplayName")
+        return object_json.get("artistDisplayName")
 
-    def get_media_type(self, record):
+    def get_media_type(self, object_json):
         # This provider only supports Images.
         return "image"
 
