@@ -315,13 +315,16 @@ class ProviderDataIngester(ABC):
 
         return batch, should_continue
 
-    def get_response_json(self, query_params: dict):
+    def get_response_json(self, query_params: dict, endpoint: str | None = None):
         """
         Make the actual API requests needed to ingest a batch. This can be overridden
         in order to support APIs that require multiple requests, for example.
         """
         return self.delayed_requester.get_response_json(
-            self.endpoint, self.retries, query_params, headers=self.headers
+            endpoint or self.endpoint,
+            self.retries,
+            query_params,
+            headers=self.headers,
         )
 
     def get_should_continue(self, response_json):
@@ -384,7 +387,7 @@ class ProviderDataIngester(ABC):
         pass
 
     @abstractmethod
-    def get_record_data(self, data: dict) -> dict | list[dict]:
+    def get_record_data(self, data: dict) -> dict | list[dict] | None:
         """
         Parse out the necessary information (license info, urls, etc) from the record
         data into a dictionary.
