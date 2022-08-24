@@ -65,7 +65,7 @@ https://github.com/creativecommons/cccatalog/issues/334)
 import logging
 import os
 from datetime import datetime, timedelta
-from typing import Callable, Dict, Optional, Sequence
+from typing import Callable, Dict, List, Optional, Sequence
 
 from airflow import DAG
 from airflow.models.baseoperator import cross_downstream
@@ -183,7 +183,7 @@ def create_provider_api_workflow_dag(
             load_timeout,
             media_types,
             create_preingestion_tasks,
-            create_postingestion_tasks
+            create_postingestion_tasks,
         )
 
         report_load_completion = create_report_load_completion(
@@ -374,6 +374,8 @@ def create_day_partitioned_ingestion_dag(
     pull_timeout: timedelta = timedelta(hours=2),
     load_timeout: timedelta = timedelta(hours=1),
     media_types: Sequence[str] = ("image",),
+    create_preingestion_tasks: Optional[Callable] = None,
+    create_postingestion_tasks: Optional[Callable] = None,
 ):
     """
     Given a `main_function` and `reingestion_day_list_list`, this
@@ -415,6 +417,12 @@ def create_day_partitioned_ingestion_dag(
                       allowed to take.
     load_timeout:     datetime.timedelta giving the amount of time
                       the load_data steps are allowed to take.
+    media_types:      list describing the media type(s) that this provider handles
+                      (e.g. `["audio"]`, `["image", "audio"]`, etc.)
+    create_preingestion_tasks and create_postingestion_tasks: callable which creates a
+                        task or task group to be run before or after (respectively) the
+                        rest of the provider workflow. Loading and dropping temporary
+                        tables is one example.
 
     Calculation of ingestion dates:
 
@@ -470,9 +478,11 @@ def create_day_partitioned_ingestion_dag(
             reingestion_day_list_list,
             ingestion_callable,
             pull_timeout,
+            load_timeout,
             dag_id,
             media_types,
-            dagrun_timeout,
+            create_preingestion_tasks,
+            create_postingestion_tasks,
         )
 
         # For each 'level', make a wait task that waits for all of the reingestion taks
@@ -512,6 +522,8 @@ def _build_ingest_operator_list_list(
     load_timeout,
     dag_id,
     media_types,
+    create_preingestion_tasks,
+    create_postingestion_tasks,
 ):
     # TODO: This forces the reingestion workflow to include the current date in
     # reingestion. Should this be removed?
@@ -526,7 +538,15 @@ def _build_ingest_operator_list_list(
         operator_list = []
         for day_shift in L:
             ingest_data, ingestion_metrics = create_ingestion_workflow(
-                dag_id, ingestion_callable, True, day_shift, pull_timeout, load_timeout, media_types
+                dag_id,
+                ingestion_callable,
+                True,
+                day_shift,
+                pull_timeout,
+                load_timeout,
+                media_types,
+                create_preingestion_tasks,
+                create_postingestion_tasks,
             )
             operator_list.append(ingest_data)
             duration_list.append(ingestion_metrics["duration"])
