@@ -471,6 +471,7 @@ def create_day_partitioned_ingestion_dag(
         catchup=False,
         tags=["provider-reingestion"],
         render_template_as_native_obj=True,
+        user_defined_macros={"date_partition_for_prefix": date_partition_for_prefix},
     )
     with dag:
         # Generate a list of lists of ingestion TaskGroups for each day of reingestion.
