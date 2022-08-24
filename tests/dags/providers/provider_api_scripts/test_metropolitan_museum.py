@@ -40,7 +40,7 @@ CC0 = LicenseInfo(
 
 @pytest.mark.parametrize(
     "test_date, expected",
-    [("2022-07-01", {"metadataDate": "2022-07-01"}), (None, None)],
+    [("2022-07-01", {"metadataDate": "2022-07-01"}), (None, {}), ("", {})],
 )
 def test_get_next_query_params(test_date, expected):
     ingester = MetMuseumDataIngester(date=test_date)
