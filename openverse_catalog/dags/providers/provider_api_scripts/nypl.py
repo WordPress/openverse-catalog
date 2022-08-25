@@ -88,7 +88,7 @@ class NyplDataIngester(ProviderDataIngester):
             if image_id is None:
                 continue
             image_link = img.get("imageLinks", {}).get("imageLink", [])
-            image_url, filetype = NyplDataIngester._get_image_data(image_link)
+            image_url, filetype = self._get_image_data(image_link)
             if not image_url:
                 continue
             foreign_landing_url = img.get("itemLink", {}).get("$")
