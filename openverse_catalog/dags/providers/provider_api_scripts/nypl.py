@@ -21,8 +21,9 @@ FILETYPE_PATTERN = r" .(jpeg|gif) "
 class NyplDataIngester(ProviderDataIngester):
     providers = {"image": prov.NYPL_DEFAULT_PROVIDER}
     headers = {"Authorization": f"Token token={NYPL_API}"}
-    endpoint = "http://api.repo.nypl.org/api/v1/items/search"
-    metadata_endpoint = "http://api.repo.nypl.org/api/v1/items/item_details/"
+    endpoint = "http://api.repo.nypl.org/api/v1/items"
+    search_endpoint = f"{endpoint}/search"
+    metadata_endpoint = f"{endpoint}/item_details/"
     batch_limit = 500
     delay = 5
     image_url_dimensions = ["g", "v", "q", "w", "r"]
