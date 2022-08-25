@@ -119,6 +119,12 @@ class MetMuseumDataIngester(ProviderDataIngester):
             for img in image_list
         ]
 
+    def get_should_continue(self, response_json):
+        # The met museum search function does not have pagination for the initial list
+        # of object IDs, so after processing the first list, we're done.
+        if response_json:
+            return False
+
     def _get_foreign_id(self, object_id: int, image_url: str):
         unique_identifier = image_url.split("/")[-1].split(".")[0]
         return f"{object_id}-{unique_identifier}"
