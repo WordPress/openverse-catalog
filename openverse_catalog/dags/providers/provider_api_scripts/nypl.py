@@ -56,7 +56,9 @@ class NyplDataIngester(ProviderDataIngester):
     def get_record_data(self, data):
         uuid = data.get("uuid")
 
-        item_json = self.get_detail_json(endpoint=self.metadata_endpoint + uuid) or {}
+        item_json = (
+            self.get_response_json({}, endpoint=self.metadata_endpoint + uuid) or {}
+        )
         item_details = item_json.get("nyplAPI", {}).get("response")
         if not item_details:
             return None
