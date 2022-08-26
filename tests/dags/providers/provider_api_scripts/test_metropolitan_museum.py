@@ -40,7 +40,11 @@ CC0 = LicenseInfo(
 
 @pytest.mark.parametrize(
     "test_date, expected",
-    [("2022-07-01", {"metadataDate": "2022-07-01"}), (None, {}), ("", {})],
+    [
+        pytest.param("2022-07-01", {"metadataDate": "2022-07-01"}, id="happy_path"),
+        pytest.param(None, {}, id="None"),
+        pytest.param("", {}, id="empty_string"),
+    ],
 )
 def test_get_next_query_params(test_date, expected):
     ingester = MetMuseumDataIngester(date=test_date)
@@ -51,9 +55,13 @@ def test_get_next_query_params(test_date, expected):
 @pytest.mark.parametrize(
     "response_json, expected",
     [
-        ({"total": 4, "objectIDs": [153, 1578, 465, 546]}, [153, 1578, 465, 546]),
-        (None, None),
-        ({}, None),
+        pytest.param(
+            {"total": 4, "objectIDs": [153, 1578, 465, 546]},
+            [153, 1578, 465, 546],
+            id="happy_path",
+        ),
+        pytest.param({}, None, id="empty_dict"),
+        pytest.param(None, None, id="None"),
     ],
 )
 def test_get_batch_data(response_json, expected):
@@ -74,8 +82,8 @@ def test_get_batch_data(response_json, expected):
             full_expected_data[0].get("meta_data"),
             id="full_object",
         ),
-        ({}, None),
-        (None, None),
+        pytest.param({}, None, id="empty_dict"),
+        pytest.param(None, None, id="None"),
     ],
 )
 def test_get_meta_data(response_json, expected):
@@ -96,8 +104,8 @@ def test_get_meta_data(response_json, expected):
             full_expected_data[0].get("raw_tags"),
             id="full_object",
         ),
-        ({}, []),
-        (None, None),
+        pytest.param({}, [], id="empty_dict"),
+        pytest.param(None, None, id="None"),
     ],
 )
 def test_get_tag_list(response_json, expected):
@@ -135,9 +143,13 @@ def test_get_title(response_json, expected):
 @pytest.mark.parametrize(
     "response_json, expected",
     [
-        ({}, None),
-        (None, None),
-        ({"artistDisplayName": "Unidentified flying obj"}, "Unidentified flying obj"),
+        pytest.param({}, None, id="empty_json"),
+        pytest.param(None, None, id="None"),
+        pytest.param(
+            {"artistDisplayName": "Unidentified flying obj"},
+            "Unidentified flying obj",
+            id="happy_path",
+        ),
     ],
 )
 def test_get_artist_name(response_json, expected):
