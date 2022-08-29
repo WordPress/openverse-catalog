@@ -226,7 +226,7 @@ def test_get_record_data_handles_example_dict():
         "width": 5514,
         "height": 3102,
         "creator": "PtrQs",
-        "creator_url": "https://commons.wikimedia.org/wiki/User:PtrQs",
+        "creator_url": "//commons.wikimedia.org/wiki/User:PtrQs",
         "title": "20120925 PlozevetBretagne LoneTree DSC07971 PtrQs",
         "filetype": "jpg",
         "filesize": 11863148,
@@ -320,7 +320,7 @@ def test_extract_creator_info_handles_internal_wc_link():
     actual_creator, actual_creator_url = wmc.extract_creator_info(image_info)
     expect_creator = "NotaRealUser"
     expect_creator_url = (
-        "https://commons.wikimedia.org/w/index.php?title=User:NotaRealUser&"
+        "//commons.wikimedia.org/w/index.php?title=User:NotaRealUser&"
         "action=edit&redlink=1"
     )
     assert expect_creator == actual_creator

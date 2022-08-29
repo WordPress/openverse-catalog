@@ -15,7 +15,6 @@ import logging
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from typing import Optional
-from urllib.parse import urlparse
 
 import lxml.html as html
 from common.constants import AUDIO, IMAGE
@@ -316,7 +315,7 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
         # We take all text to replicate what is shown on Wikimedia Commons
         artist_text = "".join(artist_elem.xpath("//text()")).strip()
         url_list = list(artist_elem.iterlinks())
-        artist_url = self.cleanse_url(url_list[0][2]) if url_list else None
+        artist_url = url_list[0][2] if url_list else None
         return artist_text, artist_url
 
     def extract_category_info(self, media_info):
@@ -373,20 +372,6 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
         meta_data["categories"] = categories_list
         meta_data.update(self.get_geo_data(media_data))
         return meta_data
-
-    def cleanse_url(self, url_string):
-        """
-        Check to make sure that a url is valid, and prepend a protocol if needed
-        """
-        parse_result = urlparse(url_string)
-
-        if parse_result.netloc == HOST:
-            parse_result = urlparse(url_string, scheme="https")
-        elif not parse_result.scheme:
-            parse_result = urlparse(url_string, scheme="http")
-
-        if parse_result.netloc or parse_result.path:
-            return parse_result.geturl()
 
     def get_ext_value(self, media_info: dict, ext_key: str) -> Optional[str]:
         return media_info.get("extmetadata", {}).get(ext_key, {}).get("value")
