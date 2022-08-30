@@ -45,6 +45,8 @@ class BrooklynMuseumDataIngester(ProviderDataIngester):
     def get_should_continue(self, response_json):
         # We can assume that any truthy response from the get data function would
         # indicate we can continue
+        # TODO: Check this as part of the testing for the API key
+        # https://github.com/WordPress/openverse-catalog/issues/385
         return bool(self._get_data_from_response(response_json))
 
     def get_batch_data(self, response_json) -> list | None:
@@ -66,6 +68,8 @@ class BrooklynMuseumDataIngester(ProviderDataIngester):
         height, width = None, None
         size_list = image.get("derivatives", "")
         if isinstance(size_list, list):
+            # Pull out the largest sized image we have access to
+            # https://www.brooklynmuseum.org/api/new-documentation/#definition-Image
             size_type = image.get("largest_derivative", "")
             for size in size_list:
                 if size.get("size", "") == size_type:
