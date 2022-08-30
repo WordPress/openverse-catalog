@@ -121,7 +121,9 @@ class BrooklynMuseumDataIngester(ProviderDataIngester):
             creators = BrooklynMuseumDataIngester._get_creators(data)
 
             for image in image_info:
-                foreign_id = image.get("id", "")
+                foreign_id = image.get("id")
+                if foreign_id is None:
+                    continue
                 image_url = BrooklynMuseumDataIngester._get_image_url(image)
                 if image_url is None:
                     continue

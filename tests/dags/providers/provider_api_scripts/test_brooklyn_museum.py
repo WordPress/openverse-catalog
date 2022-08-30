@@ -133,6 +133,16 @@ def test_handle_object_data(resource_name, expected):
     assert actual == expected
 
 
+@pytest.mark.parametrize("field", ["id", "largest_derivative_url"])
+def test_handle_object_data_missing_field(field):
+    response_json = _get_resource_json("object_data.json")
+    license_url = "https://creativecommons.org/licenses/by/3.0/"
+    # Remove the requested field
+    response_json["images"][0].pop(field)
+    actual = bkm._handle_object_data(response_json, license_url)
+    assert actual == []
+
+
 @pytest.mark.parametrize(
     "resource_name, expected",
     [
