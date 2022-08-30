@@ -92,11 +92,8 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
         batch_json = None
 
         for _ in range(MEAN_GLOBAL_USAGE_LIMIT):
-            response_json = self.delayed_requester.get_response_json(
-                self.endpoint,
-                self.retries,
+            response_json = super().get_response_json(
                 query_params,
-                headers=self.headers,
                 timeout=60,
             )
 
