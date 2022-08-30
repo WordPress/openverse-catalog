@@ -254,14 +254,14 @@ def test_get_record_data_throws_out_invalid_mediatype(monkeypatch):
     assert data is None
 
 
-def test_get_media_info_dict():
+def test_extract_media_info_dict():
     with open(RESOURCES / "image_data_example.json") as f:
         media_data = json.load(f)
 
     with open(RESOURCES / "image_info_from_example_data.json") as f:
         expect_image_info = json.load(f)
 
-    actual_image_info = wmc.get_media_info_dict(media_data)
+    actual_image_info = wmc.extract_media_info_dict(media_data)
 
     assert actual_image_info == expect_image_info
 
@@ -337,20 +337,20 @@ def test_extract_creator_info_handles_link_as_partial_text():
     assert expect_creator_url == actual_creator_url
 
 
-def test_get_license_info_finds_license_url():
+def test_extract_license_info_finds_license_url():
     with open(RESOURCES / "image_info_from_example_data.json") as f:
         image_info = json.load(f)
 
     expect_license_url = "https://creativecommons.org/licenses/by-sa/4.0/"
-    actual_license_url = wmc.get_license_info(image_info).url
+    actual_license_url = wmc.extract_license_info(image_info).url
     assert actual_license_url == expect_license_url
 
 
-def test_get_license_url_handles_missing_license_url():
+def test_extract_license_url_handles_missing_license_url():
     with open(RESOURCES / "image_info_artist_partial_link.json") as f:
         image_info = json.load(f)
     expect_license_url = None
-    actual_license_url = wmc.get_license_info(image_info).url
+    actual_license_url = wmc.extract_license_info(image_info).url
     assert actual_license_url == expect_license_url
 
 

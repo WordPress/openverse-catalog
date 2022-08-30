@@ -106,7 +106,7 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
                 # Update continue token for the next request
                 self.continue_token = response_json.pop("continue", {})
                 query_params.update(self.continue_token)
-                logger.info(f"new_continue_token: {self.continue_token}")
+                logger.info(f"New continue token: {self.continue_token}")
 
                 # Merge this response into the batch
                 batch_json = self.merge_response_jsons(batch_json, response_json)
@@ -140,14 +140,14 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
         foreign_id = record.get("pageid")
         logger.debug(f"Processing page ID: {foreign_id}")
 
-        media_info = self.get_media_info_dict(record)
+        media_info = self.extract_media_info_dict(record)
 
         valid_media_type = self.extract_media_type(media_info)
         if not valid_media_type:
             # Do not process unsupported media types, like Video
             return None
 
-        license_info = self.get_license_info(media_info)
+        license_info = self.extract_license_info(media_info)
         if license_info.url is None:
             return None
 
@@ -235,7 +235,8 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
 
         return []
 
-    def get_media_info_dict(self, media_data):
+    @staticmethod
+    def extract_media_info_dict(media_data):
         media_info_list = media_data.get("imageinfo")
         if media_info_list:
             media_info = media_info_list[0]
@@ -243,7 +244,8 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
             media_info = {}
         return media_info
 
-    def get_value_by_name(self, key_value_list: list, prop_name: str):
+    @staticmethod
+    def get_value_by_name(key_value_list: list, prop_name: str):
         """Gets the first value for the given `prop_name` in a list of
         key value pairs."""
         if key_value_list is None:
@@ -257,14 +259,18 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
         if prop_list:
             return prop_list[0].get("value")
 
-    def get_value_by_names(self, key_value_list: list, prop_names: list):
+    @staticmethod
+    def get_value_by_names(key_value_list: list, prop_names: list):
         """Gets the first available value for one of the `prop_names`
         property names"""
         for prop_name in prop_names:
-            if val := self.get_value_by_name(key_value_list, prop_name):
+            if val := WikimediaCommonsDataIngester.get_value_by_name(
+                key_value_list, prop_name
+            ):
                 return val
 
-    def extract_media_type(self, media_info):
+    @staticmethod
+    def extract_media_type(media_info):
         media_type = media_info.get("mediatype")
 
         if media_type in IMAGE_MEDIATYPES:
@@ -278,17 +284,23 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
         )
         return None
 
-    def extract_audio_category(self, parsed_data):
+    @staticmethod
+    def extract_audio_category(parsed_data):
         """Set category to "pronunciation" for any audio with
         pronunciation of a word or a phrase"""
         for category in parsed_data["meta_data"].get("categories", []):
             if "pronunciation" in category.lower():
                 return "pronunciation"
 
-    def extract_title(self, media_info):
+    @staticmethod
+    def extract_ext_value(media_info: dict, ext_key: str) -> Optional[str]:
+        return media_info.get("extmetadata", {}).get(ext_key, {}).get("value")
+
+    @staticmethod
+    def extract_title(media_info):
         # Titles often have 'File:filename.jpg' form
         # We remove the 'File:' and extension from title
-        title = self.get_ext_value(media_info, "ObjectName")
+        title = WikimediaCommonsDataIngester.extract_ext_value(media_info, "ObjectName")
         if title is None:
             title = media_info.get("title")
         if title.startswith("File:"):
@@ -300,13 +312,21 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
                 title = title[:last_dot_position]
         return title
 
-    def extract_date_info(self, media_info):
-        date_originally_created = self.get_ext_value(media_info, "DateTimeOriginal")
-        last_modified_at_source = self.get_ext_value(media_info, "DateTime")
+    @staticmethod
+    def extract_date_info(media_info):
+        date_originally_created = WikimediaCommonsDataIngester.extract_ext_value(
+            media_info, "DateTimeOriginal"
+        )
+        last_modified_at_source = WikimediaCommonsDataIngester.extract_ext_value(
+            media_info, "DateTime"
+        )
         return date_originally_created, last_modified_at_source
 
-    def extract_creator_info(self, media_info):
-        artist_string = self.get_ext_value(media_info, "Artist")
+    @staticmethod
+    def extract_creator_info(media_info):
+        artist_string = WikimediaCommonsDataIngester.extract_ext_value(
+            media_info, "Artist"
+        )
 
         if not artist_string:
             return None, None
@@ -318,28 +338,38 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
         artist_url = url_list[0][2] if url_list else None
         return artist_text, artist_url
 
-    def extract_category_info(self, media_info):
-        categories_string = self.get_ext_value(media_info, "Categories") or ""
+    @staticmethod
+    def extract_category_info(media_info):
+        categories_string = (
+            WikimediaCommonsDataIngester.extract_ext_value(media_info, "Categories")
+            or ""
+        )
 
         categories_list = categories_string.split("|")
         return categories_list
 
-    def extract_file_type(self, media_info):
+    @staticmethod
+    def extract_file_type(media_info):
         filetype = media_info.get("url", "").split(".")[-1]
         return None if filetype == "" else filetype
 
-    def get_license_info(self, media_info):
-        license_url = self.get_ext_value(media_info, "LicenseUrl") or ""
+    @staticmethod
+    def extract_license_info(media_info):
+        license_url = (
+            WikimediaCommonsDataIngester.extract_ext_value(media_info, "LicenseUrl")
+            or ""
+        )
         # TODO Add public domain items
         # if license_url == "":
-        #     license_name = _get_ext_value(media_info, "LicenseShortName") or ""
+        #     license_name = extract_ext_value(media_info, "LicenseShortName") or ""
         #     if license_name.lower() in {"public_domain", "pdm-owner"}:
         #         pass
 
         license_info = get_license_info(license_url=license_url.strip())
         return license_info
 
-    def get_geo_data(self, media_data):
+    @staticmethod
+    def extract_geo_data(media_data):
         geo_properties = {
             "latitude": "GPSLatitude",
             "longitude": "GPSLongitude",
@@ -354,18 +384,18 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
 
     def create_meta_data_dict(self, media_data):
         global_usage_length = len(media_data.get("globalusage", []))
-        media_info = self.get_media_info_dict(media_data)
+        media_info = self.extract_media_info_dict(media_data)
         date_originally_created, last_modified_at_source = self.extract_date_info(
             media_info
         )
         categories_list = self.extract_category_info(media_info)
-        description = self.get_ext_value(media_info, "ImageDescription")
+        description = self.extract_ext_value(media_info, "ImageDescription")
         meta_data = {
             "global_usage_count": global_usage_length,
             "date_originally_created": date_originally_created,
             "last_modified_at_source": last_modified_at_source,
             "categories": categories_list,
-            **self.get_geo_data(media_data),
+            **self.extract_geo_data(media_data),
         }
         if description:
             description_text = " ".join(
@@ -373,9 +403,6 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
             ).strip()
             meta_data["description"] = description_text
         return meta_data
-
-    def get_ext_value(self, media_info: dict, ext_key: str) -> Optional[str]:
-        return media_info.get("extmetadata", {}).get(ext_key, {}).get("value")
 
     def merge_response_jsons(self, left_json, right_json):
         # Note that we will keep the continue value from the right json in
