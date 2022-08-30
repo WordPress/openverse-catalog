@@ -400,14 +400,14 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
             merged_pages = self.get_media_pages(merged_json)
             merged_pages.update(
                 {
-                    k: self.merge_image_pages(left_pages[k], right_pages[k])
+                    k: self.merge_media_pages(left_pages[k], right_pages[k])
                     for k in left_pages
                 }
             )
 
         return merged_json
 
-    def merge_image_pages(self, left_page, right_page):
+    def merge_media_pages(self, left_page, right_page):
         merged_page = deepcopy(left_page)
         merged_globalusage = left_page.get("globalusage", []) + right_page.get(
             "globalusage", []

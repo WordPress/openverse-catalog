@@ -141,50 +141,50 @@ def test_merge_response_jsons():
     assert actual_merged_response == expect_merged_response
 
 
-def test_merge_image_pages_left_only_with_gu():
+def test_merge_media_pages_left_only_with_gu():
     with open(RESOURCES / "continuation/page_44672185_left.json") as f:
         left_page = json.load(f)
     with open(RESOURCES / "continuation/page_44672185_right.json") as f:
         right_page = json.load(f)
-    actual_merged_page = wmc.merge_image_pages(left_page, right_page)
+    actual_merged_page = wmc.merge_media_pages(left_page, right_page)
     assert actual_merged_page == left_page
 
 
-def test_merge_image_pages_left_only_with_gu_backwards():
+def test_merge_media_pages_left_only_with_gu_backwards():
     with open(RESOURCES / "continuation/page_44672185_left.json") as f:
         left_page = json.load(f)
     with open(RESOURCES / "continuation/page_44672185_right.json") as f:
         right_page = json.load(f)
-    actual_merged_page = wmc.merge_image_pages(right_page, left_page)
+    actual_merged_page = wmc.merge_media_pages(right_page, left_page)
     assert actual_merged_page == left_page
 
 
-def test_merge_image_pages_neither_have_gu():
+def test_merge_media_pages_neither_have_gu():
     with open(RESOURCES / "continuation/page_44672210_left.json") as f:
         left_page = json.load(f)
     with open(RESOURCES / "continuation/page_44672210_right.json") as f:
         right_page = json.load(f)
-    actual_merged_page = wmc.merge_image_pages(left_page, right_page)
+    actual_merged_page = wmc.merge_media_pages(left_page, right_page)
     assert actual_merged_page == left_page
 
 
-def test_merge_image_pages_neigher_have_gu_backwards():
+def test_merge_media_pages_neigher_have_gu_backwards():
     with open(RESOURCES / "continuation/page_44672210_left.json") as f:
         left_page = json.load(f)
     with open(RESOURCES / "continuation/page_44672210_right.json") as f:
         right_page = json.load(f)
-    actual_merged_page = wmc.merge_image_pages(right_page, left_page)
+    actual_merged_page = wmc.merge_media_pages(right_page, left_page)
     assert actual_merged_page == left_page
 
 
-def test_merge_image_pages_both_have_gu():
+def test_merge_media_pages_both_have_gu():
     with open(RESOURCES / "continuation/page_44672212_left.json") as f:
         left_page = json.load(f)
     with open(RESOURCES / "continuation/page_44672212_right.json") as f:
         right_page = json.load(f)
     with open(RESOURCES / "continuation/page_44672212_merged.json") as f:
         expect_merged_page = json.load(f)
-    actual_merged_page = wmc.merge_image_pages(left_page, right_page)
+    actual_merged_page = wmc.merge_media_pages(left_page, right_page)
     assert actual_merged_page == expect_merged_page
 
 
