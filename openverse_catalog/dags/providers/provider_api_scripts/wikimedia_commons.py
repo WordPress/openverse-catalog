@@ -353,7 +353,6 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
         return geo_data
 
     def create_meta_data_dict(self, media_data):
-        meta_data = {}
         global_usage_length = len(media_data.get("globalusage", []))
         media_info = self.get_media_info_dict(media_data)
         date_originally_created, last_modified_at_source = self.extract_date_info(
@@ -361,16 +360,18 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
         )
         categories_list = self.extract_category_info(media_info)
         description = self.get_ext_value(media_info, "ImageDescription")
+        meta_data = {
+            "global_usage_count": global_usage_length,
+            "date_originally_created": date_originally_created,
+            "last_modified_at_source": last_modified_at_source,
+            "categories": categories_list,
+            **self.get_geo_data(media_data),
+        }
         if description:
             description_text = " ".join(
                 html.fromstring(description).xpath("//text()")
             ).strip()
             meta_data["description"] = description_text
-        meta_data["global_usage_count"] = global_usage_length
-        meta_data["date_originally_created"] = date_originally_created
-        meta_data["last_modified_at_source"] = last_modified_at_source
-        meta_data["categories"] = categories_list
-        meta_data.update(self.get_geo_data(media_data))
         return meta_data
 
     def get_ext_value(self, media_info: dict, ext_key: str) -> Optional[str]:
