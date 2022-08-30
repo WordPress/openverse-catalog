@@ -30,10 +30,10 @@ class BrooklynMuseumDataIngester(ProviderDataIngester):
         return constants.IMAGE
 
     def get_next_query_params(self, prev_query_params: dict | None, **kwargs) -> dict:
-        if not prev_query_params:
+        if not prev_query_params or "offset" not in prev_query_params:
             offset = 0
         else:
-            offset = kwargs.get("offset", 0) + self.batch_limit
+            offset = prev_query_params["offset"] + self.batch_limit
         return {**self._common_args, "offset": offset}
 
     @staticmethod

@@ -32,7 +32,7 @@ def test_build_query_param_default():
 
 def test_build_query_param_given():
     offset = 70
-    actual_param = bkm.get_next_query_params({"foo": "bar"}, offset=offset)
+    actual_param = bkm.get_next_query_params({"foo": "bar", "offset": offset})
     expected_param = {
         "has_images": 1,
         "rights_type_permissive": 1,
