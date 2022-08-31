@@ -194,33 +194,25 @@ def _remove_param_from_url(url: str, param: str) -> str:
     return parsed_url._replace(query=urlencode(query, doseq=True)).geturl()
 
 
-def _remove_from(audio_url: Optional[str]) -> Optional[str]:
-    """
-    Remove the "from" parameter from an audio URL. Audio URLs have a "from" param which
-    seems to encapsulate information about the calling application.
+def _get_audio_info(media_data: dict) -> tuple[Optional[str], Optional[int]]:
+    """Parse audio URL & audio duration
+    Also remove the "from" parameter from an audio URL. Audio URLs have a "from" param
+    which seems to encapsulate information about the calling application.
     Example from the API:
     https://prod-1.storage.jamendo.com/?trackid=1532771&format=mp31&from=app-devsite
     This information looks like an API key or secret when returned, so we remove it
     since it's not necessary for serving the audio files.
     >>> base_url = "https://prod-1.storage.jamendo.com/"
     >>> url = f"{base_url}?trackid=1532771&format=mp31&from=app-devsite"
-    >>> _remove_from(url)
+    >>> _remove_param_from_url(url, "from")
     'https://prod-1.storage.jamendo.com/?trackid=1532771&format=mp31'
-    """
-    if audio_url is None:
-        return
-    return _remove_param_from_url(audio_url, "from")
-
-
-def _get_audio_info(media_data: dict) -> tuple[Optional[str], int]:
-    """Parses audio URL, audio download URL, audio duration
-    If the audio does not allow download, we save the 'streaming'
-    URL as the `audio_url`
     :return: Tuple with main audio file information:
     - audio_url
     - duration (in milliseconds)
     """
-    audio_url = _remove_from(media_data.get("audio"))
+    if (audio_url := media_data.get("audio")) is None:
+        return None, None
+    audio_url = _remove_param_from_url(audio_url, "from")
     duration = media_data.get("duration")
     if duration:
         duration = int(duration) * 1000
