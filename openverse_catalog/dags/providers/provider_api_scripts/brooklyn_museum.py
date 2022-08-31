@@ -139,12 +139,12 @@ class BrooklynMuseumDataIngester(ProviderDataIngester):
         return images
 
     def get_record_data(self, data: dict) -> dict | list[dict] | None:
+        id_ = data.get("id")
+        if not id_:
+            return None
         rights_info = data.get("rights_type")
         license_url = self._get_license_url(rights_info)
         if license_url is None:
-            return None
-        id_ = data.get("id")
-        if not id_:
             return None
         endpoint = f"{self.endpoint}{id_}"
         object_data = self._get_data_from_response(
