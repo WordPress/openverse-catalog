@@ -57,20 +57,6 @@ def test_get_data_from_response(resource_name, expected):
 
 
 @pytest.mark.parametrize(
-    "resource_name, expected",
-    [
-        ("response_success.json", True),
-        ("response_error.json", False),
-        ("response_nodata.json", False),
-    ],
-)
-def test_should_continue(resource_name, expected):
-    response_json = _get_resource_json(resource_name)
-    actual = bkm.get_should_continue(response_json)
-    assert actual == expected
-
-
-@pytest.mark.parametrize(
     "batch_objects_name, object_data_name, expected_count",
     [
         ("batch_objects.json", "object_data.json", 1),
@@ -102,7 +88,7 @@ def test_process_batch(batch_objects_name, object_data_name, expected_count):
                     "foreign_identifier": 170425,
                     "foreign_landing_url": "https://www.brooklynmuseum.org/opencollection/objects/90636",
                     "height": 1152,
-                    "image_url": "https://d1lfxha3ugu3d4.cloudfront.net/images/opencollection/objects/size4/CUR.66.242.29.jpg",
+                    "image_url": "d1lfxha3ugu3d4.cloudfront.net/images/opencollection/objects/size4/CUR.66.242.29.jpg",
                     "license_info": LicenseInfo(
                         license="by",
                         version="3.0",
@@ -196,16 +182,36 @@ def test_get_creators(data, expected):
 
 
 @pytest.mark.parametrize(
-    "data, expected",
+    "license_url, license_is_none",
     [
-        (
-            _get_resource_json("image_details.json"),
-            "https://d1lfxha3ugu3d4.cloudfront.net/images/opencollection/objects/"
-            "size4/CUR.66.242.29.jpg",
-        ),
-        ({}, None),
+        (None, True),
+        ("someurl", False),
     ],
 )
-def test_get_images(data, expected):
-    actual = bkm._get_image_url(data)
-    assert actual == expected
+@pytest.mark.parametrize(
+    "data, data_is_none",
+    [
+        ({}, True),
+        ({"doesnt-have-id": "foobar"}, True),
+        ({"id": "foobar"}, False),
+    ],
+)
+@pytest.mark.parametrize(
+    "object_data, object_data_is_none",
+    [
+        (None, True),
+        ({"some-data": 1}, False),
+    ],
+)
+def test_get_record_data(
+    license_url, license_is_none, data, data_is_none, object_data, object_data_is_none
+):
+    should_be_none = any([license_is_none, data_is_none, object_data_is_none])
+    with (
+        patch.object(bkm, "_get_license_url", return_value=license_url),
+        patch.object(bkm, "get_response_json"),
+        patch.object(bkm, "_get_data_from_response", return_value=object_data),
+        patch.object(bkm, "_handle_object_data"),
+    ):
+        actual = bkm.get_record_data(data)
+        assert (actual is None) == should_be_none

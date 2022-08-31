@@ -42,13 +42,6 @@ class BrooklynMuseumDataIngester(ProviderDataIngester):
             return response_json.get("data")
         return None
 
-    def get_should_continue(self, response_json):
-        # We can assume that any truthy response from the get data function would
-        # indicate we can continue
-        # TODO: Check this as part of the testing for the API key
-        # https://github.com/WordPress/openverse-catalog/issues/385
-        return bool(self._get_data_from_response(response_json))
-
     def get_batch_data(self, response_json) -> list | None:
         return self._get_data_from_response(response_json)
 
@@ -103,13 +96,6 @@ class BrooklynMuseumDataIngester(ProviderDataIngester):
         return creator
 
     @staticmethod
-    def _get_image_url(image):
-        image_url = image.get("largest_derivative_url")
-        if image_url and not image_url.startswith("http"):
-            image_url = "https://" + image_url
-        return image_url
-
-    @staticmethod
     def _handle_object_data(data, license_url) -> list[dict]:
         images = []
         image_info = data.get("images")
@@ -124,7 +110,7 @@ class BrooklynMuseumDataIngester(ProviderDataIngester):
                 foreign_id = image.get("id")
                 if foreign_id is None:
                     continue
-                image_url = BrooklynMuseumDataIngester._get_image_url(image)
+                image_url = image.get("largest_derivative_url")
                 if image_url is None:
                     continue
                 height, width = BrooklynMuseumDataIngester._get_image_sizes(image)
@@ -147,16 +133,17 @@ class BrooklynMuseumDataIngester(ProviderDataIngester):
     def get_record_data(self, data: dict) -> dict | list[dict] | None:
         rights_info = data.get("rights_type")
         license_url = self._get_license_url(rights_info)
-        logger.debug(license_url)
         if license_url is None:
             return None
-        id_ = data.get("id", "")
+        id_ = data.get("id")
+        if not id_:
+            return None
         endpoint = f"{self.endpoint}{id_}"
         object_data = self._get_data_from_response(
             self.get_response_json(query_params={}, endpoint=endpoint)
         )
         if object_data is None:
-            return
+            return None
         return self._handle_object_data(data=object_data, license_url=license_url)
 
 
