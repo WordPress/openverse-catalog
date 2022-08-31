@@ -37,8 +37,8 @@ class VictoriaDataIngester(ProviderDataIngester):
         "cc by-sa",
     ]
 
-    def __init__(self, *args):
-        super().__init__(*args)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         # This set is used to prevent duplicate images of the same items
         self.RECORDS_IDS = set()
 
