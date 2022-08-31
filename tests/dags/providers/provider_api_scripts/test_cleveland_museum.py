@@ -109,6 +109,11 @@ def test_get_image_type_none():
     assert actual_image is None
 
 
+def test_get_image_type_no_data():
+    # When image_data is None
+    assert clm._get_image_type(None) is None
+
+
 def test_get_metadata():
     data = _get_resource_json("complete_data.json")
     actual_metadata = clm._get_metadata(data)

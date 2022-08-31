@@ -72,6 +72,9 @@ class ClevelandDataIngester(ProviderDataIngester):
     @staticmethod
     def _get_image_type(image_data):
         # Returns the image url and key for the image in `image_data` dict.
+        if image_data is None:
+            return None
+
         for key in ["web", "print", "full"]:
             if keyed_image := image_data.get(key):
                 return keyed_image
