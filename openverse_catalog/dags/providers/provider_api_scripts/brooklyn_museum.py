@@ -16,8 +16,8 @@ class BrooklynMuseumDataIngester(ProviderDataIngester):
     endpoint = "https://www.brooklynmuseum.org/api/v2/object/"
     batch_limit = 35
 
-    def __init__(self, conf: dict = None, date: str = None):
-        super().__init__(conf, date)
+    def __init__(self, *args):
+        super().__init__(*args)
         self.api_key = Variable.get("API_KEY_BROOKLYN_MUSEUM")
         self.headers = {"api_key": self.api_key}
 
