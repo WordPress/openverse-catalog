@@ -34,9 +34,7 @@ def test_build_query_param_given():
     offset = 70
     actual_param = bkm.get_next_query_params({"foo": "bar", "offset": offset})
     expected_param = {
-        "has_images": 1,
-        "rights_type_permissive": 1,
-        "limit": bkm.batch_limit,
+        "foo": "bar",
         "offset": offset + bkm.batch_limit,
     }
     assert actual_param == expected_param
@@ -99,8 +97,6 @@ def test_process_batch(batch_objects_name, object_data_name, expected_count):
                         "accession_number": "66.242.29",
                         "classification": "Clothing",
                         "credit_line": "Gift of John C. Monks",
-                        "date": None,
-                        "description": None,
                         "medium": "Silk",
                     },
                     "title": "Caftan",
@@ -164,7 +160,7 @@ def test_get_license_url(resource_name, expected):
 def test_get_metadata():
     response_json = _get_resource_json("object_data.json")
     actual_metadata = bkm._get_metadata(response_json)
-    expected_metadata = _get_resource_json("metadata.json")
+    expected_metadata = _get_resource_json("expected_metadata.json")
 
     assert actual_metadata == expected_metadata
 

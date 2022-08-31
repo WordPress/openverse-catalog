@@ -15,11 +15,6 @@ class BrooklynMuseumDataIngester(ProviderDataIngester):
     providers = {"image": prov.BROOKLYN_DEFAULT_PROVIDER}
     endpoint = "https://www.brooklynmuseum.org/api/v2/object/"
     batch_limit = 35
-    _common_args = {
-        "has_images": 1,
-        "rights_type_permissive": 1,
-        "limit": batch_limit,
-    }
 
     def __init__(self, conf: dict = None, date: str = None):
         super().__init__(conf, date)
@@ -30,11 +25,18 @@ class BrooklynMuseumDataIngester(ProviderDataIngester):
         return constants.IMAGE
 
     def get_next_query_params(self, prev_query_params: dict | None, **kwargs) -> dict:
-        if not prev_query_params or "offset" not in prev_query_params:
-            offset = 0
+        if not prev_query_params:
+            return {
+                "has_images": 1,
+                "rights_type_permissive": 1,
+                "limit": self.batch_limit,
+                "offset": 0,
+            }
         else:
-            offset = prev_query_params["offset"] + self.batch_limit
-        return {**self._common_args, "offset": offset}
+            return {
+                **prev_query_params,
+                "offset": prev_query_params["offset"] + self.batch_limit,
+            }
 
     @staticmethod
     def _get_data_from_response(response_json) -> dict | None:
@@ -72,7 +74,7 @@ class BrooklynMuseumDataIngester(ProviderDataIngester):
 
     @staticmethod
     def _get_metadata(data):
-        return {
+        metadata = {
             "accession_number": data.get("accession_number"),
             "date": data.get("object_date"),
             "description": data.get("description"),
@@ -80,6 +82,7 @@ class BrooklynMuseumDataIngester(ProviderDataIngester):
             "credit_line": data.get("credit_line"),
             "classification": data.get("classification"),
         }
+        return {k: v for k, v in metadata.items() if v is not None}
 
     @staticmethod
     def _get_creators(data):
@@ -99,35 +102,40 @@ class BrooklynMuseumDataIngester(ProviderDataIngester):
     def _handle_object_data(data, license_url) -> list[dict]:
         images = []
         image_info = data.get("images")
-        if image_info is not None:
-            id_ = data.get("id", "")
-            title = data.get("title", "")
-            foreign_url = f"https://www.brooklynmuseum.org/opencollection/objects/{id_}"
-            metadata = BrooklynMuseumDataIngester._get_metadata(data)
-            creators = BrooklynMuseumDataIngester._get_creators(data)
+        if image_info is None:
+            return []
 
-            for image in image_info:
-                foreign_id = image.get("id")
-                if foreign_id is None:
-                    continue
-                image_url = image.get("largest_derivative_url")
-                if image_url is None:
-                    continue
-                height, width = BrooklynMuseumDataIngester._get_image_sizes(image)
-                license_info = get_license_info(license_url=license_url)
-                images.append(
-                    {
-                        "foreign_landing_url": foreign_url,
-                        "image_url": image_url,
-                        "license_info": license_info,
-                        "foreign_identifier": foreign_id,
-                        "width": width,
-                        "height": height,
-                        "title": title,
-                        "meta_data": metadata,
-                        "creator": creators,
-                    }
-                )
+        id_ = data.get("id")
+        if id_ is None:
+            return []
+
+        title = data.get("title", "")
+        foreign_url = f"https://www.brooklynmuseum.org/opencollection/objects/{id_}"
+        metadata = BrooklynMuseumDataIngester._get_metadata(data)
+        creators = BrooklynMuseumDataIngester._get_creators(data)
+
+        for image in image_info:
+            foreign_id = image.get("id")
+            if foreign_id is None:
+                continue
+            image_url = image.get("largest_derivative_url")
+            if image_url is None:
+                continue
+            height, width = BrooklynMuseumDataIngester._get_image_sizes(image)
+            license_info = get_license_info(license_url=license_url)
+            images.append(
+                {
+                    "foreign_landing_url": foreign_url,
+                    "image_url": image_url,
+                    "license_info": license_info,
+                    "foreign_identifier": foreign_id,
+                    "width": width,
+                    "height": height,
+                    "title": title,
+                    "meta_data": metadata,
+                    "creator": creators,
+                }
+            )
         return images
 
     def get_record_data(self, data: dict) -> dict | list[dict] | None:
