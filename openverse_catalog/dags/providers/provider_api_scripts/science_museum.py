@@ -35,9 +35,8 @@ class ScienceMuseumDataIngester(ProviderDataIngester):
     delay = 5
     headers = {"Accept": "application/json"}
 
-    def __init__(self):
-
-        super().__init__()
+    def __init__(self, *args):
+        super().__init__(*args)
         # instance variable to prevent duplicate records
         self.RECORD_IDS = set()
 
