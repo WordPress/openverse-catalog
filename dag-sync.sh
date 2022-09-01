@@ -23,11 +23,11 @@ new=$(git rev-parse HEAD)
 subject=$(git log -1 --format='%s')
 
 
-if [ -z "$SLACK_URL" ]; then
+if [ -z "$SLACK_URL" ]
+  then
   echo "Slack hook was not supplied! Updates will not be posted"
 else
-  curl
-    $SLACK_URL \
+  curl $SLACK_URL \
     -X POST \
     -H 'Content-Type: application/json' \
     -d '{"text":"Deployed: '"$subject"'","username":"DAG Sync","icon_emoji":":recycle:","blocks":[{"type":"section","text":{"type":"mrkdwn","text":"Deployed: <https://github.com/WordPress/openverse-catalog/commit/'"$new"'|'"$subject"'>"}}]}'
