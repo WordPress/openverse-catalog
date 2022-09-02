@@ -14,12 +14,15 @@ cd "$SCRIPT_DIR"
 
 # Get current commit hash
 current=$(git rev-parse HEAD)
-# Pull repo
-git pull --rebase
-# Get new commit hash after pull
-new=$(git rev-parse HEAD)
+# Update origin
+git fetch origin
+# Get new commit hash *one commit ahead* of this one
+new=$(git rev-list --reverse --topo-order HEAD..origin/main | head -1)
+# If there is no new commit hash to move to, nothing has changed, quit early
+[ -z $new ] && exit
+# Move ahead to this new commit
+git reset --hard $new
 # Check if the hash has changed, if not quit early
-[ $current = $new ] && exit
 subject=$(git log -1 --format='%s')
 
 
