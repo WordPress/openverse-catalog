@@ -24,7 +24,7 @@ new=$(git rev-list --reverse --topo-order HEAD..origin/main | head -1)
 [ -z $new ] && exit
 # Move ahead to this new commit
 git reset --hard $new
-# Check if the hash has changed, if not quit early
+# Pull out the subject from the new commit
 subject=$(git log -1 --format='%s')
 
 

@@ -37,7 +37,7 @@ The "🔒" icon below notes that the action must be performed by a core maintain
 2. After the release GitHub action has run, [check that the new Docker tag corresponding to the release exists on ghcr.io](https://github.com/wordpress/openverse-catalog/pkgs/container/openverse-catalog).
 3. Ensure that there are [no actively running DAGs](https://airflow.openverse.engineering/dagrun/list/?_flt_3_state=running).
 4. 🔒 Update the `docker_image_tag` in Terraform's configuration.
-5. 🔒 Initiate the deployment via `just prod apply catalog-airflow`.
+5. 🔒 Initiate the deployment via `just plan prod catalog-airflow` (and subsequently `just apply prod catalog-airflow` if the plan looks correct).
 
 ## DAG deployments
 
@@ -59,6 +59,7 @@ The Catalog is also backed by a Postgres instance, which serves as the primary d
 
 This instance is hosted on AWS using [RDS](https://aws.amazon.com/rds/).
 The instance can be accessed using [`pgcli`](https://www.pgcli.com/) or a similar client with the jumphost defined in the infrastructure repository.
+For more information on this process see the [documentation on connecting to the jumphost](https://github.com/WordPress/openverse-infrastructure/blob/main/docs/CONNECTING-TO-JUMPHOST.md) (note that you will need additional access to view this document, please reach out to the maintainers if you're interested).
 
 ## Migrations
 
