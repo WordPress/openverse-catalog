@@ -226,7 +226,7 @@ def send_message(
 ) -> None:
     """Send a simple slack message, convenience message for short/simple messages."""
     log.info(text)
-    if not should_send_message(dag_id, http_conn_id):
+    if not should_send_message(text, username, dag_id, http_conn_id):
         return
 
     environment = Variable.get("environment", default_var="dev")
@@ -241,10 +241,14 @@ def send_message(
     s.send(text)
 
 
-def should_send_message(dag_id, http_conn_id=SLACK_NOTIFICATIONS_CONN_ID):
+def should_send_message(
+    text, username, dag_id, http_conn_id=SLACK_NOTIFICATIONS_CONN_ID
+):
     """
-    Returns true if a Slack connection is defined and we are in production (or
-    the message override is set).
+    Returns True if:
+      * A Slack connection is defined
+      * The DAG is not configured to silence messages of this type
+      * We are in the prod env OR the message override is set.
     """
     # Exit early if no slack connection exists
     hook = HttpHook(http_conn_id=http_conn_id)
@@ -254,10 +258,7 @@ def should_send_message(dag_id, http_conn_id=SLACK_NOTIFICATIONS_CONN_ID):
         return False
 
     # Exit early if this DAG is configured to skip Slack messaging
-    silenced_dags = Variable.get(
-        "silenced_slack_notifications", default_var={}, deserialize_json=True
-    )
-    if dag_id in silenced_dags:
+    if should_silence_message(text, username, dag_id):
         log.info(f"Skipping Slack notification for {dag_id}.")
         return False
 
@@ -267,6 +268,25 @@ def should_send_message(dag_id, http_conn_id=SLACK_NOTIFICATIONS_CONN_ID):
         "slack_message_override", default_var={}, deserialize_json=True
     )
     return environment == "prod" or force_message
+
+
+def should_silence_message(text, username, dag_id):
+    """
+    Checks the `silenced_slack_notifications` Airflow variable to see if the message
+    should be silenced for this DAG.
+    """
+    # Match on message text and username
+    message = username + text
+
+    # Get the configuration for silenced messages for this DAG
+    messages_to_silence = Variable.get(
+        "silenced_slack_notifications", default_var={}, deserialize_json=True
+    ).get(dag_id)
+
+    return bool(messages_to_silence) and any(
+        predicate.lower() in message.lower()
+        for predicate in sum(messages_to_silence.values(), [])
+    )
 
 
 def send_alert(
@@ -282,16 +302,6 @@ def send_alert(
     Wrapper for send_message that allows sending a message to the configured alerts
     channel instead of the default notification channel.
     """
-
-    known_failures = Variable.get(
-        "silenced_slack_alerts", default_var={}, deserialize_json=True
-    )
-    if dag_id in known_failures and any(
-        error.lower() in text.lower() for error in known_failures[dag_id]["errors"]
-    ):
-        log.info(f"Skipping Slack alert for {dag_id}: {text}")
-        return
-
     send_message(
         text,
         dag_id,
