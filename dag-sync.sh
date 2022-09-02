@@ -5,6 +5,8 @@
 # Inputs:
 #   - The first and only argument to the script should be the Slack hook URL target
 #     for the output sync message.
+#
+# Inspired by https://stackoverflow.com/a/21005490/3277713 via torek CC BY-SA 3.0
 set -e
 
 SLACK_URL=$1
