@@ -26,6 +26,9 @@ class NyplDataIngester(ProviderDataIngester):
     metadata_endpoint = f"{endpoint_base}/item_details/"
     batch_limit = 500
     delay = 5
+    # NYPL returns a list of image objects, with the dimension encoded
+    # in the URL's query parameter.
+    # This list is in order from the largest image to the smallest one.
     image_url_dimensions = ["g", "v", "q", "w", "r"]
 
     def get_next_query_params(self, prev_query_params, **kwargs):
@@ -89,10 +92,12 @@ class NyplDataIngester(ProviderDataIngester):
             image_id = capture.get("imageID", {}).get("$")
             if image_id is None:
                 continue
+
             image_link = capture.get("imageLinks", {}).get("imageLink", [])
             image_url, filetype = self._get_image_data(image_link)
             if not image_url:
                 continue
+
             foreign_landing_url = capture.get("itemLink", {}).get("$")
             license_url = capture.get("rightsStatementURI", {}).get("$")
             if not foreign_landing_url or license_url is None:
@@ -133,42 +138,42 @@ class NyplDataIngester(ProviderDataIngester):
         &suffix=29eed1f0-3d50-0134-c4c7-00505686a51c.001",
           "description": "Cropped .jpeg (1600 pixels on the long side)"
         }
-        Extracts the largest image based on the `t` query parameter
+        Selects the largest image based on the image URL's `t` query parameter
         and IMAGE_URL_DIMENSIONS.
         """
-
-        image_type = {
-            parse_qs(urlparse(img["$"]).query)["t"][0]: {
-                "url": img["$"],
-                "description": img["description"],
-            }
-            for img in images
+        # Create a dict with the NyplDataIngester.image_url_dimensions as keys,
+        # and image data as value.
+        image_types = {
+            parse_qs(urlparse(img["$"]).query)["t"][0]: i
+            for i, img in enumerate(images)
         }
-        if image_type == {}:
+        if not image_types:
             return None, None
-        preferred_image = (
-            (
-                image_type[dimension]["url"].replace("&download=1", ""),
-                NyplDataIngester._get_filetype(image_type[dimension]["description"]),
-            )
+
+        # Select the dict with the largest image
+        preferred_image_index = next(
+            image_types[dimension]
             for dimension in NyplDataIngester.image_url_dimensions
-            if dimension in image_type
+            if dimension in image_types
         )
-        image_url, filetype = next(preferred_image, None)
-        image_url = image_url.replace("http://", "https://")
+        if preferred_image_index is None:
+            return None, None
+        preferred_image = images[preferred_image_index]
+
+        image_url = preferred_image["$"].replace("&download=1", "")
+        filetype = NyplDataIngester._get_filetype(preferred_image["description"])
         return image_url, filetype
 
     @staticmethod
     def _get_creators(creatorinfo):
-        if isinstance(creatorinfo, list):
-            primary_creator = (
-                info.get("namePart", {}).get("$")
-                for info in creatorinfo
-                if info.get("usage") == "primary"
-            )
-            creator = next(primary_creator, None)
-        else:
-            creator = creatorinfo.get("namePart", {}).get("$")
+        if not isinstance(creatorinfo, list):
+            creatorinfo = [creatorinfo]
+        primary_creator = (
+            info.get("namePart", {}).get("$")
+            for info in creatorinfo
+            if info.get("usage") == "primary"
+        )
+        creator = next(primary_creator, None)
 
         return creator
 
@@ -219,13 +224,17 @@ class NyplDataIngester(ProviderDataIngester):
         subject_list = mods.get("subject", [])
         if isinstance(subject_list, dict):
             subject_list = [subject_list]
-        topics = [
-            subject["topic"].get("$")
-            for subject in subject_list
-            if "topic" in subject and subject["topic"].get("$")
-        ]
+        # Topic can be a dictionary or a list
+        topics = [subject["topic"] for subject in subject_list if "topic" in subject]
         if topics:
-            metadata["topics"] = ", ".join(topics)
+            tags = []
+            for topic in topics:
+                if isinstance(topic, list):
+                    tags.extend([t.get("$") for t in topic])
+                else:
+                    tags.append(topic.get("$"))
+            if tags:
+                metadata["tags"] = ", ".join(tags)
 
         return metadata
 
