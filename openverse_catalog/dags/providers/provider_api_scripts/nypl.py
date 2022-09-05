@@ -21,9 +21,9 @@ FILETYPE_PATTERN = r" .(jpeg|gif) "
 class NyplDataIngester(ProviderDataIngester):
     providers = {"image": prov.NYPL_DEFAULT_PROVIDER}
     headers = {"Authorization": f"Token token={NYPL_API}"}
-    endpoint = "http://api.repo.nypl.org/api/v1/items"
-    search_endpoint = f"{endpoint}/search"
-    metadata_endpoint = f"{endpoint}/item_details/"
+    endpoint_base = "http://api.repo.nypl.org/api/v1/items"
+    endpoint = f"{endpoint_base}/search/"
+    metadata_endpoint = f"{endpoint_base}/item_details/"
     batch_limit = 500
     delay = 5
     image_url_dimensions = ["g", "v", "q", "w", "r"]
@@ -67,7 +67,7 @@ class NyplDataIngester(ProviderDataIngester):
         title_info = mods.get("titleInfo")
         if isinstance(title_info, list) and len(title_info) > 0:
             title_info = title_info[0]
-        title = title_info.get("title", {}).get("$")
+        title = "" if title_info is None else title_info.get("title", {}).get("$")
 
         name_properties = mods.get("name")
         creator = self._get_creators(name_properties) if name_properties else None
@@ -85,16 +85,16 @@ class NyplDataIngester(ProviderDataIngester):
         if not isinstance(captures, list):
             captures = [captures]
         images = []
-        for img in captures:
-            image_id = img.get("imageID", {}).get("$")
+        for capture in captures:
+            image_id = capture.get("imageID", {}).get("$")
             if image_id is None:
                 continue
-            image_link = img.get("imageLinks", {}).get("imageLink", [])
+            image_link = capture.get("imageLinks", {}).get("imageLink", [])
             image_url, filetype = self._get_image_data(image_link)
             if not image_url:
                 continue
-            foreign_landing_url = img.get("itemLink", {}).get("$")
-            license_url = img.get("rightsStatementURI", {}).get("$")
+            foreign_landing_url = capture.get("itemLink", {}).get("$")
+            license_url = capture.get("rightsStatementURI", {}).get("$")
             if not foreign_landing_url or license_url is None:
                 continue
 
@@ -195,12 +195,16 @@ class NyplDataIngester(ProviderDataIngester):
                 # 'point': 'start', 'qualifier': 'approximate', '$': '1990'},
                 # {'encoding': 'w3cdtf', 'point': 'end',
                 # 'qualifier': 'approximate', '$': '1999'}]
-                start_date = (
+                start_date = next(
                     d.get("$") for d in date_created if d.get("point") == "start"
                 )
-                end_date = (d.get("$") for d in date_created if d.get("point") == "end")
-                if next(start_date) and next(end_date):
+                end_date = next(
+                    d.get("$") for d in date_created if d.get("point") == "end"
+                )
+                if start_date and end_date:
                     date_created = f"{start_date}-{end_date}"
+                elif start_date:
+                    date_created = start_date
                 else:
                     date_created = None
             else:
@@ -212,9 +216,12 @@ class NyplDataIngester(ProviderDataIngester):
         if description := mods.get("physicalDescription", {}).get("note", {}).get("$"):
             metadata["physical_description"] = description
 
+        subject_list = mods.get("subject", [])
+        if isinstance(subject_list, dict):
+            subject_list = [subject_list]
         topics = [
             subject["topic"].get("$")
-            for subject in mods.get("subject", [])
+            for subject in subject_list
             if "topic" in subject and subject["topic"].get("$")
         ]
         if topics:
