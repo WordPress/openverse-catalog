@@ -75,6 +75,7 @@ from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
 from common.constants import DAG_DEFAULT_ARGS, XCOM_PULL_TEMPLATE
 from common.loader import loader, reporting, s3, sql
+from common.on_failure_callback import get_task_app_name
 from providers.factory_utils import (
     date_partition_for_prefix,
     generate_tsv_filenames,
@@ -194,6 +195,7 @@ def create_provider_api_workflow(
             task_id=f"pull_{media_type_name}_data",
             python_callable=pull_media_wrapper,
             op_kwargs={
+                "task_run_id": get_task_app_name("{{task_instance_key_str}}"),
                 **ingestion_kwargs,
                 # Note: this is assumed to match the order of media_types exactly
                 "tsv_filenames": [
@@ -218,6 +220,7 @@ def create_provider_api_workflow(
                     task_id="create_loading_table",
                     python_callable=sql.create_loading_table,
                     op_kwargs={
+                        "task_run_id": get_task_app_name("{{task_instance_key_str}}"),
                         "postgres_conn_id": DB_CONN_ID,
                         "identifier": identifier,
                         "media_type": media_type,
@@ -248,6 +251,7 @@ def create_provider_api_workflow(
                     retries=1,
                     python_callable=loader.load_from_s3,
                     op_kwargs={
+                        "task_run_id": get_task_app_name("{{task_instance_key_str}}"),
                         "bucket": OPENVERSE_BUCKET,
                         "key": XCOM_PULL_TEMPLATE.format(copy_to_s3.task_id, "s3_key"),
                         "postgres_conn_id": DB_CONN_ID,
@@ -262,6 +266,7 @@ def create_provider_api_workflow(
                     task_id="drop_loading_table",
                     python_callable=sql.drop_load_table,
                     op_kwargs={
+                        "task_run_id": get_task_app_name("{{task_instance_key_str}}"),
                         "postgres_conn_id": DB_CONN_ID,
                         "identifier": identifier,
                         "media_type": media_type,

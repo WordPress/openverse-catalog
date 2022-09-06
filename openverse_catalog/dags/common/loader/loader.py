@@ -12,6 +12,7 @@ def copy_to_s3(output_dir, bucket, identifier, aws_conn_id):
 
 
 def load_s3_data(
+    task_run_id,
     bucket,
     aws_conn_id,
     postgres_conn_id,
@@ -27,14 +28,19 @@ def load_s3_data(
         identifier, bucket, aws_conn_id, media_prefix=media_type
     )
     sql.load_s3_data_to_intermediate_table(
-        postgres_conn_id, bucket, tsv_key, identifier, media_type
+        task_run_id, postgres_conn_id, bucket, tsv_key, identifier, media_type
     )
     sql.upsert_records_to_db_table(
-        postgres_conn_id, identifier, media_type=media_type, tsv_version=tsv_version
+        task_run_id,
+        postgres_conn_id,
+        identifier,
+        media_type=media_type,
+        tsv_version=tsv_version,
     )
 
 
 def load_from_s3(
+    task_run_id,
     bucket,
     key,
     postgres_conn_id,
@@ -43,10 +49,14 @@ def load_from_s3(
     identifier,
 ) -> RecordMetrics:
     loaded, missing_columns, foreign_id_dup = sql.load_s3_data_to_intermediate_table(
-        postgres_conn_id, bucket, key, identifier, media_type
+        task_run_id, postgres_conn_id, bucket, key, identifier, media_type
     )
     upserted = sql.upsert_records_to_db_table(
-        postgres_conn_id, identifier, media_type=media_type, tsv_version=tsv_version
+        task_run_id,
+        postgres_conn_id,
+        identifier,
+        media_type=media_type,
+        tsv_version=tsv_version,
     )
     url_dup = loaded - missing_columns - foreign_id_dup - upserted
     return RecordMetrics(upserted, missing_columns, foreign_id_dup, url_dup)

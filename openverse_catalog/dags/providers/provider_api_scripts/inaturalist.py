@@ -33,6 +33,7 @@ from airflow.utils.task_group import TaskGroup
 from common.constants import POSTGRES_CONN_ID
 from common.licenses import LicenseInfo, get_license_info
 from common.loader import provider_details as prov
+from common.on_failure_callback import PG_SET_NAME_TEMPLATE, get_task_app_name
 from providers.provider_api_scripts.provider_data_ingester import ProviderDataIngester
 
 
@@ -141,7 +142,12 @@ class INaturalistDataIngester(ProviderDataIngester):
             create_inaturalist_schema = PostgresOperator(
                 task_id="create_inaturalist_schema",
                 postgres_conn_id=POSTGRES_CONN_ID,
-                sql=(SCRIPT_DIR / "create_schema.sql").read_text(),
+                sql=(
+                    PG_SET_NAME_TEMPLATE.format(
+                        get_task_app_name("{{task_instance_key_str}}")
+                    )
+                    + (SCRIPT_DIR / "create_schema.sql").read_text()
+                ),
             )
 
             with TaskGroup(group_id="load_source_files") as load_source_files:
@@ -149,7 +155,12 @@ class INaturalistDataIngester(ProviderDataIngester):
                     PostgresOperator(
                         task_id=f"load_{source_name}",
                         postgres_conn_id=POSTGRES_CONN_ID,
-                        sql=(SCRIPT_DIR / f"{source_name}.sql").read_text(),
+                        sql=(
+                            PG_SET_NAME_TEMPLATE.format(
+                                get_task_app_name("{{task_instance_key_str}}")
+                            )
+                            + (SCRIPT_DIR / f"{source_name}.sql").read_text()
+                        ),
                     ),
 
             (check_for_file_updates >> create_inaturalist_schema >> load_source_files)
@@ -161,6 +172,9 @@ class INaturalistDataIngester(ProviderDataIngester):
         drop_inaturalist_schema = PostgresOperator(
             task_id="drop_inaturalist_schema",
             postgres_conn_id=POSTGRES_CONN_ID,
-            sql="DROP SCHEMA IF EXISTS inaturalist CASCADE",
+            sql=PG_SET_NAME_TEMPLATE.format(
+                get_task_app_name(get_task_app_name("{{task_instance_key_str}}"))
+            )
+            + "DROP SCHEMA IF EXISTS inaturalist CASCADE",
         )
         return drop_inaturalist_schema

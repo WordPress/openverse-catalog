@@ -6,6 +6,7 @@ from airflow.providers.postgres.hooks.postgres import PostgresHook
 from common.constants import AUDIO, IMAGE
 from common.loader import provider_details as prov
 from common.loader.paths import _extract_media_type
+from common.on_failure_callback import PG_SET_NAME_TEMPLATE
 from common.storage import columns as col
 from common.storage.columns import NULL, Column, UpsertStrategy
 from common.storage.db_columns import AUDIO_TABLE_COLUMNS, IMAGE_TABLE_COLUMNS
@@ -59,6 +60,7 @@ def create_column_definitions(table_columns: List[Column], is_loading=True):
 
 
 def create_loading_table(
+    task_run_id: str,
     postgres_conn_id: str,
     identifier: str,
     media_type: str = IMAGE,
@@ -68,6 +70,7 @@ def create_loading_table(
     """
     load_table = _get_load_table_name(identifier, media_type=media_type)
     postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
+    postgres.run(PG_SET_NAME_TEMPLATE.format(task_run_id))
     loading_table_columns = TSV_COLUMNS[media_type]
     columns_definition = f"{create_column_definitions(loading_table_columns)}"
     table_creation_query = dedent(
@@ -100,13 +103,14 @@ def create_loading_table(
 
 
 def load_local_data_to_intermediate_table(
-    postgres_conn_id, tsv_file_name, identifier, max_rows_to_skip=10
+    task_run_id, postgres_conn_id, tsv_file_name, identifier, max_rows_to_skip=10
 ):
     media_type = _extract_media_type(tsv_file_name)
     load_table = _get_load_table_name(identifier, media_type=media_type)
     logger.info(f"Loading {tsv_file_name} into {load_table}")
 
     postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
+    postgres.run(PG_SET_NAME_TEMPLATE.format(task_run_id))
     load_successful = False
 
     while not load_successful and max_rows_to_skip >= 0:
@@ -143,6 +147,7 @@ def _handle_s3_load_result(cursor) -> int:
 
 
 def load_s3_data_to_intermediate_table(
+    task_run_id,
     postgres_conn_id,
     bucket,
     s3_key,
@@ -153,6 +158,7 @@ def load_s3_data_to_intermediate_table(
     logger.info(f"Loading {s3_key} from S3 Bucket {bucket} into {load_table}")
 
     postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
+    postgres.run(PG_SET_NAME_TEMPLATE.format(task_run_id))
     loaded = postgres.run(
         dedent(
             f"""
@@ -234,6 +240,7 @@ def _is_tsv_column_from_different_version(
 
 
 def upsert_records_to_db_table(
+    task_run_id: str,
     postgres_conn_id: str,
     identifier: str,
     db_table: str = None,
@@ -244,6 +251,7 @@ def upsert_records_to_db_table(
     Upserts newly ingested records from loading table into the main db table.
     For tsv columns that do not exist in the `tsv_version` for `media_type`,
     NULL value is used.
+    :param task_run_id      The application identifier for database jobs
     :param postgres_conn_id
     :param identifier
     :param db_table
@@ -258,6 +266,7 @@ def upsert_records_to_db_table(
     load_table = _get_load_table_name(identifier, media_type=media_type)
     logger.info(f"Upserting new records into {db_table}.")
     postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
+    postgres.run(PG_SET_NAME_TEMPLATE.format(task_run_id))
 
     # Remove identifier column
     db_columns: List[Column] = DB_COLUMNS[media_type][1:]
@@ -298,12 +307,14 @@ def upsert_records_to_db_table(
 
 
 def drop_load_table(
+    task_run_id,
     postgres_conn_id,
     identifier,
     media_type: str = IMAGE,
 ):
     load_table = _get_load_table_name(identifier, media_type=media_type)
     postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
+    postgres.run(PG_SET_NAME_TEMPLATE.format(task_run_id))
     postgres.run(f"DROP TABLE IF EXISTS {load_table};")
 
 
@@ -335,8 +346,11 @@ def _delete_malformed_row_in_file(tsv_file_name, line_number):
                 write_obj.write(line)
 
 
-def expire_old_images(postgres_conn_id, provider, image_table=TABLE_NAMES[IMAGE]):
+def expire_old_images(
+    task_run_id, postgres_conn_id, provider, image_table=TABLE_NAMES[IMAGE]
+):
     postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
+    postgres.run(PG_SET_NAME_TEMPLATE.format(task_run_id))
 
     if provider not in OLDEST_PER_PROVIDER:
         raise Exception(

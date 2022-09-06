@@ -19,6 +19,6 @@ def test_load_from_s3_calculations(load_value, upsert_value, expected):
         sql_mock.upsert_records_to_db_table.return_value = upsert_value
 
         actual = loader.load_from_s3(
-            mock.Mock(), "fake", "fake", "fake", "fake", "fake"
+            "fake_task_run_id", mock.Mock(), "fake", "fake", "fake", "fake", "fake"
         )
         assert actual == expected
