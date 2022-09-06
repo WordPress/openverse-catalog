@@ -50,22 +50,10 @@ dag = DAG(
 )
 
 with dag:
-    check_alerts = PythonOperator(
-        task_id="check_silenced_alert_configuration",
+    PythonOperator(
+        task_id="check_silenced_dags_configuration",
         python_callable=check_silenced_dags.check_configuration,
         op_kwargs={
             "github_pat": GITHUB_PAT,
-            "airflow_variable": "silenced_slack_alerts",
         },
     )
-
-    check_notifications = PythonOperator(
-        task_id="check_silenced_notification_configuration",
-        python_callable=check_silenced_dags.check_configuration,
-        op_kwargs={
-            "github_pat": GITHUB_PAT,
-            "airflow_variable": "silenced_slack_notifications",
-        },
-    )
-
-    check_alerts >> check_notifications
