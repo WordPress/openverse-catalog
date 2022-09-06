@@ -51,7 +51,7 @@ variable to `true` in the Airflow UI.
 import json
 import logging
 from os.path import basename
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, TypedDict
 
 from airflow.exceptions import AirflowNotFoundException
 from airflow.models import Variable
@@ -63,6 +63,20 @@ SLACK_NOTIFICATIONS_CONN_ID = "slack_notifications"
 SLACK_ALERTS_CONN_ID = "slack_alerts"
 JsonDict = dict[str, Any]
 log = logging.getLogger(__name__)
+
+
+class SilencedSlackNotification(TypedDict):
+    """
+    Configuration for a silenced Slack notification.
+
+    issue:     A link to a GitHub issue which describes why the notification
+               is silenced and tracks resolving the problem.
+    predicate: Slack notifications whose text or username contain the
+               predicate will be silenced. Matching is case-insensitive.
+    """
+
+    issue: str
+    predicate: str
 
 
 class SlackMessage:
@@ -279,13 +293,13 @@ def should_silence_message(text, username, dag_id):
     message = username + text
 
     # Get the configuration for silenced messages for this DAG
-    messages_to_silence = Variable.get(
+    silenced_notifications: list[SilencedSlackNotification] = Variable.get(
         "silenced_slack_notifications", default_var={}, deserialize_json=True
-    ).get(dag_id, {})
+    ).get(dag_id, [])
 
-    return bool(messages_to_silence) and any(
-        predicate.lower() in message.lower()
-        for predicate in messages_to_silence.values()
+    return bool(silenced_notifications) and any(
+        notification["predicate"].lower() in message.lower()
+        for notification in silenced_notifications
     )
 
 

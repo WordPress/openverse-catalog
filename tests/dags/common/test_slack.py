@@ -344,54 +344,72 @@ def test_should_send_message_is_false_without_hook(http_hook_mock):
         # dag_id is not in silenced_notifications
         (
             {
-                "another_dag_id": {
-                    "https://github.com/WordPress/openverse/issues/1": "KeyError"
-                }
+                "another_dag_id": [
+                    {
+                        "issue": "https://github.com/WordPress/openverse/issues/1",
+                        "predicate": "KeyError",
+                    }
+                ]
             },
             False,
         ),
         # dag_id is configured, but text and username do not match
         (
             {
-                "test_dag_id": {
-                    "https://github.com/WordPress/openverse/issues/1": "Unit codes"
-                }
+                "test_dag_id": [
+                    {
+                        "issue": "https://github.com/WordPress/openverse/issues/1",
+                        "predicate": "Unit codes",
+                    }
+                ]
             },
             False,
         ),
         # text matches
         (
             {
-                "test_dag_id": {
-                    "https://github.com/WordPress/openverse/issues/1": "KeyError: 'image'"
-                }
+                "test_dag_id": [
+                    {
+                        "issue": "https://github.com/WordPress/openverse/issues/1",
+                        "predicate": "KeyError: 'image'",
+                    }
+                ]
             },
             True,
         ),
         # a substring of text matches
         (
             {
-                "test_dag_id": {
-                    "https://github.com/WordPress/openverse/issues/1": "KeyError"
-                }
+                "test_dag_id": [
+                    {
+                        "issue": "https://github.com/WordPress/openverse/issues/1",
+                        "predicate": "KeyError",
+                    }
+                ]
             },
             True,
         ),
         # matches are case-insensitive
         (
             {
-                "test_dag_id": {
-                    "https://github.com/WordPress/openverse/issues/1": "kEYErrOR"
-                }
+                "test_dag_id": [
+                    {
+                        "issue": "https://github.com/WordPress/openverse/issues/1",
+                        "predicate": "kEYErrOR",
+                    }
+                ]
             },
             True,
         ),
         # username matches
         (
             {
-                "test_dag_id": {
-                    "https://github.com/WordPress/openverse/issues/1": "Airflow DAG Failure"
-                }
+                "test_dag_id": [
+                    {
+                        "issue": "https://github.com/WordPress/openverse/issues/1",
+                        "predicate": "Airflow DAG Failure",
+                    }
+                ]
             },
             True,
         ),
