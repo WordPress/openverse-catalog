@@ -2,7 +2,7 @@ import os
 from datetime import datetime, timedelta
 from typing import Literal
 
-from common import slack
+from common import on_failure_callback
 
 
 AUDIO = "audio"
@@ -22,7 +22,7 @@ DAG_DEFAULT_ARGS = {
     "retries": 2,
     "retry_delay": timedelta(minutes=5),
     "execution_timeout": timedelta(hours=1),
-    "on_failure_callback": slack.on_failure_callback,
+    "on_failure_callback": on_failure_callback.integrated,
 }
 XCOM_PULL_TEMPLATE = "{{{{ ti.xcom_pull(task_ids='{}', key='{}') }}}}"
 
