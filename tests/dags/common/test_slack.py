@@ -345,7 +345,7 @@ def test_should_send_message_is_false_without_hook(http_hook_mock):
         (
             {
                 "another_dag_id": {
-                    "https://github.com/WordPress/openverse/issues/1": ["KeyError"]
+                    "https://github.com/WordPress/openverse/issues/1": "KeyError"
                 }
             },
             False,
@@ -354,10 +354,7 @@ def test_should_send_message_is_false_without_hook(http_hook_mock):
         (
             {
                 "test_dag_id": {
-                    "https://github.com/WordPress/openverse/issues/1": [
-                        "Authorization Failed",
-                        "Unit codes",
-                    ]
+                    "https://github.com/WordPress/openverse/issues/1": "Unit codes"
                 }
             },
             False,
@@ -366,10 +363,7 @@ def test_should_send_message_is_false_without_hook(http_hook_mock):
         (
             {
                 "test_dag_id": {
-                    "https://github.com/WordPress/openverse/issues/1": [
-                        "Authorization Failed",
-                        "KeyError: 'image'",
-                    ]
+                    "https://github.com/WordPress/openverse/issues/1": "KeyError: 'image'"
                 }
             },
             True,
@@ -378,10 +372,7 @@ def test_should_send_message_is_false_without_hook(http_hook_mock):
         (
             {
                 "test_dag_id": {
-                    "https://github.com/WordPress/openverse/issues/1": [
-                        "Authorization Failed",
-                        "KeyError",
-                    ]
+                    "https://github.com/WordPress/openverse/issues/1": "KeyError"
                 }
             },
             True,
@@ -390,10 +381,7 @@ def test_should_send_message_is_false_without_hook(http_hook_mock):
         (
             {
                 "test_dag_id": {
-                    "https://github.com/WordPress/openverse/issues/1": [
-                        "Authorization Failed",
-                        "kEYErrOR",
-                    ]
+                    "https://github.com/WordPress/openverse/issues/1": "kEYErrOR"
                 }
             },
             True,
@@ -402,10 +390,7 @@ def test_should_send_message_is_false_without_hook(http_hook_mock):
         (
             {
                 "test_dag_id": {
-                    "https://github.com/WordPress/openverse/issues/1": [
-                        "Airflow DAG Failure",
-                        "Authorization Failed",
-                    ]
+                    "https://github.com/WordPress/openverse/issues/1": "Airflow DAG Failure"
                 }
             },
             True,

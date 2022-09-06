@@ -281,11 +281,11 @@ def should_silence_message(text, username, dag_id):
     # Get the configuration for silenced messages for this DAG
     messages_to_silence = Variable.get(
         "silenced_slack_notifications", default_var={}, deserialize_json=True
-    ).get(dag_id)
+    ).get(dag_id, {})
 
     return bool(messages_to_silence) and any(
         predicate.lower() in message.lower()
-        for predicate in sum(messages_to_silence.values(), [])
+        for predicate in messages_to_silence.values()
     )
 
 
