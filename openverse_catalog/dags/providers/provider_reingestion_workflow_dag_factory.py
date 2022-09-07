@@ -14,10 +14,10 @@ import importlib
 
 from common.helpers import IngestionInput, get_reingestion_day_list_list
 from providers.provider_dag_factory import create_day_partitioned_ingestion_dag
-from providers.provider_ingestion_workflows import PROVIDER_INGESTION_WORKFLOWS
+from providers.provider_reingestion_workflows import PROVIDER_REINGESTION_WORKFLOWS
 
 
-for config in PROVIDER_INGESTION_WORKFLOWS:
+for config in PROVIDER_REINGESTION_WORKFLOWS:
     provider_script = importlib.import_module(
         f"providers.provider_api_scripts.{config.provider_script}"
     )
