@@ -70,11 +70,11 @@ def create_loading_table(
     """
     load_table = _get_load_table_name(identifier, media_type=media_type)
     postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
-    postgres.run(PG_SET_NAME_TEMPLATE.format(task_run_id))
     loading_table_columns = TSV_COLUMNS[media_type]
     columns_definition = f"{create_column_definitions(loading_table_columns)}"
     table_creation_query = dedent(
         f"""
+    select pg_sleep(120);
     CREATE TABLE public.{load_table}(
     {columns_definition});
     """
@@ -95,6 +95,7 @@ def create_loading_table(
             )
         )
 
+    postgres.run(PG_SET_NAME_TEMPLATE.format(task_run_id))
     postgres.run(table_creation_query)
     postgres.run(f"ALTER TABLE public.{load_table} OWNER TO {DB_USER_NAME};")
     create_index(col.PROVIDER.db_name, None)

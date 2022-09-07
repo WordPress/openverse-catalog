@@ -55,6 +55,7 @@ from airflow.operators.python import PythonOperator
 from airflow.utils.trigger_rule import TriggerRule
 from common.constants import DAG_DEFAULT_ARGS, POSTGRES_CONN_ID
 from common.loader import loader, paths, sql
+from common.on_failure_callback import get_task_app_name
 
 
 DAG_ID = "tsv_to_postgres_loader"
@@ -105,11 +106,13 @@ with dag:
         task_id="create_loading_table",
         python_callable=sql.create_loading_table,
         op_kwargs={
+            "task_run_id": get_task_app_name("{{task_instance_key_str}}"),
             "postgres_conn_id": POSTGRES_CONN_ID,
             "identifier": TIMESTAMP_TEMPLATE,
             "media_type": media_type_xcom,
         },
         doc_md="Create a temporary loading table for ingesting data from a TSV.",
+        execution_timeout=timedelta(seconds=15),
     )
     copy_to_s3 = PythonOperator(
         task_id="copy_to_s3",
