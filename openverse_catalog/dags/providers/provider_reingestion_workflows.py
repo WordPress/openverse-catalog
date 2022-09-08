@@ -67,7 +67,7 @@ PROVIDER_REINGESTION_WORKFLOWS = [
     ProviderReingestionWorkflow(
         dag_id="wikimedia_reingestion_workflow",
         provider_script="wikimedia_commons",
-        ingester_class=WikimediaCommonsDataIngester,
+        ingestion_callable=WikimediaCommonsDataIngester,
         pull_timeout=timedelta(minutes=90),
         media_types=("image", "audio"),
         max_active_tasks=2,

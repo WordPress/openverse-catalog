@@ -10,19 +10,12 @@ this will only pull data for each of the given days and create the tsv; the
 loading step is not yet wired up.
 """
 
-import importlib
-
 from common.helpers import IngestionInput, get_reingestion_day_list_list
 from providers.provider_dag_factory import create_day_partitioned_ingestion_dag
 from providers.provider_reingestion_workflows import PROVIDER_REINGESTION_WORKFLOWS
 
 
 for config in PROVIDER_REINGESTION_WORKFLOWS:
-    provider_script = importlib.import_module(
-        f"providers.provider_api_scripts.{config.provider_script}"
-    )
-    ingestion_callable = config.ingester_class or provider_script.main
-
     reingestion_days = get_reingestion_day_list_list(
         [
             IngestionInput(1, config.daily_list_length),
@@ -35,15 +28,5 @@ for config in PROVIDER_REINGESTION_WORKFLOWS:
     )
 
     globals()[config.dag_id] = create_day_partitioned_ingestion_dag(
-        config.dag_id,
-        ingestion_callable,
-        reingestion_days,
-        config.start_date,
-        config.max_active_runs,
-        config.max_active_tasks,
-        config.default_args,
-        config.dagrun_timeout,
-        config.pull_timeout,
-        config.load_timeout,
-        config.media_types,
+        config, reingestion_days
     )

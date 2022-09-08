@@ -7,6 +7,7 @@ from airflow.models import DagRun, TaskInstance
 from airflow.utils.session import create_session
 from pendulum import now
 from providers import provider_dag_factory
+from providers.provider_reingestion_workflows import ProviderReingestionWorkflow
 
 from tests.conftest import mark_extended
 
@@ -70,8 +71,11 @@ def test_skipped_pull_data_runs_successfully(side_effect, clean_db):
 
 def test_create_day_partitioned_ingestion_dag_with_single_layer_dependencies():
     dag = provider_dag_factory.create_day_partitioned_ingestion_dag(
-        "test_dag",
-        print,
+        ProviderReingestionWorkflow(
+            dag_id="test_dag",
+            provider_script="provider_data_ingester",
+            ingestion_callable=print,
+        ),
         [[1, 2]],
     )
     # First task in the ingestion step for today
@@ -93,8 +97,11 @@ def test_create_day_partitioned_ingestion_dag_with_single_layer_dependencies():
 
 def test_create_day_partitioned_ingestion_dag_with_multi_layer_dependencies():
     dag = provider_dag_factory.create_day_partitioned_ingestion_dag(
-        "test_dag",
-        print,
+        ProviderReingestionWorkflow(
+            dag_id="test_dag",
+            provider_script="provider_data_ingester",
+            ingestion_callable=print,
+        ),
         [[1, 2], [3, 4, 5]],
     )
     today_id = "ingest_data.generate_image_filename"
