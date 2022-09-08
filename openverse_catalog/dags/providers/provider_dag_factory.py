@@ -123,9 +123,7 @@ def create_provider_api_workflow_dag(conf: ProviderWorkflow):
         ingest_data, ingestion_metrics = create_ingestion_workflow(conf)
 
         report_load_completion = create_report_load_completion(
-            conf.dag_id,
-            conf.media_types,
-            ingestion_metrics,
+            conf.dag_id, conf.media_types, ingestion_metrics, conf.dated
         )
 
         ingest_data >> report_load_completion
@@ -280,17 +278,21 @@ def create_report_load_completion(
     dag_id,
     media_types,
     ingestion_metrics,
+    dated,
 ):
     return PythonOperator(
         task_id=("report_load_completion"),
         python_callable=reporting.report_completion,
         op_kwargs={
-            "provider_name": dag_id,
+            "dag_id": dag_id,
             "media_types": media_types,
             "duration": ingestion_metrics["duration"],
             "record_counts_by_media_type": ingestion_metrics[
                 "record_counts_by_media_type"
             ],
+            "dated": dated,
+            "date_range_start": "{{ data_interval_start | ds }}",
+            "date_range_end": "{{ data_interval_end | ds }}",
         },
         trigger_rule=TriggerRule.ALL_DONE,
     )
@@ -355,9 +357,7 @@ def create_day_partitioned_ingestion_dag(
         # Create a single report_load_completion task, passing in the list of duration
         # and counts data for each completed task.
         report_load_completion = create_report_load_completion(
-            conf.dag_id,
-            conf.media_types,
-            ingestion_metrics,
+            conf.dag_id, conf.media_types, ingestion_metrics, conf.dated
         )
 
         # report_load_completion is downstream of all the ingestion TaskGroups in the

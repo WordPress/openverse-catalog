@@ -85,7 +85,7 @@ def clean_record_counts(
 
 
 def report_completion(
-    provider_name: str,
+    dag_id: str,
     media_types: Sequence[str],
     duration: float | str | list[float] | None,
     record_counts_by_media_type: MediaTypeRecordMetrics | list[MediaTypeRecordMetrics],
@@ -147,7 +147,7 @@ def report_completion(
 
     # Collect data into a single message
     message = f"""
-*Provider*: `{provider_name}`
+*DAG*: `{dag_id}`
 *Date range*: {date_range}
 *Duration of data pull task*: {duration or '_No data_'}
 *Number of records upserted per media type*:
