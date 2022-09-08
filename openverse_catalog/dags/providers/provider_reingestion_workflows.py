@@ -39,7 +39,7 @@ class ProviderReingestionWorkflow(ProviderWorkflow):
 
     # Override default ProviderWorkflow configurations
     schedule_string: str = "@daily"
-    dated = True
+    dated: bool = True
 
 
 PROVIDER_REINGESTION_WORKFLOWS = [

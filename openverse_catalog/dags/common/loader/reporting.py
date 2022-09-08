@@ -43,7 +43,7 @@ class RecordMetrics(NamedTuple):
 MediaTypeRecordMetrics = dict[str, RecordMetrics]
 
 
-def humanize_time_duration(seconds: float) -> str:
+def humanize_time_duration(seconds: float | int) -> str:
     if seconds == 0:
         return "inf"
     elif seconds < 1:
@@ -62,7 +62,7 @@ def clean_duration(duration: float | list[float]):
         duration = sum([x for x in duration if x])
 
     # Truncate the duration value if it's provided
-    if isinstance(duration, float):
+    if isinstance(duration, float) or isinstance(duration, int):
         duration = humanize_time_duration(duration)
 
     return duration
