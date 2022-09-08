@@ -38,7 +38,7 @@ class ProviderReingestionWorkflow(ProviderWorkflow):
     dagrun_timeout: timedelta = timedelta(hours=23)
 
     # Override default ProviderWorkflow configurations
-    schedule_string: str = "@daily"
+    schedule_string: str = "@weekly"
     dated: bool = True
 
 
