@@ -420,8 +420,6 @@ def _build_ingest_operator_list_list(
     executions of the `main_function` allowed; that is set by the
     `max_active_tasks` parameter.
     """
-    # TODO: This forces the reingestion workflow to include the current date in
-    # reingestion. Should this be removed?
     if reingestion_day_list_list[0] != [0]:
         reingestion_day_list_list = [[0]] + reingestion_day_list_list
 
