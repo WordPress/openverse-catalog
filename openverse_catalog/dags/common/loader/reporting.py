@@ -56,7 +56,7 @@ def humanize_time_duration(seconds: float) -> str:
     return ", ".join(parts)
 
 
-def clean_duration(duration):
+def clean_duration(duration: float | list[float]):
     # If a list of duration values is provided, get the sum of all non-None values
     if isinstance(duration, list):
         duration = sum([x for x in duration if x])
@@ -68,7 +68,10 @@ def clean_duration(duration):
     return duration
 
 
-def clean_record_counts(record_counts_by_media_type, media_types):
+def clean_record_counts(
+    record_counts_by_media_type: MediaTypeRecordMetrics | list[MediaTypeRecordMetrics],
+    media_types: Sequence[str],
+):
     # If a list of record_counts dicts is provided, sum all of the individual values
     if isinstance(record_counts_by_media_type, list):
         return {
@@ -84,8 +87,8 @@ def clean_record_counts(record_counts_by_media_type, media_types):
 def report_completion(
     provider_name: str,
     media_types: Sequence[str],
-    duration: float | str | None,
-    record_counts_by_media_type: MediaTypeRecordMetrics,
+    duration: float | str | list[float] | None,
+    record_counts_by_media_type: MediaTypeRecordMetrics | list[MediaTypeRecordMetrics],
     dated: bool = False,
     date_range_start: str | None = None,
     date_range_end: str | None = None,
