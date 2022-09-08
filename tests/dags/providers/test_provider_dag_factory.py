@@ -8,6 +8,7 @@ from airflow.utils.session import create_session
 from pendulum import now
 from providers import provider_dag_factory
 from providers.provider_reingestion_workflows import ProviderReingestionWorkflow
+from providers.provider_workflows import ProviderWorkflow
 
 from tests.conftest import mark_extended
 
@@ -58,12 +59,14 @@ def test_skipped_pull_data_runs_successfully(side_effect, clean_db):
     ) as pull_media_mock:
         generate_filenames_mock.side_effect = _generate_tsv_mock
         pull_media_mock.side_effect = side_effect
-        dag = provider_dag_factory.create_provider_api_workflow(
-            dag_id=DAG_ID,
-            ingestion_callable=None,
-            default_args={"retries": 0, "on_failure_callback": None},
-            schedule_string="@once",
-            dated=False,
+        dag = provider_dag_factory.create_provider_api_workflow_dag(
+            ProviderWorkflow(
+                provider_script="provider_data_ingester",
+                ingestion_callable=print,
+                dag_id=DAG_ID,
+                default_args={"retries": 0, "on_failure_callback": None},
+                schedule_string="@once",
+            )
         )
         # Pendulum must be used here in order for Airflow to run this successfully
         dag.run(start_date=now(), executor=DebugExecutor())
