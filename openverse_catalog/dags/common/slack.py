@@ -271,7 +271,7 @@ def should_send_message(
     # Exit early if we aren't on production or if force alert is not set
     environment = Variable.get("environment", default_var="dev")
     force_message = Variable.get(
-        "slack_message_override", default_var={}, deserialize_json=True
+        "slack_message_override", default_var=False, deserialize_json=True
     )
     return environment == "prod" or force_message
 
