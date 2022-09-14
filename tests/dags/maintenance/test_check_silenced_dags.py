@@ -2,7 +2,7 @@ from unittest import mock
 
 import pytest
 from airflow.exceptions import AirflowException, AirflowSkipException
-from maintenance.check_silenced_dags.check_silenced_dags import (
+from maintenance.check_silenced_dags import (
     check_configuration,
     get_dags_with_closed_issues,
     get_issue_info,
