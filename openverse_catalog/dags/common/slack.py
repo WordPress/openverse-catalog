@@ -228,31 +228,23 @@ class SlackMessage:
         return response
 
 
-def send_message(
-    text: str,
-    dag_id: str,
-    username: str = "Airflow",
-    icon_emoji: str = ":airflow:",
-    markdown: bool = True,
-    unfurl_links: bool = True,
-    unfurl_media: bool = True,
-    http_conn_id: str = SLACK_NOTIFICATIONS_CONN_ID,
-) -> None:
-    """Send a simple slack message, convenience message for short/simple messages."""
-    log.info(text)
-    if not should_send_message(text, username, dag_id, http_conn_id):
-        return
+def should_silence_message(text, username, dag_id):
+    """
+    Checks the `silenced_slack_notifications` Airflow variable to see if the message
+    should be silenced for this DAG.
+    """
+    # Match on message text and username
+    message = username + text
 
-    environment = Variable.get("environment", default_var="dev")
-    s = SlackMessage(
-        f"{username} | {environment}",
-        icon_emoji,
-        unfurl_links,
-        unfurl_media,
-        http_conn_id=http_conn_id,
+    # Get the configuration for silenced messages for this DAG
+    silenced_notifications: list[SilencedSlackNotification] = Variable.get(
+        "silenced_slack_notifications", default_var={}, deserialize_json=True
+    ).get(dag_id, [])
+
+    return bool(silenced_notifications) and any(
+        notification["predicate"].lower() in message.lower()
+        for notification in silenced_notifications
     )
-    s.add_text(text, plain_text=not markdown)
-    s.send(text)
 
 
 def should_send_message(
@@ -284,23 +276,31 @@ def should_send_message(
     return environment == "prod" or force_message
 
 
-def should_silence_message(text, username, dag_id):
-    """
-    Checks the `silenced_slack_notifications` Airflow variable to see if the message
-    should be silenced for this DAG.
-    """
-    # Match on message text and username
-    message = username + text
+def send_message(
+    text: str,
+    dag_id: str,
+    username: str = "Airflow",
+    icon_emoji: str = ":airflow:",
+    markdown: bool = True,
+    unfurl_links: bool = True,
+    unfurl_media: bool = True,
+    http_conn_id: str = SLACK_NOTIFICATIONS_CONN_ID,
+) -> None:
+    """Send a simple slack message, convenience message for short/simple messages."""
+    log.info(text)
+    if not should_send_message(text, username, dag_id, http_conn_id):
+        return
 
-    # Get the configuration for silenced messages for this DAG
-    silenced_notifications: list[SilencedSlackNotification] = Variable.get(
-        "silenced_slack_notifications", default_var={}, deserialize_json=True
-    ).get(dag_id, [])
-
-    return bool(silenced_notifications) and any(
-        notification["predicate"].lower() in message.lower()
-        for notification in silenced_notifications
+    environment = Variable.get("environment", default_var="dev")
+    s = SlackMessage(
+        f"{username} | {environment}",
+        icon_emoji,
+        unfurl_links,
+        unfurl_media,
+        http_conn_id=http_conn_id,
     )
+    s.add_text(text, plain_text=not markdown)
+    s.send(text)
 
 
 def send_alert(
