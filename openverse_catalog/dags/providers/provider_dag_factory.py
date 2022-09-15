@@ -66,7 +66,6 @@ import logging
 import os
 
 from airflow import DAG
-from airflow.models.baseoperator import cross_downstream
 from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import PythonOperator
 from airflow.utils.task_group import TaskGroup
@@ -298,8 +297,8 @@ def create_provider_api_workflow_dag(conf: ProviderWorkflow):
     return dag
 
 
-def _build_ingest_operator_list_list(
-    reingestion_day_list_list: list[list[int]], conf: ProviderReingestionWorkflow
+def _build_partitioned_ingest_workflows(
+    partitioned_reingestion_days: list[list[int]], conf: ProviderReingestionWorkflow
 ):
     """
     Builds a list of lists of ingestion tasks, parameterized by the given
@@ -307,18 +306,18 @@ def _build_ingest_operator_list_list(
 
     Required Arguments:
 
-    conf:                       ProviderReingestionWorkflow configuration
-                                object used to configure the ingestion tasks.
-    reingestion_day_list_list:  list of lists of integers. It gives the
-                                set of days before the current execution
-                                date of the DAG for which the
-                                `main_function` should be run, and
-                                describes how the calls to the function
-                                should be prioritized.
+    conf:                          ProviderReingestionWorkflow configuration
+                                   object used to configure the ingestion tasks.
+    partitioned_reingestion_days:  list of lists of integers. It gives the
+                                   set of days before the current execution
+                                   date of the DAG for which the
+                                   `main_function` should be run, and
+                                   describes how the calls to the function
+                                   should be prioritized.
 
     Calculation of ingestion dates:
 
-    The `reingestion_day_list_list` should have the form
+    The `partitioned_reingestion_days` should have the form
         [
             [int, ..., int],
             [int, ..., int],
@@ -331,7 +330,7 @@ def _build_ingest_operator_list_list(
     date minus the number of days given by integers in the first list
     (in an arbitrary order, and possibly in parallel if so configured),
     then for the dates calculated from the second list, and so on.  For
-    example, given the `reingestion_day_list_list`
+    example, given the `partitioned_reingestion_days`
         [
             [1, 2, 3],
             [8, 13, 18],
@@ -351,35 +350,35 @@ def _build_ingest_operator_list_list(
     executions of the `main_function` allowed; that is set by the
     `max_active_tasks` parameter.
     """
-    if reingestion_day_list_list[0] != [0]:
-        reingestion_day_list_list = [[0]] + reingestion_day_list_list
+    if partitioned_reingestion_days[0] != [0]:
+        partitioned_reingestion_days = [[0]] + partitioned_reingestion_days
 
-    operator_list_list = []
+    partitioned_workflows = []
     duration_list = []
     record_counts_by_media_type_list = []
 
-    for L in reingestion_day_list_list:
-        operator_list = []
-        for day_shift in L:
+    for partition in partitioned_reingestion_days:
+        workflow_list = []
+        for day_shift in partition:
             ingest_data, ingestion_metrics = create_ingestion_workflow(conf, day_shift)
-            operator_list.append(ingest_data)
+            workflow_list.append(ingest_data)
             duration_list.append(ingestion_metrics["duration"])
             record_counts_by_media_type_list.append(
                 ingestion_metrics["record_counts_by_media_type"]
             )
 
-        operator_list_list.append(operator_list)
+        partitioned_workflows.append(workflow_list)
 
     total_ingestion_metrics = {
         "duration": duration_list,
         "record_counts_by_media_type": record_counts_by_media_type_list,
     }
 
-    return operator_list_list, total_ingestion_metrics
+    return partitioned_workflows, total_ingestion_metrics
 
 
 def create_day_partitioned_reingestion_dag(
-    conf: ProviderReingestionWorkflow, reingestion_day_list_list: list[list[int]]
+    conf: ProviderReingestionWorkflow, partitioned_reingestion_days: list[list[int]]
 ):
     """
     Given a `conf` object and `reingestion_day_list_list`, this
@@ -416,24 +415,24 @@ def create_day_partitioned_reingestion_dag(
     )
     with dag:
         # Generate a list of lists of ingestion TaskGroups for each day of reingestion.
-        ingest_operator_list_list, ingestion_metrics = _build_ingest_operator_list_list(
-            reingestion_day_list_list, conf
-        )
+        (
+            partitioned_ingest_workflows,
+            ingestion_metrics,
+        ) = _build_partitioned_ingest_workflows(partitioned_reingestion_days, conf)
 
-        # For each 'level', make a wait task that waits for all of the reingestion taks
-        # at that level to complete.
-        for i in range(len(ingest_operator_list_list) - 1):
-            wait_operator = EmptyOperator(
-                task_id=f"wait_L{i}", trigger_rule=TriggerRule.ALL_DONE
+        # For each 'level', make a gather task that waits for all of the reingestion
+        # tasks at that level to complete.
+        for i in range(len(partitioned_ingest_workflows) - 1):
+            gather_operator = EmptyOperator(
+                task_id=f"gather_L{i}", trigger_rule=TriggerRule.ALL_DONE
             )
 
-            # Set the waiter downstream of all ingestion TaskGroups in the ith list.
-            cross_downstream(ingest_operator_list_list[i], [wait_operator])
+            # Set gather task downstream of all ingestion TaskGroups in the ith list.
+            partitioned_ingest_workflows[i] >> gather_operator
 
-            # Set the waiter upstream of all ingestion TaskGroups in the i+1th list.
-            # This gates the tasks behind the waiter.
-            wait_operator >> ingest_operator_list_list[i + 1]
-        ingest_operator_list_list[-1]
+            # Set gather task upstream of all ingestion TaskGroups in the i+1th list.
+            # This gates the tasks at each level.
+            gather_operator >> partitioned_ingest_workflows[i + 1]
 
         # Create a single report_load_completion task, passing in the list of duration
         # and counts data for each completed task.
@@ -443,6 +442,6 @@ def create_day_partitioned_reingestion_dag(
 
         # report_load_completion is downstream of all the ingestion TaskGroups in the
         # final list.
-        cross_downstream(ingest_operator_list_list[-1], [report_load_completion])
+        partitioned_ingest_workflows[-1] >> report_load_completion
 
     return dag

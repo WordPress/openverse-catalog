@@ -10,13 +10,13 @@ this will only pull data for each of the given days and create the tsv; the
 loading step is not yet wired up.
 """
 
-from common.helpers import IngestionInput, get_reingestion_day_list_list
+from common.helpers import IngestionInput, get_partitioned_reingestion_days
 from providers.provider_dag_factory import create_day_partitioned_reingestion_dag
 from providers.provider_reingestion_workflows import PROVIDER_REINGESTION_WORKFLOWS
 
 
 for config in PROVIDER_REINGESTION_WORKFLOWS:
-    reingestion_days = get_reingestion_day_list_list(
+    partitioned_reingestion_days = get_partitioned_reingestion_days(
         [
             IngestionInput(1, config.daily_list_length),
             IngestionInput(7, config.weekly_list_length),
@@ -28,5 +28,5 @@ for config in PROVIDER_REINGESTION_WORKFLOWS:
     )
 
     globals()[config.dag_id] = create_day_partitioned_reingestion_dag(
-        config, reingestion_days
+        config, partitioned_reingestion_days
     )
