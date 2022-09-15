@@ -103,16 +103,14 @@ from tests.factories.github import make_issue
 def test_check_configuration(silenced_dags, dags_to_reenable, should_send_alert):
     with (
         mock.patch(
-            "maintenance.check_silenced_dags.check_silenced_dags.Variable",
+            "maintenance.check_silenced_dags.Variable",
             return_value=silenced_dags,
         ),
         mock.patch(
-            "maintenance.check_silenced_dags.check_silenced_dags.get_dags_with_closed_issues",
+            "maintenance.check_silenced_dags.get_dags_with_closed_issues",
             return_value=dags_to_reenable,
         ) as get_dags_with_closed_issues_mock,
-        mock.patch(
-            "maintenance.check_silenced_dags.check_silenced_dags.send_alert"
-        ) as send_alert_mock,
+        mock.patch("maintenance.check_silenced_dags.send_alert") as send_alert_mock,
     ):
         message = check_configuration("not_set")
         assert send_alert_mock.called == should_send_alert
@@ -120,7 +118,7 @@ def test_check_configuration(silenced_dags, dags_to_reenable, should_send_alert)
 
         # Called with correct dag_ids
         for dag_id, issue_url, predicate in dags_to_reenable:
-            assert f"<{issue_url}|{dag_id}: {predicate}>" in message
+            assert f"<{issue_url}|{dag_id}: '{predicate}'>" in message
 
 
 @pytest.mark.parametrize(
@@ -163,7 +161,7 @@ def test_get_dags_with_closed_issues(open_issues, closed_issues):
         return make_issue("closed")
 
     with mock.patch(
-        "maintenance.check_silenced_dags.check_silenced_dags.GitHubAPI.get_issue",
+        "maintenance.check_silenced_dags.GitHubAPI.get_issue",
     ) as MockGetIssue:
         MockGetIssue.side_effect = mock_get_issue
 
