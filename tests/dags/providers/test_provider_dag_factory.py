@@ -73,7 +73,7 @@ def test_skipped_pull_data_runs_successfully(side_effect, clean_db):
 
 
 def test_create_day_partitioned_ingestion_dag_with_single_layer_dependencies():
-    dag = provider_dag_factory.create_day_partitioned_ingestion_dag(
+    dag = provider_dag_factory.create_day_partitioned_reingestion_dag(
         ProviderReingestionWorkflow(
             dag_id="test_dag",
             provider_script="provider_data_ingester",
@@ -99,7 +99,7 @@ def test_create_day_partitioned_ingestion_dag_with_single_layer_dependencies():
 
 
 def test_create_day_partitioned_ingestion_dag_with_multi_layer_dependencies():
-    dag = provider_dag_factory.create_day_partitioned_ingestion_dag(
+    dag = provider_dag_factory.create_day_partitioned_reingestion_dag(
         ProviderReingestionWorkflow(
             dag_id="test_dag",
             provider_script="provider_data_ingester",

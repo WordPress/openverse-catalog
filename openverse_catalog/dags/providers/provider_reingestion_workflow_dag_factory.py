@@ -11,7 +11,7 @@ loading step is not yet wired up.
 """
 
 from common.helpers import IngestionInput, get_reingestion_day_list_list
-from providers.provider_dag_factory import create_day_partitioned_ingestion_dag
+from providers.provider_dag_factory import create_day_partitioned_reingestion_dag
 from providers.provider_reingestion_workflows import PROVIDER_REINGESTION_WORKFLOWS
 
 
@@ -27,6 +27,6 @@ for config in PROVIDER_REINGESTION_WORKFLOWS:
         ]
     )
 
-    globals()[config.dag_id] = create_day_partitioned_ingestion_dag(
+    globals()[config.dag_id] = create_day_partitioned_reingestion_dag(
         config, reingestion_days
     )
