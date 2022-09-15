@@ -114,7 +114,7 @@ def report_completion(
         - `date_range`: The range of time this ingestion covers. If the ingestion covers
           the entire provided dataset, "all" is provided
     """
-    aggregate_duration = isinstance(duration, list)
+    is_aggregate_duration = isinstance(duration, list)
 
     duration = clean_duration(duration)
     record_counts_by_media_type = clean_record_counts(
@@ -155,7 +155,7 @@ def report_completion(
 *Number of records upserted per media type*:
 {media_type_reports}"""
 
-    if aggregate_duration:
+    if is_aggregate_duration:
         # Add disclaimer about duration for aggregate data
         message += (
             "\n_Duration is the sum of the duration for each data pull task."
