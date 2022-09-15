@@ -85,17 +85,17 @@ def test_create_day_partitioned_ingestion_dag_with_single_layer_dependencies():
     today_pull_data_id = "ingest_data.generate_image_filename"
     # Last task in the ingestion step for today
     today_drop_table_id = "ingest_data.load_image_data.drop_loading_table"
-    wait0_id = "wait_L0"
+    gather0_id = "gather_L0"
     ingest1_id = "ingest_data_1.generate_image_filename_1"
     ingest2_id = "ingest_data_2.generate_image_filename_2"
     today_pull_task = dag.get_task(today_pull_data_id)
     assert today_pull_task.upstream_task_ids == set()
-    wait_task = dag.get_task(wait0_id)
-    assert wait_task.upstream_task_ids == {today_drop_table_id}
+    gather_task = dag.get_task(gather0_id)
+    assert gather_task.upstream_task_ids == {today_drop_table_id}
     ingest1_task = dag.get_task(ingest1_id)
-    assert ingest1_task.upstream_task_ids == {wait0_id}
+    assert ingest1_task.upstream_task_ids == {gather0_id}
     ingest2_task = dag.get_task(ingest2_id)
-    assert ingest2_task.upstream_task_ids == {wait0_id}
+    assert ingest2_task.upstream_task_ids == {gather0_id}
 
 
 def test_create_day_partitioned_ingestion_dag_with_multi_layer_dependencies():
@@ -108,22 +108,22 @@ def test_create_day_partitioned_ingestion_dag_with_multi_layer_dependencies():
         [[1, 2], [3, 4, 5]],
     )
     today_id = "ingest_data.generate_image_filename"
-    wait0_id = "wait_L0"
+    gather0_id = "gather_L0"
     ingest1_id = "ingest_data_1.generate_image_filename_1"
     ingest2_id = "ingest_data_2.generate_image_filename_2"
-    wait1_id = "wait_L1"
+    gather1_id = "gather_L1"
     ingest3_id = "ingest_data_3.generate_image_filename_3"
     ingest4_id = "ingest_data_4.generate_image_filename_4"
     ingest5_id = "ingest_data_5.generate_image_filename_5"
     today_task = dag.get_task(today_id)
     assert today_task.upstream_task_ids == set()
     ingest1_task = dag.get_task(ingest1_id)
-    assert ingest1_task.upstream_task_ids == {wait0_id}
+    assert ingest1_task.upstream_task_ids == {gather0_id}
     ingest2_task = dag.get_task(ingest2_id)
-    assert ingest2_task.upstream_task_ids == {wait0_id}
+    assert ingest2_task.upstream_task_ids == {gather0_id}
     ingest3_task = dag.get_task(ingest3_id)
-    assert ingest3_task.upstream_task_ids == {wait1_id}
+    assert ingest3_task.upstream_task_ids == {gather1_id}
     ingest4_task = dag.get_task(ingest4_id)
-    assert ingest4_task.upstream_task_ids == {wait1_id}
+    assert ingest4_task.upstream_task_ids == {gather1_id}
     ingest5_task = dag.get_task(ingest5_id)
-    assert ingest5_task.upstream_task_ids == {wait1_id}
+    assert ingest5_task.upstream_task_ids == {gather1_id}
