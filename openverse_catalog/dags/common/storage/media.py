@@ -54,9 +54,6 @@ class MediaStore(metaclass=abc.ABCMeta):
     output_dir:     String giving a path where `output_file` should be placed.
     buffer_length:  Integer giving the maximum number of media information rows
                     to store in memory before writing them to disk.
-
-    TODO: Output_file and output_dir are only used by retired DAGs as far as I can
-    tell. We should look into cleaning these up.
     """
 
     def __init__(
