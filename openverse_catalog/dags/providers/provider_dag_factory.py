@@ -409,7 +409,8 @@ def create_day_partitioned_reingestion_dag(
         start_date=conf.start_date,
         catchup=False,
         doc_md=conf.doc_md,
-        tags=["provider-reingestion"],
+        tags=["provider-reingestion"]
+        + [f"provider-reingestion: {media_type}" for media_type in conf.media_types],
         render_template_as_native_obj=True,
         user_defined_macros={"date_partition_for_prefix": date_partition_for_prefix},
     )
