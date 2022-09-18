@@ -14,9 +14,6 @@ SLACK_URL=$1
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 cd "$SCRIPT_DIR"
 
-# Get current commit hash
-current=$(git rev-parse HEAD)
-echo "$current"
 # Update origin
 git fetch origin
 # Get new commit hash *one commit ahead* of this one
