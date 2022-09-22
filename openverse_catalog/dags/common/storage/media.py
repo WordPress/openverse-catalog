@@ -59,7 +59,6 @@ class MediaStore(metaclass=abc.ABCMeta):
     def __init__(
         self,
         provider: Optional[str] = None,
-        date: Optional[str] = None,
         output_file: Optional[str] = None,
         output_dir: Optional[str] = None,
         buffer_length: int = 100,
@@ -70,7 +69,7 @@ class MediaStore(metaclass=abc.ABCMeta):
         self.provider = provider
         self.buffer_length = buffer_length
         self.output_path = self._initialize_output_path(
-            output_dir, output_file, provider, date=date
+            output_dir, output_file, provider
         )
         self.columns = None
         self._media_buffer = []
@@ -162,7 +161,6 @@ class MediaStore(metaclass=abc.ABCMeta):
         output_file: Optional[str],
         provider: Optional[str],
         version: Optional[str] = None,
-        date: Optional[str] = None,
     ) -> str:
         """Creates the path for the tsv file.
         If output_dir and output_file ar not given,
@@ -186,9 +184,6 @@ class MediaStore(metaclass=abc.ABCMeta):
             output_file = str(output_file)
         else:
             datetime_string = datetime.now().strftime("%Y%m%d%H%M%S")
-            # If an ingestion date is provided, append it to the filepath
-            if date is not None:
-                datetime_string += f"_{date}"
             output_file = (
                 f"{provider}_{self.media_type}_v{version}_{datetime_string}.tsv"
             )

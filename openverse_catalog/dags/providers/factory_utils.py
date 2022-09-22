@@ -147,7 +147,9 @@ def pull_media_wrapper(
 
 
 def date_partition_for_prefix(
-    schedule_interval: str | None, logical_date: datetime
+    schedule_interval: str | None,
+    logical_date: datetime,
+    reingestion_date: datetime,
 ) -> str:
     """
     Given a schedule interval and the logical date for a DAG run, determine an
@@ -158,6 +160,12 @@ def date_partition_for_prefix(
         - Hourly -> `year=YYYY/month=MM/day=DD`
         - Daily -> `year=YYYY/month=MM`
         - None/yearly/monthly/weekly/other -> `year=YYYY`
+
+    If a reingestion_date is supplied, it is further partitioned by the reingestion
+    date itself to avoid filename collisions.
+
+    Example:
+        - `year=YYYY/month=MM/day=DD/YYYY-MM-DD`
     """
     hourly_airflow = "@hourly"
     hourly_cron = cron_presets[hourly_airflow]
@@ -174,5 +182,9 @@ def date_partition_for_prefix(
     # Add day to hourly cases
     if schedule_interval in {hourly_airflow, hourly_cron}:
         prefix += f"/day={logical_date.day:02}"
+
+    # Further partition by reingestion date if supplied
+    if reingestion_date is not None:
+        prefix += f"/{reingestion_date}"
 
     return prefix

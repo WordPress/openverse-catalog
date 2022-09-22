@@ -64,6 +64,7 @@ https://github.com/creativecommons/cccatalog/issues/334)
 """
 import logging
 import os
+from string import Template
 
 from airflow import DAG
 from airflow.operators.empty import EmptyOperator
@@ -88,11 +89,16 @@ DB_CONN_ID = os.getenv("OPENLEDGER_CONN_ID", "postgres_openledger_testing")
 AWS_CONN_ID = os.getenv("AWS_CONN_ID", "no_aws_conn_id")
 OPENVERSE_BUCKET = os.getenv("OPENVERSE_BUCKET")
 OUTPUT_DIR_PATH = os.path.realpath(os.getenv("OUTPUT_DIR", "/tmp/"))
-DATE_RANGE_ARG_TEMPLATE = "{{{{ macros.ds_add(ds, -{}) }}}}"
-DATE_PARTITION_ARG_TEMPLATE = "{media_type}/{provider_name}/{{{{ date_partition_for_prefix(dag.schedule_interval, dag_run.logical_date) }}}}"  # noqa
+_DATE_RANGE_INNER_TEMPLATE = "macros.ds_add(ds, -{} )"
+DATE_RANGE_ARG_TEMPLATE = "{{{{" + _DATE_RANGE_INNER_TEMPLATE + "}}}}"
+DATE_PARTITION_ARG_TEMPLATE = Template(
+    "$media_type/$provider_name/{{ date_partition_for_prefix(dag.schedule_interval, dag_run.logical_date, $reingestion_date ) }}"  # noqa
+)
 
 
-def create_ingestion_workflow(conf: ProviderWorkflow, day_shift: int = 0):
+def create_ingestion_workflow(
+    conf: ProviderWorkflow, day_shift: int = 0, is_reingestion: bool = False
+):
     """
     Creates a TaskGroup that performs the ingestion tasks, first pulling and then
     loading data. Returns the TaskGroup, and a dictionary of reporting metrics.
@@ -105,6 +111,7 @@ def create_ingestion_workflow(conf: ProviderWorkflow, day_shift: int = 0):
 
     day_shift: integer giving the number of days before the current execution date
                for which ingestion should run (if `conf.dated==True`).
+    is_reingestion: is this workflow a reingestion workflow
     """
 
     def append_day_shift(id_str):
@@ -175,9 +182,14 @@ def create_ingestion_workflow(conf: ProviderWorkflow, day_shift: int = 0):
                             generate_filenames.task_id, f"{media_type}_tsv"
                         ),
                         "s3_bucket": OPENVERSE_BUCKET,
-                        "s3_prefix": DATE_PARTITION_ARG_TEMPLATE.format(
+                        "s3_prefix": DATE_PARTITION_ARG_TEMPLATE.substitute(
                             media_type=media_type,
                             provider_name=provider_name,
+                            reingestion_date=_DATE_RANGE_INNER_TEMPLATE.format(
+                                day_shift
+                            )
+                            if is_reingestion
+                            else None,
                         ),
                         "aws_conn_id": AWS_CONN_ID,
                     },
@@ -360,7 +372,9 @@ def _build_partitioned_ingest_workflows(
     for partition in partitioned_reingestion_days:
         workflow_list = []
         for day_shift in partition:
-            ingest_data, ingestion_metrics = create_ingestion_workflow(conf, day_shift)
+            ingest_data, ingestion_metrics = create_ingestion_workflow(
+                conf, day_shift, is_reingestion=True
+            )
             workflow_list.append(ingest_data)
             duration_list.append(ingestion_metrics["duration"])
             record_counts_by_media_type_list.append(
