@@ -165,7 +165,9 @@ def date_partition_for_prefix(
     date itself to avoid filename collisions.
 
     Example:
-        - `year=YYYY/month=MM/day=DD/YYYY-MM-DD`
+        - Hourly -> `year=YYYY/month=MM/day=DD/reingestion=YYYY-MM-DD`
+        - Daily -> `year=YYYY/month=MM/reingestion=YYYY-MM-DD`
+        - None/yearly/monthly/weekly/other -> `year=YYYY/reingestion=YYYY-MM-DD`
     """
     hourly_airflow = "@hourly"
     hourly_cron = cron_presets[hourly_airflow]
@@ -185,6 +187,6 @@ def date_partition_for_prefix(
 
     # Further partition by reingestion date if supplied
     if reingestion_date is not None:
-        prefix += f"/{reingestion_date}"
+        prefix += f"/reingestion={reingestion_date}"
 
     return prefix
