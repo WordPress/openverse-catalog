@@ -116,7 +116,7 @@ def create_ingestion_workflow(
 
     def append_day_shift(id_str):
         # Appends the day_shift to an id if it is non-zero
-        return f"{id_str}{f'_{day_shift}' if day_shift else ''}"
+        return f"{id_str}{f'_day_shift_{day_shift}' if day_shift else ''}"
 
     with TaskGroup(group_id=append_day_shift("ingest_data")) as ingest_data:
         media_type_name = "mixed" if len(conf.media_types) > 1 else conf.media_types[0]
@@ -438,7 +438,7 @@ def create_day_partitioned_reingestion_dag(
         # tasks at that level to complete.
         for i in range(len(partitioned_ingest_workflows) - 1):
             gather_operator = EmptyOperator(
-                task_id=f"gather_L{i}", trigger_rule=TriggerRule.ALL_DONE
+                task_id=f"gather_partition_{i}", trigger_rule=TriggerRule.ALL_DONE
             )
 
             # Set gather task downstream of all ingestion TaskGroups in the ith list.
