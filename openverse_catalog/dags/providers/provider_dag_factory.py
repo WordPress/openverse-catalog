@@ -92,7 +92,7 @@ OUTPUT_DIR_PATH = os.path.realpath(os.getenv("OUTPUT_DIR", "/tmp/"))
 _DATE_RANGE_INNER_TEMPLATE = "macros.ds_add(ds, -{} )"
 DATE_RANGE_ARG_TEMPLATE = "{{{{" + _DATE_RANGE_INNER_TEMPLATE + "}}}}"
 DATE_PARTITION_ARG_TEMPLATE = Template(
-    "$media_type/$provider_name/{{ date_partition_for_prefix(dag.schedule, dag_run.logical_date, $reingestion_date ) }}"  # noqa
+    "$media_type/$provider_name/{{ date_partition_for_prefix(dag.schedule_interval, dag_run.logical_date, $reingestion_date ) }}"  # noqa
 )
 
 

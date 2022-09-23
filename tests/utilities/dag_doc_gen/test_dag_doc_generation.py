@@ -8,7 +8,7 @@ from openverse_catalog.utilities.dag_doc_gen.dag_doc_generation import DagInfo
 
 
 class DagMock(NamedTuple):
-    schedule: str | None
+    schedule_interval: str | None
     doc_md: str | None
     catchup: bool
     tags: list[str]
@@ -44,7 +44,7 @@ _MODULE = "openverse_catalog.utilities.dag_doc_gen.dag_doc_generation"
 def test_get_dags_info(
     schedule, doc, expected_doc, catchup, tags, type_, provider_workflow
 ):
-    dag = DagMock(schedule=schedule, doc_md=doc, catchup=catchup, tags=tags)
+    dag = DagMock(schedule_interval=schedule, doc_md=doc, catchup=catchup, tags=tags)
     expected = DagInfo(
         dag_id=DAG_ID,
         schedule=schedule,
