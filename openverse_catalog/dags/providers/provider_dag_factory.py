@@ -92,7 +92,7 @@ OUTPUT_DIR_PATH = os.path.realpath(os.getenv("OUTPUT_DIR", "/tmp/"))
 _DATE_RANGE_INNER_TEMPLATE = "macros.ds_add(ds, -{} )"
 DATE_RANGE_ARG_TEMPLATE = "{{{{" + _DATE_RANGE_INNER_TEMPLATE + "}}}}"
 DATE_PARTITION_ARG_TEMPLATE = Template(
-    "$media_type/$provider_name/{{ date_partition_for_prefix(dag.schedule_interval, dag_run.logical_date, $reingestion_date ) }}"  # noqa
+    "$media_type/$provider_name/{{ date_partition_for_prefix(dag.schedule, dag_run.logical_date, $reingestion_date ) }}"  # noqa
 )
 
 
@@ -288,7 +288,7 @@ def create_provider_api_workflow_dag(conf: ProviderWorkflow):
         max_active_tasks=conf.max_active_tasks,
         max_active_runs=conf.max_active_runs,
         start_date=conf.start_date,
-        schedule_interval=conf.schedule_string,
+        schedule=conf.schedule_string,
         catchup=conf.dated,  # catchup is turned on for dated DAGs to allow backfilling
         doc_md=conf.doc_md,
         tags=["provider"]
@@ -418,7 +418,7 @@ def create_day_partitioned_reingestion_dag(
         max_active_tasks=conf.max_active_tasks,
         max_active_runs=conf.max_active_runs,
         dagrun_timeout=conf.dagrun_timeout,
-        schedule_interval=conf.schedule_string,
+        schedule=conf.schedule_string,
         start_date=conf.start_date,
         catchup=False,
         doc_md=conf.doc_md,

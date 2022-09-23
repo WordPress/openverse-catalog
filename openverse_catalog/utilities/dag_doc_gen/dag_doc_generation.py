@@ -106,7 +106,7 @@ def get_dags_info(dags: DagMapping) -> list[DagInfo]:
         dags_info.append(
             DagInfo(
                 dag_id=dag_id,
-                schedule=dag.schedule_interval,
+                schedule=dag.schedule,
                 doc=doc,
                 type_=type_,
                 dated=dated,
