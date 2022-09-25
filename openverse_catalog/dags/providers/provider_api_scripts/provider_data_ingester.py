@@ -319,14 +319,6 @@ class ProviderDataIngester(ABC):
             **kwargs,
         )
 
-    def get_detail_json(self, endpoint: str, query_params: Dict | None = None):
-        """
-        Make the API requests needed to get detail information.
-        """
-        return self.delayed_requester.get_response_json(
-            endpoint, self.retries, query_params or {}, headers=self.headers
-        )
-
     def get_should_continue(self, response_json):
         """
         This method should be overridden when an API has additional logic for
