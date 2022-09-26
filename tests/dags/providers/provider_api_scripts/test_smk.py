@@ -3,7 +3,7 @@ import logging
 from pathlib import Path
 
 from common.licenses import LicenseInfo
-from providers.provider_api_scripts.smk import SmkDataIngester
+from providers.provider_api_scripts.smk import IMAGE_SIZE, SmkDataIngester
 
 
 RESOURCES = Path(__file__).parent.resolve() / "resources/smk"
@@ -63,4 +63,11 @@ def test__get_foreign_landing_url():
     item = {"object_number": "KKSgb22423"}
     actual_url = smk._get_foreign_landing_url(item)
     expected_url = "https://open.smk.dk/en/artwork/image/KKSgb22423"
+    assert actual_url == expected_url
+
+
+def test__get_image_url():
+    image_iiif_id = "https://iip.smk.dk/iiif/jp2/1z40kx99j_kksgb22423.tif.jp2"
+    actual_url = smk._get_image_url(image_iiif_id)
+    expected_url = f"https://iip.smk.dk/iiif/jp2/1z40kx99j_kksgb22423.tif.jp2/full/!{IMAGE_SIZE},/0/default.jpg"
     assert actual_url == expected_url

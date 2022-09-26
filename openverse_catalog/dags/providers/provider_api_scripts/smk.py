@@ -53,9 +53,11 @@ class SmkDataIngester(ProviderDataIngester):
         return f"{landing_page_base_url}{object_num}"
 
     @staticmethod
-    def _get_image_url(image_iiif_id, image_size=IMAGE_SIZE):
+    def _get_image_url(image_iiif_id: str, image_size=IMAGE_SIZE):
         # For high quality IIIF-enabled images, restrict the image size to prevent
         # loading very large files.
+        # TODO: consider just using the full "image_native" when adding the
+        # "image_thumbnail".
         image_url = f"{image_iiif_id}/full/!{image_size},/0/default.jpg"
         return image_url
 
