@@ -83,3 +83,40 @@ def test__get_title_none():
     item = {"id": "123_object"}
     actual_title = smk._get_title(item)
     assert actual_title is None
+
+
+def test__get_alternative_images_high_quality():
+    item = _get_resource_json("image_data_hq.json")
+    expected_images_data = _get_resource_json("expected_image_data_hq.json")
+    actual_images_data = smk._get_alternative_images(item)
+
+    assert actual_images_data == expected_images_data
+
+
+def test__get_alternative_images_legacy():
+    item = _get_resource_json("image_data_legacy.json")
+    expected_images_data = _get_resource_json("expected_image_data_legacy.json")
+    actual_images_data = smk._get_alternative_images(item)
+
+    assert actual_images_data == expected_images_data
+
+
+def test__get_alternative_image_partial():
+    item = _get_resource_json("image_data_partial.json")
+    expected_images_data = _get_resource_json("expected_image_data_partial.json")
+
+    actual_images_data = smk._get_alternative_images(item)
+
+    assert actual_images_data == expected_images_data
+
+
+def test__get_metadata():
+    item = _get_resource_json("item.json")
+    actual_metadata = smk._get_metadata(item)
+
+    expected_metadata = {
+        "created_date": "2020-03-21T10:18:17Z",
+        "collection": "Gammel bestand",
+        "techniques": "Kobberstik",
+    }
+    assert actual_metadata == expected_metadata
