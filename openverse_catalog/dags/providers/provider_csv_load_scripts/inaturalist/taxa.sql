@@ -18,7 +18,7 @@ CREATE TABLE inaturalist.taxa (
     rank character varying(255),
     name character varying(255),
     active boolean,
-    ancestor_names varchar[]
+    ancestor_names text
 );
 COMMIT;
 
@@ -36,7 +36,7 @@ WITH aggregated AS
 (
     select
         child.taxon_id,
-        array_agg(ancestors.name) as ancestor_names
+        string_agg(ancestors.name, '|' ORDER BY ancestors.name) as ancestor_names
     from
         inaturalist.taxa ancestors,
         inaturalist.taxa child

@@ -138,7 +138,7 @@ PROVIDER_WORKFLOWS = [
         provider_script="inaturalist",
         ingestion_callable=INaturalistDataIngester,
         create_preingestion_tasks=INaturalistDataIngester.create_preingestion_tasks,
-        create_postingestion_tasks=INaturalistDataIngester.create_postingestion_tasks,
+        # create_postingestion_tasks=INaturalistDataIngester.create_postingestion_tasks,
         schedule_string="@monthly",
         pull_timeout=timedelta(days=5),
         load_timeout=timedelta(days=5),
