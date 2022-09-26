@@ -8,6 +8,8 @@ from openverse_catalog.utilities.dag_doc_gen.dag_doc_generation import DagInfo
 
 
 class DagMock(NamedTuple):
+    # schedule_interval used here because the Dag model does not actually have a
+    # schedule attribute
     schedule_interval: str | None
     doc_md: str | None
     catchup: bool
