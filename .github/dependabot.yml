@@ -11,7 +11,7 @@ updates:
   # they are not pinned by the Airflow constraints file.
   - package-ecosystem: pip
     directory: /
-    # Check for updates once a week
+    # Check for updates once a month
     schedule:
       interval: monthly
     labels:
