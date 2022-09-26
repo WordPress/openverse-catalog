@@ -40,7 +40,7 @@ class SmkDataIngester(ProviderDataIngester):
 
     @staticmethod
     def _get_foreign_landing_url(item) -> str | None:
-        """Use the English site instead of the original."""
+        """Use the English site instead of the original link."""
         object_num = item.get("object_number")
         if not object_num:
             logger.info(

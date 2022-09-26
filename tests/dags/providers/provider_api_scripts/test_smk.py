@@ -2,8 +2,6 @@ import json
 import logging
 from pathlib import Path
 
-# from unittest.mock import MagicMock, patch
-# import requests
 from common.licenses import LicenseInfo
 from providers.provider_api_scripts.smk import SmkDataIngester
 
@@ -59,3 +57,10 @@ def test_get_next_query_params_increments_offset():
     }
 
     assert actual_param == expected_param
+
+
+def test__get_foreign_landing_url():
+    item = {"object_number": "KKSgb22423"}
+    actual_url = smk._get_foreign_landing_url(item)
+    expected_url = "https://open.smk.dk/en/artwork/image/KKSgb22423"
+    assert actual_url == expected_url
