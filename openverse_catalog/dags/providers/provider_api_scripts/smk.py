@@ -62,11 +62,11 @@ class SmkDataIngester(ProviderDataIngester):
 
     @staticmethod
     def _get_title(item: dict) -> str | None:
-        titles = item.get("titles")
+        titles = item.get("titles", [])
         try:
             return titles[0].get("title")
-        except KeyError:
-            logger.info(f"No title for image with foreign id {item.get('id')}.")
+        except IndexError:
+            logger.info(f"No title for image with (foreign) id {item.get('id')}.")
             return
 
     @staticmethod
@@ -74,8 +74,8 @@ class SmkDataIngester(ProviderDataIngester):
         # TODO: review this field, there could be more than one creator or artist.
         # Keeping it as it was for the class refactor.
         try:
-            return item.get("production")[0].get("creator")
-        except KeyError:
+            return item.get("production", [])[0].get("creator")
+        except IndexError:
             return
 
     @staticmethod
@@ -91,6 +91,7 @@ class SmkDataIngester(ProviderDataIngester):
             if iiif_id is None:
                 # Legacy images do not have IIIF links.
                 image_url = item.get("image_native")
+                print(f"\n\nLegacy image: {item}\n")
             else:
                 image_url = SmkDataIngester._get_image_url(iiif_id)
 
@@ -109,6 +110,7 @@ class SmkDataIngester(ProviderDataIngester):
 
         alternative_images = item.get("alternative_images")
         if type(alternative_images) == list:
+            print(f"Item with alternative_images: {item}")
             for alt_img in alternative_images:
                 if type(alt_img) == dict:
                     iiif_id = alt_img.get("iiif_id")
