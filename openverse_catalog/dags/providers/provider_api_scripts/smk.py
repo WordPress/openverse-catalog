@@ -66,7 +66,7 @@ class SmkDataIngester(ProviderDataIngester):
         titles = item.get("titles", [])
         try:
             return titles[0].get("title")
-        except IndexError:
+        except (IndexError, KeyError):
             logger.info(f"No title for image with (foreign) id {item.get('id')}.")
             return
 
@@ -76,7 +76,7 @@ class SmkDataIngester(ProviderDataIngester):
         # Keeping it as it was for the class refactor.
         try:
             return item.get("production", [])[0].get("creator")
-        except IndexError:
+        except (IndexError, KeyError):
             return
 
     @staticmethod

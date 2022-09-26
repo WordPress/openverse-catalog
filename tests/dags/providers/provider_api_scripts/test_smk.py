@@ -71,3 +71,15 @@ def test__get_image_url():
     actual_url = smk._get_image_url(image_iiif_id)
     expected_url = f"https://iip.smk.dk/iiif/jp2/1z40kx99j_kksgb22423.tif.jp2/full/!{IMAGE_SIZE},/0/default.jpg"
     assert actual_url == expected_url
+
+
+def test__get_title():
+    item = {"titles": [{"title": "sample"}]}
+    actual_title = smk._get_title(item)
+    assert actual_title == "sample"
+
+
+def test__get_title_none():
+    item = {"id": "123_object"}
+    actual_title = smk._get_title(item)
+    assert actual_title is None
