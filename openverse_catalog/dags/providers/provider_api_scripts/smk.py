@@ -77,9 +77,9 @@ class SmkDataIngester(ProviderDataIngester):
         # Legacy images do not have an iiif_id; fall back to the ID from the
         # collection DB.
         iiif_id = item.get("image_iiif_id")
-        id = iiif_id or item.get("id")
+        image_id = iiif_id or item.get("id")
 
-        if id is not None:
+        if image_id is not None:
             if iiif_id is None:
                 # Legacy images do not have IIIF links.
                 image_url = item.get("image_native")
@@ -91,7 +91,7 @@ class SmkDataIngester(ProviderDataIngester):
             filesize = item.get("image_size") or item.get("size")
             images.append(
                 {
-                    "id": id,
+                    "id": image_id,
                     "image_url": image_url,
                     "height": height,
                     "width": width,
