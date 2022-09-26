@@ -120,3 +120,17 @@ def test__get_metadata():
         "techniques": "Kobberstik",
     }
     assert actual_metadata == expected_metadata
+
+
+def test_get_record_data_returns_main_image():
+    item = _get_resource_json("item.json")
+    images = smk.get_record_data(item)
+
+    assert len(images) == 1
+
+
+def test_get_record_data_returns_alternative_images():
+    item = _get_resource_json("item_with_alternative_images.json")
+    images = smk.get_record_data(item)
+
+    assert len(images) == 3
