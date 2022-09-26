@@ -205,7 +205,7 @@ on.
 
 When a DAG has known failures, it can be ommitted from Slack error reporting by adding
 an entry to the `silenced_slack_notifications` Airflow variable. This is a dictionary
-where thekey is the `dag_id` of the affected DAG, and the value is a list of
+where the key is the `dag_id` of the affected DAG, and the value is a list of
 SilencedSlackNotifications (which map silenced notifications to GitHub URLs) for that
 DAG.
 
