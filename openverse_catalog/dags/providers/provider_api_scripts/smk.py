@@ -19,8 +19,6 @@ class SmkDataIngester(ProviderDataIngester):
     headers = {"Accept": "application/json"}
     providers = {"image": prov.SMK_DEFAULT_PROVIDER}
 
-    landing_page_base_url = "https://open.smk.dk/en/artwork/image/"
-
     def get_media_type(self, record: dict) -> str:
         return constants.IMAGE
 
@@ -40,10 +38,20 @@ class SmkDataIngester(ProviderDataIngester):
     def get_batch_data(self, response_json) -> list:
         return response_json.get("items")
 
-    def _get_foreign_landing_url(self, item) -> str:
-        """Use the English site instead of the original in Denmark language"""
-        object_id = item.get("object_number")
-        return f"{self.landing_page_base_url}{object_id}" if object_id else None
+    @staticmethod
+    def _get_foreign_landing_url(item) -> str | None:
+        """Use the English site instead of the original."""
+        object_num = item.get("object_number")
+        if not object_num:
+            logger.info(
+                f"Image with (foreign) id {item.get('id')} does not have "
+                "`object_number`! Therefore we cannot build the "
+                "foreign_landing_url."
+            )
+            print(item)
+            return
+        landing_page_base_url = "https://open.smk.dk/en/artwork/image/"
+        return f"{landing_page_base_url}{object_num}"
 
     @staticmethod
     def _get_image_url(image_iiif_id, image_size=IMAGE_SIZE):
@@ -141,19 +149,17 @@ class SmkDataIngester(ProviderDataIngester):
         return meta_data
 
     def get_record_data(self, data: dict) -> dict | list[dict] | None:
-        # Validate early if it has an image
-        # ...
         license_info = get_license_info(license_url=data.get("rights"))
-        if not license_info:
+        foreign_landing_url = self._get_foreign_landing_url(data)
+        if not license_info or not foreign_landing_url:
             return None
-
         images = []
         alt_images = self._get_alternative_images(data)
         for img in alt_images:
             images.append(
                 {
                     "foreign_identifier": img.get("id"),
-                    "foreign_landing_url": self._get_foreign_landing_url(img),
+                    "foreign_landing_url": foreign_landing_url,
                     "image_url": img.get("image_url"),
                     "license_info": license_info,
                     "title": self._get_title(data),
