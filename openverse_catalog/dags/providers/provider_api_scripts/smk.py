@@ -48,7 +48,6 @@ class SmkDataIngester(ProviderDataIngester):
                 "`object_number`! Therefore we cannot build the "
                 "foreign_landing_url."
             )
-            print(item)
             return
         landing_page_base_url = "https://open.smk.dk/en/artwork/image/"
         return f"{landing_page_base_url}{object_num}"
@@ -91,7 +90,6 @@ class SmkDataIngester(ProviderDataIngester):
             if iiif_id is None:
                 # Legacy images do not have IIIF links.
                 image_url = item.get("image_native")
-                print(f"\n\nLegacy image: {item}\n")
             else:
                 image_url = SmkDataIngester._get_image_url(iiif_id)
 
@@ -110,7 +108,6 @@ class SmkDataIngester(ProviderDataIngester):
 
         alternative_images = item.get("alternative_images")
         if type(alternative_images) == list:
-            print(f"Item with alternative_images: {item}")
             for alt_img in alternative_images:
                 if type(alt_img) == dict:
                     iiif_id = alt_img.get("iiif_id")
@@ -152,16 +149,13 @@ class SmkDataIngester(ProviderDataIngester):
 
     def get_record_data(self, data: dict) -> dict | list[dict] | None:
         license_info = get_license_info(license_url=data.get("rights"))
-        foreign_landing_url = self._get_foreign_landing_url(data)
-        if not license_info or not foreign_landing_url:
-            return None
         images = []
         alt_images = self._get_alternative_images(data)
         for img in alt_images:
             images.append(
                 {
                     "foreign_identifier": img.get("id"),
-                    "foreign_landing_url": foreign_landing_url,
+                    "foreign_landing_url": self._get_foreign_landing_url(data),
                     "image_url": img.get("image_url"),
                     "license_info": license_info,
                     "title": self._get_title(data),
