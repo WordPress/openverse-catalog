@@ -81,7 +81,7 @@ def _single_value(cursor):
 
 
 @provide_session
-def _month_check(dag_id: str, media_type: str, session: SASession = None) -> str:
+def _month_check(dag_id: str, session: SASession = None) -> str:
     """
     Checks whether there has been a previous DagRun this month. If so,
     returns the task_id for the matview refresh task; else, returns the
@@ -128,19 +128,27 @@ def _month_check(dag_id: str, media_type: str, session: SASession = None) -> str
         and current_date.year == last_dagrun_date.year
     )
 
-    next_step = (
-        "refresh matview"
-        if is_last_dagrun_in_current_month
-        else "refresh popularity metrics"
-    )
-    message = f"Starting data refresh | _Next: {next_step}_"
-    report_status(media_type, message, dag_id)
-
     return (
         REFRESH_POPULARITY_METRICS_TASK_ID
         if not is_last_dagrun_in_current_month
         else REFRESH_MATERIALIZED_VIEW_TASK_ID
     )
+
+
+def _monthly_check_with_reporting(dag_id: str, media_type: str) -> str:
+    """
+    Wrapper for the monthly check function to report which step is starting
+    which step is next to slack.
+    """
+    next_task_id = _month_check(dag_id)
+    next_step = {
+        REFRESH_POPULARITY_METRICS_TASK_ID: "refresh popularity metrics",
+        REFRESH_MATERIALIZED_VIEW_TASK_ID: "refresh matview",
+    }.get(next_task_id, "unable to determine next step")
+    message = f":horse_racing: Starting data refresh | _Next: {next_step}_"
+    report_status(media_type, message, dag_id)
+
+    return next_task_id
 
 
 def create_data_refresh_dag(data_refresh: DataRefresh, external_dag_ids: Sequence[str]):
@@ -190,7 +198,7 @@ def create_data_refresh_dag(data_refresh: DataRefresh, external_dag_ids: Sequenc
         # Check if this is the first DagRun of the month for this DAG.
         month_check = BranchPythonOperator(
             task_id="month_check",
-            python_callable=_month_check,
+            python_callable=_monthly_check_with_reporting,
             op_kwargs={
                 "dag_id": data_refresh.dag_id,
                 "media_type": data_refresh.media_type,
