@@ -12,6 +12,7 @@ from airflow.operators.python import PythonOperator
 from airflow.utils.task_group import TaskGroup
 from common.constants import POSTGRES_CONN_ID
 from common.popularity import sql
+from data_refresh import reporting
 from data_refresh.data_refresh_types import DataRefresh
 
 
@@ -45,6 +46,17 @@ def create_refresh_popularity_metrics_task_group(data_refresh: DataRefresh):
             ),
         )
 
+        update_metrics_status = PythonOperator(
+            task_id=f"report_{UPDATE_MEDIA_POPULARITY_METRICS_TASK_ID}_status",
+            python_callable=reporting.report_status,
+            op_kwargs={
+                "media_type": media_type,
+                "dag_id": data_refresh.dag_id,
+                "message": "Popularity metrics update complete | "
+                "_Next: popularity constants view update_",
+            },
+        )
+
         update_constants = PythonOperator(
             task_id=UPDATE_MEDIA_POPULARITY_CONSTANTS_TASK_ID,
             python_callable=sql.update_media_popularity_constants,
@@ -56,6 +68,18 @@ def create_refresh_popularity_metrics_task_group(data_refresh: DataRefresh):
             ),
         )
 
-        update_metrics >> update_constants
+        update_constants_status = PythonOperator(
+            task_id=f"report_{UPDATE_MEDIA_POPULARITY_CONSTANTS_TASK_ID}_status",
+            python_callable=reporting.report_status,
+            op_kwargs={
+                "media_type": media_type,
+                "dag_id": data_refresh.dag_id,
+                "message": "Popularity constants view update complete | "
+                "_Next: refresh matview_",
+            },
+        )
+
+        update_metrics >> [update_constants, update_metrics_status]
+        update_constants >> update_constants_status
 
     return refresh_all_popularity_data

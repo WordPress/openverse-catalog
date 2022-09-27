@@ -59,7 +59,7 @@ from data_refresh.refresh_view_data_task_factory import (
     UPDATE_DB_VIEW_TASK_ID,
     create_refresh_view_data_task,
 )
-from data_refresh.reporting import report_record_difference
+from data_refresh.reporting import report_record_difference, report_status
 
 
 logger = logging.getLogger(__name__)
@@ -81,7 +81,7 @@ def _single_value(cursor):
 
 
 @provide_session
-def _month_check(dag_id: str, session: SASession = None) -> str:
+def _month_check(dag_id: str, media_type: str, session: SASession = None) -> str:
     """
     Checks whether there has been a previous DagRun this month. If so,
     returns the task_id for the matview refresh task; else, returns the
@@ -127,6 +127,14 @@ def _month_check(dag_id: str, session: SASession = None) -> str:
         current_date.month == last_dagrun_date.month
         and current_date.year == last_dagrun_date.year
     )
+
+    next_step = (
+        "refresh matview"
+        if is_last_dagrun_in_current_month
+        else "refresh popularity metrics"
+    )
+    message = f"Starting data refresh | _Next: {next_step}_"
+    report_status(media_type, message, dag_id)
 
     return (
         REFRESH_POPULARITY_METRICS_TASK_ID
@@ -185,6 +193,7 @@ def create_data_refresh_dag(data_refresh: DataRefresh, external_dag_ids: Sequenc
             python_callable=_month_check,
             op_kwargs={
                 "dag_id": data_refresh.dag_id,
+                "media_type": data_refresh.media_type,
             },
         )
 
