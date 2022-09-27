@@ -1,5 +1,5 @@
 import pytest
-from data_refresh.record_reporting import report_record_difference
+from data_refresh.reporting import report_record_difference
 
 
 @pytest.mark.parametrize(

@@ -48,7 +48,6 @@ from common.constants import (
 from common.operators.postgres_result import PostgresResultOperator
 from data_refresh.data_refresh_task_factory import create_data_refresh_task_group
 from data_refresh.data_refresh_types import DATA_REFRESH_CONFIGS, DataRefresh
-from data_refresh.record_reporting import report_record_difference
 from data_refresh.refresh_popularity_metrics_task_factory import (
     GROUP_ID as REFRESH_POPULARITY_METRICS_GROUP_ID,
 )
@@ -60,6 +59,7 @@ from data_refresh.refresh_view_data_task_factory import (
     UPDATE_DB_VIEW_TASK_ID,
     create_refresh_view_data_task,
 )
+from data_refresh.reporting import report_record_difference
 
 
 logger = logging.getLogger(__name__)
