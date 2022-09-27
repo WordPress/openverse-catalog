@@ -14,6 +14,7 @@ def report_status(media_type: str, message: str, dag_id: str):
         username="Data Refresh Notification",
         icon_emoji="arrows_counterclockwise",
     )
+    return message
 
 
 def report_record_difference(before: str, after: str, media_type: str, dag_id: str):

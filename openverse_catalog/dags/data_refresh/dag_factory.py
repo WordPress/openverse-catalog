@@ -135,7 +135,7 @@ def _month_check(dag_id: str, session: SASession = None) -> str:
     )
 
 
-def _monthly_check_with_reporting(dag_id: str, media_type: str) -> str:
+def _month_check_with_reporting(dag_id: str, media_type: str) -> str:
     """
     Wrapper for the monthly check function to report which step is starting
     which step is next to slack.
@@ -198,7 +198,7 @@ def create_data_refresh_dag(data_refresh: DataRefresh, external_dag_ids: Sequenc
         # Check if this is the first DagRun of the month for this DAG.
         month_check = BranchPythonOperator(
             task_id="month_check",
-            python_callable=_monthly_check_with_reporting,
+            python_callable=_month_check_with_reporting,
             op_kwargs={
                 "dag_id": data_refresh.dag_id,
                 "media_type": data_refresh.media_type,
