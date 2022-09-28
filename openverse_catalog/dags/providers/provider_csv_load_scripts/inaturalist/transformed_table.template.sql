@@ -1,6 +1,6 @@
 /*
 -------------------------------------------------------------------------------
-Build Transformed Table
+Load Intermediate Table
 -------------------------------------------------------------------------------
 
     ** Please note: This SQL will not run as is! You must replace offset_num and
@@ -21,39 +21,40 @@ Everything on iNaturalist is holding at version 4, except CC0 which is version 1
 License versions below are hard-coded from inaturalist
 https://github.com/inaturalist/inaturalist/blob/d338ba76d82af83d8ad0107563015364a101568c/app/models/shared/license_module.rb#L5
 
-TO DO:
-- integrate back with the regular dag steps starting with the cleaning and reporting
-  step at the end of common.sql.load_s3_data_to_intermediate_table
-- handle duplicate photo IDs (though many fewer now than before, may need to aggregate
-  observers)
+Using image columns version 001 from common.storage.tsv_columns.
 */
 
-INSERT INTO INATURALIST.TRANSFORMED
+INSERT INTO {intermediate_table}
 (
     SELECT
-        INATURALIST.PHOTOS.PHOTO_ID as foreign_identifier,
-        INATURALIST.PHOTOS.WIDTH,
-        INATURALIST.PHOTOS.HEIGHT,
-        left(string_agg(INATURALIST.TAXA.NAME, ' & '), 5000) as title,
-        string_to_array(string_agg(INATURALIST.TAXA.ancestor_names,'|'),'|') as raw_tags,
-        -- only jpg, jpeg, png, and gif in June 2022 data, all in extensions.py for images
-        lower(INATURALIST.PHOTOS.EXTENSION) as filetype,
-        INATURALIST.LICENSE_CODES.OPENVERSE_CODE AS LICENSE,
-        INATURALIST.LICENSE_CODES.LICENSE_VERSION,
-        COALESCE(INATURALIST.OBSERVERS.LOGIN, INATURALIST.PHOTOS.OBSERVER_ID::text)
-            as creator,
-        'https://www.inaturalist.org/users/' || INATURALIST.PHOTOS.OBSERVER_ID
-            as creator_url,
-        now() as ingestion_timestamp,
-        -- going for consistency with prod code here see provider_details.py
-        'provider_api' as ingestion_type,
-        'inaturalist' as provider, -- seems like provider and source are the same
-        'photograph' as category,
+        INATURALIST.PHOTOS.PHOTO_ID as FOREIGN_ID,
         'https://www.inaturalist.org/photos/' || INATURALIST.PHOTOS.PHOTO_ID
-            as foreign_landing_url,
+            as LANDING_URL,
         'https://inaturalist-open-data.s3.amazonaws.com/photos/'
         || INATURALIST.PHOTOS.PHOTO_ID || '/medium.' || INATURALIST.PHOTOS.EXTENSION
-            as image_url
+            as DIRECT_URL,
+        null::varchar(10) as THUMBNAIL,
+        -- only jpg, jpeg, png & gif in 6/2022 data, all in extensions.py for images
+        lower(INATURALIST.PHOTOS.EXTENSION) as FILETYPE,
+        null::int as FILESIZE,
+        INATURALIST.LICENSE_CODES.OPENVERSE_CODE as LICENSE,
+        INATURALIST.LICENSE_CODES.LICENSE_VERSION,
+        COALESCE(INATURALIST.OBSERVERS.LOGIN, INATURALIST.PHOTOS.OBSERVER_ID::text)
+            as CREATOR,
+        'https://www.inaturalist.org/users/' || INATURALIST.PHOTOS.OBSERVER_ID
+            as CREATOR_URL,
+        left(string_agg(INATURALIST.TAXA.NAME, ' & '), 5000) as TITLE,
+        -- TO DO: should there be a timestamp or anything in the metadata or is null ok?
+        null::json as META_DATA,
+        -- TO DO: confirm format here, string list format? json?
+        string_to_array(string_agg(INATURALIST.TAXA.ancestor_names,'|'),'|') as TAGS,
+        'photograph' as CATEGORY,
+        null::boolean as WATERMARKED,
+        'inaturalist' as PROVIDER,
+        'inaturalist' as SOURCE,
+        'provider_api' as INGESTION_TYPE,
+        INATURALIST.PHOTOS.WIDTH,
+        INATURALIST.PHOTOS.HEIGHT
     FROM INATURALIST.PHOTOS
     INNER JOIN
         INATURALIST.OBSERVATIONS ON
@@ -67,18 +68,19 @@ INSERT INTO INATURALIST.TRANSFORMED
     INNER JOIN
         INATURALIST.LICENSE_CODES ON
             INATURALIST.PHOTOS.LICENSE = INATURALIST.LICENSE_CODES.INATURALIST_CODE
-    WHERE photo_id between {page_start} and {page_end}
-    GROUP BY INATURALIST.PHOTOS.PHOTO_ID,
+    WHERE INATURALIST.PHOTOS.PHOTO_ID BETWEEN {page_start} AND {page_end}
+    GROUP BY
+        INATURALIST.PHOTOS.PHOTO_ID,
         INATURALIST.PHOTOS.WIDTH,
         INATURALIST.PHOTOS.HEIGHT,
-        INATURALIST.PHOTOS.EXTENSION,
+        lower(INATURALIST.PHOTOS.EXTENSION),
         INATURALIST.LICENSE_CODES.OPENVERSE_CODE,
         INATURALIST.LICENSE_CODES.LICENSE_VERSION,
         COALESCE(INATURALIST.OBSERVERS.LOGIN, INATURALIST.PHOTOS.OBSERVER_ID::text),
-        'https://www.inaturalist.org/users/' || INATURALIST.PHOTOS.OBSERVER_ID
+        INATURALIST.PHOTOS.OBSERVER_ID
 )
 ;
 COMMIT;
 
 SELECT count(*) records
-FROM INATURALIST.TRANSFORMED;
+FROM {intermediate_table} ;

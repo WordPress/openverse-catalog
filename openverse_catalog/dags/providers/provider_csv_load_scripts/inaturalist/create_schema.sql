@@ -3,30 +3,30 @@ COMMIT;
 SELECT schema_name
 FROM information_schema.schemata WHERE schema_name = 'inaturalist';
 
-/* target staging table */
+-- /* target staging table -- replace with standard loading table */
 
-DROP TABLE IF EXISTS inaturalist.transformed;
-COMMIT;
+-- DROP TABLE IF EXISTS inaturalist.transformed;
+-- COMMIT;
 
-CREATE TABLE inaturalist.transformed (
-    foreign_identifier integer,
-    width smallint,
-    height smallint,
-    title varchar(5000),
-    raw_tags varchar[],
-    filetype varchar(5),
-    license varchar(50),
-    license_version varchar(25),
-    creator varchar(2000),
-    creator_url varchar(2000),
-    ingestion_timestamp timestamp,
-    ingestion_type varchar(80),
-    provider varchar(80),
-    category varchar(80),
-    foreign_landing_url varchar(1000),
-    image_url varchar(3000)
-);
-COMMIT;
+-- CREATE TABLE inaturalist.transformed (
+--     foreign_identifier integer,
+--     width smallint,
+--     height smallint,
+--     title varchar(5000),
+--     raw_tags varchar[],
+--     filetype varchar(5),
+--     license varchar(50),
+--     license_version varchar(25),
+--     creator varchar(2000),
+--     creator_url varchar(2000),
+--     ingestion_timestamp timestamp,
+--     ingestion_type varchar(80),
+--     provider varchar(80),
+--     category varchar(80),
+--     foreign_landing_url varchar(1000),
+--     image_url varchar(3000)
+-- );
+-- COMMIT;
 
 /* license look-up for cleaning */
 

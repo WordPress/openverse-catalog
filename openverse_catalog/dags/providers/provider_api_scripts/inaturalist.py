@@ -26,6 +26,7 @@ from pathlib import Path
 from typing import Dict
 
 import pendulum
+from airflow import DAG
 from airflow.exceptions import AirflowSkipException
 from airflow.operators.python import PythonOperator
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
@@ -34,7 +35,7 @@ from airflow.providers.postgres.operators.postgres import PostgresOperator
 from airflow.utils.task_group import TaskGroup
 from common.constants import POSTGRES_CONN_ID
 from common.licenses import LicenseInfo, get_license_info
-from common.loader import provider_details as prov
+from common.loader import provider_details, sql
 from providers.provider_api_scripts.provider_data_ingester import ProviderDataIngester
 
 
@@ -42,14 +43,14 @@ logger = logging.getLogger(__name__)
 
 AWS_CONN_ID = os.getenv("AWS_CONN_ID", "test_conn_id")
 OPENVERSE_BUCKET = os.getenv("OPENVERSE_BUCKET", "openverse-storage")
-PROVIDER = prov.INATURALIST_DEFAULT_PROVIDER
+PROVIDER = provider_details.INATURALIST_DEFAULT_PROVIDER
 SCRIPT_DIR = Path(__file__).parents[1] / "provider_csv_load_scripts/inaturalist"
 SOURCE_FILE_NAMES = ["photos", "observations", "taxa", "observers"]
 
 
 class INaturalistDataIngester(ProviderDataIngester):
 
-    providers = {"image": prov.INATURALIST_DEFAULT_PROVIDER}
+    providers = {"image": provider_details.INATURALIST_DEFAULT_PROVIDER}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -109,57 +110,9 @@ class INaturalistDataIngester(ProviderDataIngester):
     def endpoint(self):
         raise NotImplementedError("Normalized TSV files from AWS S3 means no endpoint.")
 
-    # @staticmethod
-    # def load_photo_taxa_relation(
-    #         aws_conn_id=AWS_CONN_ID,
-    #         temp_bucket=OPENVERSE_BUCKET,
-    #         pg_conn_id=POSTGRES_CONN_ID,
-    #     ):
-    #     temp_filename = "temp_inaturalist_observation_file.csv.gz"
-    #     s3 = S3Hook(aws_conn_id=aws_conn_id)
-    #     pg = PostgresHook(pg_conn_id)
-    #     # Getting id pairs for observations and taxa. Unfortunately, S3 select cannot
-    #     # automatically compress output.
-    #     # https://airflow.apache.org/docs/apache-airflow-providers-amazon/stable/_api/airflow/providers/amazon/aws/hooks/s3/index.html#airflow.providers.amazon.aws.hooks.s3.S3Hook.select_key # noqa
-    #     with open(temp_filename, "w") as temp_file:
-    #         temp_file.write(
-    #             s3.select_key(
-    #                 key="observations.csv.gz",
-    #                 bucket_name="inaturalist-open-data",
-    #                 expression="SELECT observation_uuid, taxon_id FROM S3Object WHERE taxon_id IS NOT NULL", # noqa
-    #                 input_serialization={
-    #                     "CompressionType": "GZIP",
-    #                     "CSV": {
-    #                         "FileHeaderInfo": "Use",
-    #                         "FieldDelimiter": "\t",
-    #                         "RecordDelimiter": "\n",
-    #                     }
-    #                 },
-    #             )
-    #         )
-    #     # Compressing and writing ids to temp_bucket (OPENVERSE_BUCKET) on s3
-    #     s3.load_file(
-    #         filename=temp_filename,
-    #         key=temp_filename,
-    #         bucket_name=temp_bucket,
-    #         replace=True,
-    #         gzip=True,
-    #     )
-    #     # Loading ids from temp_bucket (OPENVERSE_BUCKET) to Postgres
-    #     load_sql = (
-    #         "SELECT aws_s3.table_import_from_s3('inaturalist.observations', '',"
-    #         "'(FORMAT ''csv'', DELIMITER E'','', HEADER)',"
-    #         f"'{temp_bucket}', '{temp_filename}', 'us-east-1'); "
-    #         "ALTER TABLE inaturalist.observations ADD PRIMARY KEY (observation_uuid);"
-    #         "COMMIT;"
-    #     )
-    #     pg.run(load_sql)
-    #     # file clean-up
-    #     os.remove(temp_filename)
-    #     s3.delete_objects(bucket=temp_bucket, keys=[temp_filename])
-
     @staticmethod
-    def build_transformed_table(
+    def load_intermediate_table(
+        intermediate_table: str,
         postgres_conn_id=POSTGRES_CONN_ID,
         sql_template_file_name="transformed_table.template.sql",
         page_length=2_000_000,
@@ -168,11 +121,16 @@ class INaturalistDataIngester(ProviderDataIngester):
         sql_template = (SCRIPT_DIR / sql_template_file_name).read_text()
         # get the number of "pages" in the photos table
         max_id = pg.get_records("SELECT max(photo_id) FROM inaturalist.photos")[0][0]
+        logger.info(f"Loading {intermediate_table}...")
         logger.info(f"Max photo_id={max_id}. Transform {page_length} ids / iteration.")
         # then cycle through the pages
         for page_start in range(0, max_id, page_length):
             page_end = page_start + page_length - 1
-            sql = sql_template.format(page_start=page_start, page_end=page_end)
+            sql = sql_template.format(
+                intermediate_table=intermediate_table,
+                page_start=page_start,
+                page_end=page_end,
+            )
             total_records = pg.get_records(sql)[0][0]
             logger.info(f"{page_start=}, loaded {total_records} so far.")
 
@@ -211,21 +169,15 @@ class INaturalistDataIngester(ProviderDataIngester):
                         f"{file_name}.csv.gz" for file_name in SOURCE_FILE_NAMES
                     ],
                 },
+                doc_md="Has iNaturalist published new data to s3?",
             )
 
             create_inaturalist_schema = PostgresOperator(
                 task_id="create_inaturalist_schema",
                 postgres_conn_id=POSTGRES_CONN_ID,
                 sql=(SCRIPT_DIR / "create_schema.sql").read_text(),
+                doc_md="Create temporary schema and license table",
             )
-
-            # load_photo_taxa_relation_file = PythonOperator(
-            #     task_id="load_photo_taxa_relation_file",
-            #     python_callable=INaturalistDataIngester.load_photo_taxa_relation,
-            #     op_kwargs={
-            #         "last_success": "{{ prev_start_date_success }}",
-            #     },
-            # )
 
             with TaskGroup(group_id="load_raw_source_files") as load_raw_source_files:
                 for source_name in SOURCE_FILE_NAMES:
@@ -233,29 +185,99 @@ class INaturalistDataIngester(ProviderDataIngester):
                         task_id=f"load_{source_name}",
                         postgres_conn_id=POSTGRES_CONN_ID,
                         sql=(SCRIPT_DIR / f"{source_name}.sql").read_text(),
+                        doc_md=f"Load iNaturalist {source_name} from s3 to postgres",
                     ),
-
-            build_transformed_table = PythonOperator(
-                task_id="build_transformed_table",
-                python_callable=INaturalistDataIngester.build_transformed_table,
-                execution_timeout=timedelta(hours=24),
-            )
 
             (
                 check_for_file_updates
                 >> create_inaturalist_schema
                 >> load_raw_source_files
-                # >> load_photo_taxa_relation_file
-                >> build_transformed_table
             )
 
         return preingestion_tasks
 
-    # @staticmethod
-    # def create_postingestion_tasks():
-    #     drop_inaturalist_schema = PostgresOperator(
-    #         task_id="drop_inaturalist_schema",
-    #         postgres_conn_id=POSTGRES_CONN_ID,
-    #         sql="DROP SCHEMA IF EXISTS inaturalist CASCADE",
-    #     )
-    #     return drop_inaturalist_schema
+    @staticmethod
+    def create_postingestion_tasks():
+        # TO DO: add drop_loading_table step from database.loader_workflow here or in
+        # selected loader tasks.
+        drop_inaturalist_schema = PostgresOperator(
+            task_id="drop_inaturalist_schema",
+            postgres_conn_id=POSTGRES_CONN_ID,
+            sql="DROP SCHEMA IF EXISTS inaturalist CASCADE",
+            doc_md="Drop iNaturalist source tables and their schema",
+        )
+        return drop_inaturalist_schema
+
+    @staticmethod
+    def inaturalist_workflow():
+
+        with DAG as inaturalist_workflow:
+
+            preingestion_tasks = INaturalistDataIngester.create_preingestion_tasks()
+
+            with TaskGroup as loader_tasks:
+
+                create_loading_table = PostgresOperator(
+                    task_id="create_loading_table",
+                    callable=sql.create_loading_table,
+                    op_kwargs={
+                        "postgres_conn_id": POSTGRES_CONN_ID,
+                        "identifier": "{{ ts_nodash }}",
+                        "media_type": "image",
+                    },
+                    doc_md=(
+                        "Create a temp table for ingesting data from inaturalist "
+                        "source tables."
+                    ),
+                )
+
+                load_intermediate_table = PythonOperator(
+                    task_id="load_intermediate_table",
+                    python_callable=INaturalistDataIngester.load_intermediate_table,
+                    execution_timeout=timedelta(hours=6),
+                    op_kwargs={
+                        "intermediate_table": sql._get_load_table_name(
+                            "{{ ts_nodash }}"
+                        )
+                    },
+                    doc_md=(
+                        "Load data from source tables to intermediate table in batches."
+                    ),
+                )
+
+                clean_transformed_provider_s3_data = PythonOperator(
+                    task_id="clean_transformed_provider_s3_data",
+                    callable=sql.clean_transformed_provider_s3_data,
+                    op_kwargs={},
+                    execution_timeout=timedelta(hours=6),
+                    doc_md="Remove duplicates and records missing required fields.",
+                )
+
+                upsert_records_to_db_table = PythonOperator(
+                    task_id="upsert_records_to_db_table",
+                    callable=sql.upsert_records_to_db_table,
+                    op_kwargs={},
+                    execution_timeout=timedelta(hours=6),
+                    doc_md="Add transformed records to the target catalog image table.",
+                )
+
+                (
+                    create_loading_table
+                    >> load_intermediate_table
+                    >> clean_transformed_provider_s3_data
+                    >> upsert_records_to_db_table
+                )
+
+            postingestion_tasks = INaturalistDataIngester.create_postingestion_tasks()
+
+            (preingestion_tasks >> loader_tasks >> postingestion_tasks)
+
+        return inaturalist_workflow
+
+
+def main():
+    INaturalistDataIngester.inaturalist_workflow()
+
+
+if __name__ == "__main__":
+    main()
