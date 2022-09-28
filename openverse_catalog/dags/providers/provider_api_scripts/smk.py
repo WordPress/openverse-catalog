@@ -49,8 +49,7 @@ class SmkDataIngester(ProviderDataIngester):
                 "foreign_landing_url."
             )
             return
-        landing_page_base_url = "https://open.smk.dk/en/artwork/image/"
-        return f"{landing_page_base_url}{object_num}"
+        return f"https://open.smk.dk/en/artwork/image/{object_num}"
 
     @staticmethod
     def _get_image_url(image_iiif_id: str, image_size=IMAGE_SIZE):
@@ -63,21 +62,20 @@ class SmkDataIngester(ProviderDataIngester):
 
     @staticmethod
     def _get_title(item: dict) -> str | None:
-        titles = item.get("titles", [])
-        try:
-            return titles[0].get("title")
-        except (IndexError, KeyError):
+        titles = item.get("titles")
+        if not titles or not isinstance(titles, list):
             logger.info(f"No title for image with (foreign) id {item.get('id')}.")
             return
+        return titles[0].get("title")
 
     @staticmethod
     def _get_creator(item: dict) -> str | None:
         # TODO: review this field, there could be more than one creator or artist.
         # Keeping it as it was for the class refactor.
-        try:
-            return item.get("production", [])[0].get("creator")
-        except (IndexError, KeyError):
+        data = item.get("production", [])
+        if not data or not isinstance(data, list):
             return
+        return data[0].get("creator")
 
     @staticmethod
     def _get_alternative_images(item: dict) -> list:
@@ -151,6 +149,8 @@ class SmkDataIngester(ProviderDataIngester):
 
     def get_record_data(self, data: dict) -> dict | list[dict] | None:
         license_info = get_license_info(license_url=data.get("rights"))
+        if license_info is None:
+            return
         images = []
         alt_images = self._get_alternative_images(data)
         for img in alt_images:

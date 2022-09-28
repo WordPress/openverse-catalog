@@ -1,5 +1,4 @@
 import json
-import logging
 from pathlib import Path
 
 from common.licenses import LicenseInfo
@@ -7,10 +6,6 @@ from providers.provider_api_scripts.smk import IMAGE_SIZE, SmkDataIngester
 
 
 RESOURCES = Path(__file__).parent.resolve() / "resources/smk"
-
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s", level=logging.DEBUG
-)
 
 smk = SmkDataIngester()
 
