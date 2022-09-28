@@ -8,8 +8,6 @@ from providers.provider_api_scripts.provider_data_ingester import ProviderDataIn
 
 logger = logging.getLogger(__name__)
 
-IMAGE_SIZE = 2048
-
 
 class SmkDataIngester(ProviderDataIngester):
     endpoint = "https://api.smk.dk/api/v1/art/search/"
@@ -52,7 +50,7 @@ class SmkDataIngester(ProviderDataIngester):
         return f"https://open.smk.dk/en/artwork/image/{object_num}"
 
     @staticmethod
-    def _get_image_url(image_iiif_id: str, image_size=IMAGE_SIZE):
+    def _get_image_url(image_iiif_id: str, image_size=2048):
         # For high quality IIIF-enabled images, restrict the image size to prevent
         # loading very large files.
         # TODO: consider just using the full "image_native" when adding the
