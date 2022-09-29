@@ -64,8 +64,11 @@ class PhylopicDataIngester(ProviderDataIngester):
         continue, so we need a truthy value for prev_query_params.
         """
         params = query_params.copy()
-        endpoint = params.pop("endpoint")
-        return super().get_response_json(query_params, endpoint, **kwargs)
+        return super().get_response_json(
+            query_params=query_params,
+            endpoint=endpoint or params.pop("endpoint", None),
+            **kwargs,
+        )
 
     def get_next_query_params(self, prev_query_params: dict | None, **kwargs) -> dict:
         """
@@ -101,6 +104,13 @@ class PhylopicDataIngester(ProviderDataIngester):
             # Get all images and limit the results for each request.
             "endpoint": f"{base_endpoint}/{self.offset}/{self.batch_limit}"
         }
+
+    def get_should_continue(self, response_json):
+        """
+        Override for upstream "return True". Dated runs will only ever make 1 query so
+        they should not continue to loop.
+        """
+        return False if self.date else True
 
     @staticmethod
     def _get_response_data(response_json) -> dict | list | None:
@@ -230,8 +240,20 @@ class PhylopicDataIngester(ProviderDataIngester):
         _uuid = data.get("uid")
         logger.info(f"Processing UUID: {_uuid}")
         params = {
-            "options": "credit+licenseURL+pngFiles+submitted+submitter+taxa+"
-            "canonicalName+string+firstName+lastName"
+            "options": " ".join(
+                [
+                    "credit",
+                    "licenseURL",
+                    "pngFiles",
+                    "submitted",
+                    "submitter",
+                    "taxa",
+                    "canonicalName",
+                    "string",
+                    "firstName",
+                    "lastName",
+                ]
+            )
         }
         endpoint = f"{self.endpoint}/{_uuid}"
         response_json = self.get_response_json(params, endpoint)
