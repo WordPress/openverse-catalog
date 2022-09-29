@@ -196,7 +196,7 @@ PROVIDER_WORKFLOWS = [
     ),
     ProviderWorkflow(
         provider_script="smk",
-        ingester_class=SmkDataIngester,
+        ingestion_callable=SmkDataIngester,
         start_date=datetime(2020, 1, 1),
     ),
     ProviderWorkflow(
