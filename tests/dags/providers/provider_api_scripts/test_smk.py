@@ -80,27 +80,27 @@ def test__get_title_none():
     assert actual_title is None
 
 
-def test__get_alternative_images_high_quality():
+def test__get_images_high_quality():
     item = _get_resource_json("image_data_hq.json")
     expected_images_data = _get_resource_json("expected_image_data_hq.json")
-    actual_images_data = smk._get_alternative_images(item)
+    actual_images_data = smk._get_images(item)
 
     assert actual_images_data == expected_images_data
 
 
-def test__get_alternative_images_legacy():
+def test__get_images_legacy():
     item = _get_resource_json("image_data_legacy.json")
     expected_images_data = _get_resource_json("expected_image_data_legacy.json")
-    actual_images_data = smk._get_alternative_images(item)
+    actual_images_data = smk._get_images(item)
 
     assert actual_images_data == expected_images_data
 
 
-def test__get_alternative_image_partial():
+def test__get_images_partial():
     item = _get_resource_json("image_data_partial.json")
     expected_images_data = _get_resource_json("expected_image_data_partial.json")
 
-    actual_images_data = smk._get_alternative_images(item)
+    actual_images_data = smk._get_images(item)
 
     assert actual_images_data == expected_images_data
 

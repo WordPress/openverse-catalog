@@ -12,7 +12,6 @@ logger = logging.getLogger(__name__)
 class SmkDataIngester(ProviderDataIngester):
     endpoint = "https://api.smk.dk/api/v1/art/search/"
     delay = 5
-    retries = 3
     batch_limit = 2000
     headers = {"Accept": "application/json"}
     providers = {"image": prov.SMK_DEFAULT_PROVIDER}
@@ -76,7 +75,7 @@ class SmkDataIngester(ProviderDataIngester):
         return data[0].get("creator")
 
     @staticmethod
-    def _get_alternative_images(item: dict) -> list:
+    def _get_images(item: dict) -> list:
         images = []
 
         # Legacy images do not have an iiif_id; fall back to the ID from the
@@ -150,7 +149,7 @@ class SmkDataIngester(ProviderDataIngester):
         if license_info is None:
             return
         images = []
-        alt_images = self._get_alternative_images(data)
+        alt_images = self._get_images(data)
         for img in alt_images:
             images.append(
                 {
