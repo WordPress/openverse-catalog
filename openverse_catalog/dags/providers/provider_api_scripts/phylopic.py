@@ -111,7 +111,7 @@ class PhylopicDataIngester(ProviderDataIngester):
         Override for upstream "return True". Dated runs will only ever make 1 query so
         they should not continue to loop.
         """
-        return False if self.date else True
+        return not bool(self.date)
 
     @staticmethod
     def _get_response_data(response_json) -> dict | list | None:
@@ -239,6 +239,8 @@ class PhylopicDataIngester(ProviderDataIngester):
 
     def get_record_data(self, data: dict) -> dict | list[dict] | None:
         _uuid = data.get("uid")
+        if not _uuid:
+            return
         logger.info(f"Processing UUID: {_uuid}")
         params = {
             "options": " ".join(
