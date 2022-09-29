@@ -12,6 +12,7 @@ from providers.provider_api_scripts.jamendo import JamendoDataIngester
 from providers.provider_api_scripts.metropolitan_museum import MetMuseumDataIngester
 from providers.provider_api_scripts.museum_victoria import VictoriaDataIngester
 from providers.provider_api_scripts.nypl import NyplDataIngester
+from providers.provider_api_scripts.phylopic import PhylopicDataIngester
 from providers.provider_api_scripts.provider_data_ingester import ProviderDataIngester
 from providers.provider_api_scripts.science_museum import ScienceMuseumDataIngester
 from providers.provider_api_scripts.smk import SmkDataIngester
@@ -180,6 +181,7 @@ PROVIDER_WORKFLOWS = [
     ),
     ProviderWorkflow(
         provider_script="phylopic",
+        ingestion_callable=PhylopicDataIngester,
         start_date=datetime(2011, 1, 1),
         schedule_string="@weekly",
         dated=True,
