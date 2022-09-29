@@ -1,20 +1,15 @@
 import json
-import logging
 from functools import partial
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 from common.licenses import get_license_info
-from providers.provider_api_scripts import phylopic as pp
+from providers.provider_api_scripts.phylopic import PhylopicDataIngester
 
 
 RESOURCES = Path(__file__).parent / "resources/phylopic"
-
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s",
-    level=logging.DEBUG,
-)
+pp = PhylopicDataIngester()
 
 
 @pytest.fixture
@@ -27,20 +22,50 @@ def get_json(filename):
         return json.load(f)
 
 
-def test_get_total_images_giving_zero():
-    with patch.object(pp.delayed_requester, "get_response_json", return_value=None):
-        img_count = pp._get_total_images()
-        assert img_count == 0
-
-
-def test_get_total_images_correct():
-    r = get_json("total_images_example.json")
-    with patch.object(pp.delayed_requester, "get_response_json", return_value=r):
-        img_count = pp._get_total_images()
-        assert img_count == 10
-
-
 invalid_endpoint = partial(pytest.param, marks=pytest.mark.raises(exception=ValueError))
+
+
+@pytest.mark.parametrize(
+    "kwargs, expected_kwargs",
+    [
+        # Empty params
+        ({"query_params": {}}, {"query_params": {}, "endpoint": None}),
+        # Empty params & falsy endpoint
+        ({"query_params": {}, "endpoint": ""}, {"query_params": {}, "endpoint": None}),
+        (
+            {"query_params": {}, "endpoint": None},
+            {"query_params": {}, "endpoint": None},
+        ),
+        # Query params with no endpoint
+        (
+            {"query_params": {"foo": "bar"}},
+            {"query_params": {"foo": "bar"}, "endpoint": None},
+        ),
+        # Query params with endpoint defined
+        (
+            {"query_params": {"foo": "bar", "endpoint": "special-endpoint"}},
+            {"query_params": {"foo": "bar"}, "endpoint": "special-endpoint"},
+        ),
+        # Endpoint kwarg supersedes endpoint query param
+        (
+            {
+                "query_params": {"foo": "bar", "endpoint": "gets-ignored"},
+                "endpoint": "is-actually-used",
+            },
+            {"query_params": {"foo": "bar"}, "endpoint": "is-actually-used"},
+        ),
+    ],
+)
+def test_get_response_json_override(kwargs, expected_kwargs):
+    with patch.object(
+        PhylopicDataIngester.__bases__[0], "get_response_json"
+    ) as mock_response_json:
+        query_params_before = kwargs.get("query_params").copy()
+        pp.get_response_json(**kwargs)
+        actual_kwargs = mock_response_json.call_args.kwargs
+        assert actual_kwargs == expected_kwargs
+        # query params should not change as part of the call
+        assert kwargs.get("query_params") == query_params_before
 
 
 @pytest.mark.parametrize(
