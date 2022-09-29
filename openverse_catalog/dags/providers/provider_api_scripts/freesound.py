@@ -16,51 +16,73 @@ from datetime import datetime
 
 import requests
 from airflow.models import Variable
+from common import constants
 from common.licenses.licenses import get_license_info
 from common.loader import provider_details as prov
-from common.requester import DelayedRequester
-from common.storage.audio import AudioStore
+from providers.provider_api_scripts.provider_data_ingester import ProviderDataIngester
 from requests.exceptions import ConnectionError, SSLError
 from retry import retry
 
 
-LIMIT = 150
-DELAY = 1  # in seconds
-RETRIES = 3
-HOST = "freesound.org"
-ENDPOINT = f"https://{HOST}/apiv2/search/text"
-PROVIDER = prov.FREESOUND_DEFAULT_PROVIDER
-API_KEY = Variable.get("API_KEY_FREESOUND", default_var="not_set")
-FLAKY_EXCEPTIONS = (SSLError, ConnectionError)
-
-HEADERS = {
-    "Accept": "application/json",
-}
-DEFAULT_QUERY_PARAMS = {
-    "format": "json",
-    "token": API_KEY,
-    "query": "",
-    "page_size": LIMIT,
-    "fields": "id,url,name,tags,description,created,license,type,download,"
-    "filesize,bitrate,bitdepth,duration,samplerate,pack,username,"
-    "num_downloads,avg_rating,num_ratings,geotag,previews",
-}
-
-delayed_requester = DelayedRequester(DELAY)
-audio_store = AudioStore(provider=PROVIDER)
-
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s",
-    level=logging.INFO,
-)
 logger = logging.getLogger(__name__)
 
-preview_bitrates = {
-    "preview-hq-mp3": 128000,
-    "preview-lq-mp3": 64000,
-    "preview-hq-ogg": 192000,
-    "preview-lq-ogg": 80000,
-}
+
+class FreesoundDataIngester(ProviderDataIngester):
+    batch_limit = 150
+    RETRIES = 3
+    host = "freesound.org"
+    endpoint = f"https://{host}/apiv2/search/text"
+    providers = {"audio": prov.FREESOUND_DEFAULT_PROVIDER}
+    flaky_exceptions = (SSLError, ConnectionError)
+    preview_bitrates = {
+        "preview-hq-mp3": 128000,
+        "preview-lq-mp3": 64000,
+        "preview-hq-ogg": 192000,
+        "preview-lq-ogg": 80000,
+    }
+
+    HEADERS = {
+        "Accept": "application/json",
+    }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.api_key = Variable.get("API_KEY_FREESOUND")
+        self.headers = {"api_key": self.api_key}
+
+    def get_media_type(self, record: dict) -> str:
+        return constants.AUDIO
+
+    def ingest_records(self, **kwargs):
+        for license_name in [
+            "Attribution",
+            "Attribution Noncommercial",
+            "Creative Commons 0",
+        ]:
+            logger.info(f"Obtaining audio records under license '{license_name}'")
+            super().ingest_records(license_name=license_name, **kwargs)
+
+    def get_next_query_params(self, prev_query_params: dict | None, **kwargs) -> dict:
+        license_name = kwargs.get("license_name")
+        if not prev_query_params:
+            return {
+                "format": "json",
+                "token": self.api_key,
+                "query": "",
+                "page_size": self.batch_limit,
+                "fields": "id,url,name,tags,description,created,license,type,download,"
+                "filesize,bitrate,bitdepth,duration,samplerate,pack,username,"
+                "num_downloads,avg_rating,num_ratings,geotag,previews",
+                "license_name": license_name,
+                "page": 1,
+            }
+        else:
+            return {**prev_query_params, "page": prev_query_params["page"] + 1}
+
+    def get_batch_data(self, response_json):
+        if response_json:
+            return response_json.get("results")
+        return None
 
 
 def main(date="all"):
