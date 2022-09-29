@@ -85,6 +85,42 @@ class FreesoundDataIngester(ProviderDataIngester):
         return None
 
 
+    @staticmethod
+    def _get_creator_data(item):
+        if creator := item.get("username"):
+            creator = creator.strip()
+            creator_url = f"https://freesound.org/people/{creator}/"
+        else:
+            creator_url = None
+        return creator, creator_url
+
+
+    @staticmethod
+    def _get_metadata(item):
+        metadata = {}
+        fields = [
+            "description",
+            "num_downloads",
+            "avg_rating",
+            "num_ratings",
+            "geotag",
+            "download",
+        ]
+        for field in fields:
+            if field_value := item.get(field):
+                metadata[field] = field_value
+        return metadata
+
+
+    @staticmethod
+    def _get_license(item):
+        item_license = get_license_info(license_url=item.get("license"))
+
+        if item_license.license is None:
+            return None
+        return item_license
+
+
 def main(date="all"):
     """This script pulls the data for a given date from the Freesound,
     and writes it into a .TSV file to be eventually read
@@ -285,39 +321,6 @@ def _get_audio_files(media_data):
     main_file["audio_url"] = main_file.pop("url")
     main_file["filesize"] = _get_audio_file_size(main_file["audio_url"])
     return main_file, alt_files
-
-
-def _get_creator_data(item):
-    if creator := item.get("username"):
-        creator = creator.strip()
-        creator_url = f"https://freesound.org/people/{creator}/"
-    else:
-        creator_url = None
-    return creator, creator_url
-
-
-def _get_metadata(item):
-    metadata = {}
-    fields = [
-        "description",
-        "num_downloads",
-        "avg_rating",
-        "num_ratings",
-        "geotag",
-        "download",
-    ]
-    for field in fields:
-        if field_value := item.get(field):
-            metadata[field] = field_value
-    return metadata
-
-
-def _get_license(item):
-    item_license = get_license_info(license_url=item.get("license"))
-
-    if item_license.license is None:
-        return None
-    return item_license
 
 
 if __name__ == "__main__":
