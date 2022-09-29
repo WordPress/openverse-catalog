@@ -64,9 +64,10 @@ class PhylopicDataIngester(ProviderDataIngester):
         continue, so we need a truthy value for prev_query_params.
         """
         params = query_params.copy()
+        endpoint_query_param = params.pop("endpoint", None)
         return super().get_response_json(
-            query_params=query_params,
-            endpoint=endpoint or params.pop("endpoint", None),
+            query_params=params,
+            endpoint=endpoint or endpoint_query_param,
             **kwargs,
         )
 
