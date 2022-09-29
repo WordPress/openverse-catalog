@@ -69,7 +69,6 @@ class FreesoundDataIngester(ProviderDataIngester):
             start_date = "*"
             # Allow self.date to be undefined, necessary for the first full, successful
             # run of Freesound but can be changed to dated afterwards.
-            # TODO: Madison you need to mention this in the PR description :)
             if self.date:
                 start_date = datetime.strftime(
                     datetime.fromisoformat(self.date), "%Y-%m-%dT%H:%M:%SZ"
