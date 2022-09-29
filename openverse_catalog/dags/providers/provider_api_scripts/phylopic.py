@@ -15,26 +15,112 @@ import logging
 from datetime import date, timedelta
 from typing import Dict
 
+from common import constants
 from common.licenses import get_license_info
-from common.requester import DelayedRequester
-from common.storage.image import ImageStore
+from common.loader import provider_details as prov
+from providers.provider_api_scripts.provider_data_ingester import ProviderDataIngester
 
 
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s", level=logging.INFO
-)
 logger = logging.getLogger(__name__)
 
-DELAY = 5.0
-HOST = "phylopic.org"
-ENDPOINT = f"http://{HOST}/api/a"
-PROVIDER = "phylopic"
-LIMIT = 5
-# Default number of days to process if date_end is not defined
-DEFAULT_PROCESS_DAYS = 7
 
-delayed_requester = DelayedRequester(DELAY)
-image_store = ImageStore(provider=PROVIDER)
+class PhylopicDataIngester(ProviderDataIngester):
+    delay = 5
+    endpoint = f"http://phylopic.org/api/a/image"
+    providers = {"image": prov.PHYLOPIC_DEFAULT_PROVIDER}
+    batch_limit = 25
+    # Default number of days to process if date_end is not defined
+    default_process_days = 7
+
+    def __init__(self, *args):
+        super().__init__(*args)
+        # This is made an instance attribute rather than passed around via query params
+        # because it actually comprises the URL we hit (not the params) depending on
+        # whether we're running a dated DAG or not.
+        self.offset = 0
+
+    @staticmethod
+    def _compute_date_range(date_start: str, days: int = default_process_days) -> str:
+        """
+        Given an ISO formatted date string and a number of days, compute the
+        ISO string that represents the start date plus the days provided.
+        """
+        date_end = date.fromisoformat(date_start) + timedelta(days=days)
+        return date_end.isoformat()
+
+    def get_media_type(self, record: dict) -> str:
+        return constants.IMAGE
+
+    def get_response_json(
+        self, query_params: dict, endpoint: str | None = None, **kwargs
+    ):
+        """
+        Override for the upstream get_response_json function.
+
+        Due to how the Phylopic API works, the crucial parameters are actually
+        specified in the endpoint itself. We pop the endpoint off here and hand it
+        to the parent function if it exists. We copy the parameter set before doing this
+        because it may be the only value in the params, but we still want execution to
+        continue, so we need a truthy value for prev_query_params.
+        """
+        params = query_params.copy()
+        endpoint = params.pop("endpoint")
+        super().get_response_json(query_params, endpoint, **kwargs)
+
+    def get_next_query_params(self, prev_query_params: dict | None, **kwargs) -> dict:
+        """
+        Additional optional arguments:
+
+        default_process_days: If a date is supplied to the ingester in the form of
+        YYYY-MM-DD, this is the number of days from that date to process. By default,
+        this DAG runs weekly and so default_process_days is 7.
+
+        If this is being run as a dated DAG, **only one request is ever issued** to
+        retrieve all updated IDs. As such, the dated version will only return one
+        query param set whenever called. The full run DAG does require the typical
+        offset + limit. All of these values are encoded in an "endpoint" field, which
+        is used instead of query parameters when actually issuing the request.
+        """
+        base_endpoint = f"{self.endpoint}/list"
+        if self.date:
+            default_process_days = kwargs.get(
+                "default_process_days", self.default_process_days
+            )
+            end_date = self._compute_date_range(self.date, default_process_days)
+            return {
+                # Get a list of objects uploaded/updated within a date range
+                # http://phylopic.org/api/#method-image-time-range
+                "endpoint": f"{base_endpoint}/modified/{self.date}/{end_date}"
+            }
+
+        # This code path is only reached for non-dated DAG runs
+        if prev_query_params:
+            # Update our offset based on the batch limit
+            self.offset += self.batch_limit
+        return {
+            # Get all images and limit the results for each request.
+            "endpoint": f"{base_endpoint}/{self.offset}/{self.batch_limit}"
+        }
+
+    def get_batch_data(self, response_json):
+        """
+        Process the returned IDs.
+
+        The Phylopic API returns only lists of IDs in the initial request. We must take
+        this request and iterate through all the IDs to get the metadata for each one.
+        """
+        data = []
+        if response_json and response_json.get("success") is True:
+            data = list(response_json.get("result"))
+
+        if not data:
+            logger.warning("No content available!")
+            return None
+
+        return data
+
+    def get_record_data(self, data: dict) -> dict | list[dict] | None:
+        id_ = data.get("uid")
 
 
 def main(date_start: str = "all", date_end: str = None):
@@ -117,8 +203,6 @@ def _create_endpoint_for_IDs(**kwargs):
     if ((date_start := kwargs.get("date_start")) is not None) and (
         (date_end := kwargs.get("date_end")) is not None
     ):
-        # Get a list of objects uploaded/updated from a given date to another date
-        # http://phylopic.org/api/#method-image-time-range
         endpoint = (
             f"http://phylopic.org/api/a/image/list/modified/{date_start}/{date_end}"
         )
@@ -253,15 +337,6 @@ def _get_image_info(result, _uuid):
                 height = image.get("height")
 
     return img_url, width, height
-
-
-def _compute_date_range(date_start: str, days: int = DEFAULT_PROCESS_DAYS) -> str:
-    """
-    Given an ISO formatted date string and a number of days, compute the
-    ISO string that represents the start date plus the days provided.
-    """
-    date_end = date.fromisoformat(date_start) + timedelta(days=days)
-    return date_end.isoformat()
 
 
 if __name__ == "__main__":
