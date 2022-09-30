@@ -142,7 +142,7 @@ def _month_check_with_reporting(dag_id: str, media_type: str) -> str:
     """
     next_task_id = _month_check(dag_id)
     next_step = {
-        REFRESH_POPULARITY_METRICS_TASK_ID: "refresh popularity metrics",
+        REFRESH_POPULARITY_METRICS_TASK_ID: "update popularity metrics",
         REFRESH_MATERIALIZED_VIEW_TASK_ID: "refresh matview",
     }.get(next_task_id, "unable to determine next step")
     message = f":horse_racing: Starting data refresh | _Next: {next_step}_"

@@ -124,7 +124,7 @@ def test_month_check_ignores_failed_dagruns():
 @pytest.mark.parametrize(
     "task_id, expected_message",
     [
-        (REFRESH_POPULARITY_METRICS_TASK_ID, "refresh popularity metrics"),
+        (REFRESH_POPULARITY_METRICS_TASK_ID, "update popularity metrics"),
         (REFRESH_MATERIALIZED_VIEW_TASK_ID, "refresh matview"),
         ("Some other task ID", "unable to determine next step"),
     ],
