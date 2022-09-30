@@ -138,7 +138,7 @@ def _month_check(dag_id: str, session: SASession = None) -> str:
 def _month_check_with_reporting(dag_id: str, media_type: str) -> str:
     """
     Wrapper for the monthly check function to report which step is starting
-    which step is next to slack.
+    and which step is next to slack.
     """
     next_task_id = _month_check(dag_id)
     next_step = {

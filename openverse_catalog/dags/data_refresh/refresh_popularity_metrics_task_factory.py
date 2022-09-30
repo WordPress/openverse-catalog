@@ -25,7 +25,8 @@ def create_refresh_popularity_metrics_task_group(data_refresh: DataRefresh):
     """
     This factory method instantiates a TaskGroup that will update the popularity
     DB tables for the given media type, including percentiles and popularity
-    metrics.
+    metrics. It also creates a reporting tasks which will report the status of the
+    various steps once they complete.
 
     Required Arguments:
 
