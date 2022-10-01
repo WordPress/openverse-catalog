@@ -42,8 +42,9 @@ class DelayedRequester:
             between consecutive requests via the `get` method.
     """
 
-    def __init__(self, delay=0):
+    def __init__(self, delay=0, headers={}):
         self._DELAY = delay
+        self.headers = headers
         self._last_request = 0
         self.session = requests.Session()
 
@@ -85,7 +86,7 @@ class DelayedRequester:
             logger.error(f"Error with the request for URL: {url}.")
             logger.info(f"{type(e).__name__}: {e}")
             logger.info(f"Using query parameters {params}")
-            logger.info(f'Using headers {kwargs.get("headers")}')
+            logger.info(f'Using headers {kwargs.get("headers") or self.headers}')
             return None
 
     def _delay_processing(self):
