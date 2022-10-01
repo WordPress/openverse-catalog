@@ -162,9 +162,7 @@ def test_oauth_requester_initializes_correctly(oauth_provider_var_mock):
     ],
     ids=["none_none", "default_only", "request_only", "both"],
 )
-def test_handles_optional_headers(
-    init_kwargs, request_kwargs, expected_request_args, monkeypatch
-):
+def test_handles_optional_headers(init_kwargs, request_kwargs, expected_request_args):
     dq = requester.DelayedRequester(0, headers=init_kwargs)
     dq.session.get = MagicMock(return_value=None)
     url = "http://test"
