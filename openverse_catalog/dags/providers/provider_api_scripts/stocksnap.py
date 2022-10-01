@@ -45,7 +45,7 @@ class StockSnapDataIngester(ProviderDataIngester):
     def get_next_query_params(self, prev_query_params, **kwargs):
         # StockSnap uses /{page} at the end of the endpoint url instead of query params.
         self._page_counter += 1
-        return None
+        return {}
 
     def get_media_type(self, record):
         return "image"
