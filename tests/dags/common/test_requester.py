@@ -150,3 +150,26 @@ def test_oauth_requester_initializes_correctly(oauth_provider_var_mock):
     odq = requester.OAuth2DelayedRequester(FAKE_OAUTH_PROVIDER_NAME, 1)
     assert isinstance(odq.session, OAuth2Session)
     assert odq.session.client_id == "fakeclient"
+
+
+@pytest.mark.parametrize(
+    "init_kwargs, request_kwargs, expected_request_args",
+    [
+        (None, None, None),
+        ({"init_header": "test"}, None, {"init_header": "test"}),
+        (None, {"req_header": "test"}, {"req_header": "test"}),
+        ({"init_header": "test"}, {"req_header": "test"}, {"req_header": "test"}),
+    ],
+    ids=["none_none", "default_only", "request_only", "both"],
+)
+def test_handles_optional_headers(
+    init_kwargs, request_kwargs, expected_request_args, monkeypatch
+):
+    dq = requester.DelayedRequester(0, headers=init_kwargs)
+    dq.session.get = MagicMock(return_value=None)
+    url = "http://test"
+    params = {"testy": "test"}
+    dq.get(url, params, headers=request_kwargs)
+    dq.session.get.assert_called_once_with(
+        url, params=params, headers=expected_request_args
+    )

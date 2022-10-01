@@ -60,8 +60,11 @@ class DelayedRequester:
         """
         self._delay_processing()
         self._last_request = time.time()
+        request_kwargs = kwargs or dict()
+        if kwargs.get("headers") is None:
+            request_kwargs["headers"] = self.headers
         try:
-            response = self.session.get(url, params=params, **kwargs)
+            response = self.session.get(url, params=params, **request_kwargs)
             if response.status_code == requests.codes.ok:
                 logger.debug(f"Received response from url {response.url}")
             elif response.status_code == requests.codes.unauthorized:
@@ -86,7 +89,7 @@ class DelayedRequester:
             logger.error(f"Error with the request for URL: {url}.")
             logger.info(f"{type(e).__name__}: {e}")
             logger.info(f"Using query parameters {params}")
-            logger.info(f'Using headers {kwargs.get("headers") or self.headers}')
+            logger.info(f'Using headers {request_kwargs.get("headers")}')
             return None
 
     def _delay_processing(self):
