@@ -6,8 +6,7 @@ from typing import Dict, Optional, Sequence, Type
 from providers.provider_api_scripts.brooklyn_museum import BrooklynMuseumDataIngester
 from providers.provider_api_scripts.cleveland_museum import ClevelandDataIngester
 from providers.provider_api_scripts.finnish_museums import FinnishMuseumsDataIngester
-
-# from providers.provider_api_scripts.inaturalist import INaturalistDataIngester
+from providers.provider_api_scripts.inaturalist import INaturalistDataIngester
 from providers.provider_api_scripts.metropolitan_museum import MetMuseumDataIngester
 from providers.provider_api_scripts.museum_victoria import VictoriaDataIngester
 from providers.provider_api_scripts.provider_data_ingester import ProviderDataIngester
@@ -135,15 +134,15 @@ PROVIDER_WORKFLOWS = [
         schedule_string="@daily",
         dated=True,
     ),
-    # ProviderWorkflow(
-    #     provider_script="inaturalist",
-    #     ingestion_callable=INaturalistDataIngester,
-    #     create_preingestion_tasks=INaturalistDataIngester.create_preingestion_tasks,
-    #     create_postingestion_tasks=INaturalistDataIngester.create_postingestion_tasks,
-    #     schedule_string="@monthly",
-    #     pull_timeout=timedelta(days=5),
-    #     load_timeout=timedelta(days=5),
-    # ),
+    ProviderWorkflow(
+        provider_script="inaturalist",
+        ingestion_callable=INaturalistDataIngester,
+        create_preingestion_tasks=INaturalistDataIngester.create_preingestion_tasks,
+        create_postingestion_tasks=INaturalistDataIngester.create_postingestion_tasks,
+        schedule_string="@monthly",
+        pull_timeout=timedelta(days=5),
+        load_timeout=timedelta(days=5),
+    ),
     ProviderWorkflow(
         provider_script="freesound",
         media_types=("audio",),

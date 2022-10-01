@@ -47,7 +47,10 @@ INSERT INTO {intermediate_table}
         -- TO DO: should there be a timestamp or anything in the metadata or is null ok?
         null::json as META_DATA,
         -- TO DO: confirm format here, string list format? json?
-        string_to_array(string_agg(INATURALIST.TAXA.ancestor_names,'|'),'|') as TAGS,
+        array_to_json(string_to_array(string_agg(
+            INATURALIST.TAXA.ancestor_names,
+            '|')
+        ,'|')) as TAGS,
         'photograph' as CATEGORY,
         null::boolean as WATERMARKED,
         'inaturalist' as PROVIDER,
@@ -71,6 +74,7 @@ INSERT INTO {intermediate_table}
     WHERE INATURALIST.PHOTOS.PHOTO_ID BETWEEN {page_start} AND {page_end}
     GROUP BY
         INATURALIST.PHOTOS.PHOTO_ID,
+        INATURALIST.PHOTOS.EXTENSION,
         INATURALIST.PHOTOS.WIDTH,
         INATURALIST.PHOTOS.HEIGHT,
         lower(INATURALIST.PHOTOS.EXTENSION),

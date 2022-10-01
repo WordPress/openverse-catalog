@@ -26,7 +26,6 @@ from pathlib import Path
 from typing import Dict
 
 import pendulum
-from airflow import DAG
 from airflow.exceptions import AirflowSkipException
 from airflow.operators.python import PythonOperator
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
@@ -46,6 +45,11 @@ OPENVERSE_BUCKET = os.getenv("OPENVERSE_BUCKET", "openverse-storage")
 PROVIDER = provider_details.INATURALIST_DEFAULT_PROVIDER
 SCRIPT_DIR = Path(__file__).parents[1] / "provider_csv_load_scripts/inaturalist"
 SOURCE_FILE_NAMES = ["photos", "observations", "taxa", "observers"]
+LOADER_ARGS = {
+    "postgres_conn_id": POSTGRES_CONN_ID,
+    "identifier": "{{ ts_nodash }}",
+    "media_type": "image",
+}
 
 
 class INaturalistDataIngester(ProviderDataIngester):
@@ -209,22 +213,18 @@ class INaturalistDataIngester(ProviderDataIngester):
         return drop_inaturalist_schema
 
     @staticmethod
-    def inaturalist_workflow():
+    def create_ingestion_workflow():
 
-        with DAG as inaturalist_workflow:
+        with TaskGroup(group_id="ingest_data") as ingest_data:
 
             preingestion_tasks = INaturalistDataIngester.create_preingestion_tasks()
 
-            with TaskGroup as loader_tasks:
+            with TaskGroup(group_id="loader_tasks") as loader_tasks:
 
-                create_loading_table = PostgresOperator(
+                create_loading_table = PythonOperator(
                     task_id="create_loading_table",
-                    callable=sql.create_loading_table,
-                    op_kwargs={
-                        "postgres_conn_id": POSTGRES_CONN_ID,
-                        "identifier": "{{ ts_nodash }}",
-                        "media_type": "image",
-                    },
+                    python_callable=sql.create_loading_table,
+                    op_kwargs=LOADER_ARGS,
                     doc_md=(
                         "Create a temp table for ingesting data from inaturalist "
                         "source tables."
@@ -237,7 +237,7 @@ class INaturalistDataIngester(ProviderDataIngester):
                     execution_timeout=timedelta(hours=6),
                     op_kwargs={
                         "intermediate_table": sql._get_load_table_name(
-                            "{{ ts_nodash }}"
+                            LOADER_ARGS["identifier"]
                         )
                     },
                     doc_md=(
@@ -247,16 +247,16 @@ class INaturalistDataIngester(ProviderDataIngester):
 
                 clean_transformed_provider_s3_data = PythonOperator(
                     task_id="clean_transformed_provider_s3_data",
-                    callable=sql.clean_transformed_provider_s3_data,
-                    op_kwargs={},
+                    python_callable=sql.clean_transformed_provider_s3_data,
+                    op_kwargs=LOADER_ARGS,
                     execution_timeout=timedelta(hours=6),
                     doc_md="Remove duplicates and records missing required fields.",
                 )
 
                 upsert_records_to_db_table = PythonOperator(
                     task_id="upsert_records_to_db_table",
-                    callable=sql.upsert_records_to_db_table,
-                    op_kwargs={},
+                    python_callable=sql.upsert_records_to_db_table,
+                    op_kwargs=LOADER_ARGS,
                     execution_timeout=timedelta(hours=6),
                     doc_md="Add transformed records to the target catalog image table.",
                 )
@@ -272,12 +272,4 @@ class INaturalistDataIngester(ProviderDataIngester):
 
             (preingestion_tasks >> loader_tasks >> postingestion_tasks)
 
-        return inaturalist_workflow
-
-
-def main():
-    INaturalistDataIngester.inaturalist_workflow()
-
-
-if __name__ == "__main__":
-    main()
+        return ingest_data
