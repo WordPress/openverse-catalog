@@ -11,16 +11,6 @@ PHOTOS has on the order of 120 million records, and OBSERVATIONS has on the orde
 70 million records. We have to join them to get at the taxa (species) information for
 any given photo. Taxa are the only descriptive text we have for inaturalist photos.
 
-This file uses database pagination instead of limit/offset: This would have avoided the
-need to sort / index, but might introduce data quality risks (if postgres moved
-things around while the job was running) and some pages appear empty which requires
-more complicated python logic for retries. More on this approach at:
-https://www.citusdata.com/blog/2016/03/30/five-ways-to-paginate/
-
-Everything on iNaturalist is holding at version 4, except CC0 which is version 1.0.
-License versions below are hard-coded from inaturalist
-https://github.com/inaturalist/inaturalist/blob/d338ba76d82af83d8ad0107563015364a101568c/app/models/shared/license_module.rb#L5
-
 Using image columns version 001 from common.storage.tsv_columns.
 */
 
@@ -46,7 +36,7 @@ INSERT INTO {intermediate_table}
         left(string_agg(INATURALIST.TAXA.NAME, ' & '), 5000) as TITLE,
         -- TO DO: should there be a timestamp or anything in the metadata or is null ok?
         null::json as META_DATA,
-        -- TO DO: confirm format here, string list format? json?
+        -- TO DO: confirm format here, is provider name integrated, and if so how?
         array_to_json(string_to_array(string_agg(
             INATURALIST.TAXA.ancestor_names,
             '|')
@@ -77,7 +67,6 @@ INSERT INTO {intermediate_table}
         INATURALIST.PHOTOS.EXTENSION,
         INATURALIST.PHOTOS.WIDTH,
         INATURALIST.PHOTOS.HEIGHT,
-        lower(INATURALIST.PHOTOS.EXTENSION),
         INATURALIST.LICENSE_CODES.OPENVERSE_CODE,
         INATURALIST.LICENSE_CODES.LICENSE_VERSION,
         COALESCE(INATURALIST.OBSERVERS.LOGIN, INATURALIST.PHOTOS.OBSERVER_ID::text),

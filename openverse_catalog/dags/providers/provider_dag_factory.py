@@ -302,11 +302,10 @@ def create_provider_api_workflow_dag(conf: ProviderWorkflow):
         if callable(
             getattr(conf.ingestion_callable, "create_ingestion_workflow", None)
         ):
-            ingest_data = conf.ingestion_callable.create_ingestion_workflow()
-            # TO DO: There is no pull_data task for bulk s3 csv loads (inaturalist) in
-            # the way that there is for API pipelines. Need to figure out what we want
-            # to track and then start tracking it.
-            ingestion_metrics = {"duration": None, "record_counts_by_media_type": None}
+            (
+                ingest_data,
+                ingestion_metrics,
+            ) = conf.ingestion_callable.create_ingestion_workflow()
         else:
             ingest_data, ingestion_metrics = create_ingestion_workflow(conf)
 
