@@ -153,21 +153,42 @@ def test_oauth_requester_initializes_correctly(oauth_provider_var_mock):
 
 
 @pytest.mark.parametrize(
-    "init_kwargs, request_kwargs, expected_request_args",
+    "init_headers, request_kwargs, expected_request_kwargs",
     [
-        (None, None, None),
-        ({"init_header": "test"}, None, {"init_header": "test"}),
-        (None, {"req_header": "test"}, {"req_header": "test"}),
-        ({"init_header": "test"}, {"req_header": "test"}, {"req_header": "test"}),
+        (None, None, {"headers": {}}),
+        ({"init_header": "test"}, None, {"headers": {"init_header": "test"}}),
+        (
+            None,
+            {"headers": {"h1": "test1"}, "other_kwarg": "test"},
+            {"headers": {"h1": "test1"}, "other_kwarg": "test"},
+        ),
+        (None, {"headers": {"h2": "test2"}}, {"headers": {"h2": "test2"}}),
+        (
+            {"init_header": "test"},
+            {"headers": {"h2": "test2"}},
+            {"headers": {"h2": "test2"}},
+        ),
+        ({"init_header": "test"}, {"headers": None}, {"headers": None}),
+        ({"init_header": "test"}, {"headers": {}}, {"headers": {}}),
     ],
-    ids=["none_none", "default_only", "request_only", "both"],
+    ids=[
+        "none_none",
+        "default_only",
+        "req_only_other",
+        "req_only_no_other",
+        "both",
+        "override_to_none",
+        "override_to_empty",
+    ],
 )
-def test_handles_optional_headers(init_kwargs, request_kwargs, expected_request_args):
-    dq = requester.DelayedRequester(0, headers=init_kwargs)
+def test_handles_optional_headers(
+    init_headers, request_kwargs, expected_request_kwargs
+):
+    dq = requester.DelayedRequester(0, headers=init_headers)
     dq.session.get = MagicMock(return_value=None)
     url = "http://test"
     params = {"testy": "test"}
-    dq.get(url, params, headers=request_kwargs)
+    dq.get(url, params, **(request_kwargs or {}))
     dq.session.get.assert_called_once_with(
-        url, params=params, headers=expected_request_args
+        url, params=params, **(expected_request_kwargs or {})
     )

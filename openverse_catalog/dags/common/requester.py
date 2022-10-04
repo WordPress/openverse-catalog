@@ -44,9 +44,9 @@ class DelayedRequester:
              by kwargs in specific calls to the get method
     """
 
-    def __init__(self, delay=0, headers={}):
+    def __init__(self, delay=0, headers=None):
         self._DELAY = delay
-        self.headers = headers
+        self.headers = headers or {}
         self._last_request = 0
         self.session = requests.Session()
 
@@ -62,8 +62,8 @@ class DelayedRequester:
         """
         self._delay_processing()
         self._last_request = time.time()
-        request_kwargs = kwargs or dict()
-        if kwargs.get("headers") is None:
+        request_kwargs = kwargs or {}
+        if "headers" not in kwargs:
             request_kwargs["headers"] = self.headers
         try:
             response = self.session.get(url, params=params, **request_kwargs)
