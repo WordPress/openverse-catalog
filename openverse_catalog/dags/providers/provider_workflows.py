@@ -171,7 +171,7 @@ PROVIDER_WORKFLOWS = [
     ),
     ProviderWorkflow(
         provider_script="nypl",
-        ingester_class=NyplDataIngester,
+        ingestion_callable=NyplDataIngester,
         start_date=datetime(2020, 1, 1),
     ),
     ProviderWorkflow(
