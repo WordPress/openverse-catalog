@@ -21,6 +21,7 @@ from urllib.parse import parse_qs, urlencode, urlsplit
 
 import common
 from airflow.models import Variable
+from common import constants
 from common.licenses import get_license_info
 from common.loader import provider_details as prov
 from common.urls import rewrite_redirected_url
@@ -38,7 +39,7 @@ class JamendoDataIngester(ProviderDataIngester):
     headers = {"Accept": "application/json"}
 
     def get_media_type(self, record):
-        return "audio"
+        return constants.AUDIO
 
     def get_next_query_params(self, prev_query_params, **kwargs):
         if not prev_query_params:
