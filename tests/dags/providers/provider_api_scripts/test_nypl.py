@@ -14,7 +14,7 @@ RESOURCES = Path(__file__).parent / "resources/nypl"
 CC0 = LicenseInfo(
     license="cc0",
     version="1.0",
-    url="https://creativecommons.org/publicdomain/zero/1.0",
+    url="https://creativecommons.org/publicdomain/zero/1.0/",
     raw_url="https://creativecommons.org/publicdomain/zero/1.0/",
 )
 
