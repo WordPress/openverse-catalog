@@ -120,7 +120,7 @@ def test_get_record_data_success():
     result = search_response["nyplAPI"]["response"]["result"][0]
     item_response = _get_resource_json("response_itemdetails_success.json")
 
-    with patch.object(nypl, "get_detail_json", return_value=item_response):
+    with patch.object(nypl, "get_response_json", return_value=item_response):
         images = nypl.get_record_data(result)
     assert len(images) == 7
     expected_image = {
@@ -152,6 +152,6 @@ def test_get_record_data_failure():
     result = search_response["nyplAPI"]["response"]["result"][0]
 
     item_response = None
-    with patch.object(nypl, "get_detail_json", return_value=item_response):
+    with patch.object(nypl, "get_response_json", return_value=item_response):
         images = nypl.get_record_data(result)
     assert images is None
