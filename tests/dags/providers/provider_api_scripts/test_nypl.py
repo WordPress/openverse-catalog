@@ -134,7 +134,7 @@ def test_get_record_data_success():
             "date_issued": "1981",
             "genre": "Maps",
             "publisher": "New York Public Library, Local History and Genealogy Division",
-            "topics": "Census districts",
+            "tags": "Census districts",
             "type_of_resource": "cartographic",
             "physical_description": "4 polyester film encapsulations, some containing 2 sheets back-to-back. "
             "Accompanying text formatted as 1 large sheet (46 x 59 cm), in one of "
