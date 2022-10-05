@@ -12,12 +12,12 @@ on:
   workflow_dispatch:
 
 concurrency:
-    group: ${{ github.workflow }}-${{ github.event_name == 'release' && 'release' || github.ref }}
-    # Don't continue building images for a workflow if it is not triggered by release.
-    # For workflows triggered by release, allow them to complete and just block on them.
-    # This ensures deployments in particular to happen in series rather than parallel.
-    cancel-in-progress: ${{ github.event_name != 'release' }}
-    
+  group: ${{ github.workflow }}-${{ github.event_name == 'release' && 'release' || github.ref }}
+  # Don't continue building images for a workflow if it is not triggered by release.
+  # For workflows triggered by release, allow them to complete and just block on them.
+  # This ensures deployments in particular to happen in series rather than parallel.
+  cancel-in-progress: ${{ github.event_name != 'release' }}
+
 jobs:
   lint:
     name: Lint
