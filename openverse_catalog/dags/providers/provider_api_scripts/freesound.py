@@ -30,7 +30,6 @@ logger = logging.getLogger(__name__)
 
 class FreesoundDataIngester(ProviderDataIngester):
     batch_limit = 150
-    RETRIES = 3
     host = "freesound.org"
     endpoint = f"https://{host}/apiv2/search/text"
     providers = {"audio": prov.FREESOUND_DEFAULT_PROVIDER}
@@ -42,14 +41,13 @@ class FreesoundDataIngester(ProviderDataIngester):
         "preview-lq-ogg": 80000,
     }
 
-    HEADERS = {
+    headers = {
         "Accept": "application/json",
     }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.api_key = Variable.get("API_KEY_FREESOUND")
-        self.headers = {"api_key": self.api_key}
 
     def get_media_type(self, record: dict) -> str:
         return constants.AUDIO
@@ -81,7 +79,7 @@ class FreesoundDataIngester(ProviderDataIngester):
                 "fields": "id,url,name,tags,description,created,license,type,download,"
                 "filesize,bitrate,bitdepth,duration,samplerate,pack,username,"
                 "num_downloads,avg_rating,num_ratings,geotag,previews",
-                "license_name": license_name,
+                "license": license_name,
                 "filter": f"created:[{start_date} TO NOW]",
                 "page": 1,
             }
