@@ -26,21 +26,26 @@ logger = logging.getLogger(__name__)
 class PhylopicDataIngester(ProviderDataIngester):
     delay = 5
     host = "http://phylopic.org"
-    endpoint = f"{host}/api/a/image"
+    # Use "base_endpoint" since class's "endpoint" parameter gets defined as a property
+    base_endpoint = f"{host}/api/a/image"
     providers = {"image": prov.PHYLOPIC_DEFAULT_PROVIDER}
     batch_limit = 25
-    # Default number of days to process if date_end is not defined
+    # If a date is supplied to the ingester in the form of YYYY-MM-DD, this is the
+    # number of days from that date to process. By default,this DAG runs weekly
+    # and so default_process_days is 7.
     default_process_days = 7
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # This is made an instance attribute rather than passed around via query params
         # because the URL we hit includes it in the path (not the params) depending on
-        # whether we're running a dated DAG or not.
-        self.offset = 0
+        # whether we're running a dated DAG or not. This needs to start at 0 after
+        # getting called once, so we do not set it as a sentinel for the
+        # get_next_query_params function.
+        self.offset = None
 
     @staticmethod
-    def _compute_date_range(date_start: str, days: int = default_process_days) -> str:
+    def _compute_date_range(date_start: str, days: int) -> str:
         """
         Given an ISO formatted date string and a number of days, compute the
         ISO string that represents the start date plus the days provided.
@@ -51,60 +56,36 @@ class PhylopicDataIngester(ProviderDataIngester):
     def get_media_type(self, record: dict) -> str:
         return constants.IMAGE
 
-    def get_response_json(
-        self, query_params: dict, endpoint: str | None = None, **kwargs
-    ):
+    @property
+    def endpoint(self) -> str:
         """
-        Override for the upstream get_response_json function.
-
-        Due to how the Phylopic API works, the crucial parameters are actually
-        specified in the endpoint itself. We pop the endpoint off here and hand it
-        to the parent function if it exists. We copy the parameter set before doing this
-        because it may be the only value in the params, but we still want execution to
-        continue, so we need a truthy value for prev_query_params.
+        If this is being run as a dated DAG, **only one request is ever issued** to
+        retrieve all updated IDs. As such, the dated version will only return one
+        endpoint. The full run DAG does require the typical offset + limit, which gets
+        recomputed on each call to this property.
         """
-        params = query_params.copy()
-        endpoint_query_param = params.pop("endpoint", None)
-        return super().get_response_json(
-            query_params=params,
-            endpoint=endpoint or endpoint_query_param,
-            **kwargs,
-        )
+        list_endpoint = f"{self.base_endpoint}/list"
+        if self.date:
+            end_date = self._compute_date_range(self.date, self.default_process_days)
+            # Get a list of objects uploaded/updated within a date range
+            # http://phylopic.org/api/#method-image-time-range
+            endpoint = f"{list_endpoint}/modified/{self.date}/{end_date}"
+        else:
+            # Get all images and limit the results for each request.
+            endpoint = f"{list_endpoint}/{self.offset}/{self.batch_limit}"
+        logger.info(f"Constructed endpoint: {endpoint}")
+        return endpoint
 
     def get_next_query_params(self, prev_query_params: dict | None, **kwargs) -> dict:
         """
-        Additional optional arguments:
-
-        default_process_days: If a date is supplied to the ingester in the form of
-        YYYY-MM-DD, this is the number of days from that date to process. By default,
-        this DAG runs weekly and so default_process_days is 7.
-
-        If this is being run as a dated DAG, **only one request is ever issued** to
-        retrieve all updated IDs. As such, the dated version will only return one
-        query param set whenever called. The full run DAG does require the typical
-        offset + limit. All of these values are encoded in an "endpoint" field, which
-        is used instead of query parameters when actually issuing the request.
+        Since the query range is determined via endpoint, this only increments the range
+        to query.
         """
-        base_endpoint = f"{self.endpoint}/list"
-        if self.date:
-            default_process_days = kwargs.get(
-                "default_process_days", self.default_process_days
-            )
-            end_date = self._compute_date_range(self.date, default_process_days)
-            return {
-                # Get a list of objects uploaded/updated within a date range
-                # http://phylopic.org/api/#method-image-time-range
-                "endpoint": f"{base_endpoint}/modified/{self.date}/{end_date}"
-            }
-
-        # This code path is only reached for non-dated DAG runs
-        if prev_query_params:
-            # Update our offset based on the batch limit
+        if self.offset is None:
+            self.offset = 0
+        else:
             self.offset += self.batch_limit
-        return {
-            # Get all images and limit the results for each request.
-            "endpoint": f"{base_endpoint}/{self.offset}/{self.batch_limit}"
-        }
+        return {}
 
     def get_should_continue(self, response_json):
         """
@@ -241,7 +222,7 @@ class PhylopicDataIngester(ProviderDataIngester):
         _uuid = data.get("uid")
         if not _uuid:
             return
-        logger.info(f"Processing UUID: {_uuid}")
+        logger.debug(f"Processing UUID: {_uuid}")
         params = {
             "options": " ".join(
                 [
@@ -258,7 +239,7 @@ class PhylopicDataIngester(ProviderDataIngester):
                 ]
             )
         }
-        endpoint = f"{self.endpoint}/{_uuid}"
+        endpoint = f"{self.base_endpoint}/{_uuid}"
         response_json = self.get_response_json(params, endpoint)
         result = self._get_response_data(response_json)
         if not result:

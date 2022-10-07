@@ -1,5 +1,4 @@
 import json
-from functools import partial
 from pathlib import Path
 from unittest.mock import patch
 
@@ -22,52 +21,6 @@ def get_json(filename):
         return json.load(f)
 
 
-invalid_endpoint = partial(pytest.param, marks=pytest.mark.raises(exception=ValueError))
-
-
-@pytest.mark.parametrize(
-    "kwargs, expected_kwargs",
-    [
-        # Empty params
-        ({"query_params": {}}, {"query_params": {}, "endpoint": None}),
-        # Empty params & falsy endpoint
-        ({"query_params": {}, "endpoint": ""}, {"query_params": {}, "endpoint": None}),
-        (
-            {"query_params": {}, "endpoint": None},
-            {"query_params": {}, "endpoint": None},
-        ),
-        # Query params with no endpoint
-        (
-            {"query_params": {"foo": "bar"}},
-            {"query_params": {"foo": "bar"}, "endpoint": None},
-        ),
-        # Query params with endpoint defined
-        (
-            {"query_params": {"foo": "bar", "endpoint": "special-endpoint"}},
-            {"query_params": {"foo": "bar"}, "endpoint": "special-endpoint"},
-        ),
-        # Endpoint kwarg supersedes endpoint query param
-        (
-            {
-                "query_params": {"foo": "bar", "endpoint": "gets-ignored"},
-                "endpoint": "is-actually-used",
-            },
-            {"query_params": {"foo": "bar"}, "endpoint": "is-actually-used"},
-        ),
-    ],
-)
-def test_get_response_json_override(kwargs, expected_kwargs):
-    with patch.object(
-        PhylopicDataIngester.__bases__[0], "get_response_json"
-    ) as mock_response_json:
-        query_params_before = kwargs.get("query_params").copy()
-        pp.get_response_json(**kwargs)
-        actual_kwargs = mock_response_json.call_args.kwargs
-        assert actual_kwargs == expected_kwargs
-        # query params should not change as part of the call
-        assert kwargs.get("query_params") == query_params_before
-
-
 @pytest.fixture
 def ingester() -> PhylopicDataIngester:
     _pp = PhylopicDataIngester()
@@ -79,15 +32,12 @@ def ingester() -> PhylopicDataIngester:
 
 
 @pytest.mark.parametrize(
-    "offset, limit, prev_query_params, non_dated_endpoint",
+    "offset, limit, non_dated_endpoint",
     [
         # Basic limit/offset changes
-        (0, 25, False, "http://phylopic.org/api/a/image/list/0/25"),
-        (0, 30, False, "http://phylopic.org/api/a/image/list/0/30"),
-        (60, 30, False, "http://phylopic.org/api/a/image/list/60/30"),
-        # Existence of previous query params increments offset
-        (0, 25, True, "http://phylopic.org/api/a/image/list/25/25"),
-        (60, 30, True, "http://phylopic.org/api/a/image/list/90/30"),
+        (0, 25, "http://phylopic.org/api/a/image/list/0/25"),
+        (0, 30, "http://phylopic.org/api/a/image/list/0/30"),
+        (60, 30, "http://phylopic.org/api/a/image/list/60/30"),
     ],
 )
 @pytest.mark.parametrize(
@@ -102,10 +52,9 @@ def ingester() -> PhylopicDataIngester:
         ),
     ],
 )
-def test_get_next_query_params(
+def test_endpoint(
     offset,
     limit,
-    prev_query_params,
     non_dated_endpoint,
     date,
     dated_endpoint,
@@ -116,8 +65,17 @@ def test_get_next_query_params(
     ingester.date = date
     ingester.offset = offset
     ingester.batch_limit = limit
-    actual = ingester.get_next_query_params(prev_query_params)
-    assert actual["endpoint"] == expected_endpoint
+    assert ingester.endpoint == expected_endpoint
+
+
+def test_get_next_query_params(ingester):
+    # Initial call sets offset to 0
+    ingester.batch_limit = 50
+    # Offset after the first call should be 0, then increment by batch limit
+    # each other iteration
+    for expected_offset in [0, 50, 100]:
+        ingester.get_next_query_params({})
+        assert ingester.offset == expected_offset
 
 
 @pytest.mark.parametrize("dated", [True, False])
