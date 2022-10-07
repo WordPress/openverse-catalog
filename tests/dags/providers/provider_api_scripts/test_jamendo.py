@@ -46,12 +46,9 @@ def test_remove_param_from_url(url, param, expected):
     assert actual == expected
 
 
-def test_get_batch_data_returns_correctly_with_none_json():
-    assert jamendo.get_batch_data(None) is None
-
-
-def test_get_batch_data_returns_correctly_with_no_results():
-    assert jamendo.get_batch_data({}) is None
+@pytest.mark.parametrize("json", [None, {}])  # No results
+def test_get_batch_data_returns_correctly(json):
+    assert jamendo.get_batch_data(json) is None
 
 
 def test_get_next_query_params_adds_offset():
@@ -103,24 +100,18 @@ def test_get_record_data():
     assert actual == expected
 
 
-def test_get_record_data_returns_none_when_no_foreign_id():
+@pytest.mark.parametrize(
+    "required_field",
+    [
+        "shareurl",  # foreign identifier
+        "audio",  # audio url
+        "license_ccurl",  # license
+    ],
+)
+def test_get_record_data_returns_none_when_required_data_is_null(required_field):
     with open(RESOURCES / "audio_data_example.json") as f:
         audio_data = json.load(f)
-        audio_data.pop("shareurl", None)
-    assert jamendo.get_record_data(audio_data) is None
-
-
-def test_get_record_data_returns_none_when_no_audio_url():
-    with open(RESOURCES / "audio_data_example.json") as f:
-        audio_data = json.load(f)
-        audio_data.pop("audio", None)
-    assert jamendo.get_record_data(audio_data) is None
-
-
-def test_get_record_data_returns_none_when_no_license():
-    with open(RESOURCES / "audio_data_example.json") as f:
-        audio_data = json.load(f)
-        audio_data.pop("license_ccurl", None)
+        audio_data.pop(required_field, None)
     assert jamendo.get_record_data(audio_data) is None
 
 

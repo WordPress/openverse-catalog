@@ -170,9 +170,7 @@ class JamendoDataIngester(ProviderDataIngester):
             return None
 
         license_url = data.get("license_ccurl")
-        logger.info(license_url)
         license_info = get_license_info(license_url=license_url)
-        logger.info(license_info)
         if license_info.license is None:
             return None
 
@@ -202,10 +200,6 @@ class JamendoDataIngester(ProviderDataIngester):
                 audio_set.lower().replace(" ", "-").replace("/", "-").replace("--", "")
             )
             set_url = rewrite_redirected_url(f"{base_url}{set_id}/{set_slug}")
-            logger.info(audio_set)
-            logger.info(set_slug)
-            logger.info(set_url)
-
         return {
             "title": title,
             "creator": creator,
