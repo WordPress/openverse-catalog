@@ -35,7 +35,7 @@ class PhylopicDataIngester(ProviderDataIngester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # This is made an instance attribute rather than passed around via query params
-        # because it actually comprises the URL we hit (not the params) depending on
+        # because the URL we hit includes it in the path (not the params) depending on
         # whether we're running a dated DAG or not.
         self.offset = 0
 
