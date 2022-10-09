@@ -129,7 +129,7 @@ class NyplDataIngester(ProviderDataIngester):
         return None
 
     @staticmethod
-    def _get_image_data(images):
+    def _get_image_data(images) -> tuple[None, None] | tuple[str, str]:
         """
         Receives a list of dictionaries of the following shape:
         {
