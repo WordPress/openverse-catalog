@@ -119,6 +119,8 @@ class NyplDataIngester(ProviderDataIngester):
         """
         Extracts the filetype from a description string like:
         "Cropped .jpeg (1600 pixels on the long side)"
+        This is required because the filetype is not present/extractable from the
+        url via the MediaStore class.
         :param description: the description string
         :return:  jpeg | gif
         """
