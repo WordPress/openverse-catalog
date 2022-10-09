@@ -9,9 +9,6 @@ from common.loader.provider_details import ImageCategory
 from providers.provider_api_scripts.provider_data_ingester import ProviderDataIngester
 
 
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s", level=logging.INFO
-)
 logger = logging.getLogger(__name__)
 
 NYPL_API = Variable.get("API_KEY_NYPL", default_var=None)
