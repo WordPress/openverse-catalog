@@ -129,7 +129,7 @@ class NyplDataIngester(ProviderDataIngester):
     @staticmethod
     def _get_image_data(images):
         """
-        Gets a list of dictionaries of the following shape:
+        Receives a list of dictionaries of the following shape:
         {
           "$": "http://images.nypl.org/index.php?id=56738467&t=q&download=1
         &suffix=29eed1f0-3d50-0134-c4c7-00505686a51c.001",
