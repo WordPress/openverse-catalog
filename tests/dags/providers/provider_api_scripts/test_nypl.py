@@ -143,8 +143,7 @@ def test_get_record_data_success():
         "title": "1900 census enumeration districts, Manhattan and Bronx",
         "license_info": CC0,
     }
-    for key, value in expected_image.items():
-        assert images[0][key] == value
+    assert images[0] == expected_image
 
 
 def test_get_record_data_failure():
