@@ -112,7 +112,7 @@ class NyplDataIngester(ProviderDataIngester):
                 "meta_data": metadata,
             }
             images.append(image_data)
-        return images or None
+        return images
 
     @staticmethod
     def _get_filetype(description: str):
