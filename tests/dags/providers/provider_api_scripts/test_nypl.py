@@ -18,9 +18,6 @@ CC0 = LicenseInfo(
     raw_url="https://creativecommons.org/publicdomain/zero/1.0/",
 )
 
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s", level=logging.DEBUG
-)
 
 
 @pytest.fixture(autouse=True)
