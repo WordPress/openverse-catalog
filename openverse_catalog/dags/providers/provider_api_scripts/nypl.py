@@ -65,7 +65,7 @@ class NyplDataIngester(ProviderDataIngester):
         mods = item_details.get("mods")
 
         title_info = mods.get("titleInfo")
-        if isinstance(title_info, list) and len(title_info) > 0:
+        if isinstance(title_info, list) and len(title_info):
             title_info = title_info[0]
         title = "" if title_info is None else title_info.get("title", {}).get("$")
 
