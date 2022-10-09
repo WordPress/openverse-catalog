@@ -28,8 +28,7 @@ def validate_url_string():
 
 
 nypl = NyplDataIngester()
-image_store = ImageStore(provider=prov.NYPL_DEFAULT_PROVIDER)
-nypl.media_stores = {"image": image_store}
+image_store = nypl.media_stores["image"]
 
 
 def _get_resource_json(json_name):
