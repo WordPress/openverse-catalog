@@ -52,17 +52,7 @@ class FreesoundDataIngester(ProviderDataIngester):
     def get_media_type(self, record: dict) -> str:
         return constants.AUDIO
 
-    def ingest_records(self, **kwargs):
-        for license_name in [
-            "Attribution",
-            "Attribution Noncommercial",
-            "Creative Commons 0",
-        ]:
-            logger.info(f"Obtaining audio records under license '{license_name}'")
-            super().ingest_records(license_name=license_name, **kwargs)
-
     def get_next_query_params(self, prev_query_params: dict | None, **kwargs) -> dict:
-        license_name = kwargs.get("license_name")
         if not prev_query_params:
             start_date = "*"
             # Allow self.date to be undefined, necessary for the first full, successful
@@ -101,7 +91,6 @@ class FreesoundDataIngester(ProviderDataIngester):
                         "previews",
                     ]
                 ),
-                "license": license_name,
                 "filter": f"created:[{start_date} TO NOW]",
                 "page": 1,
             }
