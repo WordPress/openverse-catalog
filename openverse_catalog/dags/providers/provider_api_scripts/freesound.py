@@ -76,9 +76,31 @@ class FreesoundDataIngester(ProviderDataIngester):
                 "token": self.api_key,
                 "query": "",
                 "page_size": self.batch_limit,
-                "fields": "id,url,name,tags,description,created,license,type,download,"
-                "filesize,bitrate,bitdepth,duration,samplerate,pack,username,"
-                "num_downloads,avg_rating,num_ratings,geotag,previews",
+                "fields": ",".join(
+                    [
+                        "id",
+                        "url",
+                        "name",
+                        "tags",
+                        "description",
+                        "created",
+                        "license",
+                        "type",
+                        "download",
+                        "filesize",
+                        "bitrate",
+                        "bitdepth",
+                        "duration",
+                        "samplerate",
+                        "pack",
+                        "username",
+                        "num_downloads",
+                        "avg_rating",
+                        "num_ratings",
+                        "geotag",
+                        "previews",
+                    ]
+                ),
                 "license": license_name,
                 "filter": f"created:[{start_date} TO NOW]",
                 "page": 1,
@@ -87,9 +109,9 @@ class FreesoundDataIngester(ProviderDataIngester):
             return {**prev_query_params, "page": prev_query_params["page"] + 1}
 
     def get_batch_data(self, response_json):
-        if response_json:
+        if results := response_json.get("results"):
             # Freesound sometimes returns results that are just "None", filter these out
-            return [item for item in response_json.get("results") if item is not None]
+            return [item for item in results if item is not None]
         return None
 
     @staticmethod
