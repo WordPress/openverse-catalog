@@ -34,6 +34,7 @@ class FreesoundDataIngester(ProviderDataIngester):
     endpoint = f"https://{host}/apiv2/search/text"
     providers = {"audio": prov.FREESOUND_DEFAULT_PROVIDER}
     flaky_exceptions = (SSLError, ConnectionError)
+    preferred_preview = "preview-hq-mp3"
     preview_bitrates = {
         "preview-hq-mp3": 128000,
         "preview-lq-mp3": 64000,
@@ -155,14 +156,6 @@ class FreesoundDataIngester(ProviderDataIngester):
         else:
             return None, None, None
 
-    @staticmethod
-    def _get_preview_filedata(preview_type, preview_url):
-        return {
-            "url": preview_url,
-            "filetype": preview_type.split("-")[-1],
-            "bit_rate": FreesoundDataIngester.preview_bitrates[preview_type],
-        }
-
     @retry(flaky_exceptions, tries=3, delay=1, backoff=2)
     def _get_audio_file_size(self, url):
         """
@@ -180,8 +173,25 @@ class FreesoundDataIngester(ProviderDataIngester):
         """
         return int(requests.head(url).headers["content-length"])
 
-    def _get_audio_files(self, media_data):
-        # This is the original file, needs auth for downloading.
+    def _get_audio_files(
+        self, media_data
+    ) -> tuple[dict, list[dict]] | tuple[None, None]:
+        previews = media_data.get("previews")
+        # If there are no previews, then we will not be able to play the file
+        if not previews:
+            return None, None
+
+        # If our preferred preview type is not present, skip this audio
+        if not (preview_url := previews.get(self.preferred_preview)):
+            return None, None
+
+        main_file = {
+            "audio_url": preview_url,
+            "filetype": self.preferred_preview.split("-")[-1],
+            "bit_rate": FreesoundDataIngester.preview_bitrates[self.preferred_preview],
+            "filesize": self._get_audio_file_size(preview_url),
+        }
+        # These are the original files, needs auth for downloading.
         # bit_rate in kilobytes, converted to bytes
         alt_files = [
             {
@@ -192,15 +202,6 @@ class FreesoundDataIngester(ProviderDataIngester):
                 "filesize": media_data.get("filesize"),
             }
         ]
-        previews = media_data.get("previews")
-        # If there are no previews, then we will not be able to play the file
-        if not previews:
-            return None
-        main_file = self._get_preview_filedata(
-            "preview-hq-mp3", previews["preview-hq-mp3"]
-        )
-        main_file["audio_url"] = main_file.pop("url")
-        main_file["filesize"] = self._get_audio_file_size(main_file["audio_url"])
         return main_file, alt_files
 
     def get_record_data(self, media_data: dict) -> dict | list[dict] | None:

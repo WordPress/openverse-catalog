@@ -29,8 +29,8 @@ def file_size_patch():
 
 @pytest.fixture
 def audio_data():
-    AUDIO_DATA_EXAMPLE = RESOURCES / "audio_data_example.json"
-    with open(AUDIO_DATA_EXAMPLE) as f:
+    audio_data_example = RESOURCES / "audio_data_example.json"
+    with open(audio_data_example) as f:
         yield json.load(f)
 
 
@@ -83,71 +83,53 @@ def test_get_items(file_size_patch):
     assert actual_audio_count == expected_audio_count
 
 
-def test_process_item_batch_handles_example_batch(audio_data, file_size_patch):
-    items_batch = [audio_data]
-    with patch.object(
-        fsd.media_stores["audio"], "add_item", return_value=1
-    ) as mock_add:
-        fsd.process_batch(items_batch)
-        mock_add.assert_called_once()
-        _, actual_call_args = mock_add.call_args_list[0]
-        expected_call_args = {
-            "alt_files": [
-                {
-                    "bit_rate": 1381000,
-                    "filesize": 107592,
-                    "filetype": "wav",
-                    "sample_rate": 44100,
-                    "url": "https://freesound.org/apiv2/sounds/415362/download/",
-                }
-            ],
-            "audio_set": "https://freesound.org/apiv2/packs/23434/",
+def test_get_audio_files_handles_example_audio_data(audio_data, file_size_patch):
+    actual = fsd._get_audio_files(audio_data)
+    expected = (
+        {
             "audio_url": "https://freesound.org/data/previews/415/415362_6044691-hq.mp3",
             "bit_rate": 128000,
-            "creator": "owly-bee",
-            "creator_url": "https://freesound.org/people/owly-bee/",
-            "duration": 608,
             "filesize": AUDIO_FILE_SIZE,
             "filetype": "mp3",
-            "foreign_identifier": 415362,
-            "foreign_landing_url": "https://freesound.org/people/owly-bee/sounds/415362/",
-            "license_info": LicenseInfo(
-                license="by",
-                version="3.0",
-                url="https://creativecommons.org/licenses/by/3.0/",
-                raw_url="http://creativecommons.org/licenses/by/3.0/",
-            ),
-            "meta_data": {
-                "description": "A disinterested noise in a somewhat low tone.",
-                "download": "https://freesound.org/apiv2/sounds/415362/download/",
-                "num_downloads": 164,
-            },
-            "raw_tags": ["eh", "disinterest", "low", "uh", "voice", "uncaring"],
-            "set_foreign_id": "foo",
-            "set_url": "https://freesound.org/apiv2/packs/23434/",
-            "title": "Ehh disinterested.wav",
-        }
-        assert actual_call_args == expected_call_args
+        },
+        [
+            {
+                "bit_rate": 1381000,
+                "filesize": 107592,
+                "filetype": "wav",
+                "sample_rate": 44100,
+                "url": "https://freesound.org/apiv2/sounds/415362/download/",
+            }
+        ],
+    )
+    assert actual == expected
 
 
-def test_extract_audio_data_returns_none_when_no_foreign_id(audio_data):
-    audio_data.pop("id", None)
-    actual_audio_info = fsd.get_record_data(audio_data)
-    expected_audio_info = None
-    assert actual_audio_info is expected_audio_info
+def test_get_audio_files_returns_none_when_missing_previews(audio_data):
+    audio_data.pop("previews", None)
+    actual = fsd._get_audio_files(audio_data)
+    assert actual == (None, None)
 
 
-def test_extract_audio_data_returns_none_when_no_audio_url(audio_data):
-    audio_data.pop("url", None)
-    audio_data.pop("download", None)
-    actual_audio_info = fsd.get_record_data(audio_data)
-    assert actual_audio_info is None
+def test_get_audio_files_returns_none_when_missing_preferred_preview(audio_data):
+    audio_data["previews"].pop(fsd.preferred_preview)
+    actual = fsd._get_audio_files(audio_data)
+    assert actual == (None, None)
 
 
-def test_extract_audio_data_returns_none_when_no_license(audio_data):
-    audio_data.pop("license", None)
-    actual_audio_info = fsd.get_record_data(audio_data)
-    assert actual_audio_info is None
+@pytest.mark.parametrize(
+    "missing_fields",
+    [
+        ("id",),
+        ("url", "download"),
+        ("license",),
+    ],
+)
+def test_get_record_data_returns_none_when_missing_data(missing_fields, audio_data):
+    for field in missing_fields:
+        audio_data.pop(field, None)
+    actual = fsd.get_record_data(audio_data)
+    assert actual is None
 
 
 def test_get_audio_set_info(audio_data):
