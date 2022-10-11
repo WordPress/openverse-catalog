@@ -3,7 +3,7 @@
 Thank you for your interest in contributing to Openverse! This document is
 a set of guidelines to help you contribute to this project.
 
-Please refer to [CONTRIBUTING.md](https://github.com/WordPress/openverse/blob/0b5e24bd325da7b75db9484a268d7c8d197ae920/CONTRIBUTING.md) for a
+Please refer to [CONTRIBUTING.md](https://github.com/WordPress/openverse/blob/main/CONTRIBUTING.md) for a
 detailed understanding of the contribution guidelines.
 
 ## Code of Conduct
@@ -20,4 +20,4 @@ you'd like to see documented.
 
 ## Questions or Thoughts?
 
-Feel free to [join us on Slack](https://make.wordpress.org/chat/) and discuss the project with the engineers and community members on #openverse. 
+Feel free to [join us on Slack](https://make.wordpress.org/chat/) and discuss the project with the engineers and community members on #openverse.
