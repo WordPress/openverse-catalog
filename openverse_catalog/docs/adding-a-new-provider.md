@@ -41,10 +41,10 @@ which can be used to generate the files you'll need and get you started.
 
     )
     ```
-    There are many other options that allow you to tweak the `schedule` (when and how often your DAG is run), timeouts for individual steps of the DAG, and more. See the documentation for details. <TODO, expand>
+    There are many other options that allow you to tweak the `schedule` (when and how often your DAG is run), timeouts for individual steps of the DAG, and more. See the documentation for details. <TODO: add docs for other options.>
 
 
-You should now have a fully functioning provider DAG. <TODO LINK TO DOCUMENTATION ON HOW TO RUN A DAG LOCALLY> *NOTE*: when your code is merged, the DAG will become available in production but will be disabled by default. A contributor with Airflow access will need to manually turn the DAG on in production.
+You should now have a fully functioning provider DAG. <TODO: add and link to docs for how to run provider DAGs locally, preferably with images.> *NOTE*: when your code is merged, the DAG will become available in production but will be disabled by default. A contributor with Airflow access will need to manually turn the DAG on in production.
 
 # Implementing a ProviderDataIngester
 
@@ -74,15 +74,15 @@ By convention, when a provider supports multiple media types we set separate pro
 from common.loader import provider_details as prov
 
 providers = {
-    "image": prov.MYPROVIDER_DEFAULT_PROVIDER,
-    "audio": prov.MYPROVIDER_AUDIO_PROVIDER
+    "image": prov.FOO_MUSEUM_IMAGE_PROVIDER,
+    "audio": prov.FOO_MUSEUM_AUDIO_PROVIDER
 }
 ```
 
 ### `endpoint`
 
 This is the main API endpoint from which batches of data will be requested. The ProviderDataIngester assumes that the same endpoint will be hit each batch, with different query params. If you have a more complicated use case, you may find help in the following sections:
-* [Implementing a computed endpoint with variable path](#endpoint)
+* [Implementing a computed endpoint with variable path](#endpoint-2)
 * [Overriding get_response_json to make a more complex request](#get_response_json)
 
 
@@ -180,8 +180,6 @@ TIPS:
 | *foreign_landing_url* | URL of page where the record lives on the source website. |
 | *audio_url* / *image_url* | Direct link to the media file. Note that the field name differs depending on media type. |
 | *license_info* | LicenseInfo object that has (1) the URL of the license for the record, (2) string representation of the license, (3) version of the license, (4) raw license URL that was by provider, if different from canonical URL |
-
-To get the LicenseInfo object, use `common.license.get_license_info` with either (`license_` and `license_version`) or `license_url` named parameters. In the case of the `publicdomain` license, which has no version, one should pass `common.license.constants.NO_VERSION` here.
 
 The following fields are optional, but it is highly encouraged to populate as much data as possible:
 

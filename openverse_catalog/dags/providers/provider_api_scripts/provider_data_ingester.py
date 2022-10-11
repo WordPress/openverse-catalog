@@ -68,8 +68,20 @@ class ProviderDataIngester(ABC):
     @abstractmethod
     def providers(self) -> dict[str, str]:
         """
-        A dictionary whose keys are the supported `media_types`, and values are
-        the `provider` string in the `media` table of the DB for that type.
+        A dictionary mapping each supported media type to its corresponding
+        `provider` string (the string that will populate the `provider` field
+        in the Catalog DB). These strings should be defined as constants in
+        common.loader.provider_details.py
+
+        By convention, when a provider supports multiple media types we set
+        separate provider strings for each type. For example:
+
+        ```
+        providers = {
+            "image": provider_details.MYPROVIDER_IMAGE_PROVIDER,
+            "audio": provider_details.MYPROVIDER_AUDIO_PROVIDER,
+        }
+        ```
         """
         pass
 
