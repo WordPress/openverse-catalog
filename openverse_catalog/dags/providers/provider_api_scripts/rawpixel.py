@@ -15,6 +15,7 @@ Notes:                  Rawpixel has given us beta access to their API.
 import logging
 from urllib.parse import parse_qs, urlparse
 
+from airflow.models import Variable
 from common import constants
 from common.licenses import get_license_info
 from common.loader import provider_details as prov
@@ -26,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 class RawpixelDataIngester(ProviderDataIngester):
     providers = {constants.IMAGE: prov.RAWPIXEL_DEFAULT_PROVIDER}
-    endpoint = "https://api.rawpixel.com/api/v1/search"
+    endpoint = "https://www.rawpixel.com/api/v1/search"
     batch_limit = 100
 
     def get_media_type(self, record: dict) -> str:
@@ -38,6 +39,9 @@ class RawpixelDataIngester(ProviderDataIngester):
                 "tags": "$publicdomain",
                 "page": 1,
                 "pagesize": self.batch_limit,
+                # TODO: This is *not* correct, we actually need to construct this
+                # signature cryptographically
+                "s": Variable.get("API_KEY_RAWPIXEL"),  # s -> "signature"
             }
         else:
             return {**prev_query_params, "page": prev_query_params["page"] + 1}
@@ -46,21 +50,6 @@ class RawpixelDataIngester(ProviderDataIngester):
         if response_json and (results := response_json.get("results")):
             return results
         return None
-
-    @staticmethod
-    def _get_foreign_id_url(image):
-        if image.get("freecc0"):
-            # get the image identifier
-            foreign_id = image.get("id", "")
-
-            # get the landing page
-            foreign_url = image.get("url")
-
-            if not foreign_url:
-                logger.warning(f"Landing page not detected for image ID: {foreign_id}")
-            return [foreign_id, foreign_url]
-        else:
-            return [None, None]
 
     @staticmethod
     def _get_image_properties(image, foreign_url):
@@ -111,9 +100,12 @@ class RawpixelDataIngester(ProviderDataIngester):
         license_ = "cc0"
         version = "1.0"
 
-        foreign_id, foreign_url = self._get_foreign_id_url(data)
-        if not foreign_url:
+        if not (foreign_id := data.get("id")):
             return None
+
+        if not (foreign_url := data.get("url")):
+            return None
+
         img_url, width, height = self._get_image_properties(data, foreign_url)
         if not img_url:
             return None
