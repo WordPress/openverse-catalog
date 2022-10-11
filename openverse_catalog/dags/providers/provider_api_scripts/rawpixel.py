@@ -12,8 +12,10 @@ Notes:                  Rawpixel has given us beta access to their API.
                         although the API key we've been given can circumvent this limit.
                         https://www.rawpixel.com/api/v1/search?tags=$publicdomain&page=1&pagesize=100
 """
+import base64
+import hmac
 import logging
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, urlencode, urlparse
 
 from airflow.models import Variable
 from common import constants
@@ -27,8 +29,13 @@ logger = logging.getLogger(__name__)
 
 class RawpixelDataIngester(ProviderDataIngester):
     providers = {constants.IMAGE: prov.RAWPIXEL_DEFAULT_PROVIDER}
-    endpoint = "https://www.rawpixel.com/api/v1/search"
+    api_path = "/api/v1/search"
+    endpoint = f"https://www.rawpixel.com{api_path}"
     batch_limit = 100
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.api_key: str = Variable.get("API_KEY_RAWPIXEL")
 
     def get_media_type(self, record: dict) -> str:
         return constants.IMAGE
@@ -39,12 +46,36 @@ class RawpixelDataIngester(ProviderDataIngester):
                 "tags": "$publicdomain",
                 "page": 1,
                 "pagesize": self.batch_limit,
-                # TODO: This is *not* correct, we actually need to construct this
-                # signature cryptographically
-                "s": Variable.get("API_KEY_RAWPIXEL"),  # s -> "signature"
             }
         else:
             return {**prev_query_params, "page": prev_query_params["page"] + 1}
+
+    def _get_signature(self, query_params: dict) -> str:
+        ordered_params = {k: v for k, v in sorted(query_params.items())}
+        # URL encode the ordered parameters in a way that matches Node's
+        # querystring.stringify as closely as possible
+        # See: https://docs.python.org/3.10/library/urllib.parse.html#urllib.parse.urlencode  # noqa
+        # and https://nodejs.org/api/querystring.html#querystringstringifyobj-sep-eq-options  # noqa
+        query = urlencode(ordered_params, doseq=True)
+        url = f"{self.api_path}?{query}"
+        digest = hmac.digest(
+            key=self.api_key.encode("utf-8"),
+            msg=url.encode("utf-8"),
+            digest="sha256",
+        )
+        b64 = base64.b64encode(digest)
+        signature = b64.replace(b"+", b"-").replace(b"/", b"_").replace(b"=", b"")
+        return signature.decode("utf-8")
+
+    def get_response_json(
+        self, query_params: dict, endpoint: str | None = None, **kwargs
+    ):
+        """
+        Override of base get_response_json to inject API-key based HMAC signature.
+        """
+        signature = self._get_signature(query_params)
+        query_params = {**query_params, "s": signature}
+        return super().get_response_json(query_params, endpoint, **kwargs)
 
     def get_batch_data(self, response_json):
         if response_json and (results := response_json.get("results")):
