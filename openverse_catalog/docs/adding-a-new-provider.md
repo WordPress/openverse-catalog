@@ -3,21 +3,31 @@
 The Openverse Catalog collects data from the APIs of sites that share openly-licensed media,and saves them in our Catalog database. We call the scripts that pull data from these APIs "Provider API scripts". You can find examples in [`provider_api_scripts` folder](../dags/providers/provider_api_scripts).
 
 To add a new Provider to Openverse, you'll need to do the following:
-1. *Add a `provider` string to the [common.loader.provider_details](../dags/common/loader/provider_details.py) module.* This is the string that will be used to populate the `provider` column in the database for records ingested by your provider.
-    ```
-    MY_PROVIDER_DEFAULT_PROVIDER = "myprovider"
-    ```
-2. *Create a new module in the [`provider_api_scripts` folder](../dags/providers/provider_api_scripts).* This is what we call the "provider script", and it's responsible for actually pulling the data from the API and committing it locally. Much of this logic is implemented in the [`ProviderDataIngester` base class](../dags/providers/provider_api_scripts/provider_data_ingester.py): at a high level, all you need to do is subclass the ProviderDataIngester and fill out a handful of abstract methods. You can copy and edit the [`TemplateProviderDataIngester`](../template_provider.py) to meet your needs, or read more detailed instructions in the [section below](#implementing-a-providerdataingester).
-    ```
-    # In provider_api_scripts/myprovider.py
 
-    from providers.provider_api_scripts.provider_data_ingester import ProviderDataIngester
+1. **Create a new ProviderDataIngester class.** Each provider should implement a subclass of the [`ProviderDataIngester` base class](../dags/providers/provider_api_scripts/provider_data_ingester.py), which is responsible for actually pulling the data from the API and committing it locally. Because much of this logic is implemented in the base class, all you need to do is fill out a handful of abstract methods. We provide a script
+which can be used to generate the files you'll need and get you started.
 
-
-    class MyProviderDataIngester(ProviderDataIngester):
-        ...
+    You'll need the `name` of your provider, the API `endpoint` to fetch data from, and the `media_types`
+    for which you expect to pull data (for example "image" or "audio").
     ```
-3. *Define a `ProviderWorkflow` configuration in order to generate a DAG.* We use Airflow DAGs (link to Airflow docs) to automate data ingestion. All you need to do to create a DAG for your provider is to define a `ProviderWorkflow` dataclass and add it to the `PROVIDER_WORKFLOWS` list in [`provider_workflows.py`](../dags/providers/provider_workflows.py). Our DAG factories will pick up the configuration and generate a new DAG in Airflow!
+    > python3 openverse_catalog/dags/templates/create_provider_data_ingester.py "Foo Museum" -e "https://foo-museum.org/api/v1/" -m image audio
+    ```
+
+    You should see output similar to this:
+    ```
+    Creating files in /Users/staci/projects/openverse-projects/openverse-catalog
+    API script:        openverse-catalog/openverse_catalog/dags/providers/provider_api_scripts/foo_museum.py
+    API script test:   openverse-catalog/tests/dags/providers/provider_api_scripts/test_foo_museum.py
+
+    NOTE: You will also need to add a new ProviderWorkflow dataclass configuration to the PROVIDER_WORKFLOWS list in `openverse-catalog/dags/providers/provider_workflows.py`.
+    ```
+
+    Complete the TODOs detailed in the generated files. For more detailed instructions and tips, read the documentation in the [section below](#implementing-a-providerdataingester).
+2. **Add a `provider` string to the [common.loader.provider_details](../dags/common/loader/provider_details.py) module.** This is the string that will be used to populate the `provider` column in the database for records ingested by your provider.
+    ```
+    FOO_MUSEUM_IMAGE_PROVIDER = "foo_museum"
+    ```
+3. **Define a `ProviderWorkflow` configuration in order to generate a DAG.** We use Airflow DAGs (link to Airflow docs) to automate data ingestion. All you need to do to create a DAG for your provider is to define a `ProviderWorkflow` dataclass and add it to the `PROVIDER_WORKFLOWS` list in [`provider_workflows.py`](../dags/providers/provider_workflows.py). Our DAG factories will pick up the configuration and generate a new DAG in Airflow!
 
     At minimum, you'll need to provide the following in your configuration:
     * `provider_script`: the name of the file where you defined your `ProviderDataIngester` class
@@ -25,8 +35,8 @@ To add a new Provider to Openverse, you'll need to do the following:
     * `media_types`: the media types your provider handles
     ```
     ProviderWorkflow(
-        provider_script='myprovider',
-        ingestion_callable=MyProviderDataIngester,
+        provider_script='foo_museum',
+        ingestion_callable=FooMuseumDataIngester,
         media_types=("image", "audio",)
 
     )
