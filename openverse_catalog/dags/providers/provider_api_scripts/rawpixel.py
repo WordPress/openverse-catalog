@@ -19,7 +19,7 @@ from urllib.parse import parse_qs, urlencode, urlparse
 
 from airflow.models import Variable
 from common import constants
-from common.licenses import get_license_info
+from common.licenses import NO_LICENSE_FOUND, get_license_info
 from common.loader import provider_details as prov
 from providers.provider_api_scripts.provider_data_ingester import ProviderDataIngester
 
@@ -32,6 +32,8 @@ class RawpixelDataIngester(ProviderDataIngester):
     api_path = "/api/v1/search"
     endpoint = f"https://www.rawpixel.com{api_path}"
     batch_limit = 100
+    CC0 = "cc0"
+    license_version = "1.0"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -128,13 +130,17 @@ class RawpixelDataIngester(ProviderDataIngester):
 
     def get_record_data(self, data: dict) -> dict | list[dict] | None:
         # verify the license and extract the metadata
-        license_ = "cc0"
-        version = "1.0"
-
         if not (foreign_id := data.get("id")):
             return None
 
         if not (foreign_url := data.get("url")):
+            return None
+
+        if not (metadata := data.get("metadata")):
+            return None
+
+        license_info = get_license_info(metadata["license_url"])
+        if license_info == NO_LICENSE_FOUND:
             return None
 
         img_url, width, height = self._get_image_properties(data, foreign_url)
@@ -143,12 +149,6 @@ class RawpixelDataIngester(ProviderDataIngester):
         title, owner = self._get_title_owner(data)
         meta_data = self._get_meta_data(data)
         tags = self._get_tags(data)
-
-        # TODO:How to get license_url, creator_url, source, watermarked?
-        license_info = get_license_info(
-            license_=license_,
-            license_version=version,
-        )
         return {
             "foreign_landing_url": foreign_url,
             "image_url": img_url,
