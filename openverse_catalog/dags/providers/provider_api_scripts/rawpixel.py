@@ -15,7 +15,7 @@ Notes:                  Rawpixel has given us beta access to their API.
 import base64
 import hmac
 import logging
-from urllib.parse import parse_qs, urlencode, urlparse
+from urllib.parse import urlencode
 
 from airflow.models import Variable
 from common import constants
@@ -85,19 +85,34 @@ class RawpixelDataIngester(ProviderDataIngester):
         return None
 
     @staticmethod
-    def _get_image_properties(image, foreign_url):
-        img_url = image.get("image_opengraph")
-        if img_url:
-            # extract the dimensions from the query params because
-            # the dimensions in the metadata are at times
-            # inconsistent with the rescaled images
-            query_params = urlparse(img_url)
-            width = parse_qs(query_params.query).get("w", [])[0]
-            height = parse_qs(query_params.query).get("h", [])[0]
-            return [img_url, width, height]
-        else:
-            logger.warning(f"Image not detected in URL: {foreign_url}")
-            return [None, None, None, None]
+    def _get_image_url(data: dict) -> str | None:
+        """
+        Access to the raw images is restricted in much the same way that the search API
+        is restricted via API key + query param HMAC signature. Rawpixel provides two
+        options for pseudo-direct URLs under the keys `google_teaser` and
+        `pinterestImage`. These are scaled down to small and medium size images
+        respectively, and the properties which define each are present in the query
+        params.
+
+        **Example**
+        `google_teaser`: https://img.rawpixel.com/private/static/images/website/2022-05/upwk61670216-wikimedia-image-job572-1.jpg?w=800&dpr=1&fit=default&crop=default&q=65&vib=3&con=3&usm=15&bg=F4F4F3&ixlib=js-2.2.1&s=2d6a659c473e7a7ece331e3867a383fe
+        `pinterestImage`: https://img.rawpixel.com/private/static/images/website/2022-05/upwk61670216-wikimedia-image-job572-1.jpg?w=1200&h=1200&dpr=1&fit=clip&crop=default&fm=jpg&q=75&vib=3&con=3&usm=15&cs=srgb&bg=F4F4F3&ixlib=js-2.2.1&s=12a67d2a2b59d6712886af7a73eb3045
+
+        Due to the nature of HMAC signatures, we cannot strip the query params to access
+        the full raw image without a signature, and we cannot use our API key to compute
+        this signature (they likely have a private key they use for this). The
+        `pinterestImage` is the highest quality direct URL we have access to, so we'll
+        use that one.
+        """  # noqa
+        return data.get("pinterestImage")
+
+    @staticmethod
+    def _get_image_properties(data: dict) -> tuple[None, None] | tuple[int, int]:
+        width = max(data.get("width", 0), data.get("display_image_width", 0))
+        height = max(data.get("height", 0), data.get("display_image_height", 0))
+        if (width, height) == (0, 0):
+            return None, None
+        return width, height
 
     @staticmethod
     def _get_title_owner(image):
@@ -143,6 +158,9 @@ class RawpixelDataIngester(ProviderDataIngester):
         if license_info == NO_LICENSE_FOUND:
             return None
 
+        if not (image_url := self._get_image_url(data)):
+            return None
+
         img_url, width, height = self._get_image_properties(data, foreign_url)
         if not img_url:
             return None
@@ -151,7 +169,7 @@ class RawpixelDataIngester(ProviderDataIngester):
         tags = self._get_tags(data)
         return {
             "foreign_landing_url": foreign_url,
-            "image_url": img_url,
+            "image_url": image_url,
             "license_info": license_info,
             "foreign_identifier": str(foreign_id),
             "width": str(width) if width else None,
