@@ -14,6 +14,7 @@ from providers.provider_api_scripts.museum_victoria import VictoriaDataIngester
 from providers.provider_api_scripts.nypl import NyplDataIngester
 from providers.provider_api_scripts.phylopic import PhylopicDataIngester
 from providers.provider_api_scripts.provider_data_ingester import ProviderDataIngester
+from providers.provider_api_scripts.rawpixel import RawpixelDataIngester
 from providers.provider_api_scripts.science_museum import ScienceMuseumDataIngester
 from providers.provider_api_scripts.smk import SmkDataIngester
 from providers.provider_api_scripts.stocksnap import StockSnapDataIngester
@@ -189,6 +190,7 @@ PROVIDER_WORKFLOWS = [
     ),
     ProviderWorkflow(
         provider_script="rawpixel",
+        ingestion_callable=RawpixelDataIngester,
         pull_timeout=timedelta(hours=12),
     ),
     ProviderWorkflow(
