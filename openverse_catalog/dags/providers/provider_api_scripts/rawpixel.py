@@ -34,8 +34,6 @@ class RawpixelDataIngester(ProviderDataIngester):
     api_path = "/api/v1/search"
     endpoint = f"https://www.rawpixel.com{api_path}"
     batch_limit = 100
-    CC0 = "cc0"
-    license_version = "1.0"
     # Regex pattern for partial suffix capture
     suffix_pattern_partial = re.compile(
         r"""
@@ -84,42 +82,46 @@ class RawpixelDataIngester(ProviderDataIngester):
     def get_media_type(self, record: dict) -> str:
         return constants.IMAGE
 
-    def get_next_query_params(self, prev_query_params: dict | None, **kwargs) -> dict:
-        if not prev_query_params:
-            return {
-                "tags": "$publicdomain",
-                "page": 1,
-                "pagesize": self.batch_limit,
-            }
-        else:
-            return {**prev_query_params, "page": prev_query_params["page"] + 1}
-
     def _get_signature(self, query_params: dict) -> str:
+        """
+        URL encode the ordered parameters in a way that matches Node's
+        querystring.stringify as closely as possible
+        See: https://docs.python.org/3.10/library/urllib.parse.html#urllib.parse.urlencode  # noqa
+        and https://nodejs.org/api/querystring.html#querystringstringifyobj-sep-eq-options  # noqa
+        """
+        # Params must be ordered for deterministic computation
         ordered_params = {k: v for k, v in sorted(query_params.items())}
-        # URL encode the ordered parameters in a way that matches Node's
-        # querystring.stringify as closely as possible
-        # See: https://docs.python.org/3.10/library/urllib.parse.html#urllib.parse.urlencode  # noqa
-        # and https://nodejs.org/api/querystring.html#querystringstringifyobj-sep-eq-options  # noqa
+        # Build parameters as a string, split out sequences since that's Node's behavior
         query = urlencode(ordered_params, doseq=True)
+        # Concat onto API path, note that the scheme & fqdn are intentionally missing
         url = f"{self.api_path}?{query}"
+        # Set up an HMAC using our API key and the URL as a message
         digest = hmac.digest(
             key=self.api_key.encode("utf-8"),
             msg=url.encode("utf-8"),
             digest="sha256",
         )
+        # Encode it as base64
         b64 = base64.b64encode(digest)
+        # Perform some character replacements, this logic was supplied explicitly by
+        # Rawpixel's Node example
         signature = b64.replace(b"+", b"-").replace(b"/", b"_").replace(b"=", b"")
+        # Convert back to a string
         return signature.decode("utf-8")
 
-    def get_response_json(
-        self, query_params: dict, endpoint: str | None = None, **kwargs
-    ):
-        """
-        Override of base get_response_json to inject API-key based HMAC signature.
-        """
-        signature = self._get_signature(query_params)
-        query_params = {**query_params, "s": signature}
-        return super().get_response_json(query_params, endpoint, **kwargs)
+    def get_next_query_params(self, prev_query_params: dict | None, **kwargs) -> dict:
+        if not prev_query_params:
+            params = {
+                "tags": "$publicdomain",
+                "page": 1,
+                "pagesize": self.batch_limit,
+            }
+        else:
+            params = {**prev_query_params, "page": prev_query_params["page"] + 1}
+            # Remove signature
+            params.pop("s", None)
+        # Inject HMAC signature after all params have been added
+        return {**params, "s": self._get_signature(params)}
 
     def get_batch_data(self, response_json):
         if response_json and (results := response_json.get("results")):
