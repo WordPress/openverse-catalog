@@ -74,6 +74,8 @@ class RawpixelDataIngester(ProviderDataIngester):
         "creative commons",
         "public domain",
     }
+    # Image size options
+    full_size_option = "image_1300"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -127,24 +129,22 @@ class RawpixelDataIngester(ProviderDataIngester):
     @staticmethod
     def _get_image_url(data: dict) -> str | None:
         """
-        Access to the raw images is restricted in much the same way that the search API
-        is restricted via API key + query param HMAC signature. Rawpixel provides two
-        options for pseudo-direct URLs under the keys `google_teaser` and
-        `pinterestImage`. These are scaled down to small and medium size images
-        respectively, and the properties which define each are present in the query
-        params.
+        Rawpixel provides a "style_uri" string which can be formatted with these values:
+            'image_24', 'image_png_24', 'image_48', 'image_png_48', 'image_100',
+            'image_png_100', 'image_150', 'image_png_150', 'image_200', 'image_png_200',
+            'image_250', 'image_png_250', 'image_300', 'image_png_300', 'image_400',
+            'image_png_400', 'image_500', 'image_png_500', 'image_600', 'image_png_600',
+            'image_700', 'image_png_700', 'image_800', 'image_png_800', 'image_900',
+            'image_png_900', 'image_1000', 'image_png_1000', 'image_1300',
+            'image_png_1300'
 
-        **Example**
-        `google_teaser`: https://img.rawpixel.com/private/static/images/website/2022-05/upwk61670216-wikimedia-image-job572-1.jpg?w=800&dpr=1&fit=default&crop=default&q=65&vib=3&con=3&usm=15&bg=F4F4F3&ixlib=js-2.2.1&s=2d6a659c473e7a7ece331e3867a383fe
-        `pinterestImage`: https://img.rawpixel.com/private/static/images/website/2022-05/upwk61670216-wikimedia-image-job572-1.jpg?w=1200&h=1200&dpr=1&fit=clip&crop=default&fm=jpg&q=75&vib=3&con=3&usm=15&cs=srgb&bg=F4F4F3&ixlib=js-2.2.1&s=12a67d2a2b59d6712886af7a73eb3045
-
-        Due to the nature of HMAC signatures, we cannot strip the query params to access
-        the full raw image without a signature, and we cannot use our API key to compute
-        this signature (they likely have a private key they use for this). The
-        `pinterestImage` is the highest quality direct URL we have access to, so we'll
-        use that one.
-        """  # noqa
-        return data.get("pinterestImage")
+        The number refers to the width displayed, and a png option is provided for each
+        size.
+        """
+        style_uri = data.get("style_uri")
+        if not style_uri:
+            return None
+        return style_uri.format(RawpixelDataIngester.full_size_option)
 
     @staticmethod
     def _get_image_properties(data: dict) -> tuple[None, None] | tuple[int, int]:
