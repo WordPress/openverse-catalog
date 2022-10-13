@@ -4,12 +4,15 @@ TODO: This documentation is temporary and should be replaced by more thorough do
 
 The following is temporary, limited documentation of the columns for each of our Catalog data models.
 
-*Required Fields*
+## Required Fields
+
 | field name | description |
 | --- | --- |
 | *foreign_landing_url* | URL of page where the record lives on the source website. |
 | *audio_url* / *image_url* | Direct link to the media file. Note that the field name differs depending on media type. |
 | *license_info* | LicenseInfo object that has (1) the URL of the license for the record, (2) string representation of the license, (3) version of the license, (4) raw license URL that was by provider, if different from canonical URL |
+
+## Optional Fields
 
 The following fields are optional, but it is highly encouraged to populate as much data as possible:
 

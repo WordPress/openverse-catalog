@@ -9,9 +9,9 @@ The most straightforward implementation of a `ProviderDataIngester` repeats the 
 
 Some provider APIs may not fit neatly into this workflow. This document addresses some common use cases.
 
-## How do I process a "record" that contains data about multiple records?
+## How do I process a provider "record" that contains data about multiple records?
 
-**Example**: you're pulling data from a Museum database, and each "record" in a batch contains multiple photos of a single physical object.
+**Example**: You're pulling data from a Museum database, and each "record" in a batch contains multiple photos of a single physical object.
 
 **Solution**: The `get_record_data` method takes a `data` object representing a single record from the provider API. Typically, it extracts required data and returns it as a single dict. However, it can also return a **list of dictionaries** for cases like the one described, where multiple Openverse records can be extracted.
 
@@ -45,6 +45,7 @@ def get_record_data(self, data: dict) -> dict | list[dict] | None:
         endpoint=f"https://foobar.museum.org/api/v1/images/{data.get("uuid")}"
     )
 
+    ...
 ```
 
 When doing this, keep in mind that adding too many requests may slow down ingestion. Be aware of rate limits from your provider API as well.
@@ -73,21 +74,25 @@ def __init__(self, *args, **kwargs):
     self.page_number = None
 
 def get_next_query_params(self, prev_query_params: dict | None, **kwargs) -> dict:
-    # Set it to the initial value
+    # Remember that `get_next_query_params` is called before every request, even
+    # the first one.
+
     if self.page_number is None:
+        # Set initial value
         self.page_number = 0
     else:
+        # Increment value on subsequent requests
         self.page_number += 1
 
     # Return your actual query params
     return {}
 ```
 
-Now each time `get_batch` is called, the `endpoint` is correctly 'calculated'.
+Now each time `get_batch` is called, the `endpoint` is correctly updated.
 
 ## How do I run ingestion for a set of discrete categories?
 
-**Example**: My provider has some set of categories that I'd like to iterate over and ingest data for. Eg, an audio provider's search endpoint that requires you specify whether you're searching for "podcasts", "music", etc. I'd like to iterate over all the available categories and run ingestiotn for each.
+**Example**: My provider has some set of categories that I'd like to iterate over and ingest data for. Eg, an audio provider's search endpoint that requires you specify whether you're searching for "podcasts", "music", etc. I'd like to iterate over all the available categories and run ingestion for each.
 
 **Solution**: You can do this by overriding the `ingest_records` method, which accepts optional `kwargs` that it passes through on each call to `get_next_query_params`. This is best demonstrated with code:
 
@@ -117,7 +122,7 @@ This will result in the ingestion function running once for each category.
 
 **Example**: A single GET request is insufficient to get a batch from a provider. Instead, several requests need to be made in sequence until a "batchcomplete" token is encountered.
 
-**Solution**: You can ovveride `get_response_json` in order to implement more complex behavior.
+**Solution**: You can override `get_response_json` in order to implement more complex behavior.
 
 ```
 # Psuedo code serves as an example

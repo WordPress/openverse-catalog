@@ -1,4 +1,6 @@
-# Openverse Provider DAGs
+# Openverse Providers
+
+## Overview
 
 The Openverse Catalog collects data from the APIs of sites that share openly-licensed media,and saves them in our Catalog database. This process is automated by Airflow DAGs generated for each provider. A simple provider DAG looks like this:
 
@@ -26,14 +28,15 @@ Adding a new provider to Openverse means adding a new provider DAG. Fortunately,
 
 We call the code that pulls data from our provider APIs "Provider API scripts". You can find examples in [`provider_api_scripts` folder](../dags/providers/provider_api_scripts). This code will be run during the `pull` steps of the provider DAG.
 
-At a high level, a provider script should iteratively request batches of records from the provider API, extract data in the format required by Openverse, and commit it to local storage. Much of this logic is implemented in a [`ProviderDataIngester` base class](../dags/providers/provider_api_scripts/provider_data_ingester.py) (which also provides additional testing features <TODO: link to documentation for testing features like ingestion_limit, skip_ingestion_errors etc>). All you need to do to add a new provider is extend this class and implement its abstract methods.
+At a high level, a provider script should iteratively request batches of records from the provider API, extract data in the format required by Openverse, and commit it to local storage. Much of this logic is implemented in a [`ProviderDataIngester` base class](../dags/providers/provider_api_scripts/provider_data_ingester.py) (which also provides additional testing features *<TODO: link to documentation for testing features like ingestion_limit, skip_ingestion_errors etc>*). All you need to do to add a new provider is extend this class and implement its abstract methods.
 
 We provide a [script](../dags/templates/create_provider_ingester.py) that can be used to generate the files you'll need and get you started:
 
 ```
 # PROVIDER: The name of the provider
 # ENDPOINT: The API endpoint from which to fetch data
-# MEDIA: Optionally, a space-delineated list of media types ingested by this provider (and supported by Openverse). If not provided, defaults to "image"
+# MEDIA: Optionally, a space-delineated list of media types ingested by this provider
+#        (and supported by Openverse). If not provided, defaults to "image".
 
 > create_provider_data_ingester.py <PROVIDER> <ENDPOINT> -m <MEDIA>
 
@@ -68,7 +71,6 @@ At minimum, you'll need to provide the following in your configuration:
 Example:
 ```
 # In openverse_catalog/dags/providers/provider_workflows.py
-# Import your new ingester class
 from providers.provider_api_scripts.foobar_museum import FoobarMuseumDataIngester
 
 ...
@@ -83,6 +85,6 @@ PROVIDER_WORKFLOWS = [
 ]
 ```
 
-There are many other options that allow you to tweak the `schedule` (when and how often your DAG is run), timeouts for individual steps of the DAG, and more. These are documented in the definition of the `ProviderWorkflow` dataclass. <TODO: add docs for other options.>
+There are many other options that allow you to tweak the `schedule` (when and how often your DAG is run), timeouts for individual steps of the DAG, and more. These are documented in the definition of the `ProviderWorkflow` dataclass. *<TODO: add docs for other options.>*
 
-After adding your configuration, run `just up` and you should now have a fully functioning provider DAG! <TODO: add and link to docs for how to run provider DAGs locally, preferably with images.> *NOTE*: when your code is merged, the DAG will become available in production but will be disabled by default. A contributor with Airflow access will need to manually turn the DAG on in production.
+After adding your configuration, run `just up` and you should now have a fully functioning provider DAG! *<TODO: add and link to docs for how to run provider DAGs locally, preferably with images.>* *NOTE*: when your code is merged, the DAG will become available in production but will be disabled by default. A contributor with Airflow access will need to manually turn the DAG on in production.
