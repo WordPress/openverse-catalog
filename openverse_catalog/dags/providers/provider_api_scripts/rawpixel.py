@@ -188,13 +188,15 @@ class RawpixelDataIngester(ProviderDataIngester):
         return title or None
 
     @staticmethod
-    def _get_meta_data(metadata: dict) -> dict:
+    def _get_meta_data(data: dict, metadata: dict) -> dict:
         description = RawpixelDataIngester._clean_text(
             metadata.get("description_text") or ""
         )
-        meta_data = {}
-        if description:
-            meta_data["description"] = description
+        meta_data = {
+            "description": description or None,
+            "download_count": data.get("download_count"),
+        }
+        meta_data = {k: v for k, v in meta_data.items() if v is not None}
         return meta_data
 
     @staticmethod
@@ -221,11 +223,11 @@ class RawpixelDataIngester(ProviderDataIngester):
     def _get_category(metadata: dict) -> str | None:
         keywords = set(metadata.get("popular_keywords", []))
         if "public domain art" in keywords:
-            return prov.ImageCategory.DIGITIZED_ARTWORK
+            return prov.ImageCategory.DIGITIZED_ARTWORK.value
         if "image" in keywords or "photo" in keywords:
-            return prov.ImageCategory.PHOTOGRAPH
+            return prov.ImageCategory.PHOTOGRAPH.value
         if "clipart" in keywords:
-            return prov.ImageCategory.ILLUSTRATION
+            return prov.ImageCategory.ILLUSTRATION.value
         return None
 
     def get_record_data(self, data: dict) -> dict | list[dict] | None:
@@ -239,7 +241,7 @@ class RawpixelDataIngester(ProviderDataIngester):
         if not (metadata := data.get("metadata")):
             return None
 
-        license_info = get_license_info(metadata["license_url"])
+        license_info = get_license_info(metadata["licenseUrl"])
         if license_info == NO_LICENSE_FOUND:
             return None
 
@@ -255,8 +257,8 @@ class RawpixelDataIngester(ProviderDataIngester):
             "width": width,
             "height": height,
             "title": self._get_title(metadata),
-            "meta_data": self._get_meta_data(data),
-            "raw_tags": self._get_tags(data),
+            "meta_data": self._get_meta_data(data, metadata),
+            "raw_tags": self._get_tags(metadata),
             "creator": self._get_source(data),
             "filetype": data.get("name_ext"),
             # Filesize not available via the API and wouldn't reflect final image size
