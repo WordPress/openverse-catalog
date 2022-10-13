@@ -30,9 +30,10 @@ class {provider}DataIngester(ProviderDataIngester):
 
     def get_next_query_params(self, prev_query_params: dict | None, **kwargs) -> dict:
         # On the first request, `prev_query_params` will be `None`. We can detect this
-        # and return our default params
+        # and return our default params.
         if not prev_query_params:
-            # TODO: Return your default params here.
+            # TODO: Return your default params here. `batch_limit` is not automatically added to
+            # the params, so make sure to add it here if you need it!
             # TODO: If you need an API key, add the (empty) key to `openverse_catalog/env.template`
             # Do not hardcode API keys!
             return {
@@ -66,6 +67,8 @@ class {provider}DataIngester(ProviderDataIngester):
     def get_record_data(self, data: dict) -> dict | list[dict] | None:
         # Parse out the necessary info from the record data into a dictionary.
         # TODO: Update based on your API.
+        # TODO: Important! Refer to the most up-to-date documentation about the
+        # available fields in `openverse_catalog/docs/data_models.md`
 
         # REQUIRED FIELDS:
         # - foreign_landing_url

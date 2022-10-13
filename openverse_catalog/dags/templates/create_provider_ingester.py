@@ -111,14 +111,12 @@ def main():
         add_help=True,
     )
     parser.add_argument(
-        "provider", help='Create the ingester for this provider (eg. "Cleveland").'
+        "provider", help='Create the ingester for this provider (eg. "Wikimedia").'
     )
     parser.add_argument(
-        "-e",
-        "--endpoint",
-        required=True,
+        "endpoint",
         help="API endpoint to fetch data from"
-        '(eg. "https://commons.wikimedia.org/w/api.php").',
+        ' (eg. "https://commons.wikimedia.org/w/api.php").',
     )
     parser.add_argument(
         "-m",
