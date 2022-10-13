@@ -36,6 +36,44 @@ class RawpixelDataIngester(ProviderDataIngester):
     batch_limit = 100
     CC0 = "cc0"
     license_version = "1.0"
+    # Regex pattern for partial suffix capture
+    suffix_pattern_partial = re.compile(
+        r"""
+            # Any text ending in free or original
+            (?:free|original)
+            # Optionally "free public" or "original public"
+            (?:\ public
+                # Optionally "public domain"
+                (?:\ domain
+                    # Optionally "original public domain CC0 photo"
+                    # or "free public domain CC0 image"
+                    (?:\ CC0 (?:image|photo))?
+                )?
+            )?
+            # Could end in punctuation, but the string must end with this sequence
+            .?$
+        """,
+        flags=re.IGNORECASE | re.VERBOSE,
+    )
+    # Regex pattern for full suffix capture
+    suffix_pattern_full = re.compile(
+        r"""
+            # Capture any of these complete endings
+            (?:
+                Free\ public\ domain\ CC0\ (?:image|photo) |
+                Digitally\ enhanced\ by\ rawpixel
+            )
+            # Could end in punctuation, but the string must end with this sequence
+            .?$
+        """,
+        flags=re.IGNORECASE | re.VERBOSE,
+    )
+    # Keywords which could be present in tags meaning they should be excluded
+    tags_exclude_list = {
+        "cc0",
+        "creative commons",
+        "public domain",
+    }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -117,6 +155,18 @@ class RawpixelDataIngester(ProviderDataIngester):
         return width, height
 
     @staticmethod
+    def _clean_text(text: str) -> str:
+        # First clear full patterns
+        text = RawpixelDataIngester.suffix_pattern_full.sub("", text)
+        # Then clear partial patterns
+        text = RawpixelDataIngester.suffix_pattern_partial.sub("", text)
+        # Unescape HTMl sequences
+        text = html.unescape(text)
+        # Clean whitespace
+        text = text.strip()
+        return text
+
+    @staticmethod
     def _get_title(metadata: dict) -> str | None:
         """
         Titles come in the following form, so we clean them up a bit:
@@ -131,53 +181,52 @@ class RawpixelDataIngester(ProviderDataIngester):
             return None
         # Cut off the last bit about Rawpixel
         title = title.split("|", maxsplit=1)[0].strip()
-        # Remove any text around "free public domain" or "original public domain"
-        free_pattern = re.compile(
-            r"""
-                # Any text ending in free or original
-                (?:free|original)
-                # Optionally "free public" or "original public"
-                (?:\ public
-                    # Optionally "public domain"
-                    (?:\ domain
-                        # Optionally "original public domain CC0 photo"
-                        # or "free public domain CC0 photo"
-                        (?:\ CC0 photo)?
-                    )?
-                )?
-                # Could end in punctuation, but the string must end with this sequence
-                .?$
-            """,
-            flags=re.IGNORECASE | re.VERBOSE,
-        )
-        title = free_pattern.sub("", title)
+        # Clean text
+        title = RawpixelDataIngester._clean_text(title)
         # Remove trailing punctuation
         title = title.removesuffix(",").removesuffix(".")
-        # Unescape the HTML characters
-        title = html.unescape(title)
         return title or None
 
     @staticmethod
-    def _get_meta_data(data):
-        description = data.get("pinterest_description")
+    def _get_meta_data(metadata: dict) -> dict:
+        description = RawpixelDataIngester._clean_text(
+            metadata.get("description_text") or ""
+        )
         meta_data = {}
         if description:
             meta_data["description"] = description
         return meta_data
 
     @staticmethod
-    def _get_tags(data):
-        keywords = data.get("keywords_raw")
+    def _get_source(data: dict) -> str | None:
+        source = data.get("artist_names", "")
+        source = source.removesuffix("(Source)").strip()
+        return source or None
+
+    @staticmethod
+    def _get_tags(metadata: dict) -> list[str]:
+        keywords = metadata.get("popular_keywords")
         if keywords:
-            keyword_list = keywords.split(",")
-            keyword_list = [
-                word.strip()
-                for word in keyword_list
-                if word.strip() not in ["cc0", "creative commons", "creative commons 0"]
+            return [
+                keyword
+                for keyword in keywords
+                if not any(
+                    exclude_tag in keyword
+                    for exclude_tag in RawpixelDataIngester.tags_exclude_list
+                )
             ]
-            return keyword_list
-        else:
-            return []
+        return []
+
+    @staticmethod
+    def _get_category(metadata: dict) -> str | None:
+        keywords = set(metadata.get("popular_keywords", []))
+        if "public domain art" in keywords:
+            return prov.ImageCategory.DIGITIZED_ARTWORK
+        if "image" in keywords or "photo" in keywords:
+            return prov.ImageCategory.PHOTOGRAPH
+        if "clipart" in keywords:
+            return prov.ImageCategory.ILLUSTRATION
+        return None
 
     def get_record_data(self, data: dict) -> dict | list[dict] | None:
         # verify the license and extract the metadata
@@ -198,20 +247,21 @@ class RawpixelDataIngester(ProviderDataIngester):
             return None
 
         width, height = self._get_image_properties(data)
-        title, owner = self._get_title(data)
-        meta_data = self._get_meta_data(data)
-        tags = self._get_tags(data)
         return {
             "foreign_landing_url": foreign_url,
             "image_url": image_url,
             "license_info": license_info,
-            "foreign_identifier": str(foreign_id),
-            "width": str(width) if width else None,
-            "height": str(height) if height else None,
+            "foreign_identifier": foreign_id,
+            "width": width,
+            "height": height,
             "title": self._get_title(metadata),
-            "meta_data": meta_data,
-            "raw_tags": tags,
-            "creator": owner,
+            "meta_data": self._get_meta_data(data),
+            "raw_tags": self._get_tags(data),
+            "creator": self._get_source(data),
+            "filetype": data.get("name_ext"),
+            # Filesize not available via the API and wouldn't reflect final image size
+            # anyway since we reference reduced-sized images
+            "category": self._get_category(metadata),
         }
 
 
