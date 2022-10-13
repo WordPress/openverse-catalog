@@ -14,7 +14,9 @@ Notes:                  Rawpixel has given us beta access to their API.
 """
 import base64
 import hmac
+import html
 import logging
+import re
 from urllib.parse import urlencode
 
 from airflow.models import Variable
@@ -115,23 +117,57 @@ class RawpixelDataIngester(ProviderDataIngester):
         return width, height
 
     @staticmethod
-    def _get_title_owner(image):
-        title = image.get("image_title", "")
-        owner = image.get("artist_names", "")
-        owner = owner.replace("(Source)", "").strip()
-        return [title, owner]
+    def _get_title(metadata: dict) -> str | None:
+        """
+        Titles come in the following form, so we clean them up a bit:
+          Bull elk searches for food | Free Photo - rawpixel
+          Desktop wallpaper summer beach landscape, | Free Photo - rawpixel
+          Branch with a sunflower (1714&ndash;1760) | Free Photo Illustration - rawpixel
+          Free public domain CC0 photo. | Free Photo - rawpixel
+          Flower background. Free public domain | Free Photo - rawpixel
+        """
+        title: str = metadata.get("title")
+        if not title:
+            return None
+        # Cut off the last bit about Rawpixel
+        title = title.split("|", maxsplit=1)[0].strip()
+        # Remove any text around "free public domain" or "original public domain"
+        free_pattern = re.compile(
+            r"""
+                # Any text ending in free or original
+                (?:free|original)
+                # Optionally "free public" or "original public"
+                (?:\ public
+                    # Optionally "public domain"
+                    (?:\ domain
+                        # Optionally "original public domain CC0 photo"
+                        # or "free public domain CC0 photo"
+                        (?:\ CC0 photo)?
+                    )?
+                )?
+                # Could end in punctuation, but the string must end with this sequence
+                .?$
+            """,
+            flags=re.IGNORECASE | re.VERBOSE,
+        )
+        title = free_pattern.sub("", title)
+        # Remove trailing punctuation
+        title = title.removesuffix(",").removesuffix(".")
+        # Unescape the HTML characters
+        title = html.unescape(title)
+        return title or None
 
     @staticmethod
-    def _get_meta_data(image):
-        description = image.get("pinterest_description")
+    def _get_meta_data(data):
+        description = data.get("pinterest_description")
         meta_data = {}
         if description:
             meta_data["description"] = description
         return meta_data
 
     @staticmethod
-    def _get_tags(image):
-        keywords = image.get("keywords_raw")
+    def _get_tags(data):
+        keywords = data.get("keywords_raw")
         if keywords:
             keyword_list = keywords.split(",")
             keyword_list = [
@@ -161,10 +197,8 @@ class RawpixelDataIngester(ProviderDataIngester):
         if not (image_url := self._get_image_url(data)):
             return None
 
-        img_url, width, height = self._get_image_properties(data, foreign_url)
-        if not img_url:
-            return None
-        title, owner = self._get_title_owner(data)
+        width, height = self._get_image_properties(data)
+        title, owner = self._get_title(data)
         meta_data = self._get_meta_data(data)
         tags = self._get_tags(data)
         return {
@@ -174,7 +208,7 @@ class RawpixelDataIngester(ProviderDataIngester):
             "foreign_identifier": str(foreign_id),
             "width": str(width) if width else None,
             "height": str(height) if height else None,
-            "title": title if title else None,
+            "title": self._get_title(metadata),
             "meta_data": meta_data,
             "raw_tags": tags,
             "creator": owner,
