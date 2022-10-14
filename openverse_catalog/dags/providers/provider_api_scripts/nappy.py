@@ -71,12 +71,18 @@ class NappyDataIngester(ProviderDataIngester):
         if license_info is None:
             return None
 
+        def _convert_filesize(raw_filesize_string: str) -> int:
+            # Convert sizes from strings to byte integers, ex. "187.8kB" to 188.
+            filetype_multipliers = {"kB": 1000, "MB": 1_000_000, "GB": 1_000_000_000}
+            multiplier = filetype_multipliers[raw_filesize_string[-2:]]
+
+            return int(round(float(data.get("filesize")[:-2]) * multiplier))
+
         # OPTIONAL FIELDS
         # Obtain as many optional fields as possible.
         foreign_identifier = data.get("foreign_identifier")
         thumbnail_url = data.get("url") + "?auto=format&w=600&q=75"
-        # Convert sizes like "187.8kB" to 188.
-        filesize = int(round(float(data.get("filesize").removesuffix("kB"))))
+        filesize = _convert_filesize(data.get("filesize"))
         filetype = data.get("filetype")
         creator = data.get("creator")
         creator_url = data.get("creator_url")
