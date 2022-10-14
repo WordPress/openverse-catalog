@@ -85,7 +85,7 @@ class NappyDataIngester(ProviderDataIngester):
         creator = data.get("creator")
         creator_url = data.get("creator_url")
         title = data.get("title")
-        meta_data = data.get("meta_data")
+        meta_data = {"thumbnail_url": thumbnail_url}
         raw_tags = data.get("tags").split(",")
         width = data.get("width")
         height = data.get("height")
@@ -95,7 +95,6 @@ class NappyDataIngester(ProviderDataIngester):
             "image_url": image_url,
             "license_info": license_info,
             "foreign_identifier": foreign_identifier,
-            "thumbnail_url": thumbnail_url,
             "filesize": filesize,
             "filetype": filetype,
             "creator": creator,
