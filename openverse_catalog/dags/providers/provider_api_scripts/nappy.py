@@ -23,11 +23,7 @@ logger = logging.getLogger(__name__)
 class NappyDataIngester(ProviderDataIngester):
     providers = {"image": prov.NAPPY_DEFAULT_PROVIDER}
     endpoint = "https://api.nappy.co/v1/openverse/images"
-    # TODO The following are set to their default values. Remove them if the defaults
-    # are acceptible, or override them.
-    delay = 1
-    retries = 3
-    headers = {"Accept": "application/json"}
+    headers = {"User-Agent": prov.UA_STRING, "Accept": "application/json"}
 
     def get_next_query_params(self, prev_query_params: dict | None, **kwargs) -> dict:
         # On the first request, `prev_query_params` will be `None`. We can detect this
@@ -72,7 +68,9 @@ class NappyDataIngester(ProviderDataIngester):
             return None
 
         def _convert_filesize(raw_filesize_string: str) -> int:
-            # Convert sizes from strings to byte integers, ex. "187.8kB" to 188.
+            """
+            Convert sizes from strings to byte integers, ex. "187.8kB" to 188.
+            """
             filetype_multipliers = {"kB": 1000, "MB": 1_000_000, "GB": 1_000_000_000}
             multiplier = filetype_multipliers[raw_filesize_string[-2:]]
 
