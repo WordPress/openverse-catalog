@@ -11,6 +11,13 @@ on:
       - published
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'release' && 'release' || github.ref }}
+  # Don't continue building images for a PR if the PR is updated quickly
+  # For other workflows, allow them to complete and just block on them. This
+  # ensures deployments in particular to happen in series rather than parallel.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   lint:
     name: Lint
@@ -54,6 +61,10 @@ jobs:
         id: python-version
         run: echo "::set-output name=value::$(just py-version)"
 
+      - name: Get Airflow version
+        id: airflow-version
+        run: echo "::set-output name=value::$(just airflow-version)"
+
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v1
         with:
@@ -70,6 +81,7 @@ jobs:
           outputs: type=docker,dest=/tmp/catalog.tar
           build-args: |
             PROJECT_PY_VERSION=${{ steps.python-version.outputs.value }}
+            PROJECT_AIRFLOW_VERSION=${{ steps.airflow-version.outputs.value }}
 
       - name: Upload image
         uses: actions/upload-artifact@v2

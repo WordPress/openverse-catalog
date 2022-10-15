@@ -1,16 +1,19 @@
 import importlib
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Dict, Optional, Sequence, Type
 
 from providers.provider_api_scripts.brooklyn_museum import BrooklynMuseumDataIngester
 from providers.provider_api_scripts.cleveland_museum import ClevelandDataIngester
 from providers.provider_api_scripts.finnish_museums import FinnishMuseumsDataIngester
+from providers.provider_api_scripts.freesound import FreesoundDataIngester
 from providers.provider_api_scripts.inaturalist import INaturalistDataIngester
+from providers.provider_api_scripts.jamendo import JamendoDataIngester
 from providers.provider_api_scripts.metropolitan_museum import MetMuseumDataIngester
 from providers.provider_api_scripts.museum_victoria import VictoriaDataIngester
 from providers.provider_api_scripts.provider_data_ingester import ProviderDataIngester
 from providers.provider_api_scripts.science_museum import ScienceMuseumDataIngester
+from providers.provider_api_scripts.smk import SmkDataIngester
 from providers.provider_api_scripts.stocksnap import StockSnapDataIngester
 from providers.provider_api_scripts.wikimedia_commons import (
     WikimediaCommonsDataIngester,
@@ -68,6 +71,7 @@ class ProviderWorkflow:
     create_postingestion_tasks: callable that returns an airflow task or task group to
                         to run any necessary post-ingestion tasks, such as dropping data
                         loaded during pre-ingestion
+    tags:               list of any additional tags to apply to the generated DAG
     """
 
     provider_script: str
@@ -87,6 +91,7 @@ class ProviderWorkflow:
     media_types: Sequence[str] = ("image",)
     create_preingestion_tasks: Optional[callable] = None
     create_postingestion_tasks: Optional[callable] = None
+    tags: list[str] = field(default_factory=list)
 
     def __post_init__(self):
         if not self.dag_id:
@@ -98,6 +103,7 @@ class ProviderWorkflow:
 
         if not self.ingestion_callable:
             self.ingestion_callable = provider_script.main
+            self.tags.append("legacy-ingestion")
 
         if not self.doc_md:
             self.doc_md = provider_script.__doc__
@@ -145,10 +151,12 @@ PROVIDER_WORKFLOWS = [
     ),
     ProviderWorkflow(
         provider_script="freesound",
+        ingestion_callable=FreesoundDataIngester,
         media_types=("audio",),
     ),
     ProviderWorkflow(
         provider_script="jamendo",
+        ingestion_callable=JamendoDataIngester,
         media_types=("audio",),
     ),
     ProviderWorkflow(
@@ -192,15 +200,12 @@ PROVIDER_WORKFLOWS = [
     ),
     ProviderWorkflow(
         provider_script="smk",
+        ingestion_callable=SmkDataIngester,
         start_date=datetime(2020, 1, 1),
     ),
     ProviderWorkflow(
         provider_script="stocksnap",
         ingestion_callable=StockSnapDataIngester,
-    ),
-    ProviderWorkflow(
-        provider_script="walters",
-        start_date=datetime(2020, 9, 27),
     ),
     ProviderWorkflow(
         provider_script="wikimedia_commons",
