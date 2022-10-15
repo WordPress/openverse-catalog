@@ -22,9 +22,9 @@ new=$(git rev-list --reverse --topo-order HEAD..origin/main | head -1)
 [ -z "$new" ] && exit
 
 # Verify if have /dags/ in the last commit
-have_dag=$(git log -p -1 origin/main  --pretty=format: --name-only | grep "/dags/")
+have_dag=$(git log -p -1 $new  --pretty=format: --name-only | grep "/dags/")
 # If there is no files under /dags/ folder, no need to notify, quit early
-![ "$have_dag" ] && exit
+[ -z "$have_dag" ] && exit
 
 #Move ahead to this new commit
 git reset --hard "$new"
