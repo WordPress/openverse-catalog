@@ -17,15 +17,40 @@ class SmithsonianDataIngester(ProviderDataIngester):
     providers = {
         "image": prov.SMITHSONIAN_DEFAULT_PROVIDER,
     }
-    endpoint = "https://api.si.edu/openaccess/api/v1.0/"
+    sub_providers = prov.SMITHSONIAN_SUB_PROVIDERS
+    base_endpoint = "https://api.si.edu/openaccess/api/v1.0/"
     delay = 0.5
     batch_limit = 1000
     hash_prefix_length = 2
+    description_types = {
+        "description",
+        "summary",
+        "caption",
+        "notes",
+        "description (brief)",
+        "description (spanish)",
+        "description (brief spanish)",
+        "gallery label",
+        "exhibition label",
+        "luce center label",
+        "publication label",
+        "new acquisition label",
+    }
 
     def __init__(self, *args):
         super().__init__(*args)
         self.api_key = Variable.get("API_KEY_DATA_GOV")
-        self.units_endpoint = f"{self.endpoint}terms/unit_code"
+        self.units_endpoint = f"{self.base_endpoint}terms/unit_code"
+        self.license_info = get_license_info(
+            license_url="https://creativecommons.org/publicdomain/zero/1.0/"
+        )
+
+    @property
+    def endpoint(self):
+        return f"{self.base_endpoint}search"
+
+    def get_media_type(self, record: dict) -> str:
+        return constants.IMAGE
 
     def get_next_query_params(self, prev_query_params: dict | None, **kwargs) -> dict:
         # On the first request, `prev_query_params` will be `None`. We can detect this
@@ -57,9 +82,6 @@ class SmithsonianDataIngester(ProviderDataIngester):
         if response_json:
             return response_json.get("results")
         return None
-
-    def get_media_type(self, record: dict) -> str:
-        return constants.IMAGE
 
     def get_record_data(self, data: dict) -> dict | list[dict] | None:
         # Parse out the necessary info from the record data into a dictionary.
