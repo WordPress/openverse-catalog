@@ -63,11 +63,10 @@ class NyplDataIngester(ProviderDataIngester):
             return None
         mods = item_details.get("mods")
 
-        title_info = NyplDataIngester.get_value_from_dict_or_list(mods, "titleInfo")
-        if title_info:
-            title = title_info.get("title", {}).get("$") or ""
-        else:
-            title = ""
+        title_info = mods.get("titleInfo")
+        if isinstance(title_info, list) and title_info:
+            title_info = title_info[0]
+        title = "" if title_info is None else title_info.get("title", {}).get("$")
 
         name_properties = mods.get("name")
         creator = self._get_creators(name_properties) if name_properties else None
