@@ -69,7 +69,7 @@ At minimum, you'll need to provide the following in your configuration:
 * `media_types`: the media types your provider handles
 
 Example:
-```
+```python
 # In openverse_catalog/dags/providers/provider_workflows.py
 from providers.provider_api_scripts.foobar_museum import FoobarMuseumDataIngester
 

@@ -35,7 +35,7 @@ def get_record_data(self, data: dict) -> dict | list[dict] | None:
 
 **Solution**: In this case, you can reuse the `get_response_json` method by passing in the endpoint you need:
 
-```
+```python
 def get_record_data(self, data: dict) -> dict | list[dict] | None:
     ...
 
@@ -56,7 +56,7 @@ Example: Rather than passing a `page` number in query parameters, a provider exp
 
 If your `endpoint` needs to change, you can implement it as a `property`:
 
-```
+```python
 @property
 def endpoint(self) -> str:
     # Compute the endpoint using some instance variable
@@ -65,7 +65,7 @@ def endpoint(self) -> str:
 
 In this example, `self.page_number` is an instance variable that gets updated after each request. To set up the instance variable you can override `__init__`, **being careful to remember to call `super` and pass through kwargs**, and then update it in `get_next_query_params`:
 
-```
+```python
 def __init__(self, *args, **kwargs):
     # IMPORTANT!
     super().__init__(*args, **kwargs)
@@ -96,7 +96,7 @@ Now each time `get_batch` is called, the `endpoint` is correctly updated.
 
 **Solution**: You can do this by overriding the `ingest_records` method, which accepts optional `kwargs` that it passes through on each call to `get_next_query_params`. This is best demonstrated with code:
 
-```
+```python
 CATEGORIES = ["music", "audio_book", "podcast"]
 
 def ingest_records(self, **kwargs):
@@ -124,7 +124,7 @@ This will result in the ingestion function running once for each category.
 
 **Solution**: You can override `get_response_json` in order to implement more complex behavior.
 
-```
+```python
 # Psuedo code serves as an example
 def get_response_json(
     self, query_params: dict, endpoint: str | None = None, **kwargs
