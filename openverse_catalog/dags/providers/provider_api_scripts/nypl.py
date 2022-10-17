@@ -63,10 +63,11 @@ class NyplDataIngester(ProviderDataIngester):
             return None
         mods = item_details.get("mods")
 
-        title_info = mods.get("titleInfo")
-        if isinstance(title_info, list) and len(title_info):
-            title_info = title_info[0]
-        title = "" if title_info is None else title_info.get("title", {}).get("$")
+        title_info = NyplDataIngester.get_value_from_dict_or_list(mods, "titleInfo")
+        if title_info:
+            title = title_info.get("title", {}).get("$") or ""
+        else:
+            title = ""
 
         name_properties = mods.get("name")
         creator = self._get_creators(name_properties) if name_properties else None
@@ -175,6 +176,22 @@ class NyplDataIngester(ProviderDataIngester):
         return creator
 
     @staticmethod
+    def get_value_from_dict_or_list(
+        dict_or_list: dict | list, key: str
+    ) -> dict | list | str | None:
+        """
+        If dict_or_list is a list, returns the value from the first
+        dictionary in the list.
+        If it is a dict, returns the value from the dict.
+        """
+        if isinstance(dict_or_list, list):
+            for item in dict_or_list:
+                if key in item:
+                    return item[key]
+        else:
+            return dict_or_list.get(key)
+
+    @staticmethod
     def _get_metadata(mods):
         metadata = {}
 
@@ -188,42 +205,49 @@ class NyplDataIngester(ProviderDataIngester):
             metadata["genre"] = mods.get("genre").get("$")
 
         origin_info = mods.get("originInfo", {})
-        if date_issued := origin_info.get("dateIssued", {}).get("$"):
+        if date_issued := NyplDataIngester.get_value_from_dict_or_list(
+            origin_info, "dateIssued"
+        ):
             metadata["date_issued"] = date_issued
-        if date_created := origin_info.get("dateCreated", {}):
-            if isinstance(date_created, list):
+        if date_created_object := NyplDataIngester.get_value_from_dict_or_list(
+            origin_info, "dateCreated"
+        ):
+            if isinstance(date_created_object, dict):
+                if date_created := date_created_object.get("$"):
+                    metadata["date_created"] = date_created
+            elif isinstance(date_created_object, list):
+                logger.info(f"date_created: {date_created_object}")
                 # Approximate dates have a start and an end
                 # [{'encoding': 'w3cdtf', 'keyDate': 'yes',
                 # 'point': 'start', 'qualifier': 'approximate', '$': '1990'},
                 # {'encoding': 'w3cdtf', 'point': 'end',
                 # 'qualifier': 'approximate', '$': '1999'}]
-                start_date = next(
-                    d.get("$") for d in date_created if d.get("point") == "start"
-                )
-                end_date = next(
-                    d.get("$") for d in date_created if d.get("point") == "end"
-                )
-                if start_date and end_date:
-                    date_created = f"{start_date}-{end_date}"
-                elif start_date:
-                    date_created = start_date
-                else:
-                    date_created = None
-            else:
-                date_created = date_created.get("$")
-            metadata["date_created"] = date_created
-        if publisher := origin_info.get("publisher", {}).get("$"):
+                start, end = None, None
+                for item in date_created_object:
+                    point = item.get("point")
+                    if point == "start":
+                        start = item.get("$")
+                    elif point == "end":
+                        end = item.get("$")
+                if start:
+                    metadata["date_created"] = f"{start}{f'-{end}' if end else ''}"
+
+        if publisher := NyplDataIngester.get_value_from_dict_or_list(
+            origin_info, "publisher"
+        ):
             metadata["publisher"] = publisher
-        physical_description = mods.get("physicalDescription", {})
-        if isinstance(physical_description, list):
-            note = {}
-            for item in physical_description:
-                if "note" in item:
-                    note = item.get("note", {})
-        else:
-            note = physical_description.get("note", {})
-        if description := note.get("$"):
-            metadata["physical_description"] = description
+
+        physical_description = NyplDataIngester.get_value_from_dict_or_list(
+            mods, "physicalDescription"
+        )
+        if physical_description:
+            note = NyplDataIngester.get_value_from_dict_or_list(
+                physical_description, "note"
+            )
+
+            if note and (description := note.get("$")):
+                metadata["physical_description"] = description
+                logger.info(f"Added description: {description}")
 
         subject_list = mods.get("subject", [])
         if isinstance(subject_list, dict):
