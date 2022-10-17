@@ -10,6 +10,7 @@ from providers.provider_api_scripts.provider_data_ingester import ProviderDataIn
 from retry import retry
 
 
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 
@@ -85,68 +86,29 @@ class SmithsonianDataIngester(ProviderDataIngester):
 
     def get_record_data(self, data: dict) -> dict | list[dict] | None:
         # Parse out the necessary info from the record data into a dictionary.
-        # TODO: Update based on your API.
-        # TODO: Important! Refer to the most up-to-date documentation about the
-        # available fields in `openverse_catalog/docs/data_models.md`
+        images = []
+        if image_list := self._get_image_list(data):
 
-        # REQUIRED FIELDS:
-        # - foreign_landing_url
-        # - license_info
-        # - image_url / audio_url
-        #
-        # If a required field is missing, return early to prevent unnecesary
-        # processing.
+            if (foreign_landing_url := self._get_foreign_landing_url(data)) is None:
+                return None
 
-        if (foreign_landing_url := data.get("url")) is None:
-            return None
-
-        # TODO: Note the url field name differs depending on field type. Append
-        # `image_url` or `audio_url` depending on the type of record being processed.
-        if (image_url := data.get("image_url")) is None:
-            return None
-
-        # Use the `get_license_info` utility to get license information from a URL.
-        license_url = data.get("license")
-        license_info = get_license_info(license_url)
-        if license_info is None:
-            return None
-
-        # OPTIONAL FIELDS
-        # Obtain as many optional fields as possible.
-        foreign_identifier = data.get("foreign_id")
-        thumbnail_url = data.get("thumbnail")
-        filesize = data.get("filesize")
-        filetype = data.get("filetype")
-        creator = data.get("creator")
-        creator_url = data.get("creator_url")
-        title = data.get("title")
-        meta_data = data.get("meta_data")
-        raw_tags = data.get("tags")
-        watermarked = data.get("watermarked")
-
-        # MEDIA TYPE-SPECIFIC FIELDS
-        # Each Media type may also have its own optional fields. See documentation.
-        # TODO: Populate media type-specific fields.
-        # If your provider supports more than one media type, you'll need to first
-        # determine the media type of the record being processed.
-
-        return {
-            "foreign_landing_url": foreign_landing_url,
-            "image_url": image_url,
-            "license_info": license_info,
-            # Optional fields
-            "foreign_identifier": foreign_identifier,
-            "thumbnail_url": thumbnail_url,
-            "filesize": filesize,
-            "filetype": filetype,
-            "creator": creator,
-            "creator_url": creator_url,
-            "title": title,
-            "meta_data": meta_data,
-            "raw_tags": raw_tags,
-            "watermarked": watermarked,
-            # TODO: Remember to add any media-type specific fields here
-        }
+            meta_data = self._extract_meta_data(data)
+            partial_image_data = {
+                "foreign_landing_url": foreign_landing_url,
+                "title": data.get("title"),
+                "license_info": self.license_info,
+                "source": self._extract_source(meta_data),
+                # "creator": self._get_creator(data),
+                # creator_url = data.get("creator_url")
+                # thumbnail_url = data.get("thumbnail")
+                # filesize = data.get("filesize")
+                # filetype = data.get("filetype")
+                "meta_data": meta_data,
+                # "raw_tags": self._extract_tags(data),
+                # watermarked = data.get("watermarked")
+            }
+            images += self._process_image_list(image_list, partial_image_data)
+        return images
 
     @retry(ValueError, tries=3, delay=1, backoff=2)
     def _get_unit_codes_from_api(self) -> set:
@@ -208,6 +170,127 @@ class SmithsonianDataIngester(ProviderDataIngester):
         format_string = f"0{self.hash_prefix_length}x"
         for h in range(int(max_prefix, 16) + 1):
             yield format(h, format_string)
+
+    @staticmethod
+    def _check_type(unknown_input, required_type):
+        """
+        This function ensures that the input is of the required type.
+
+        Required Arguments:
+
+        unknown_input:  This can be anything
+        required_type:  built-in type name/constructor
+
+        This function will check whether the unknown_input is of type
+        required_type. If it is, it returns the unknown_input value
+        unchanged. If not, will return the DEFAULT VALUE FOR THE TYPE
+        required_type. So, if unknown_input is a float 3.0 and the
+        required_type is int, this function will return 0.
+
+        This function will work for required_type in:
+        str, int, float, complex, list, tuple, dict, set, bool, and bytes.
+
+        This function will create a relatively high-level log message
+        whenever it has to initialize a default value for type
+        required_type.
+        """
+        logger.debug(f"Ensuring {unknown_input} is of type {required_type}")
+        if unknown_input is None:
+            logger.debug(f"{unknown_input} is of type {type(unknown_input)}.")
+            typed_input = required_type()
+        elif type(unknown_input) != required_type:
+            logger.info(
+                f"{unknown_input} is of type {type(unknown_input)}"
+                f" rather than {required_type}."
+            )
+            typed_input = required_type()
+        else:
+            typed_input = unknown_input
+        return typed_input
+
+    def _get_content_dict(self, row):
+        return self._check_type(row.get("content"), dict)
+
+    def _get_descriptive_non_repeating_dict(self, row):
+        logger.debug("Getting descriptive_non_repeating_dict from row")
+        desc = self._get_content_dict(row).get("descriptiveNonRepeating")
+        return self._check_type(desc, dict)
+
+    def _get_image_list(self, row):
+        dnr_dict = self._get_descriptive_non_repeating_dict(row)
+        online_media = self._check_type(dnr_dict.get("online_media"), dict)
+        return self._check_type(online_media.get("media"), list)
+
+    @staticmethod
+    def _process_image_list(image_list, partial_image_data: dict) -> list:
+        images = []
+        for image_data in image_list:
+            usage = image_data.get("usage", {}).get("access")
+            if image_data.get("type") != "Images" or usage != "CC0":
+                continue
+
+            if (image_url := image_data.get("content")) is None:
+                continue
+
+            if (foreign_identifier := image_data.get("idsId")) is None:
+                continue
+
+            images.append(
+                {
+                    **partial_image_data,
+                    "image_url": image_url,
+                    "foreign_identifier": foreign_identifier,
+                }
+            )
+        return images
+
+    def _get_foreign_landing_url(self, row):
+        logger.debug("Getting foreign_landing_url from row")
+        dnr_dict = self._get_descriptive_non_repeating_dict(row)
+        foreign_landing_url = dnr_dict.get("record_link")
+        if foreign_landing_url is None:
+            foreign_landing_url = dnr_dict.get("guid")
+
+        return foreign_landing_url
+
+    def _get_freetext_dict(self, row):
+        logger.debug("Getting freetext_dict from row")
+        freetext = self._get_content_dict(row).get("freetext")
+        return self._check_type(freetext, dict)
+
+    def _extract_meta_data(self, row, description_types=None) -> dict:
+        freetext = self._get_freetext_dict(row)
+        descriptive_non_repeating = self._get_descriptive_non_repeating_dict(row)
+        description, label_texts = "", ""
+        notes = self._check_type(freetext.get("notes"), list)
+
+        for note in notes:
+            label = self._check_type(note.get("label", ""), str)
+            if label.lower().strip() in self.description_types:
+                description += " " + self._check_type(note.get("content", ""), str)
+            elif label.lower().strip() == "label text":
+                label_texts += " " + self._check_type(note.get("content", ""), str)
+
+        meta_data = {
+            "unit_code": descriptive_non_repeating.get("unit_code"),
+            "data_source": descriptive_non_repeating.get("data_source"),
+        }
+
+        if description:
+            meta_data.update(description=description.strip())
+        if label_texts:
+            meta_data.update(label_text=label_texts.strip())
+
+        return {k: v for (k, v) in meta_data.items() if v is not None}
+
+    def _extract_source(self, meta_data):
+        unit_code = meta_data.get("unit_code").strip()
+        source = next(
+            (s for s in self.sub_providers if unit_code in self.sub_providers[s]), None
+        )
+        if source is None:
+            raise Exception(f"An unknown unit code value {unit_code} encountered ")
+        return source
 
     def ingest_records(self, **kwargs) -> None:
         for hash_prefix in self._get_hash_prefixes():
