@@ -75,12 +75,12 @@ class SmithsonianDataIngester(ProviderDataIngester):
                 "start": prev_query_params["start"] + self.batch_limit,
             }
 
-    def get_batch_data(self, response_json):
+    def get_batch_data(self, response_json) -> list | None:
         # Takes the raw API response from calling `get` on the endpoint, and returns
         # the list of records to process.
-        # TODO: Update based on your API.
         if response_json:
-            return response_json.get("results")
+            rows = response_json.get("response", {}).get("rows")
+            return self._check_type(rows, list)
         return None
 
     def get_record_data(self, data: dict) -> dict | list[dict] | None:
