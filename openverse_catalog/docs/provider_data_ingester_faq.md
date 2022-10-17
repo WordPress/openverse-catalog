@@ -15,7 +15,7 @@ Some provider APIs may not fit neatly into this workflow. This document addresse
 
 **Solution**: The `get_record_data` method takes a `data` object representing a single record from the provider API. Typically, it extracts required data and returns it as a single dict. However, it can also return a **list of dictionaries** for cases like the one described, where multiple Openverse records can be extracted.
 
-```
+```python
 def get_record_data(self, data: dict) -> dict | list[dict] | None:
     records = []
 
