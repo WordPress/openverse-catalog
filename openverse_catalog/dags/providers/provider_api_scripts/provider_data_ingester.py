@@ -149,12 +149,14 @@ class ProviderDataIngester(ABC):
         Optional Arguments:
         **kwargs: Optional arguments to be passed to `get_next_query_params`.
         """
+        should_continue = True
         query_params = None
 
         # If an ingestion limit has been set and we have already ingested records
         # in excess of the limit, exit early. This may happen if `ingest_records`
         # is called more than once.
-        should_continue = not self.limit or self.record_count < self.limit
+        if self.limit and self.record_count >= self.limit:
+            return
 
         logger.info(f"Begin ingestion for {self.__class__.__name__}")
 
