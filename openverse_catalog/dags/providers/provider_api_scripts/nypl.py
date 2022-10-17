@@ -32,7 +32,7 @@ class NyplDataIngester(ProviderDataIngester):
             return {
                 "q": "CC_0",
                 "field": "use_rtxt_s",
-                "page": 1,
+                "page": 2,
                 "per_page": self.batch_limit,
             }
 
@@ -214,8 +214,15 @@ class NyplDataIngester(ProviderDataIngester):
             metadata["date_created"] = date_created
         if publisher := origin_info.get("publisher", {}).get("$"):
             metadata["publisher"] = publisher
-
-        if description := mods.get("physicalDescription", {}).get("note", {}).get("$"):
+        physical_description = mods.get("physicalDescription", {})
+        if isinstance(physical_description, list):
+            note = {}
+            for item in physical_description:
+                if "note" in item:
+                    note = item.get("note", {})
+        else:
+            note = physical_description.get("note", {})
+        if description := note.get("$"):
             metadata["physical_description"] = description
 
         subject_list = mods.get("subject", [])
