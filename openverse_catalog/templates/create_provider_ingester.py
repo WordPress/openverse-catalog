@@ -3,13 +3,14 @@ Script used to generate a templated ProviderDataIngester.
 """
 
 import argparse
+import re
 from pathlib import Path
 
 import inflection
 
 
 TEMPLATES_PATH = Path(__file__).parent
-REPO_PATH = TEMPLATES_PATH.parents[2]
+REPO_PATH = TEMPLATES_PATH.parent
 PROJECT_PATH = REPO_PATH.parent
 MEDIA_TYPES = ["audio", "image"]
 
@@ -65,9 +66,8 @@ def _render_file(
 
 def fill_template(provider, endpoint, media_types):
     print(f"Creating files in {REPO_PATH}")
-    provider = provider.replace(" ", "_")
 
-    dags_path = TEMPLATES_PATH.parent / "providers"
+    dags_path = TEMPLATES_PATH.parent / "dags" / "providers"
     api_path = dags_path / "provider_api_scripts"
     filename = inflection.underscore(provider)
 
@@ -85,9 +85,10 @@ def fill_template(provider, endpoint, media_types):
 
     # Render the tests
     script_template_path = TEMPLATES_PATH / "template_test.py_template"
-    tests_path = REPO_PATH / "tests"
+    tests_path = PROJECT_PATH / "tests"
     # Mirror the directory structure, but under the "tests" top level directory
     test_script_path = tests_path.joinpath(*api_path.parts[-3:]) / f"test_{filename}.py"
+
     _render_file(
         test_script_path,
         script_template_path,
@@ -103,6 +104,22 @@ NOTE: You will also need to add a new ProviderWorkflow dataclass configuration t
 PROVIDER_WORKFLOWS list in `openverse-catalog/dags/providers/provider_workflows.py`.
 """
     )
+
+
+def sanitize_provider(provider: str) -> str:
+    """
+    Takes a provider string from user input and sanitizes it by:
+    - removing trailing whitespace
+    - replacing spaces and periods with underscores
+    - removing all characters other than alphanumeric characters, dashes,
+    and underscores.
+
+    Eg: sanitize_provider("hello world.foo*/bar2&") -> "hello_world_foobar2"
+    """
+    provider = provider.strip().replace(" ", "_").replace(".", "_")
+
+    # Remove unsupported characters
+    return re.sub("[^0-9a-xA-Z-_]+", "", provider)
 
 
 def main():
@@ -127,23 +144,23 @@ def main():
         " ('audio'/'image'). Default value is ['image',]",
     )
     args = parser.parse_args()
-    provider = args.provider
+    provider = sanitize_provider(args.provider)
     endpoint = args.endpoint
 
-    # Get valid media types
     media_types = []
+    # Default to image if no valid media types given
+    if not args.media:
+        print('No media type given, defaulting to ["image",]')
+        media_types = [
+            "image",
+        ]
+
+    # Get valid media types
     for media_type in args.media:
         if media_type in MEDIA_TYPES:
             media_types.append(media_type)
         else:
             print(f"Ignoring invalid type {media_type}")
-
-    # Default to image if no valid media types given
-    if not media_types:
-        print('No media type given, defaulting to ["image",]')
-        media_types = [
-            "image",
-        ]
 
     fill_template(provider, endpoint, media_types)
 

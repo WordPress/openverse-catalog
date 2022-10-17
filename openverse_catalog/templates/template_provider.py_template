@@ -1,7 +1,8 @@
 import logging
 
+from airflow.models import Variable
 from common import constants
-from common.license import get_license_info
+from common.licenses import get_license_info
 from common.loader import provider_details as prov
 from providers.provider_api_scripts.provider_data_ingester import ProviderDataIngester
 
@@ -22,7 +23,7 @@ class {provider}DataIngester(ProviderDataIngester):
     }
     endpoint = "{endpoint}"
     # TODO The following are set to their default values. Remove them if the defaults
-    # are acceptible, or override them.
+    # are acceptable, or override them.
     delay = 1
     retries = 3
     batch_limit = 100
