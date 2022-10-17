@@ -157,16 +157,14 @@ class SmithsonianDataIngester(ProviderDataIngester):
         unit_codes_from_api = set(response_json.get("response", {}).get("terms", []))
 
         if len(unit_codes_from_api) == 0:
-            raise ValueError("No unit codes received.")
+            raise ValueError("No unit codes received")
 
+        logger.debug(f"\nUnit codes received:\n{unit_codes_from_api}\n")
         return unit_codes_from_api
 
     @staticmethod
-    def _get_new_and_outdated_unit_codes(
-        unit_codes_from_api: set, sub_providers: dict
-    ) -> Tuple[set, set]:
-        if not sub_providers:
-            sub_providers = prov.SMITHSONIAN_SUB_PROVIDERS
+    def _get_new_and_outdated_unit_codes(unit_codes_from_api: set) -> Tuple[set, set]:
+        sub_providers = prov.SMITHSONIAN_SUB_PROVIDERS
         current_unit_codes = set().union(*sub_providers.values())
 
         new_unit_codes = unit_codes_from_api - current_unit_codes
@@ -217,7 +215,6 @@ class SmithsonianDataIngester(ProviderDataIngester):
 
 
 def main():
-    logger.info("Begin: SmithsonianRefactored data ingestion")
     ingester = SmithsonianDataIngester()
     logger.info("Validating Smithsonian sub-providers...")
     ingester.validate_unit_codes_from_api()
