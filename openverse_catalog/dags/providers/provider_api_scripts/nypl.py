@@ -3,6 +3,7 @@ import re
 from urllib.parse import parse_qs, urlparse
 
 from airflow.models import Variable
+from common import constants
 from common.licenses import get_license_info
 from common.loader import provider_details as prov
 from common.loader.provider_details import ImageCategory
@@ -11,12 +12,10 @@ from providers.provider_api_scripts.provider_data_ingester import ProviderDataIn
 
 logger = logging.getLogger(__name__)
 
-NYPL_API = Variable.get("API_KEY_NYPL", default_var=None)
-FILETYPE_PATTERN = r" .(jpeg|gif) "
-
 
 class NyplDataIngester(ProviderDataIngester):
     providers = {"image": prov.NYPL_DEFAULT_PROVIDER}
+    NYPL_API = Variable.get("API_KEY_NYPL")
     headers = {"Authorization": f"Token token={NYPL_API}"}
     endpoint_base = "http://api.repo.nypl.org/api/v1/items"
     endpoint = f"{endpoint_base}/search/"
@@ -46,7 +45,7 @@ class NyplDataIngester(ProviderDataIngester):
 
     def get_media_type(self, record):
         # This provider only supports Images.
-        return "image"
+        return constants.IMAGE
 
     def get_batch_data(self, response_json):
         if response_json:
@@ -124,7 +123,7 @@ class NyplDataIngester(ProviderDataIngester):
         :param description: the description string
         :return:  jpeg | gif
         """
-        if match := re.search(FILETYPE_PATTERN, description):
+        if match := re.search(r" .(jpeg|gif) ", description):
             return match.group(1)
         return None
 
@@ -150,18 +149,17 @@ class NyplDataIngester(ProviderDataIngester):
             return None, None
 
         # Select the dict with the largest image
-        preferred_image_index = next(
-            image_types[dimension]
-            for dimension in NyplDataIngester.image_url_dimensions
-            if dimension in image_types
-        )
-        if preferred_image_index is None:
-            return None, None
-        preferred_image = images[preferred_image_index]
+        for dimension in NyplDataIngester.image_url_dimensions:
+            if (preferred_image_index := image_types[dimension]) is not None:
+                preferred_image = images[preferred_image_index]
 
-        image_url = preferred_image["$"].replace("&download=1", "")
-        filetype = NyplDataIngester._get_filetype(preferred_image["description"])
-        return image_url, filetype
+                image_url = preferred_image["$"].replace("&download=1", "")
+                filetype = NyplDataIngester._get_filetype(
+                    preferred_image["description"]
+                )
+                return image_url, filetype
+
+        return None, None
 
     @staticmethod
     def _get_creators(creatorinfo):
