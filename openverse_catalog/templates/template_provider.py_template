@@ -1,3 +1,17 @@
+"""
+TODO: This doc string will be used to generate documentation for the DAG in
+DAGs.md. Update it to include any relevant information that you'd like to
+be documented.
+
+Content Provider:       {provider}
+
+ETL Process:            Use the API to identify all CC licensed images.
+
+Output:                 TSV file containing the images and the
+                        respective meta-data.
+
+Notes:                  {endpoint}
+"""
 import logging
 
 from airflow.models import Variable
