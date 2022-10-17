@@ -2,7 +2,67 @@ from pathlib import Path
 
 import pytest
 
-from openverse_catalog.templates import create_provider_ingester  # , sanitize_provider
+from openverse_catalog.templates import create_provider_ingester
+
+
+@pytest.mark.parametrize(
+    "media_types_str, expected_types",
+    [
+        # Just image
+        (
+            [
+                "image",
+            ],
+            [
+                "image",
+            ],
+        ),
+        # Just audio
+        (
+            [
+                "audio",
+            ],
+            [
+                "audio",
+            ],
+        ),
+        # Multiple valid types
+        (["image", "audio"], ["image", "audio"]),
+        # Discard only invalid types
+        (
+            ["image", "blorfl"],
+            [
+                "image",
+            ],
+        ),
+        (["blorfl", "audio", "image"], ["audio", "image"]),
+        # Defaults to image when all given types are invalid
+        (
+            ["blorfl", "wat"],
+            [
+                "image",
+            ],
+        ),
+        # Defaults to image when no types are given at all
+        (
+            [
+                "",
+            ],
+            [
+                "image",
+            ],
+        ),
+        (
+            None,
+            [
+                "image",
+            ],
+        ),
+    ],
+)
+def test_parse_media_types(media_types_str, expected_types):
+    actual_result = create_provider_ingester.parse_media_types(media_types_str)
+    assert actual_result == expected_types
 
 
 @pytest.mark.parametrize(

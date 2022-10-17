@@ -122,6 +122,31 @@ def sanitize_provider(provider: str) -> str:
     return re.sub("[^0-9a-xA-Z-_]+", "", provider)
 
 
+def parse_media_types(media_types: list[str]) -> list[str]:
+    """
+    Parses valid media types out from user input. Defaults to ["image",]
+    """
+    valid_media_types = []
+
+    if media_types is None:
+        media_types = []
+
+    for media_type in media_types:
+        if media_type in MEDIA_TYPES:
+            valid_media_types.append(media_type)
+        else:
+            print(f"Ignoring invalid type {media_type}")
+
+    # Default to image if no valid types given
+    if not valid_media_types:
+        print('No media type given, defaulting to ["image",]')
+        return [
+            "image",
+        ]
+
+    return valid_media_types
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Create a new provider API ProviderDataIngester",
@@ -146,21 +171,7 @@ def main():
     args = parser.parse_args()
     provider = sanitize_provider(args.provider)
     endpoint = args.endpoint
-
-    media_types = []
-    # Default to image if no valid media types given
-    if not args.media:
-        print('No media type given, defaulting to ["image",]')
-        media_types = [
-            "image",
-        ]
-
-    # Get valid media types
-    for media_type in args.media:
-        if media_type in MEDIA_TYPES:
-            media_types.append(media_type)
-        else:
-            print(f"Ignoring invalid type {media_type}")
+    media_types = parse_media_types(args.media)
 
     fill_template(provider, endpoint, media_types)
 

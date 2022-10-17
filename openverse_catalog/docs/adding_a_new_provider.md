@@ -42,7 +42,7 @@ We provide a [script](../dags/templates/create_provider_ingester.py) that can be
 
 # Example usage:
 
-> python3 openverse_catalog/dags/templates/create_provider_ingester.py "Foobar Museum" "https://foobar.museum.org/api/v1" -m "image audio"
+> python3 openverse_catalog/templates/create_provider_ingester.py "Foobar Museum" "https://foobar.museum.org/api/v1" -m image audio
 ```
 
 You should see output similar to this:
