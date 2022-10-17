@@ -32,7 +32,7 @@ class NyplDataIngester(ProviderDataIngester):
             return {
                 "q": "CC_0",
                 "field": "use_rtxt_s",
-                "page": 2,
+                "page": 1,
                 "per_page": self.batch_limit,
             }
 
