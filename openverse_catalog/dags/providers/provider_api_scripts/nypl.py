@@ -148,11 +148,15 @@ class NyplDataIngester(ProviderDataIngester):
         if not image_types:
             return None, None
 
-        # Select the dict with the largest image
+        # Select the dict containing the URL for the largest image.
+        # The image size is encoded in the URL query parameter `t`.
+        # The list of dimensions is sorted by size of the corresponding image.
         for dimension in NyplDataIngester.image_url_dimensions:
-            if (preferred_image_index := image_types.get(dimension)) is not None:
+            preferred_image_index = image_types.get(dimension)
+            if preferred_image_index is not None:
                 preferred_image = images[preferred_image_index]
 
+                # Removes the `download` query to get the viewable image URL
                 image_url = preferred_image["$"].replace("&download=1", "")
                 filetype = NyplDataIngester._get_filetype(
                     preferred_image["description"]
@@ -165,14 +169,21 @@ class NyplDataIngester(ProviderDataIngester):
     def _get_creators(creatorinfo):
         if not isinstance(creatorinfo, list):
             creatorinfo = [creatorinfo]
-        primary_creator = (
-            info.get("namePart", {}).get("$")
-            for info in creatorinfo
-            if info.get("usage") == "primary"
-        )
-        creator = next(primary_creator, None)
+        for info in creatorinfo:
+            if info.get("usage") == "primary":
+                return info.get("namePart", {}).get("$")
+        return None
 
-        return creator
+    @staticmethod
+    def _get_type_of_resource(mods: dict) -> str | None:
+        type_of_resource = mods.get("typeOfResource", {})
+        if isinstance(type_of_resource, list):
+            for type_ in type_of_resource:
+                if type_.get("usage") == "primary":
+                    return type_.get("$")
+            return None
+        else:
+            return type_of_resource.get("$")
 
     @staticmethod
     def get_value_from_dict_or_list(
@@ -194,11 +205,9 @@ class NyplDataIngester(ProviderDataIngester):
     def _get_metadata(mods):
         metadata = {}
 
-        type_of_resource = mods.get("typeOfResource")
-        if isinstance(type_of_resource, list) and (
-            type_of_resource[0].get("usage") == "primary"
-        ):
-            metadata["type_of_resource"] = type_of_resource[0].get("$")
+        type_of_resource = NyplDataIngester._get_type_of_resource(mods)
+        if type_of_resource:
+            metadata["type_of_resource"] = type_of_resource
 
         if isinstance(mods.get("genre"), dict):
             metadata["genre"] = mods.get("genre").get("$")
