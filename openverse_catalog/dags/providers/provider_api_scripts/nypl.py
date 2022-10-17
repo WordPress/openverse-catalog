@@ -224,7 +224,6 @@ class NyplDataIngester(ProviderDataIngester):
                 if date_created := date_created_object.get("$"):
                     metadata["date_created"] = date_created
             elif isinstance(date_created_object, list):
-                logger.info(f"date_created: {date_created_object}")
                 # Approximate dates have a start and an end
                 # [{'encoding': 'w3cdtf', 'keyDate': 'yes',
                 # 'point': 'start', 'qualifier': 'approximate', '$': '1990'},
@@ -255,7 +254,6 @@ class NyplDataIngester(ProviderDataIngester):
 
             if note and (description := note.get("$")):
                 metadata["physical_description"] = description
-                logger.info(f"Added description: {description}")
 
         subject_list = mods.get("subject", [])
         if isinstance(subject_list, dict):
