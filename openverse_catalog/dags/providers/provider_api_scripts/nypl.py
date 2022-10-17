@@ -150,7 +150,7 @@ class NyplDataIngester(ProviderDataIngester):
 
         # Select the dict with the largest image
         for dimension in NyplDataIngester.image_url_dimensions:
-            if (preferred_image_index := image_types[dimension]) is not None:
+            if (preferred_image_index := image_types.get(dimension)) is not None:
                 preferred_image = images[preferred_image_index]
 
                 image_url = preferred_image["$"].replace("&download=1", "")

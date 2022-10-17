@@ -1,12 +1,9 @@
 import json
-import logging
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 from common.licenses import LicenseInfo
-from common.loader import provider_details as prov
-from common.storage.image import ImageStore
 from providers.provider_api_scripts.nypl import NyplDataIngester
 
 
@@ -17,7 +14,6 @@ CC0 = LicenseInfo(
     url="https://creativecommons.org/publicdomain/zero/1.0/",
     raw_url="https://creativecommons.org/publicdomain/zero/1.0/",
 )
-
 
 
 @pytest.fixture(autouse=True)
