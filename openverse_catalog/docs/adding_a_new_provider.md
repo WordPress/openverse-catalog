@@ -28,7 +28,7 @@ Adding a new provider to Openverse means adding a new provider DAG. Fortunately,
 
 We call the code that pulls data from our provider APIs "Provider API scripts". You can find examples in [`provider_api_scripts` folder](../dags/providers/provider_api_scripts). This code will be run during the `pull` steps of the provider DAG.
 
-At a high level, a provider script should iteratively request batches of records from the provider API, extract data in the format required by Openverse, and commit it to local storage. Much of this logic is implemented in a [`ProviderDataIngester` base class](../dags/providers/provider_api_scripts/provider_data_ingester.py) (which also provides additional testing features *<TODO: link to documentation for testing features like ingestion_limit, skip_ingestion_errors etc>*). All you need to do to add a new provider is extend this class and implement its abstract methods.
+At a high level, a provider script should iteratively request batches of records from the provider API, extract data in the format required by Openverse, and commit it to local storage. Much of this logic is implemented in a [`ProviderDataIngester` base class](../dags/providers/provider_api_scripts/provider_data_ingester.py) (which also provides additional testing features *<TODO: link to documentation for testing features like ingestion_limit, skip_ingestion_errors etc>*). To add a new provider, extend this class and implement its abstract methods.
 
 We provide a [script](../dags/templates/create_provider_ingester.py) that can be used to generate the files you'll need and get you started:
 
