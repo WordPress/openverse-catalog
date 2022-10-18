@@ -213,10 +213,11 @@ class NyplDataIngester(ProviderDataIngester):
             metadata["genre"] = mods.get("genre").get("$")
 
         origin_info = mods.get("originInfo", {})
-        if date_issued := NyplDataIngester.get_value_from_dict_or_list(
+        date_issued = NyplDataIngester.get_value_from_dict_or_list(
             origin_info, "dateIssued"
-        ):
-            metadata["date_issued"] = date_issued
+        )
+        if date_issued and isinstance(date_issued, dict) and "$" in date_issued:
+            metadata["date_issued"] = date_issued["$"]
         if date_created_object := NyplDataIngester.get_value_from_dict_or_list(
             origin_info, "dateCreated"
         ):
