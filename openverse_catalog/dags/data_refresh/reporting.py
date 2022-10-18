@@ -29,7 +29,7 @@ def report_record_difference(before: str, after: str, media_type: str, dag_id: s
     message = f"""
 _Note: All values are row estimates and are not (but nearly) exact_
 *Record count difference for `{media_type}`*: {before:,} → {after:,}
-*Change*: {count_diff:+,} ({percent_diff:+}% Δ)
+*Change*: {count_diff:+,} ({percent_diff:+.3f}% Δ)
 """
     slack.send_message(
         text=message, dag_id=dag_id, username="Data refresh record difference"
