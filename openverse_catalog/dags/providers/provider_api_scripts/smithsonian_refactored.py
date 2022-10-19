@@ -37,6 +37,60 @@ class SmithsonianDataIngester(ProviderDataIngester):
         "publication label",
         "new acquisition label",
     }
+    creator_types = {
+        "artist": 0,
+        "artist/maker": 0,
+        "attributed to": 0,
+        "author": 0,
+        "created_by": 0,
+        "creator": 0,
+        "created by": 0,
+        "model maker": 0,
+        "modeler": 0,
+        "photographer": 0,
+        "photograph by": 0,
+        "written by": 0,
+        "architect": 1,
+        "designer": 1,
+        "designed by": 1,
+        "illustrator": 1,
+        "illustrated by": 1,
+        "cartoonist": 1,
+        "weaver": 1,
+        "composer": 1,
+        "composed by": 1,
+        "embroiderer": 1,
+        "landscape architect": 1,
+        "calligrapher": 1,
+        "sculptor": 1,
+        "jeweler": 1,
+        "potter": 1,
+        "ceramist": 1,
+        "compiled by": 2,
+        "engraver": 2,
+        "etcher": 2,
+        "maker": 2,
+        "silversmith": 2,
+        "producer": 2,
+        "produced by": 2,
+        "metal worker": 2,
+        "carver": 2,
+        "cartographer": 2,
+        "print maker": 3,
+        "painter": 3,
+        "after": 3,
+        "inventor": 3,
+        "lithographer": 3,
+        "attribution": 3,
+        "former attribution": 3,
+        "manufactured by": 4,
+        "manufacturer": 4,
+        "published by": 4,
+        "publisher": 4,
+        "editor": 4,
+        "patentee": 5,
+        "collector": 6,
+    }
     tag_types = ("date", "object_type", "topic", "place")
 
     def __init__(self, *args):
@@ -99,14 +153,16 @@ class SmithsonianDataIngester(ProviderDataIngester):
                 "title": data.get("title"),
                 "license_info": self.license_info,
                 "source": self._extract_source(meta_data),
-                # "creator": self._get_creator(data),
-                # creator_url = data.get("creator_url")
-                # thumbnail_url = data.get("thumbnail")
-                # filesize = data.get("filesize")
-                # filetype = data.get("filetype")
+                "creator": self._get_creator(data),
                 "meta_data": meta_data,
                 "raw_tags": self._extract_tags(data),
-                # watermarked = data.get("watermarked")
+                # TODO: Check if the following columns can be filled.
+                # creator_url
+                # thumbnail_url
+                # filesize
+                # filetype
+                # category
+                # watermarked
             }
             images += self._process_image_list(image_list, partial_image_data)
         return images
@@ -297,6 +353,59 @@ class SmithsonianDataIngester(ProviderDataIngester):
         if source is None:
             raise Exception(f"An unknown unit code value {unit_code} encountered ")
         return source
+
+    def _get_creator(self, row):
+        freetext = self._get_freetext_dict(row)
+        indexed_structured = self._get_indexed_structured_dict(row)
+        ordered_freetext_creator_objects = sorted(
+            [
+                i
+                for i in self._check_type(freetext.get("name"), list)
+                if type(i) == dict
+                and (
+                    self._check_type(i.get("label"), str).lower() in self.creator_types
+                )
+                and (self._check_type(i.get("content"), str))
+                and ("unknown" not in i.get("content").lower())
+            ],
+            key=lambda x: self.creator_types[x["label"].lower()],
+        )
+
+        indexed_structured_creator_generator = (
+            i["content"]
+            for i in self._check_type(indexed_structured.get("name"), list)
+            if type(i) == dict
+            and (self._check_type(i.get("type"), str).lower() == "personal_main")
+            and (self._check_type(i.get("content"), str))
+        )
+
+        if ordered_freetext_creator_objects:
+            first_creator_object = ordered_freetext_creator_objects[0]
+            top_priority = self.creator_types[first_creator_object["label"].lower()]
+
+            creators_list = [
+                c["content"]
+                for c in ordered_freetext_creator_objects
+                if top_priority == self.creator_types[c["label"].lower()]
+            ]
+
+            creator = (
+                "; ".join(creators_list[:-1]) + " and " + creators_list[-1]
+                if len(creators_list) > 1
+                else creators_list[0]
+            )
+
+        else:
+            creator = None
+
+        if creator is None:
+            logger.debug(f"No creator found in freetext:  {freetext}")
+            creator = next(indexed_structured_creator_generator, None)
+        if creator is None:
+            logger.debug(
+                f"No creator found in indexed_structured:  {indexed_structured}"
+            )
+        return creator
 
     def _extract_tags(self, row):
         indexed_structured = self._get_indexed_structured_dict(row)
