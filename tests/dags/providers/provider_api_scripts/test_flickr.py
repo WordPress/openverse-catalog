@@ -252,7 +252,7 @@ def test_get_largest_image_size(image_data, expected_size):
     ],
 )
 def test_get_license(license_id, expected_license_info):
-    actual_license_info = flickr._get_license({"license": license_id})
+    actual_license_info = flickr._get_license_info({"license": license_id})
     assert actual_license_info == expected_license_info
 
 
@@ -342,10 +342,10 @@ def test_get_record_data_with_sub_provider():
             "https://live.staticflickr.com/65535/49950595947_65a3560ddc" "_b.jpg"
         ),
         "license_info": test_license_info,
-        "foreign_identifier": 49950595947,
+        "foreign_identifier": "49950595947",
         "width": 1024,
         "height": 683,
-        "filesize": 218414,
+        "filesize": None,
         "filetype": "jpg",
         "creator": "NASA HQ PHOTO",
         "creator_url": "https://www.flickr.com/photos/35067687@N04",
