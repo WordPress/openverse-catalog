@@ -45,11 +45,11 @@ def test_get_next_query_params_updates_parameters():
     assert actual_params == expected_params
 
 
-# def test_get_media_type():
-#     # TODO: Test the correct media type is returned for each possible media type.
-#     pass
-#
-#
+def test_get_media_type():
+    actual_type = ingester.get_media_type(record={})
+    assert actual_type == "image"
+
+
 # def test_get_record_data():
 #     # High level test for `get_record_data`. One way to test this is to create a
 #     # `tests/resources/Smithsonian/single_item.json` file containing a sample json
