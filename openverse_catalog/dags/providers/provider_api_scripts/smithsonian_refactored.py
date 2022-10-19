@@ -37,6 +37,7 @@ class SmithsonianDataIngester(ProviderDataIngester):
         "publication label",
         "new acquisition label",
     }
+    tag_types = ("date", "object_type", "topic", "place")
 
     def __init__(self, *args):
         super().__init__(*args)
@@ -104,7 +105,7 @@ class SmithsonianDataIngester(ProviderDataIngester):
                 # filesize = data.get("filesize")
                 # filetype = data.get("filetype")
                 "meta_data": meta_data,
-                # "raw_tags": self._extract_tags(data),
+                "raw_tags": self._extract_tags(data),
                 # watermarked = data.get("watermarked")
             }
             images += self._process_image_list(image_list, partial_image_data)
@@ -216,6 +217,11 @@ class SmithsonianDataIngester(ProviderDataIngester):
         desc = self._get_content_dict(row).get("descriptiveNonRepeating")
         return self._check_type(desc, dict)
 
+    def _get_indexed_structured_dict(self, row):
+        logger.debug("Getting indexed_structured_dict from row")
+        content = self._get_content_dict(row).get("indexedStructured")
+        return self._check_type(content, dict)
+
     def _get_image_list(self, row):
         dnr_dict = self._get_descriptive_non_repeating_dict(row)
         online_media = self._check_type(dnr_dict.get("online_media"), dict)
@@ -291,6 +297,14 @@ class SmithsonianDataIngester(ProviderDataIngester):
         if source is None:
             raise Exception(f"An unknown unit code value {unit_code} encountered ")
         return source
+
+    def _extract_tags(self, row):
+        indexed_structured = self._get_indexed_structured_dict(row)
+        tag_lists_generator = (
+            self._check_type(indexed_structured.get(key), list)
+            for key in self.tag_types
+        )
+        return [tag for tag_list in tag_lists_generator for tag in tag_list if tag]
 
     def ingest_records(self, **kwargs) -> None:
         for hash_prefix in self._get_hash_prefixes():
