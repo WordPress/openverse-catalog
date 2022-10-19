@@ -25,9 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 class SmithsonianDataIngester(ProviderDataIngester):
-    providers = {
-        "image": prov.SMITHSONIAN_DEFAULT_PROVIDER,
-    }
+    providers = {"image": prov.SMITHSONIAN_DEFAULT_PROVIDER}
     sub_providers = prov.SMITHSONIAN_SUB_PROVIDERS
     base_endpoint = "https://api.si.edu/openaccess/api/v1.0/"
     delay = 0.5
@@ -47,6 +45,11 @@ class SmithsonianDataIngester(ProviderDataIngester):
         "publication label",
         "new acquisition label",
     }
+
+    # `creator_types` should have lower-case strings as keys, and integers as values.
+    # The integers given the preference order of the different creator types, with
+    # lower being more preferred. No preference is implied between two creator
+    # types with the same integer value.
     creator_types = {
         "artist": 0,
         "artist/maker": 0,
@@ -101,6 +104,7 @@ class SmithsonianDataIngester(ProviderDataIngester):
         "patentee": 5,
         "collector": 6,
     }
+
     tag_types = ("date", "object_type", "topic", "place")
 
     def __init__(self, *args):
@@ -427,6 +431,7 @@ class SmithsonianDataIngester(ProviderDataIngester):
 
     def ingest_records(self, **kwargs) -> None:
         for hash_prefix in self._get_hash_prefixes():
+            logger.debug(f"Getting records for hash prefix {hash_prefix}")
             super().ingest_records(hash_prefix=hash_prefix)
 
 
