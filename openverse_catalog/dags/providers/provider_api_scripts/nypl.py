@@ -13,6 +13,34 @@ from providers.provider_api_scripts.provider_data_ingester import ProviderDataIn
 logger = logging.getLogger(__name__)
 
 
+def get_value_from_dict_or_list(
+    dict_or_list: dict | list, keys: list[str]
+) -> dict | list | str | None:
+    """
+    Returns the nested value.
+    If dict_or_list is a list, returns the value from the first
+    dictionary in the list.
+    If it is a dict, returns the value from the dict.
+    """
+    if not keys or not dict_or_list:
+        return dict_or_list
+    current_key, updated_keys = keys[0], keys[1:]
+    if isinstance(dict_or_list, list):
+        for item in dict_or_list:
+            if current_key in item:
+                val = item[current_key]
+                if isinstance(val, (list, dict)):
+                    return get_value_from_dict_or_list(val, updated_keys)
+                elif isinstance(val, str) or val is None:
+                    return val
+        return None
+    elif isinstance(dict_or_list, dict):
+        val = dict_or_list.get(current_key)
+        if isinstance(val, (list, dict)):
+            return get_value_from_dict_or_list(val, updated_keys)
+        return val
+
+
 class NyplDataIngester(ProviderDataIngester):
     providers = {"image": prov.NYPL_DEFAULT_PROVIDER}
     NYPL_API = Variable.get("API_KEY_NYPL")
@@ -186,40 +214,24 @@ class NyplDataIngester(ProviderDataIngester):
             return type_of_resource.get("$")
 
     @staticmethod
-    def get_value_from_dict_or_list(
-        dict_or_list: dict | list, key: str
-    ) -> dict | list | str | None:
-        """
-        If dict_or_list is a list, returns the value from the first
-        dictionary in the list.
-        If it is a dict, returns the value from the dict.
-        """
-        if isinstance(dict_or_list, list):
-            for item in dict_or_list:
-                if key in item:
-                    return item[key]
-        else:
-            return dict_or_list.get(key)
-
-    @staticmethod
     def _get_metadata(mods):
         metadata = {}
 
-        type_of_resource = NyplDataIngester._get_type_of_resource(mods)
-        if type_of_resource:
+        if type_of_resource := NyplDataIngester._get_type_of_resource(mods):
             metadata["type_of_resource"] = type_of_resource
 
-        if isinstance(mods.get("genre"), dict):
-            metadata["genre"] = mods.get("genre").get("$")
+        if genre := get_value_from_dict_or_list(mods, ["genre", "$"]):
+            metadata["genre"] = genre
 
         origin_info = mods.get("originInfo", {})
-        date_issued = NyplDataIngester.get_value_from_dict_or_list(
-            origin_info, "dateIssued"
-        )
-        if date_issued and isinstance(date_issued, dict) and "$" in date_issued:
-            metadata["date_issued"] = date_issued["$"]
-        if date_created_object := NyplDataIngester.get_value_from_dict_or_list(
-            origin_info, "dateCreated"
+
+        if date_issued := get_value_from_dict_or_list(
+            mods, ["originInfo", "dateIssued", "$"]
+        ):
+            metadata["date_issued"] = date_issued
+
+        if date_created_object := get_value_from_dict_or_list(
+            origin_info, ["dateCreated"]
         ):
             if isinstance(date_created_object, dict):
                 if date_created := date_created_object.get("$"):
@@ -240,21 +252,13 @@ class NyplDataIngester(ProviderDataIngester):
                 if start:
                     metadata["date_created"] = f"{start}{f'-{end}' if end else ''}"
 
-        if publisher := NyplDataIngester.get_value_from_dict_or_list(
-            origin_info, "publisher"
-        ):
+        if publisher := get_value_from_dict_or_list(origin_info, ["publisher", "$"]):
             metadata["publisher"] = publisher
 
-        physical_description = NyplDataIngester.get_value_from_dict_or_list(
-            mods, "physicalDescription"
-        )
-        if physical_description:
-            note = NyplDataIngester.get_value_from_dict_or_list(
-                physical_description, "note"
-            )
-
-            if note and (description := note.get("$")):
-                metadata["physical_description"] = description
+        if physical_description := get_value_from_dict_or_list(
+            mods, ["physicalDescription", "note", "$"]
+        ):
+            metadata["physical_description"] = physical_description
 
         subject_list = mods.get("subject", [])
         if isinstance(subject_list, dict):
