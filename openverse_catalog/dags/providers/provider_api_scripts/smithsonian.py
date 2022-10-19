@@ -195,14 +195,12 @@ class SmithsonianDataIngester(ProviderDataIngester):
         logger.debug(f"\nUnit codes received:\n{unit_codes_from_api}\n")
         return unit_codes_from_api
 
-    @staticmethod
-    def _get_new_and_outdated_unit_codes(unit_codes_from_api: set) -> Tuple[set, set]:
-        sub_providers = prov.SMITHSONIAN_SUB_PROVIDERS
-        current_unit_codes = set().union(*sub_providers.values())
-
+    def _get_new_and_outdated_unit_codes(
+        self, unit_codes_from_api: set
+    ) -> Tuple[set, set]:
+        current_unit_codes = set().union(*self.sub_providers.values())
         new_unit_codes = unit_codes_from_api - current_unit_codes
         outdated_unit_codes = current_unit_codes - unit_codes_from_api
-
         return new_unit_codes, outdated_unit_codes
 
     def validate_unit_codes_from_api(self) -> None:

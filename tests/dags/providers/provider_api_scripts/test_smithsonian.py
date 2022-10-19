@@ -1,5 +1,6 @@
 # import json
 from pathlib import Path
+from unittest.mock import patch
 
 # import pytest
 from providers.provider_api_scripts.smithsonian import SmithsonianDataIngester
@@ -9,6 +10,40 @@ RESOURCES = Path(__file__).parent / "tests/resources/smithsonian"
 
 # Set up test class
 ingester = SmithsonianDataIngester()
+
+
+def test_get_hash_prefixes_with_len_one():
+    ingester.hash_prefix_length = 1
+    expect_prefix_list = [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "f",
+    ]
+    actual_prefix_list = list(ingester._get_hash_prefixes())
+    assert actual_prefix_list == expect_prefix_list
+    ingester.hash_prefix_length = 2  # Undo the change
+
+
+def test_alert_new_unit_codes():
+    sub_prov_dict = {"sub_prov1": {"a", "c"}, "sub_prov2": {"b"}, "sub_prov3": {"e"}}
+    unit_code_set = {"a", "b", "c", "d"}
+    with patch.dict(ingester.sub_providers, sub_prov_dict, clear=True):
+        actual_codes = ingester._get_new_and_outdated_unit_codes(unit_code_set)
+    expected_codes = ({"d"}, {"e"})
+    assert actual_codes == expected_codes
 
 
 def test_get_next_query_params_first_call():
