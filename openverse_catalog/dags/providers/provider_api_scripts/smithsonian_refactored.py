@@ -258,7 +258,7 @@ class SmithsonianDataIngester(ProviderDataIngester):
         freetext = self._get_content_dict(row).get("freetext")
         return self._check_type(freetext, dict)
 
-    def _extract_meta_data(self, row, description_types=None) -> dict:
+    def _extract_meta_data(self, row) -> dict:
         freetext = self._get_freetext_dict(row)
         descriptive_non_repeating = self._get_descriptive_non_repeating_dict(row)
         description, label_texts = "", ""
