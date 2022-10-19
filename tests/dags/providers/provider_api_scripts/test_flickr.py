@@ -23,14 +23,6 @@ def _get_resource_json(json_name):
     return resource_json
 
 
-# Add a test that makes sure the dday division evenly divides the day, with a comment
-# that says this is to make sure we catch it if we ever update that value to
-# something that doesn't
-
-# Add a test when get_preferred_image_size returns None that it logs and returns none for
-# all of get record
-
-
 def test_derive_timestamp_pair_list_with_sub_hourly_day_divisions():
     # Note that the timestamps are derived as if input was in UTC.
     actual_pair_list = flickr._derive_timestamp_pair_list("2018-01-15")
@@ -244,8 +236,8 @@ def test_url_join_no_trailing_slashes(args):
         (_get_resource_json("image_data_with_small_url_available.json"), "s"),
     ],
 )
-def test_get_image_url_returns_Nonetype_tuple_if_no_image(image_data, expected_size):
-    actual_size = flickr._get_image_url(image_data)
+def test_get_largest_image_size(image_data, expected_size):
+    actual_size = flickr._get_largest_image_size(image_data)
     assert actual_size == expected_size
 
 
@@ -260,7 +252,7 @@ def test_get_image_url_returns_Nonetype_tuple_if_no_image(image_data, expected_s
         (99999999999, None),
     ],
 )
-def test_get_license_with_int_license_id(license_id, expected_license_info):
+def test_get_license(license_id, expected_license_info):
     actual_license_info = flickr._get_license({"license": license_id})
     assert actual_license_info == expected_license_info
 
