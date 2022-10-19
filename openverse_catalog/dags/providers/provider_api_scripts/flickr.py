@@ -56,18 +56,21 @@ class FlickrDataIngester(ProviderDataIngester):
         self.api_key = Variable.get("API_KEY_FLICKR")
         self.license_param = ",".join(LICENSE_INFO.keys())
 
+        # Keeps track of number of requests made, so we can see how close we are
+        # to hitting rate limits.
+        self.requests_count = 0
+
     @staticmethod
     def _derive_timestamp_pair_list(date):
         """ "
         Build a list of timestamp pairs that divide the given date into equal
         portions of the 24-hour period. Ingestion will be run separately for
         each of these time divisions. This is necessary because requesting data
-        for the entire day at once may cause unexpected behavior from the API.
-
-        We divide the day into 48 half-hour increments. #TODO:
+        for too long a period may cause unexpected behavior from the API:
+        https://github.com/WordPress/openverse-catalog/issues/26.
         """
         seconds_in_a_day = 86400
-        number_of_divisions = 48  # Divide the day into half-hour increments
+        number_of_divisions = 48  # Half-hour increments
         portion = int(seconds_in_a_day / number_of_divisions)
         utc_date = datetime.strptime(date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
 
@@ -125,6 +128,11 @@ class FlickrDataIngester(ProviderDataIngester):
         return constants.IMAGE
 
     def get_batch_data(self, response_json):
+        # Keep track of the number of requests we've made, and log every 100
+        self.requests_count += 1
+        if self.requests_count % 100 == 0:
+            logger.debug(f"{self.requests_count} requests have been made.")
+
         if response_json is None or response_json.get("stat") != "ok":
             return None
         return response_json.get("photos", {}).get("photo")
@@ -219,7 +227,8 @@ class FlickrDataIngester(ProviderDataIngester):
             # TODO: Temporarily commenting out this code to avoid making an additional
             # request for every Flickr image to get filesize. We should test turning
             # this back on, or else find another way of getting the data.
-            # Once re-enabled, we'll need to mock this method in the tests to prevent
+            # https://github.com/WordPress/openverse-catalog/issues/811
+            # If re-enabled, we'll need to mock this method in the tests to prevent
             # making requests to Flickr while testing.
             #
             # resp = self.delayed_requester.get(image_url)
