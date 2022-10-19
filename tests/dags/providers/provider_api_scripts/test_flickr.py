@@ -223,8 +223,7 @@ def test_url_join_no_trailing_slashes(args):
 
 
 @pytest.mark.parametrize(
-    "image_data",
-    "expected_size",
+    "image_data, expected_size",
     [
         # No image detected
         (_get_resource_json("image_data_no_image_url.json"), None),
