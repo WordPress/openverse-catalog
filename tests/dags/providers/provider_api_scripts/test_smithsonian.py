@@ -409,6 +409,47 @@ def test_extract_meta_data_dnr_fields(input_ft, input_dnr, expect_meta_data):
     assert actual_meta_data == expect_meta_data
 
 
+@pytest.mark.parametrize(
+    "input_is, expect_tags",
+    [
+        ({}, []),
+        ({"nothing": "here"}, []),
+        (
+            {
+                "date": ["", ""],
+                "place": ["Indian Ocean"],
+            },
+            ["Indian Ocean"],
+        ),
+        (
+            {
+                "date": ["2000s"],
+                "object_type": ["Holotypes", "Taxonomic type specimens"],
+                "topic": ["Paleogeneral", "Protists"],
+                "place": ["Indian Ocean"],
+            },
+            [
+                "2000s",
+                "Holotypes",
+                "Taxonomic type specimens",
+                "Paleogeneral",
+                "Protists",
+                "Indian Ocean",
+            ],
+        ),
+    ],
+)
+def test_extract_tags(input_is, expect_tags):
+    input_row = {"test": "row"}
+    get_is = patch.object(
+        ingester, "_get_indexed_structured_dict", return_value=input_is
+    )
+    with get_is as mock_is:
+        actual_tags = ingester._extract_tags(input_row)
+    mock_is.assert_called_once_with(input_row)
+    assert actual_tags == expect_tags
+
+
 # def test_get_record_data():
 #     # High level test for `get_record_data`. One way to test this is to create a
 #     # `tests/resources/Smithsonian/single_item.json` file containing a sample json
