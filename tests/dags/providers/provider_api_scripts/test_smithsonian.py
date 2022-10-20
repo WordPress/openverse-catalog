@@ -168,6 +168,141 @@ def test_get_media_type():
     assert actual_type == "image"
 
 
+@pytest.mark.parametrize(
+    "input_dnr, expect_foreign_landing_url",
+    [
+        ({}, None),
+        (
+            {
+                "guid": "http://fallback.com",
+                "unit_code": "NMNHMAMMALS",
+                "record_link": "http://chooseme.com",
+            },
+            "http://chooseme.com",
+        ),
+        ({"guid": "http://fallback.com"}, "http://fallback.com"),
+        ({"no": "urlhere"}, None),
+    ],
+)
+def test_get_foreign_landing_url(input_dnr, expect_foreign_landing_url):
+    input_row = {"key": "val"}
+    with patch.object(
+        ingester, "_get_descriptive_non_repeating_dict", return_value=input_dnr
+    ) as mock_dnr:
+        actual_foreign_landing_url = ingester._get_foreign_landing_url(input_row)
+    mock_dnr.assert_called_once_with(input_row)
+    assert actual_foreign_landing_url == expect_foreign_landing_url
+
+
+@pytest.mark.parametrize(
+    "input_is, input_ft, expect_creator",
+    [
+        ({}, {}, None),
+        ({"name": ["Alice"]}, {}, None),
+        ({"name": "alice"}, {}, None),
+        ({"name": [{"type": ["personal", "main"], "nocontent": "Alice"}]}, {}, None),
+        ({"name": [{"type": "personal_main", "nocontent": "Alice"}]}, {}, None),
+        ({"noname": [{"type": "personal_main", "content": "Alice"}]}, {}, None),
+        ({"name": [{"label": "personal_main", "content": "Alice"}]}, {}, None),
+        ({"name": [{"type": "impersonal_main", "content": "Alice"}]}, {}, None),
+        (
+            {"name": [{"type": "personal_main", "content": "Alice"}]},
+            {"name": "Bob"},
+            "Alice",
+        ),
+        (
+            {"name": [{"type": "personal_main", "content": "Alice"}]},
+            {"name": ["Bob"]},
+            "Alice",
+        ),
+        (
+            {"name": [{"type": "personal_main", "content": "Alice"}]},
+            {"name": [{"label": "Creator", "nocontent": "Bob"}]},
+            "Alice",
+        ),
+        (
+            {"name": [{"type": "personal_main", "content": "Alice"}]},
+            {"name": [{"nolabel": "Creator", "content": "Bob"}]},
+            "Alice",
+        ),
+        (
+            {"name": [{"type": "personal_main", "content": "Alice"}]},
+            {"name": [{"label": "NotaCreator", "content": "Bob"}]},
+            "Alice",
+        ),
+        (
+            {"name": [{"type": "personal_main", "content": "Alice"}]},
+            {"noname": [{"label": "Creator", "content": "Bob"}]},
+            "Alice",
+        ),
+        (
+            {"name": [{"type": "personal_main", "content": "Alice"}]},
+            {"name": [{"label": "Creator", "content": "Bob"}]},
+            "Bob",
+        ),
+        (
+            {},
+            {
+                "name": [
+                    {"label": "Designer", "content": "Alice"},
+                    {"label": "Creator", "content": "Bob"},
+                ]
+            },
+            "Bob",
+        ),
+        (
+            {},
+            {
+                "name": [
+                    {"label": "AFTER", "content": "Bob"},
+                    {"label": "Designer", "content": "Alice"},
+                ]
+            },
+            "Alice",
+        ),
+        (
+            {},
+            {
+                "name": [
+                    {"label": "AFTER", "content": "Bob"},
+                    {"label": "DESIGNER", "content": "Alice"},
+                ]
+            },
+            "Alice",
+        ),
+        (
+            {
+                "name": [
+                    {"type": "personal_main", "content": "Alice"},
+                    {"type": "corporate_subj", "content": "Zoological Park"},
+                ]
+            },
+            {
+                "name": [
+                    {"label": "Creator", "content": "Bob"},
+                    {"label": "Subject", "content": "Zoological Park"},
+                ]
+            },
+            "Bob",
+        ),
+    ],
+)
+def test_get_creator(input_is, input_ft, expect_creator):
+    creator_types = {"creator": 0, "designer": 1, "after": 3}
+    input_row = {"test": "row"}
+    get_is = patch.object(
+        ingester, "_get_indexed_structured_dict", return_value=input_is
+    )
+    get_ft = patch.object(ingester, "_get_freetext_dict", return_value=input_ft)
+    ct_patch = patch.object(ingester, "creator_types", creator_types)
+    with get_is as mock_is, get_ft as mock_ft, ct_patch:
+        actual_creator = ingester._get_creator(input_row)
+
+    mock_is.assert_called_once_with(input_row)
+    mock_ft.assert_called_once_with(input_row)
+    assert actual_creator == expect_creator
+
+
 # def test_get_record_data():
 #     # High level test for `get_record_data`. One way to test this is to create a
 #     # `tests/resources/Smithsonian/single_item.json` file containing a sample json
