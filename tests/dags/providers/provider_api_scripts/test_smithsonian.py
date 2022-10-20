@@ -1,14 +1,13 @@
-# import json
+import json
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 from airflow.exceptions import AirflowException
-from common.licenses import get_license_info
 from providers.provider_api_scripts.smithsonian import SmithsonianDataIngester
 
 
-RESOURCES = Path(__file__).parent / "tests/resources/smithsonian"
+RESOURCES = Path(__file__).parent / "resources/smithsonian"
 
 # Set up test class
 ingester = SmithsonianDataIngester()
@@ -491,9 +490,7 @@ def test_process_image_list(input_media, expected_image_data):
     partial_image_data = {
         "foreign_landing_url": "https://foreignlanding.url",
         "title": "The Title",
-        "license_info": get_license_info(
-            license_url="https://creativecommons.org/publicdomain/zero/1.0/"
-        ),
+        "license_info": ingester.license_info,
         "creator": "Alice",
         "meta_data": {"unit_code": "NMNHBOTANY"},
         "source": "smithsonian_national_museum_of_natural_history",
@@ -504,23 +501,33 @@ def test_process_image_list(input_media, expected_image_data):
     assert actual_image_data == expected_result
 
 
-# def test_get_record_data():
-#     # High level test for `get_record_data`. One way to test this is to create a
-#     # `tests/resources/Smithsonian/single_item.json` file containing a sample json
-#     # representation of a record from the API under test, call `get_record_data` with
-#     # the json, and directly compare to expected output.
-#     #
-#     # Make sure to add additional tests for records of each media type supported by
-#     # your provider.
-#
-#     # Sample code for loading in the sample json
-#     with open(RESOURCES / "single_item.json") as f:
-#         resource_json = json.load(f)
-#
-#     actual_data = ingester.get_record_data(resource_json)
-#
-#     expected_data = {
-#         # TODO: Fill out the expected data which will be saved to the Catalog
-#     }
-#
-#     assert actual_data == expected_data
+def test_get_record_data():
+    with open(RESOURCES / "actual_record_data.json") as f:
+        data = json.load(f)
+    actual_data = ingester.get_record_data(data)
+    expected_data = [
+        {
+            "image_url": "https://collections.nmnh.si.edu/media/?irn=15814382",
+            "foreign_identifier": "https://collections.nmnh.si.edu/media/?irn=15814382",
+            "foreign_landing_url": "http://n2t.net/ark:/65665/34857ca78-9195-4156-849b-1ec47f7cd1ce",
+            "title": "Passerculus sandwichensis nevadensis",
+            "license_info": ingester.license_info,
+            "source": "smithsonian_national_museum_of_natural_history",
+            "creator": "Seymour H. Levy",
+            "meta_data": {
+                "unit_code": "NMNHBIRDS",
+                "data_source": "NMNH - Vertebrate Zoology - Birds Division",
+            },
+            "raw_tags": [
+                "1950s",
+                "Animals",
+                "Birds",
+                "United States",
+                "Pinal",
+                "North America",
+                "Arizona",
+            ],
+        }
+    ]
+
+    assert actual_data == expected_data
