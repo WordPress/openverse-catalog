@@ -303,6 +303,112 @@ def test_get_creator(input_is, input_ft, expect_creator):
     assert actual_creator == expect_creator
 
 
+@pytest.mark.parametrize(
+    "input_ft, input_dnr, expect_description",
+    [
+        ({}, {}, None),
+        ({"notes": [{"label": "notthis", "content": "blah"}]}, {}, None),
+        ({"notes": "notalist"}, {}, None),
+        ({"notes": [{"label": "Summary", "content": "blah"}]}, {}, "blah"),
+        (
+            {
+                "notes": [
+                    {"label": "Description", "content": "blah"},
+                    {"label": "Summary", "content": "blah"},
+                    {"label": "Description", "content": "blah"},
+                ]
+            },
+            {},
+            "blah blah blah",
+        ),
+        (
+            {
+                "notes": [
+                    {"label": "notDescription", "content": "blah"},
+                    {"label": "Summary", "content": "blah"},
+                    {"label": "Description", "content": "blah"},
+                ]
+            },
+            {},
+            "blah blah",
+        ),
+    ],
+)
+def test_ext_meta_data_description(input_ft, input_dnr, expect_description):
+    description_types = {"description", "summary"}
+    input_row = {"test": "row"}
+    get_dnr = patch.object(
+        ingester, "_get_descriptive_non_repeating_dict", return_value=input_dnr
+    )
+    get_ft = patch.object(ingester, "_get_freetext_dict", return_value=input_ft)
+    dt_patch = patch.object(ingester, "description_types", description_types)
+    with get_dnr as mock_dnr, get_ft as mock_ft, dt_patch:
+        meta_data = ingester._extract_meta_data(input_row)
+    actual_description = meta_data.get("description")
+    mock_dnr.assert_called_once_with(input_row)
+    mock_ft.assert_called_once_with(input_row)
+    assert actual_description == expect_description
+
+
+@pytest.mark.parametrize(
+    "input_ft, input_dnr, expect_label_text",
+    [
+        ({}, {}, None),
+        ({"notes": [{"label": "notthis", "content": "blah"}]}, {}, None),
+        ({"notes": "notalist"}, {}, None),
+        ({"notes": [{"label": "Label Text", "content": "blah"}]}, {}, "blah"),
+        (
+            {
+                "notes": [
+                    {"label": "Label Text", "content": "blah"},
+                    {"label": "Summary", "content": "halb"},
+                    {"label": "Description", "content": "halb"},
+                ]
+            },
+            {},
+            "blah",
+        ),
+    ],
+)
+def test_ext_meta_data_label_text(input_ft, input_dnr, expect_label_text):
+    input_row = {"test": "row"}
+    get_dnr = patch.object(
+        ingester, "_get_descriptive_non_repeating_dict", return_value=input_dnr
+    )
+    get_ft = patch.object(ingester, "_get_freetext_dict", return_value=input_ft)
+    with get_dnr as mock_dnr, get_ft as mock_ft:
+        meta_data = ingester._extract_meta_data(input_row)
+    actual_label_text = meta_data.get("label_text")
+    mock_dnr.assert_called_once_with(input_row)
+    mock_ft.assert_called_once_with(input_row)
+    assert actual_label_text == expect_label_text
+
+
+@pytest.mark.parametrize(
+    "input_ft, input_dnr, expect_meta_data",
+    [
+        ({"nothing": "here"}, {"nothing_to": "see"}, {}),
+        ({}, {"unit_code": "SIA"}, {"unit_code": "SIA"}),
+        (
+            {},
+            {"data_source": "Smithsonian Institution Archives"},
+            {"data_source": "Smithsonian Institution Archives"},
+        ),
+    ],
+)
+def test_extract_meta_data_dnr_fields(input_ft, input_dnr, expect_meta_data):
+    input_row = {"test": "row"}
+    get_dnr = patch.object(
+        ingester, "_get_descriptive_non_repeating_dict", return_value=input_dnr
+    )
+    get_ft = patch.object(ingester, "_get_freetext_dict", return_value=input_ft)
+    with get_dnr as mock_dnr, get_ft as mock_ft:
+        actual_meta_data = ingester._extract_meta_data(input_row)
+    mock_dnr.assert_called_once_with(input_row)
+    mock_ft.assert_called_once_with(input_row)
+    assert actual_meta_data == expect_meta_data
+
+
 # def test_get_record_data():
 #     # High level test for `get_record_data`. One way to test this is to create a
 #     # `tests/resources/Smithsonian/single_item.json` file containing a sample json
