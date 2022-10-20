@@ -2,7 +2,8 @@
 from pathlib import Path
 from unittest.mock import patch
 
-# import pytest
+import pytest
+from airflow.exceptions import AirflowException
 from providers.provider_api_scripts.smithsonian import SmithsonianDataIngester
 
 
@@ -44,6 +45,60 @@ def test_alert_new_unit_codes():
         actual_codes = ingester._get_new_and_outdated_unit_codes(unit_code_set)
     expected_codes = ({"d"}, {"e"})
     assert actual_codes == expected_codes
+
+
+@pytest.mark.parametrize(
+    "new_unit_codes, outdated_unit_codes",
+    [
+        ({"d"}, {"e"}),
+        ({"d"}, set()),
+        (set(), {"e"}),
+    ],
+)
+def test_validate_unit_codes_from_api_raises_exception(
+    new_unit_codes, outdated_unit_codes
+):
+    with patch.object(ingester, "_get_unit_codes_from_api"), patch.object(
+        ingester,
+        "_get_new_and_outdated_unit_codes",
+        return_value=(new_unit_codes, outdated_unit_codes),
+    ):
+        message = "^\n\\*Updates needed to the SMITHSONIAN_SUB_PROVIDERS dictionary\\**"
+        with pytest.raises(AirflowException, match=message):
+            ingester.validate_unit_codes_from_api()
+
+
+def test_validate_unit_codes_from_api():
+    with patch.object(ingester, "_get_unit_codes_from_api"), patch.object(
+        ingester, "_get_new_and_outdated_unit_codes", return_value=(set(), set())
+    ):
+        # Validation should run without raising an exception
+        ingester.validate_unit_codes_from_api()
+
+
+@pytest.mark.parametrize(
+    "input_int, expect_len, expect_first, expect_last",
+    [
+        (1, 16, "0", "f"),
+        (2, 256, "00", "ff"),
+        (3, 4096, "000", "fff"),
+        (4, 65536, "0000", "ffff"),
+    ],
+)
+def test_get_hash_prefixes_with_other_len(
+    input_int, expect_len, expect_first, expect_last
+):
+    with patch.object(ingester, "hash_prefix_length", input_int):
+        actual_list = list(ingester._get_hash_prefixes())
+
+    assert all("0x" not in h for h in actual_list)
+    assert all(
+        int(actual_list[i + 1], 16) - int(actual_list[i], 16) == 1
+        for i in range(len(actual_list) - 1)
+    )
+    assert len(actual_list) == expect_len
+    assert actual_list[0] == expect_first
+    assert actual_list[-1] == expect_last
 
 
 def test_get_next_query_params_first_call():
