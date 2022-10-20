@@ -135,6 +135,34 @@ def test_get_next_query_params_updates_parameters():
     assert actual_params == expected_params
 
 
+@pytest.mark.parametrize(
+    "input_dnr, expect_image_list",
+    [
+        ({}, []),
+        ({"non_media": {"media": ["image1", "image2"]}}, []),
+        ({"online_media": "wrong type"}, []),
+        ({"online_media": ["wrong", "type"]}, []),
+        ({"online_media": {"media": "wrong type"}}, []),
+        ({"online_media": {"media": {"wrong": "type"}}}, []),
+        (
+            {
+                "record_ID": "siris_arc_291918",
+                "online_media": {"mediaCount": 1, "media": ["image1", "image2"]},
+            },
+            ["image1", "image2"],
+        ),
+    ],
+)
+def test_get_image_list(input_dnr, expect_image_list):
+    input_row = {"key": "val"}
+    with patch.object(
+        ingester, "_get_descriptive_non_repeating_dict", return_value=input_dnr
+    ) as mock_dnr:
+        actual_image_list = ingester._get_image_list(input_row)
+    mock_dnr.assert_called_once_with(input_row)
+    assert actual_image_list == expect_image_list
+
+
 def test_get_media_type():
     actual_type = ingester.get_media_type(record={})
     assert actual_type == "image"
