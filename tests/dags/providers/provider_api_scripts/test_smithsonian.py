@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 import pytest
 from airflow.exceptions import AirflowException
+from common.licenses import get_license_info
 from providers.provider_api_scripts.smithsonian import SmithsonianDataIngester
 
 
@@ -448,6 +449,59 @@ def test_extract_tags(input_is, expect_tags):
         actual_tags = ingester._extract_tags(input_row)
     mock_is.assert_called_once_with(input_row)
     assert actual_tags == expect_tags
+
+
+@pytest.mark.parametrize(
+    "input_media, expected_image_data",
+    [
+        ([], []),
+        (
+            [
+                {
+                    "thumbnail": "https://thumbnail.one",
+                    "idsId": "id_one",
+                    "usage": {"access": "CC0"},
+                    "guid": "http://gu.id.one",
+                    "type": "Images",
+                    "content": "https://image.url.one",
+                },
+                {
+                    "thumbnail": "https://thumbnail.two",
+                    "idsId": "id_two",
+                    "usage": {"access": "CC0"},
+                    "guid": "http://gu.id.two",
+                    "type": "Images",
+                    "content": "https://image.url.two",
+                },
+            ],
+            [
+                {
+                    "foreign_identifier": "id_one",
+                    "image_url": "https://image.url.one",
+                },
+                {
+                    "foreign_identifier": "id_two",
+                    "image_url": "https://image.url.two",
+                },
+            ],
+        ),
+    ],
+)
+def test_process_image_list(input_media, expected_image_data):
+    partial_image_data = {
+        "foreign_landing_url": "https://foreignlanding.url",
+        "title": "The Title",
+        "license_info": get_license_info(
+            license_url="https://creativecommons.org/publicdomain/zero/1.0/"
+        ),
+        "creator": "Alice",
+        "meta_data": {"unit_code": "NMNHBOTANY"},
+        "source": "smithsonian_national_museum_of_natural_history",
+        "raw_tags": ["tag", "list"],
+    }
+    expected_result = [(img | partial_image_data) for img in expected_image_data]
+    actual_image_data = ingester._process_image_list(input_media, partial_image_data)
+    assert actual_image_data == expected_result
 
 
 # def test_get_record_data():
