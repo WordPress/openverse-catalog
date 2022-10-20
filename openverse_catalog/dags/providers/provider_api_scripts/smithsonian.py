@@ -208,6 +208,7 @@ class SmithsonianDataIngester(ProviderDataIngester):
         Validates the SMITHSONIAN_SUB_PROVIDERS dictionary, and raises an exception if
         human intervention is needed to add or remove unit codes.
         """
+        logger.info("Validating Smithsonian sub-providers...")
         unit_codes_from_api = self._get_unit_codes_from_api()
         new_unit_codes, outdated_unit_codes = self._get_new_and_outdated_unit_codes(
             unit_codes_from_api
@@ -428,6 +429,7 @@ class SmithsonianDataIngester(ProviderDataIngester):
         return [tag for tag_list in tag_lists_generator for tag in tag_list if tag]
 
     def ingest_records(self, **kwargs) -> None:
+        self.validate_unit_codes_from_api()
         for hash_prefix in self._get_hash_prefixes():
             logger.debug(f"Getting records for hash prefix {hash_prefix}")
             super().ingest_records(hash_prefix=hash_prefix)
@@ -435,8 +437,6 @@ class SmithsonianDataIngester(ProviderDataIngester):
 
 def main():
     ingester = SmithsonianDataIngester()
-    logger.info("Validating Smithsonian sub-providers...")
-    ingester.validate_unit_codes_from_api()
     ingester.ingest_records()
 
 
