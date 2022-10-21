@@ -74,6 +74,7 @@ class RawpixelDataIngester(ProviderDataIngester):
     }
     # Image size options
     full_size_option = "image_1300"
+    thumbnail_size_option = "image_600_png"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -129,7 +130,7 @@ class RawpixelDataIngester(ProviderDataIngester):
         return None
 
     @staticmethod
-    def _get_image_url(data: dict) -> str | None:
+    def _get_image_url(data: dict, size_option: str) -> str | None:
         """
         Rawpixel provides a "style_uri" string which can be formatted with these values:
             'image_24', 'image_png_24', 'image_48', 'image_png_48', 'image_100',
@@ -146,7 +147,7 @@ class RawpixelDataIngester(ProviderDataIngester):
         style_uri = data.get("style_uri")
         if not style_uri:
             return None
-        return style_uri.format(RawpixelDataIngester.full_size_option)
+        return style_uri.format(size_option)
 
     @staticmethod
     def _get_image_properties(data: dict) -> tuple[None, None] | tuple[int, int]:
@@ -197,6 +198,9 @@ class RawpixelDataIngester(ProviderDataIngester):
         meta_data = {
             "description": description or None,
             "download_count": data.get("download_count"),
+            "thumbnail_url": RawpixelDataIngester._get_image_url(
+                data, RawpixelDataIngester.thumbnail_size_option
+            ),
         }
         meta_data = {k: v for k, v in meta_data.items() if v is not None}
         return meta_data
@@ -247,7 +251,7 @@ class RawpixelDataIngester(ProviderDataIngester):
         if license_info == NO_LICENSE_FOUND:
             return None
 
-        if not (image_url := self._get_image_url(data)):
+        if not (image_url := self._get_image_url(data, self.full_size_option)):
             return None
 
         width, height = self._get_image_properties(data)
