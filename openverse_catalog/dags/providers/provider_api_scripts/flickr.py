@@ -286,7 +286,6 @@ class FlickrDataIngester(ProviderDataIngester):
 
 
 def main(date):
-    logger.info("Begin: Flickr data ingestion")
     ingester = FlickrDataIngester()
     ingester.ingest_records(date=date)
 
