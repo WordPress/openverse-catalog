@@ -37,14 +37,14 @@ class RawpixelDataIngester(ProviderDataIngester):
     suffix_pattern_partial = re.compile(
         r"""
             # Any text ending in free or original
-            (?:free|original)
+            (?:free\ |original\ )?
             # Optionally "free public" or "original public"
-            (?:\ public
+            (?:public
                 # Optionally "public domain"
                 (?:\ domain
                     # Optionally "original public domain CC0 photo"
                     # or "free public domain CC0 image"
-                    (?:\ CC0 (?:image|photo))?
+                    (?:\ CC0\ (?:image|photo))?
                 )?
             )?
             # Could end in punctuation, but the string must end with this sequence
@@ -159,14 +159,18 @@ class RawpixelDataIngester(ProviderDataIngester):
 
     @staticmethod
     def _clean_text(text: str) -> str:
+        # Clean whitespace
+        text = text.strip()
         # First clear full patterns
         text = RawpixelDataIngester.suffix_pattern_full.sub("", text)
         # Then clear partial patterns
         text = RawpixelDataIngester.suffix_pattern_partial.sub("", text)
         # Unescape HTMl sequences
         text = html.unescape(text)
-        # Clean whitespace
+        # Clean whitespace once more
         text = text.strip()
+        # Remove any trailing commas
+        text = text.removesuffix(",")
         return text
 
     @staticmethod
@@ -186,8 +190,8 @@ class RawpixelDataIngester(ProviderDataIngester):
         title = title.split("|", maxsplit=1)[0].strip()
         # Clean text
         title = RawpixelDataIngester._clean_text(title)
-        # Remove trailing punctuation
-        title = title.removesuffix(",").removesuffix(".")
+        # Remove trailing periods
+        title = title.removesuffix(".")
         return title or None
 
     @staticmethod
