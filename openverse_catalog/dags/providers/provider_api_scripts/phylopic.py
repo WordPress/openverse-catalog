@@ -152,7 +152,6 @@ class PhylopicDataIngester(ProviderDataIngester):
     @staticmethod
     def _get_taxa_details(result: dict) -> tuple[list[str] | None, str]:
         taxa = result.get("taxa", [])
-        # [0].get('canonicalName', {}).get('string')
         taxa_list = None
         title = ""
         if taxa:
