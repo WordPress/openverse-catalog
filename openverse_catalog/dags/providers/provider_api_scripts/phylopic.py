@@ -30,10 +30,6 @@ class PhylopicDataIngester(ProviderDataIngester):
     base_endpoint = f"{host}/api/a/image"
     providers = {"image": prov.PHYLOPIC_DEFAULT_PROVIDER}
     batch_limit = 25
-    # If a date is supplied to the ingester in the form of YYYY-MM-DD, this is the
-    # number of days from that date to process. By default,this DAG runs weekly
-    # and so default_process_days is 7.
-    default_process_days = 7
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -43,15 +39,6 @@ class PhylopicDataIngester(ProviderDataIngester):
         # getting called once, so we do not set it as a sentinel for the
         # get_next_query_params function.
         self.offset = None
-
-    @staticmethod
-    def _compute_date_range(date_start: str, days: int) -> str:
-        """
-        Given an ISO formatted date string and a number of days, compute the
-        ISO string that represents the start date plus the days provided.
-        """
-        date_end = date.fromisoformat(date_start) + timedelta(days=days)
-        return date_end.isoformat()
 
     def get_media_type(self, record: dict) -> str:
         return constants.IMAGE
@@ -66,7 +53,8 @@ class PhylopicDataIngester(ProviderDataIngester):
         """
         list_endpoint = f"{self.base_endpoint}/list"
         if self.date:
-            end_date = self._compute_date_range(self.date, self.default_process_days)
+            # Process for a given date
+            end_date = (date.fromisoformat(self.date) + timedelta(days=1)).isoformat()
             # Get a list of objects uploaded/updated within a date range
             # http://phylopic.org/api/#method-image-time-range
             endpoint = f"{list_endpoint}/modified/{self.date}/{end_date}"
@@ -243,28 +231,20 @@ class PhylopicDataIngester(ProviderDataIngester):
         }
 
 
-def main(date_start: str = None, process_days: int = None):
+def main(date: str = None):
     logger.info("Begin: Phylopic provider script")
-    ingester = PhylopicDataIngester(date=date_start)
-    ingester.default_process_days = process_days or ingester.default_process_days
+    ingester = PhylopicDataIngester(date=date)
     ingester.ingest_records()
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="PhyloPic API Job", add_help=True)
     parser.add_argument(
-        "--date-start",
+        "--date",
         default=None,
-        help="Identify all images starting from a particular date (YYYY-MM-DD).",
-    )
-    parser.add_argument(
-        "--process-days",
-        default=None,
-        help="Used in conjunction with --date-start, number of days to process starting"
-        f"from --date-start, defaults to {PhylopicDataIngester.default_process_days} "
-        "if not defined.",
+        help="Identify all images updated on a particular date (YYYY-MM-DD).",
     )
 
     args = parser.parse_args()
 
-    main(args.date_start, args.process_days)
+    main(args.date)

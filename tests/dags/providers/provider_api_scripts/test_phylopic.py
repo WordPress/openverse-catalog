@@ -48,7 +48,7 @@ def ingester() -> PhylopicDataIngester:
         # Dated DAG produces specific endpoint irrespective of everything else
         (
             "2022-01-01",
-            "http://phylopic.org/api/a/image/list/modified/2022-01-01/2022-01-08",
+            "http://phylopic.org/api/a/image/list/modified/2022-01-01/2022-01-02",
         ),
     ],
 )
@@ -201,16 +201,3 @@ def test_get_image_info_with_no_img_url():
     )
     expect_img_info = [None, None, None]
     assert actual_img_info == expect_img_info
-
-
-@pytest.mark.parametrize(
-    "date_start, days, expected",
-    [
-        ("2022-01-10", 10, "2022-01-20"),
-        ("2022-02-28", 7, "2022-03-07"),
-        ("2022-02-28", -7, "2022-02-21"),
-    ],
-)
-def test_compute_date_range(date_start, days, expected):
-    actual = pp._compute_date_range(date_start, days)
-    assert actual == expected

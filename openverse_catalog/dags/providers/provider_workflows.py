@@ -183,7 +183,7 @@ PROVIDER_WORKFLOWS = [
         provider_script="phylopic",
         ingestion_callable=PhylopicDataIngester,
         start_date=datetime(2011, 1, 1),
-        schedule_string="@weekly",
+        schedule_string="@daily",
         dated=True,
         pull_timeout=timedelta(hours=12),
     ),
