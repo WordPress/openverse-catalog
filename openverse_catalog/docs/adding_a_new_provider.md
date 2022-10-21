@@ -33,16 +33,23 @@ At a high level, a provider script should iteratively request batches of records
 We provide a [script](../dags/templates/create_provider_ingester.py) that can be used to generate the files you'll need and get you started:
 
 ```
-# PROVIDER: The name of the provider
+# PROVIDER_NAME: The name of the provider
 # ENDPOINT: The API endpoint from which to fetch data
 # MEDIA: Optionally, a space-delineated list of media types ingested by this provider
 #        (and supported by Openverse). If not provided, defaults to "image".
 
-> create_provider_data_ingester.py <PROVIDER> <ENDPOINT> -m <MEDIA>
+> just add-provider <PROVIDER_NAME> <ENDPOINT> <MEDIA>
 
-# Example usage:
+# Example usages:
 
-> python3 openverse_catalog/templates/create_provider_ingester.py "Foobar Museum" "https://foobar.museum.org/api/v1" -m image audio
+# Creates a provider that supports just audio
+> just add-provider TestProvider https://test.test/search audio
+
+# Creates a provider that supports images and audio
+> just add-provider "Foobar Museum" https://foobar.museum.org/api/v1 image audio
+
+# Creates a provider that supports the default, just image
+> just add-provider TestProvider https://test.test/search
 ```
 
 You should see output similar to this:
