@@ -305,7 +305,6 @@ def test_get_record_data():
         "meta_data": {
             "description": "Bull elk searches for food beneath the snow. Frank. Original public domain image from Flickr",  # noqa
             "download_count": 0,
-            "thumbnail_url": "https://images.rawpixel.com/image_600_png/cHJpdmF0ZS9sci9pbWFnZXMvd2Vic2l0ZS8yMDIyLTA1L2ZsNDY0NDU5OTQ2MjQtaW1hZ2Uta3UyY21zcjUuanBn.jpg",  # noqa
         },
         "raw_tags": [
             "animal",

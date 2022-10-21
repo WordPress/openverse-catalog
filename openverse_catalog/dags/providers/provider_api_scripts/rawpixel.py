@@ -33,7 +33,6 @@ class RawpixelDataIngester(ProviderDataIngester):
     providers = {constants.IMAGE: prov.RAWPIXEL_DEFAULT_PROVIDER}
     api_path = "/api/v1/search"
     endpoint = f"https://www.rawpixel.com{api_path}"
-    batch_limit = 100
     # Regex pattern for partial suffix capture
     suffix_pattern_partial = re.compile(
         r"""
@@ -74,6 +73,7 @@ class RawpixelDataIngester(ProviderDataIngester):
     }
     # Image size options
     full_size_option = "image_1300"
+    # TODO: Use as part of https://github.com/WordPress/openverse-catalog/issues/817
     thumbnail_size_option = "image_600_png"
 
     def __init__(self, *args, **kwargs):
@@ -198,9 +198,6 @@ class RawpixelDataIngester(ProviderDataIngester):
         meta_data = {
             "description": description or None,
             "download_count": data.get("download_count"),
-            "thumbnail_url": RawpixelDataIngester._get_image_url(
-                data, RawpixelDataIngester.thumbnail_size_option
-            ),
         }
         meta_data = {k: v for k, v in meta_data.items() if v is not None}
         return meta_data
