@@ -48,13 +48,13 @@ def get_record_data(self, data: dict) -> dict | list[dict] | None:
     ...
 ```
 
-When doing this, keep in mind that adding too many requests may slow down ingestion. Be aware of rate limits from your provider API as well.
+**NOTE**: When doing this, keep in mind that adding too many requests may slow down ingestion. Be aware of rate limits from your provider API as well.
 
 ## What if my API endpoint isn't static and needs to change from one request to another?
 
-Example: Rather than passing a `page` number in query parameters, a provider expects the `page` as part of the endpoint path itself.
+**Example**: Rather than passing a `page` number in query parameters, a provider expects the `page` as part of the endpoint path itself.
 
-If your `endpoint` needs to change, you can implement it as a `property`:
+**Solution**: If your `endpoint` needs to change, you can implement it as a `property`:
 
 ```python
 @property
@@ -67,7 +67,7 @@ In this example, `self.page_number` is an instance variable that gets updated af
 
 ```python
 def __init__(self, *args, **kwargs):
-    # IMPORTANT!
+    # REQUIRED!
     super().__init__(*args, **kwargs)
 
     # Set up our instance variable
@@ -92,7 +92,7 @@ Now each time `get_batch` is called, the `endpoint` is correctly updated.
 
 ## How do I run ingestion for a set of discrete categories?
 
-**Example**: My provider has some set of categories that I'd like to iterate over and ingest data for. Eg, an audio provider's search endpoint that requires you specify whether you're searching for "podcasts", "music", etc. I'd like to iterate over all the available categories and run ingestion for each.
+**Example**: My provider has some set of categories that I'd like to iterate over and ingest data for. E.g., a particular audio provider's search endpoint requires you specify whether you're searching for "podcasts", "music", etc. I'd like to iterate over all the available categories and run ingestion for each.
 
 **Solution**: You can do this by overriding the `ingest_records` method, which accepts optional `kwargs` that it passes through on each call to `get_next_query_params`. This is best demonstrated with code:
 

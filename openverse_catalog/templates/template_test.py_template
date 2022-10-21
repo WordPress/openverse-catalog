@@ -7,14 +7,13 @@ Run your tests locally with `just test -k {provider_underscore}`
 """
 
 import json
-import logging
 from pathlib import Path
 
 import pytest
 from providers.provider_api_scripts.{provider_underscore} import {provider_data_ingester}
 
 # TODO: API responses used for testing can be added to this directory
-RESOURCES = Path(__file__).parent / "tests/resources/{provider_underscore}"
+RESOURCES = Path(__file__).parent / "resources/{provider_underscore}"
 
 # Set up test class
 ingester = {provider_data_ingester}()

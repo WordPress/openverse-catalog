@@ -2,15 +2,15 @@
 
 ## Overview
 
-The Openverse Catalog collects data from the APIs of sites that share openly-licensed media,and saves them in our Catalog database. This process is automated by Airflow DAGs generated for each provider. A simple provider DAG looks like this:
+The Openverse Catalog collects data from the APIs of sites that share openly-licensed media, and saves them in our Catalog database. This process is automated by [Airflow DAGs](https://airflow.apache.org/docs/apache-airflow/stable/concepts/dags.html) generated for each provider. A simple provider DAG looks like this:
 
 ![Example DAG](assets/provider_dags/simple_dag.png)
 
 At a high level the steps are:
 
-1. `generate_filename`: Generates a TSV filename used in later steps
-2. `pull_data`: Actually pulls records from the provider API, collects just the data we need, and commits it to local storage in TSVs.
-3. `load_data`: Loads the data from TSVs into the actual Catalog database, updating old records and discarding duplicates.
+1. `generate_filename`: Generates the named of a TSV (tab-separated values) text file that will be used for saving the data to the disk in later steps
+2. `pull_data`: Pulls records from the provider API, collects just the data we need, and commits it to local storage in TSVs.
+3. `load_data`: Loads the data from TSVs into the Catalog database, updating old records and discarding duplicates.
 4. `report_load_completion`: Reports a summary of added and updated records.
 
 When a provider supports multiple media types (for example, `audio` *and* `images`), the `pull` step consumes data of all types, but separate `load` steps are generated:
@@ -68,7 +68,7 @@ Some APIs may not fit perfectly into the established `ProviderDataIngester` patt
 
 ### Add a `ProviderWorkflow` configuration class
 
-Now that you have an ingester class, you're ready to wire up a provider DAG in Airflow to automatically pull data and load it into our Catalog database. This is as simple as defining a `ProviderWorkflow` configuration dataclass and adding it to the `PROVIDER_WORKFLOWS` list in [`provider_workflows.py`](../dags/providers/provider_workflows.py). Our DAG factories will pick up the configuration and generate a complete new DAG in Airflow!
+Now that you have an ingester class, you're ready to wire up a provider DAG in Airflow to automatically pull data and load it into our Catalog database. This is done by defining a `ProviderWorkflow` configuration dataclass and adding it to the `PROVIDER_WORKFLOWS` list in [`provider_workflows.py`](../dags/providers/provider_workflows.py). Our DAG factories will pick up the configuration and generate a complete new DAG in Airflow!
 
 At minimum, you'll need to provide the following in your configuration:
 * `provider_script`: the name of the file where you defined your `ProviderDataIngester` class
@@ -94,4 +94,6 @@ PROVIDER_WORKFLOWS = [
 
 There are many other options that allow you to tweak the `schedule` (when and how often your DAG is run), timeouts for individual steps of the DAG, and more. These are documented in the definition of the `ProviderWorkflow` dataclass. *<TODO: add docs for other options.>*
 
-After adding your configuration, run `just up` and you should now have a fully functioning provider DAG! *<TODO: add and link to docs for how to run provider DAGs locally, preferably with images.>* *NOTE*: when your code is merged, the DAG will become available in production but will be disabled by default. A contributor with Airflow access will need to manually turn the DAG on in production.
+After adding your configuration, run `just up` and you should now have a fully functioning provider DAG! *<TODO: add and link to docs for how to run provider DAGs locally, preferably with images.>*
+
+*NOTE*: when your code is merged, the DAG will become available in production but will be disabled by default. A contributor with Airflow access will need to manually turn the DAG on in production.

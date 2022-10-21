@@ -10,8 +10,8 @@ import inflection
 
 
 TEMPLATES_PATH = Path(__file__).parent
-REPO_PATH = TEMPLATES_PATH.parent
-PROJECT_PATH = REPO_PATH.parent
+PROJECT_PATH = TEMPLATES_PATH.parent
+REPO_PATH = PROJECT_PATH.parent
 MEDIA_TYPES = ["audio", "image"]
 
 
@@ -61,13 +61,13 @@ def _render_file(
             template_path, provider, endpoint, media_types
         )
         target_file.write(filled_template)
-        print(f"{name + ':':<18} {target.relative_to(PROJECT_PATH)}")
+        print(f"{name + ':':<18} {target.relative_to(REPO_PATH)}")
 
 
 def fill_template(provider, endpoint, media_types):
     print(f"Creating files in {REPO_PATH}")
 
-    dags_path = TEMPLATES_PATH.parent / "dags" / "providers"
+    dags_path = PROJECT_PATH / "dags" / "providers"
     api_path = dags_path / "provider_api_scripts"
     filename = inflection.underscore(provider)
 
@@ -85,7 +85,7 @@ def fill_template(provider, endpoint, media_types):
 
     # Render the tests
     script_template_path = TEMPLATES_PATH / "template_test.py_template"
-    tests_path = PROJECT_PATH / "tests"
+    tests_path = REPO_PATH / "tests"
     # Mirror the directory structure, but under the "tests" top level directory
     test_script_path = tests_path.joinpath(*api_path.parts[-3:]) / f"test_{filename}.py"
 
