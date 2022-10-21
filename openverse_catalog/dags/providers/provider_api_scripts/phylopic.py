@@ -118,12 +118,12 @@ class PhylopicDataIngester(ProviderDataIngester):
         return data
 
     @staticmethod
-    def _image_url(_uuid: str) -> str:
-        return f"{PhylopicDataIngester.host}/image/{_uuid}"
+    def _image_url(uid: str) -> str:
+        return f"{PhylopicDataIngester.host}/image/{uid}"
 
     @staticmethod
     def _get_image_info(
-        result: dict, _uuid: str
+        result: dict, uid: str
     ) -> tuple[str | None, int | None, int | None]:
         img_url = None
         width = None
@@ -140,7 +140,7 @@ class PhylopicDataIngester(ProviderDataIngester):
                 if not img_url:
                     logging.warning(
                         "Image not detected in url: "
-                        f"{PhylopicDataIngester._image_url(_uuid)}"
+                        f"{PhylopicDataIngester._image_url(uid)}"
                     )
                 else:
                     img_url = f"{PhylopicDataIngester.host}{img_url}"
@@ -188,17 +188,17 @@ class PhylopicDataIngester(ProviderDataIngester):
     @staticmethod
     def _get_meta_data(result: dict) -> dict | None:
         meta_data = {}
-        _uuid = result.get("uid")
+        uid = result.get("uid")
         license_url = result.get("licenseURL")
 
-        img_url, width, height = PhylopicDataIngester._get_image_info(result, _uuid)
+        img_url, width, height = PhylopicDataIngester._get_image_info(result, uid)
 
         if img_url is None:
             return None
 
         meta_data["taxa"], title = PhylopicDataIngester._get_taxa_details(result)
 
-        foreign_url = PhylopicDataIngester._image_url(_uuid)
+        foreign_url = PhylopicDataIngester._image_url(uid)
 
         (
             creator,
@@ -207,7 +207,7 @@ class PhylopicDataIngester(ProviderDataIngester):
         ) = PhylopicDataIngester._get_creator_details(result)
 
         return {
-            "foreign_identifier": _uuid,
+            "foreign_identifier": uid,
             "foreign_landing_url": foreign_url,
             "image_url": img_url,
             "license_info": get_license_info(license_url=license_url),
@@ -219,10 +219,10 @@ class PhylopicDataIngester(ProviderDataIngester):
         }
 
     def get_record_data(self, data: dict) -> dict | list[dict] | None:
-        _uuid = data.get("uid")
-        if not _uuid:
+        uid = data.get("uid")
+        if not uid:
             return
-        logger.debug(f"Processing UUID: {_uuid}")
+        logger.debug(f"Processing UUID: {uid}")
         params = {
             "options": " ".join(
                 [
@@ -239,7 +239,7 @@ class PhylopicDataIngester(ProviderDataIngester):
                 ]
             )
         }
-        endpoint = f"{self.base_endpoint}/{_uuid}"
+        endpoint = f"{self.base_endpoint}/{uid}"
         response_json = self.get_response_json(params, endpoint)
         result = self._get_response_data(response_json)
         if not result:
