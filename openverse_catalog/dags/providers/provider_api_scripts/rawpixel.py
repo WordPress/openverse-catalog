@@ -37,7 +37,7 @@ class RawpixelDataIngester(ProviderDataIngester):
     suffix_pattern_partial = re.compile(
         r"""
             # Any text ending in free or original
-            (?:free\ |original\ )?
+            (?:free\ ?|original\ ?)?
             # Optionally "free public" or "original public"
             (?:public
                 # Optionally "public domain"
@@ -48,7 +48,7 @@ class RawpixelDataIngester(ProviderDataIngester):
                 )?
             )?
             # Could end in punctuation, but the string must end with this sequence
-            .?$
+            [.,!?]?$
         """,
         flags=re.IGNORECASE | re.VERBOSE,
     )
@@ -61,7 +61,7 @@ class RawpixelDataIngester(ProviderDataIngester):
                 Digitally\ enhanced\ by\ rawpixel
             )
             # Could end in punctuation, but the string must end with this sequence
-            .?$
+            [.,!?]?$
         """,
         flags=re.IGNORECASE | re.VERBOSE,
     )
