@@ -184,39 +184,6 @@ class PhylopicDataIngester(ProviderDataIngester):
 
         return creator, credit_line, pub_date
 
-    @staticmethod
-    def _get_meta_data(result: dict) -> dict | None:
-        meta_data = {}
-        uid = result.get("uid")
-        license_url = result.get("licenseURL")
-
-        img_url, width, height = PhylopicDataIngester._get_image_info(result, uid)
-
-        if img_url is None:
-            return None
-
-        meta_data["taxa"], title = PhylopicDataIngester._get_taxa_details(result)
-
-        foreign_url = PhylopicDataIngester._image_url(uid)
-
-        (
-            creator,
-            meta_data["credit_line"],
-            meta_data["pub_date"],
-        ) = PhylopicDataIngester._get_creator_details(result)
-
-        return {
-            "foreign_identifier": uid,
-            "foreign_landing_url": foreign_url,
-            "image_url": img_url,
-            "license_info": get_license_info(license_url=license_url),
-            "width": width,
-            "height": height,
-            "creator": creator,
-            "title": title,
-            "meta_data": meta_data,
-        }
-
     def get_record_data(self, data: dict) -> dict | list[dict] | None:
         uid = data.get("uid")
         if not uid:
@@ -244,7 +211,36 @@ class PhylopicDataIngester(ProviderDataIngester):
         if not result:
             return None
 
-        return self._get_meta_data(result)
+        meta_data = {}
+        uid = result.get("uid")
+        license_url = result.get("licenseURL")
+
+        img_url, width, height = self._get_image_info(result, uid)
+
+        if img_url is None:
+            return None
+
+        meta_data["taxa"], title = self._get_taxa_details(result)
+
+        foreign_url = self._image_url(uid)
+
+        (
+            creator,
+            meta_data["credit_line"],
+            meta_data["pub_date"],
+        ) = self._get_creator_details(result)
+
+        return {
+            "foreign_identifier": uid,
+            "foreign_landing_url": foreign_url,
+            "image_url": img_url,
+            "license_info": get_license_info(license_url=license_url),
+            "width": width,
+            "height": height,
+            "creator": creator,
+            "title": title,
+            "meta_data": meta_data,
+        }
 
 
 def main(date_start: str = None, process_days: int = None):

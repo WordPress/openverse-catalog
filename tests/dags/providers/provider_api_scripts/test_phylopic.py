@@ -117,12 +117,6 @@ def test_get_batch_data():
     assert actual_img_ids == expect_img_ids
 
 
-def test_get_meta_data_with_no_img_url():
-    r = get_json("no_image_url_example.json")
-    meta_data = pp._get_meta_data(r["result"])
-    assert meta_data is None
-
-
 def test_get_creator_details(image_data):
     result = image_data["result"]
     actual_creator_details = pp._get_creator_details(result)
@@ -175,6 +169,13 @@ def test_get_record_data(image_data):
 
 def test_get_record_data_no_data():
     actual = pp.get_record_data({})
+    assert actual is None
+
+
+def test_get_record_data_with_no_img_url():
+    r = get_json("no_image_url_example.json")
+    with patch.object(pp, "get_response_json", return_value=r):
+        actual = pp.get_record_data({"uid": r["result"]["uid"]})
     assert actual is None
 
 
