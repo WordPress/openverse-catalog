@@ -274,7 +274,6 @@ class RawpixelDataIngester(ProviderDataIngester):
 
 
 def main():
-    logger.info("Begin: RawPixel API ingestion")
     ingester = RawpixelDataIngester()
     ingester.ingest_records()
 
