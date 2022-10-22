@@ -73,6 +73,7 @@ PROVIDER_REINGESTION_WORKFLOWS = [
         # 64 total reingestion days
         provider_script="metropolitan_museum",
         ingestion_callable=MetMuseumDataIngester,
+        max_active_tasks=2,
         pull_timeout=timedelta(hours=12),
         daily_list_length=6,
         one_month_list_length=9,
