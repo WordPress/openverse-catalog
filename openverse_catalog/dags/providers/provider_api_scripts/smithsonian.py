@@ -28,6 +28,7 @@ class SmithsonianDataIngester(ProviderDataIngester):
     providers = {"image": prov.SMITHSONIAN_DEFAULT_PROVIDER}
     sub_providers = prov.SMITHSONIAN_SUB_PROVIDERS
     base_endpoint = "https://api.si.edu/openaccess/api/v1.0/"
+    endpoint = f"{base_endpoint}search"
     delay = 5.0
     batch_limit = 1000
     hash_prefix_length = 2
@@ -114,10 +115,6 @@ class SmithsonianDataIngester(ProviderDataIngester):
         self.license_info = get_license_info(
             license_url="https://creativecommons.org/publicdomain/zero/1.0/"
         )
-
-    @property
-    def endpoint(self):
-        return f"{self.base_endpoint}search"
 
     def get_media_type(self, record: dict) -> str:
         return constants.IMAGE
