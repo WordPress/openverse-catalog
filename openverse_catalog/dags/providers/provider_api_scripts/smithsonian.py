@@ -20,7 +20,6 @@ from providers.provider_api_scripts.provider_data_ingester import ProviderDataIn
 from retry import retry
 
 
-logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 
@@ -125,8 +124,6 @@ class SmithsonianDataIngester(ProviderDataIngester):
         query_string = "online_media_type:Images AND media_usage:CC0"
         if hash_prefix := kwargs.get("hash_prefix"):
             query_string += f" AND hash:{hash_prefix}*"
-        if unit_code := kwargs.get("unit_code"):
-            query_string += f" AND unit_code:{unit_code}"
 
         if not prev_query_params:
             return {
@@ -138,7 +135,6 @@ class SmithsonianDataIngester(ProviderDataIngester):
         else:
             return {
                 **prev_query_params,
-                "q": query_string,
                 "start": prev_query_params["start"] + self.batch_limit,
             }
 

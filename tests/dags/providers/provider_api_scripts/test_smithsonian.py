@@ -122,13 +122,10 @@ def test_get_next_query_params_updates_parameters():
         "start": 0,
         "rows": 1000,
     }
-    new_hash_prefix = "01"
-    actual_params = ingester.get_next_query_params(
-        previous_query_params, hash_prefix=new_hash_prefix
-    )
+    actual_params = ingester.get_next_query_params(previous_query_params)
     expected_params = {
         "api_key": "pass123",
-        "q": f"online_media_type:Images AND media_usage:CC0 AND hash:{new_hash_prefix}*",
+        "q": "online_media_type:Images AND media_usage:CC0 AND hash:ff*",
         "start": 1000,
         "rows": 1000,
     }
