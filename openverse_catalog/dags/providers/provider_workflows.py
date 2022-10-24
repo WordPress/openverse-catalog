@@ -140,7 +140,7 @@ PROVIDER_WORKFLOWS = [
     ProviderWorkflow(
         provider_script="flickr",
         ingestion_callable=FlickrDataIngester,
-        start_date=datetime(2004, 2, 1),
+        start_date=datetime(2020, 11, 1),
         schedule_string="@daily",
         dated=True,
     ),
