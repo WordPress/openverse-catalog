@@ -182,7 +182,7 @@ PROVIDER_WORKFLOWS = [
     ProviderWorkflow(
         provider_script="phylopic",
         ingestion_callable=PhylopicDataIngester,
-        start_date=datetime(2011, 1, 1),
+        start_date=datetime(2011, 2, 7),
         schedule_string="@daily",
         dated=True,
         pull_timeout=timedelta(hours=12),
