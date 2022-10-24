@@ -1,20 +1,16 @@
 import json
-import logging
 import os
-from unittest.mock import MagicMock, patch
 
-import requests
+import pytest
 from common.licenses import LicenseInfo
-from providers.provider_api_scripts import europeana
+from providers.provider_api_scripts.europeana import (
+    EuropeanaDataIngester,
+    EuropeanaRecordBuilder,
+)
 
 
 RESOURCES = os.path.join(
     os.path.abspath(os.path.dirname(__file__)), "resources/europeana"
-)
-
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s",
-    level=logging.DEBUG,
 )
 
 
@@ -25,120 +21,95 @@ def _get_resource_json(json_name):
     return resource_json
 
 
-def test_derive_timestamp_pair():
+FROZEN_DATE = "2018-01-15"
+
+
+@pytest.fixture
+def ingester() -> EuropeanaDataIngester:
+    return EuropeanaDataIngester(date=FROZEN_DATE)
+
+
+@pytest.fixture
+def record_builder() -> EuropeanaRecordBuilder:
+    return EuropeanaRecordBuilder()
+
+
+def test_derive_timestamp_pair(ingester):
     # Note that the timestamps are derived as if input was in UTC.
-    start_ts, end_ts = europeana._derive_timestamp_pair("2018-01-15")
-    assert start_ts == "2018-01-15T00:00:00Z"
-    assert end_ts == "2018-01-16T00:00:00Z"
-
-
-def test_get_image_list_retries_with_none_response():
-    with patch.object(
-        europeana.delayed_requester, "get", return_value=None
-    ) as mock_get:
-        europeana._get_image_list("1234", "5678", "test_cursor", max_tries=3)
-
-    assert mock_get.call_count == 3
-
-
-def test_get_image_list_for_last_page():
-    response_json = _get_resource_json("europeana_example.json")
-    response_json["items"] = []
-    response_json.pop("nextCursor", None)
-
-    r = requests.Response()
-    r.status_code = 200
-    r.json = MagicMock(return_value=response_json)
-
-    with patch.object(europeana.delayed_requester, "get", return_value=r) as mock_get:
-        europeana._get_image_list("1234", "5678", "test_cursor")
-
-    mock_get.assert_called_once()
-
-
-def test_get_image_list_retries_with_non_ok_response():
-    response_json = _get_resource_json("europeana_example.json")
-    r = requests.Response()
-    r.status_code = 504
-    r.json = MagicMock(return_value=response_json)
-    with patch.object(europeana.delayed_requester, "get", return_value=r) as mock_get:
-        europeana._get_image_list("1234", "5678", "test_cursor", max_tries=3)
-
-    assert mock_get.call_count == 3
-
-
-def test_get_image_list_with_realistic_response():
-    response_json = _get_resource_json("europeana_example.json")
-    r = requests.Response()
-    r.status_code = 200
-    r.json = MagicMock(return_value=response_json)
-    with patch.object(europeana.delayed_requester, "get", return_value=r) as mock_get:
-        image_list, next_cursor, total_number_of_images = europeana._get_image_list(
-            "1234", "5678", "test_cursor", max_tries=3
-        )
-    expect_image_list = _get_resource_json("europeana_image_list.json")
-
-    assert mock_get.call_count == 1
-    assert image_list == expect_image_list
-
-
-# This test will fail if default constants change.
-def test_build_query_param_dict_default():
-    start_timestamp = "1234"
-    end_timestamp = "5678"
-    europeana_api_key = "test_key"
-    resource_type = "IMAGE"
-    reuse_terms = ["open", "restricted"]
-    resources_per_request = "100"
-
-    actual_query_param_dict = europeana._build_query_param_dict(
-        start_timestamp, end_timestamp, "test_cursor", api_key=europeana_api_key
+    # The timestamps below depend on the ``FROZEN_DATE`` constant
+    # defined above.
+    assert ingester.base_request_body["query"] == (
+        "timestamp_created:[2018-01-15T00:00:00Z TO 2018-01-16T00:00:00Z]"
     )
-    expect_query_param_dict = {
-        "wskey": europeana_api_key,
-        "profile": "rich",
-        "reusability": reuse_terms,
-        "sort": ["europeana_id+desc", "timestamp_created+desc"],
-        "rows": resources_per_request,
-        "media": "true",
-        "start": 1,
-        "qf": [f"TYPE:{resource_type}", "provider_aggregation_edm_isShownBy:*"],
-        "query": f"timestamp_created:[{start_timestamp} TO {end_timestamp}]",
-        "cursor": "test_cursor",
+
+
+def test_get_next_query_params_uses_default_first_pass(ingester):
+    assert ingester.get_next_query_params({}) == ingester.base_request_body
+
+
+def test_get_next_query_params_updates_cursor(ingester):
+    prev_query_params = ingester.base_request_body.copy()
+    # Set cursor to something, by default it will be empty
+    cursor = 243392
+    ingester.cursor = cursor
+
+    # test that it will add the cursor when none was previously set
+    next_query_params = ingester.get_next_query_params(prev_query_params)
+    assert next_query_params == prev_query_params | {"cursor": cursor}
+
+    # next test that it actually also updates any existing cursor
+    next_cursor = cursor + 1
+    ingester.cursor = next_cursor
+
+    next_query_params_with_updated_cursor = ingester.get_next_query_params(
+        next_query_params
+    )
+
+    assert next_query_params_with_updated_cursor == next_query_params | {
+        "cursor": next_cursor
     }
-    assert actual_query_param_dict == expect_query_param_dict
 
 
-def test_extract_image_list_from_json_handles_realistic_input():
-    test_dict = _get_resource_json("europeana_example.json")
-    expect_image_list = _get_resource_json("europeana_image_list.json")
-    expect_next_cursor = "test_next_cursor"
-    expect_total_number_of_images = 27
+def test_get_should_continue_updates_cursor(ingester):
+    assert ingester.cursor is None
+
+    response_json = {
+        "nextCursor": 123533,
+        "success": "True",
+    }
+
+    assert ingester.get_should_continue(response_json) is True
+
+    assert ingester.cursor == response_json["nextCursor"]
+
+
+@pytest.mark.parametrize(
+    ("response_json"),
     (
-        actual_image_list,
-        actual_next_cursor,
-        actual_total_number_of_images,
-    ) = europeana._extract_image_list_from_json(test_dict)
-    assert actual_image_list == expect_image_list
-    assert actual_next_cursor == expect_next_cursor
-    assert actual_total_number_of_images == expect_total_number_of_images
+        {"success": "True", "nextCursor": None},
+        {"success": "True"},
+        {"success": "False", "nextCursor": "blam"},
+    ),
+)
+def test_get_should_continue_returns_false(ingester, response_json):
+    assert ingester.get_should_continue(response_json) is False
 
 
-def test_extract_image_list_from_json_returns_nones_given_non_true_success():
-    test_dict = {"success": "false", "nextCursor": "test_next_cursor"}
-    assert europeana._extract_image_list_from_json(test_dict) == (None, None, None)
+def test_get_batch_data_gets_items_property(ingester):
+    response_json = {"items": object()}
+
+    assert ingester.get_batch_data(response_json) is response_json["items"]
 
 
-def test_extract_image_list_from_json_returns_nones_given_none_json():
-    assert europeana._extract_image_list_from_json(None) == (None, None, None)
+def test_get_image_list_with_realistic_response(ingester):
+    response_json = _get_resource_json("europeana_example.json")
+    record_count = ingester.process_batch(response_json["items"])
+    assert record_count == len(response_json["items"])
 
 
-def test_process_image_data_with_real_example():
+def test_record_builder_get_record_data(ingester, record_builder):
     image_data = _get_resource_json("image_data_example.json")
-    with patch.object(
-        europeana.image_store, "add_item", return_value=100
-    ) as mock_add_item:
-        total_images = europeana._process_image_data(image_data)
+    record_data = record_builder.get_record_data(image_data)
 
     expect_meta_data = {
         "country": ["Spain"],
@@ -146,15 +117,15 @@ def test_process_image_data_with_real_example():
         "description": "Sello en seco: España artística y monumental.",
     }
 
-    mock_add_item.assert_called_once_with(
-        foreign_landing_url=(
+    assert record_data == {
+        "foreign_landing_url": (
             "http://bibliotecadigital.jcyl.es/i18n/consulta/registro.cmd?" "id=26229"
         ),
-        image_url=(
+        "image_url": (
             "http://bibliotecadigital.jcyl.es/i18n/catalogo_imagenes"
             "/imagen_id.cmd?idImagen=102620362"
         ),
-        license_info=(
+        "license_info": (
             LicenseInfo(
                 "cc0",
                 "1.0",
@@ -162,49 +133,48 @@ def test_process_image_data_with_real_example():
                 "http://creativecommons.org/publicdomain/zero/1.0/",
             )
         ),
-        foreign_identifier="/2022704/lod_oai_bibliotecadigital_jcyl_es_26229_ent1",
-        title=(
+        "foreign_identifier": "/2022704/lod_oai_bibliotecadigital_jcyl_es_26229_ent1",
+        "title": (
             "Claustro del Monasterio de S. Salvador en Oña [Material gráfico]"
             "= Cloître du Monastère de S. Salvador à Oña"
         ),
-        meta_data=expect_meta_data,
-        source=europeana.PROVIDER,
-    )
-    assert total_images == 100
+        "meta_data": expect_meta_data,
+        "source": ingester.providers["image"],
+    }
 
 
-def test_get_license_url_with_real_example():
+def test_record_builder_get_license_url_with_real_example(record_builder):
     rights_field = ["http://creativecommons.org/publicdomain/zero/1.0/"]
 
     assert (
-        europeana._get_license_url(rights_field)
+        record_builder.get_license_url(rights_field)
         == "http://creativecommons.org/publicdomain/zero/1.0/"
     )
 
 
-def test_get_license_url_with_non_cc_license():
+def test_get_license_url_with_non_cc_license(record_builder):
     rights_field = ["http://noncc.org/"]
 
-    assert europeana._get_license_url(rights_field) is None
+    assert record_builder.get_license_url(rights_field) is None
 
 
-def test_get_license_url_with_multiple_license():
+def test_get_license_url_with_multiple_license(record_builder):
     rights_field = [
         "http://noncc.org/",
         "http://creativecommons.org/publicdomain/zero/1.0/",
     ]
     expect_license = "http://creativecommons.org/publicdomain/zero/1.0/"
-    assert europeana._get_license_url(rights_field) == expect_license
+    assert record_builder.get_license_url(rights_field) == expect_license
 
 
-def test_get_foreign_landing_url_with_edmIsShownAt():
+def test_get_foreign_landing_url_with_edmIsShownAt(record_builder):
     image_data = _get_resource_json("image_data_example.json")
     expect_url = "http://bibliotecadigital.jcyl.es/i18n/consulta/registro.cmd?id=26229"
 
-    assert europeana._get_foreign_landing_url(image_data) == expect_url
+    assert record_builder.get_foreign_landing_url(image_data) == expect_url
 
 
-def test_get_foreign_landing_url_without_edmIsShownAt():
+def test_get_foreign_landing_url_without_edmIsShownAt(record_builder):
     image_data = _get_resource_json("image_data_example.json")
     image_data.pop("edmIsShownAt", None)
     expect_url = (
@@ -212,10 +182,10 @@ def test_get_foreign_landing_url_without_edmIsShownAt():
         "_es_26229_ent1?utm_source=api&utm_medium=api&utm_campaign=test_key"
     )
 
-    assert europeana._get_foreign_landing_url(image_data) == expect_url
+    assert record_builder.get_foreign_landing_url(image_data) == expect_url
 
 
-def test_create_meta_data_dict():
+def test_get_meta_data_dict(record_builder):
     image_data = _get_resource_json("image_data_example.json")
 
     expect_meta_data = {
@@ -224,10 +194,10 @@ def test_create_meta_data_dict():
         "description": "Sello en seco: España artística y monumental.",
     }
 
-    assert europeana._create_meta_data_dict(image_data) == expect_meta_data
+    assert record_builder.get_meta_data_dict(image_data) == expect_meta_data
 
 
-def test_create_meta_data_dict_without_country():
+def test_get_meta_data_dict_without_country(record_builder):
     image_data = _get_resource_json("image_data_example.json")
     image_data.pop("country", None)
 
@@ -236,10 +206,10 @@ def test_create_meta_data_dict_without_country():
         "description": "Sello en seco: España artística y monumental.",
     }
 
-    assert europeana._create_meta_data_dict(image_data) == expect_meta_data
+    assert record_builder.get_meta_data_dict(image_data) == expect_meta_data
 
 
-def test_get_description_with_langaware_en():
+def test_get_description_with_langaware_en(record_builder):
     image_data = _get_resource_json("image_data_example.json")
     image_data["dcDescriptionLangAware"]["en"] = [
         "First English Description",
@@ -247,40 +217,37 @@ def test_get_description_with_langaware_en():
     ]
     expect_description = "First English Description"
 
-    assert europeana._get_description(image_data) == expect_description
+    assert record_builder.get_description(image_data) == expect_description
 
 
-def test_get_description_with_langaware_def():
+def test_get_description_with_langaware_def(record_builder):
     image_data = _get_resource_json("image_data_example.json")
 
     expect_description = "Sello en seco: España artística y monumental."
 
-    assert europeana._get_description(image_data) == expect_description
+    assert record_builder.get_description(image_data) == expect_description
 
 
-def test_get_description_without_langaware():
+def test_get_description_without_langaware(record_builder):
     image_data = _get_resource_json("image_data_example.json")
     image_data.pop("dcDescriptionLangAware", None)
     expect_description = "Sello en seco: España artística y monumental."
 
-    assert europeana._get_description(image_data) == expect_description
+    assert record_builder.get_description(image_data) == expect_description
 
 
-def test_get_description_without_description():
+def test_get_description_without_description(record_builder):
     image_data = _get_resource_json("image_data_example.json")
     image_data.pop("dcDescriptionLangAware", None)
     image_data.pop("dcDescription", None)
     expect_description = ""
 
-    assert europeana._get_description(image_data) == expect_description
+    assert record_builder.get_description(image_data) == expect_description
 
 
-def test_process_image_data_with_sub_provider():
+def test_process_image_data_with_sub_provider(record_builder):
     image_data = _get_resource_json("image_data_sub_provider_example.json")
-    with patch.object(
-        europeana.image_store, "add_item", return_value=100
-    ) as mock_add_item:
-        total_images = europeana._process_image_data(image_data)
+    record_data = record_builder.get_record_data(image_data)
 
     expect_meta_data = {
         "country": ["United Kingdom"],
@@ -288,24 +255,23 @@ def test_process_image_data_with_sub_provider():
         "description": "Lettering: Greenwich Hospital.",
     }
 
-    mock_add_item.assert_called_once_with(
-        foreign_landing_url="https://wellcomecollection.org/works/zzwnbyhb",
-        image_url=(
+    assert record_data == {
+        "foreign_landing_url": "https://wellcomecollection.org/works/zzwnbyhb",
+        "image_url": (
             "https://iiif.wellcomecollection.org/image/V0013398.jpg/full/512,"
             "/0/default.jpg"
         ),
-        license_info=LicenseInfo(
+        "license_info": LicenseInfo(
             "by",
             "4.0",
             "https://creativecommons.org/licenses/by/4.0/",
             "http://creativecommons.org/licenses/by/4.0/",
         ),
-        foreign_identifier="/9200579/zzwnbyhb",
-        title=(
+        "foreign_identifier": "/9200579/zzwnbyhb",
+        "title": (
             "Royal Naval Hospital, Greenwich, with ships and rowing boats "
             "in the foreground. Engraving."
         ),
-        meta_data=expect_meta_data,
-        source="wellcome_collection",
-    )
-    assert total_images == 100
+        "meta_data": expect_meta_data,
+        "source": "wellcome_collection",
+    }
