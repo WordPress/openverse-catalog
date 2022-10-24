@@ -43,8 +43,6 @@ def get_value_from_dict_or_list(
 
 class NyplDataIngester(ProviderDataIngester):
     providers = {"image": prov.NYPL_DEFAULT_PROVIDER}
-    NYPL_API = Variable.get("API_KEY_NYPL")
-    headers = {"Authorization": f"Token token={NYPL_API}"}
     endpoint_base = "http://api.repo.nypl.org/api/v1/items"
     endpoint = f"{endpoint_base}/search/"
     metadata_endpoint = f"{endpoint_base}/item_details/"
@@ -54,6 +52,11 @@ class NyplDataIngester(ProviderDataIngester):
     # in the URL's query parameter.
     # This list is in order from the largest image to the smallest one.
     image_url_dimensions = ["g", "v", "q", "w", "r"]
+
+    def __init__(self, *args, **kwargs):
+        NYPL_API = Variable.get("API_KEY_NYPL")
+        NyplDataIngester.headers = {"Authorization": f"Token token={NYPL_API}"}
+        super().__init__(*args, **kwargs)
 
     def get_next_query_params(self, prev_query_params, **kwargs):
         if not prev_query_params:
@@ -165,7 +168,7 @@ class NyplDataIngester(ProviderDataIngester):
           "description": "Cropped .jpeg (1600 pixels on the long side)"
         }
         Selects the largest image based on the image URL's `t` query parameter
-        and IMAGE_URL_DIMENSIONS.
+        and image_url_dimensions.
         """
         # Create a dict with the NyplDataIngester.image_url_dimensions as keys,
         # and image data as value.
