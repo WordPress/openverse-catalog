@@ -107,8 +107,8 @@ class SmithsonianDataIngester(ProviderDataIngester):
 
     tag_types = ("date", "object_type", "topic", "place")
 
-    def __init__(self, *args):
-        super().__init__(*args)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.api_key = Variable.get("API_KEY_DATA_GOV")
         self.units_endpoint = f"{self.base_endpoint}terms/unit_code"
         self.license_info = get_license_info(
