@@ -17,16 +17,22 @@ Notes:      [The iNaturalist API is not intended for data scraping.]
             We use the table structure defined [here,]
             (https://github.com/inaturalist/inaturalist-open-data/blob/main/Metadata/structure.sql)
             except for adding ancestry tags to the taxa table.
+
+TO DO:      - need to get better at post run reporting
+            - figure out a better way to store batch limit for DRYer code
+            - decide about writing source files to s3, which ones, what to delete
 """
 
 import logging
 import os
+import zipfile
 from datetime import timedelta
 from pathlib import Path
 from typing import Dict
 
 import pendulum
-from airflow.exceptions import AirflowSkipException
+import requests
+from airflow.exceptions import AirflowNotFoundException, AirflowSkipException
 from airflow.operators.python import PythonOperator
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 from airflow.providers.postgres.hooks.postgres import PostgresHook
@@ -60,7 +66,7 @@ class INaturalistDataIngester(ProviderDataIngester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.pg = PostgresHook(POSTGRES_CONN_ID)
-        self.batch_limit = 1_000_000
+        self.batch_limit = 2_000_000
 
     def get_next_query_params(self, prev_query_params=None, **kwargs):
         if prev_query_params is None:
@@ -88,19 +94,12 @@ class INaturalistDataIngester(ProviderDataIngester):
     def endpoint(self):
         raise NotImplementedError("Normalized TSV files from AWS S3 means no endpoint.")
 
-    # TO DO: If this doesn't have to be a static method, we could integrate things like
-    # self.batch_limit, but for now, with building the task groups here, I think it does
-    # need to be this way.
-    # Also, figure out if there is a way to get Airflow to wait a little longer before
-    # killing the task. For now, made it 1_000_000 ids at a time instead of two.
-    # postgres performance tuning tips, try some of these:
-    # https://www.postgresql.org/docs/8.0/populate.html
     @staticmethod
     def load_intermediate_table(
         intermediate_table: str,
+        page_length: int,
         postgres_conn_id=POSTGRES_CONN_ID,
         sql_template_file_name="transformed_table.template.sql",
-        page_length=1_000_000,
     ):
         pg = PostgresHook(postgres_conn_id)
         sql_template = (SCRIPT_DIR / sql_template_file_name).read_text()
@@ -144,6 +143,73 @@ class INaturalistDataIngester(ProviderDataIngester):
         raise AirflowSkipException("Nothing new to ingest")
 
     @staticmethod
+    def load_catalog_of_life_names():
+        COL_URL = "https://api.checklistbank.org/dataset/9840/export.zip?format=ColDP"
+        # Tried importing common.loader.paths.STAGING_DIRECTORY but it didn't work in
+        # local environment, TO DO: find a better place for this process.
+        DATA_DIR = Path(__file__).parents[4]
+        local_zip_file = "COL_archive.zip"
+        name_usage_file = "NameUsage.tsv"
+        vernacular_file = "VernacularName.tsv"
+        # download zip file from Catalog of Life
+        if (DATA_DIR / local_zip_file).exists():
+            logger.info(
+                f"No download from Catalog of Life. {DATA_DIR}/{local_zip_file} exists."
+            )
+        else:
+            with requests.get(COL_URL, stream=True) as r:
+                r.raise_for_status()
+                with open(DATA_DIR / local_zip_file, "wb") as f:
+                    for chunk in r.iter_content(chunk_size=8192):
+                        f.write(chunk)
+            logger.info(f"Saved Catalog of Life download: {DATA_DIR}/{local_zip_file}")
+        # Extract specific files we need from the zip file
+        if (DATA_DIR / name_usage_file).exists() and (
+            DATA_DIR / vernacular_file
+        ).exists():
+            logger.info("No extract, both Catalog of Life tsv files exist.")
+        else:
+            with zipfile.ZipFile(DATA_DIR / local_zip_file) as z:
+                with open(DATA_DIR / name_usage_file, "wb") as f:
+                    f.write(z.read(name_usage_file))
+                logger.info(f"Extracted raw file: {DATA_DIR}/{name_usage_file}")
+                with open(DATA_DIR / vernacular_file, "wb") as f:
+                    f.write(z.read(vernacular_file))
+                logger.info(f"Extracted raw file: {DATA_DIR}/{vernacular_file}")
+        # set up for loading data
+        pg = PostgresHook(POSTGRES_CONN_ID)
+        COPY_SQL = (
+            "COPY inaturalist.{} FROM STDIN "
+            "DELIMITER E'\t' CSV HEADER QUOTE E'\b' NULL AS ''"
+        )
+        COUNT_SQL = "SELECT count(*) FROM inaturalist.{};"
+        # upload vernacular names file to postgres
+        pg.copy_expert(COPY_SQL.format("col_vernacular"), DATA_DIR / vernacular_file)
+        vernacular_records = pg.get_records(COUNT_SQL.format("col_vernacular"))
+        if vernacular_records[0][0] == 0:
+            raise AirflowNotFoundException("No Catalog of Life vernacular data loaded.")
+        else:
+            logger.info(
+                f"Loaded {vernacular_records[0][0]} records from {vernacular_file}"
+            )
+        # upload name usage file to postgres
+        pg.copy_expert(COPY_SQL.format("col_name_usage"), DATA_DIR / name_usage_file)
+        name_usage_records = pg.get_records(COUNT_SQL.format("col_name_usage"))
+        if name_usage_records[0][0] == 0:
+            raise AirflowNotFoundException("No Catalog of Life name usage data loaded.")
+        else:
+            logger.info(
+                f"Loaded {name_usage_records[0][0]} records from {name_usage_file}"
+            )
+        # # TO DO: save source files on s3? just delete every time?
+        # os.remove(DATA_DIR / local_zip_file)
+        # os.remove(DATA_DIR / vernacular_file)
+        # os.remove(DATA_DIR / name_usage_file)
+        return {
+            "COL Name Usage Records": name_usage_records[0][0],
+            "COL Vernacular Records": vernacular_records[0][0],
+        }
+
     def create_preingestion_tasks():
 
         with TaskGroup(group_id="preingestion_tasks") as preingestion_tasks:
@@ -167,7 +233,17 @@ class INaturalistDataIngester(ProviderDataIngester):
                 doc_md="Create temporary schema and license table",
             )
 
-            (check_for_file_updates >> create_inaturalist_schema)
+            load_catalog_of_life_names = PythonOperator(
+                task_id="load_catalog_of_life_names",
+                python_callable=INaturalistDataIngester.load_catalog_of_life_names,
+                doc_md="Load vernacular taxon names from Catalog of Life",
+            )
+
+            (
+                check_for_file_updates
+                >> create_inaturalist_schema
+                >> load_catalog_of_life_names
+            )
 
         return preingestion_tasks
 
@@ -191,7 +267,6 @@ class INaturalistDataIngester(ProviderDataIngester):
             [drop_inaturalist_schema, drop_loading_table]
         return postingestion_tasks
 
-    # @staticmethod
     def create_ingestion_workflow():
 
         record_counts_by_media_type: reporting.MediaTypeRecordMetrics = {}
@@ -232,7 +307,8 @@ class INaturalistDataIngester(ProviderDataIngester):
                     op_kwargs={
                         "intermediate_table": sql._get_load_table_name(
                             LOADER_ARGS["identifier"]
-                        )
+                        ),
+                        "page_length": 2_000_000,
                     },
                     doc_md=(
                         "Load data from source tables to intermediate table in batches."
@@ -255,7 +331,8 @@ class INaturalistDataIngester(ProviderDataIngester):
                     doc_md="Add transformed records to the target catalog image table.",
                 )
 
-                # TO DO: integrate clean-up stats via xcoms here.
+                # TO DO: integrate clean-up stats via xcoms here, keeping in mind that
+                # some dupes are excluded up front.
                 record_counts_by_media_type[MEDIA_TYPE] = reporting.RecordMetrics(
                     upserted=XCOM_PULL_TEMPLATE.format(
                         upsert_records_to_db_table.task_id, "return_value"
@@ -272,14 +349,9 @@ class INaturalistDataIngester(ProviderDataIngester):
                     >> upsert_records_to_db_table
                 )
 
-            # postingestion_tasks = INaturalistDataIngester.create_postingestion_tasks()
+            postingestion_tasks = INaturalistDataIngester.create_postingestion_tasks()
 
-            (
-                preingestion_tasks
-                >> pull_data
-                >> loader_tasks
-                # >> postingestion_tasks
-            )
+            (preingestion_tasks >> pull_data >> loader_tasks >> postingestion_tasks)
 
         # Reporting on the time it takes to load transformed data into the intermediate
         # table rather than the time it takes to load from the s3 source, because it's

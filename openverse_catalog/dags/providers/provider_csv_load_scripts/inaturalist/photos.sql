@@ -41,4 +41,14 @@ SELECT aws_s3.table_import_from_s3('inaturalist.photos',
 -- more here: https://www.postgresql.org/docs/current/indexes-ordering.html
 CREATE INDEX ON INATURALIST.PHOTOS USING btree (PHOTO_ID);
 
+DROP TABLE IF EXISTS inaturalist.photo_dupes;
+CREATE TABLE inaturalist.photo_dupes as (
+    SELECT PHOTO_ID, count(*) PHOTO_RECORDS
+    FROM INATURALIST.PHOTOS
+    GROUP BY PHOTO_ID
+    HAVING COUNT(*)>1
+);
+ALTER TABLE inaturalist.photo_dupes ADD PRIMARY KEY (PHOTO_ID);
+COMMIT;
+
 SELECT count(*) FROM inaturalist.photos;

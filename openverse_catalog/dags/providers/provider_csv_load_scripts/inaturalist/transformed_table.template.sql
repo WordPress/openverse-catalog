@@ -17,6 +17,16 @@ Using image columns version 001 from common.storage.tsv_columns.
 INSERT INTO {intermediate_table}
 (
     SELECT
+        /*
+        The same photo_id can have multiple records, for example if there are multiple
+        observations for separate species. But it only actually happens in about 0.1% of
+        the photos. For now, we're skipping them.
+        TO DO: Figure out aggregating tags and titles or formatting alternate foreign
+        identifiers for photos with multiple taxa and process them separately.
+        (If we go the alternate foreign id way, we'd want to drop photos loaded in the
+        first inaturalist load.)
+        https://github.com/WordPress/openverse-catalog/issues/685
+        */
         INATURALIST.PHOTOS.PHOTO_ID as FOREIGN_ID,
         'https://www.inaturalist.org/photos/' || INATURALIST.PHOTOS.PHOTO_ID
             as LANDING_URL,
@@ -33,19 +43,14 @@ INSERT INTO {intermediate_table}
             as CREATOR,
         'https://www.inaturalist.org/users/' || INATURALIST.PHOTOS.OBSERVER_ID
             as CREATOR_URL,
-        left(string_agg(INATURALIST.TAXA.NAME, ' & '), 5000) as TITLE,
-        -- TO DO: should there be a timestamp or anything in the metadata or is null ok?
-        null::json as META_DATA,
-        -- TO DO: confirm format here, is provider name integrated, and if so how?
-        array_to_json(string_to_array(string_agg(
-            INATURALIST.TAXA.ancestor_names,
-            '|')
-        ,'|')) as TAGS,
+        taxa_enriched.title,
+        LICENSE_CODES.license_url_metadata as META_DATA,
+        taxa_enriched.tags,
         'photograph' as CATEGORY,
         null::boolean as WATERMARKED,
         'inaturalist' as PROVIDER,
         'inaturalist' as SOURCE,
-        'provider_api' as INGESTION_TYPE,
+        'sql_bulk_load' as INGESTION_TYPE,
         INATURALIST.PHOTOS.WIDTH,
         INATURALIST.PHOTOS.HEIGHT
     FROM INATURALIST.PHOTOS
@@ -56,21 +61,15 @@ INSERT INTO {intermediate_table}
         INATURALIST.OBSERVERS ON
             INATURALIST.PHOTOS.OBSERVER_ID = INATURALIST.OBSERVERS.OBSERVER_ID
     INNER JOIN
-        INATURALIST.TAXA ON
-            INATURALIST.OBSERVATIONS.TAXON_ID = INATURALIST.TAXA.TAXON_ID
+        INATURALIST.TAXA_ENRICHED ON
+            INATURALIST.OBSERVATIONS.TAXON_ID = INATURALIST.TAXA_ENRICHED.TAXON_ID
     INNER JOIN
         INATURALIST.LICENSE_CODES ON
             INATURALIST.PHOTOS.LICENSE = INATURALIST.LICENSE_CODES.INATURALIST_CODE
     WHERE INATURALIST.PHOTOS.PHOTO_ID BETWEEN {page_start} AND {page_end}
-    GROUP BY
-        INATURALIST.PHOTOS.PHOTO_ID,
-        INATURALIST.PHOTOS.EXTENSION,
-        INATURALIST.PHOTOS.WIDTH,
-        INATURALIST.PHOTOS.HEIGHT,
-        INATURALIST.LICENSE_CODES.OPENVERSE_CODE,
-        INATURALIST.LICENSE_CODES.LICENSE_VERSION,
-        COALESCE(INATURALIST.OBSERVERS.LOGIN, INATURALIST.PHOTOS.OBSERVER_ID::text),
-        INATURALIST.PHOTOS.OBSERVER_ID
+        AND NOT(EXISTS(SELECT 1 FROM INATURALIST.PHOTO_DUPES
+                WHERE PHOTO_DUPES.PHOTO_ID BETWEEN {page_start} AND {page_end}
+                AND PHOTO_DUPES.PHOTO_ID = PHOTOS.PHOTO_ID))
 )
 ;
 COMMIT;
