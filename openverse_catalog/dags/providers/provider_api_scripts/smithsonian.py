@@ -1,11 +1,11 @@
 """
-Content Provider:       Smithsonian
+Content Provider:   Smithsonian
 
-ETL Process:            Use the API to identify all CC licensed images.
+ETL Process:        Use the API to identify all CC licensed images.
 
-Output:                 TSV file containing the images and the respective meta-data.
+Output:             TSV file containing the images and the respective meta-data.
 
-Notes:                  https://api.si.edu/openaccess/api/v1.0/search
+Notes:              https://api.si.edu/openaccess/api/v1.0/search
 """
 
 import logging
