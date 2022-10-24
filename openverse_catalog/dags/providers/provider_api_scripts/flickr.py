@@ -62,7 +62,7 @@ class FlickrDataIngester(ProviderDataIngester):
 
     @staticmethod
     def _derive_timestamp_pair_list(date):
-        """ "
+        """
         Build a list of timestamp pairs that divide the given date into equal
         portions of the 24-hour period. Ingestion will be run separately for
         each of these time divisions. This is necessary because requesting data
@@ -97,11 +97,11 @@ class FlickrDataIngester(ProviderDataIngester):
             super().ingest_records(start_timestamp=start_ts, end_timestamp=end_ts)
 
     def get_next_query_params(self, prev_query_params, **kwargs):
-        start_timestamp = kwargs.get("start_timestamp")
-        end_timestamp = kwargs.get("end_timestamp")
-
         if not prev_query_params:
             # Initial request, return default params
+            start_timestamp = kwargs.get("start_timestamp")
+            end_timestamp = kwargs.get("end_timestamp")
+
             return {
                 "min_upload_date": start_timestamp,
                 "max_upload_date": end_timestamp,
@@ -112,9 +112,22 @@ class FlickrDataIngester(ProviderDataIngester):
                 "method": "flickr.photos.search",
                 "media": "photos",
                 "safe_search": 1,  # Restrict to 'safe'
-                "extras": (
-                    "description,license,date_upload,date_taken,owner_name,tags,o_dims,"
-                    "url_t,url_s,url_m,url_l,views,content_type"
+                "extras": ",".join(
+                    [
+                        "description",
+                        "license",
+                        "date_upload",
+                        "date_taken",
+                        "owner_name",
+                        "tags",
+                        "o_dims",
+                        "url_t",
+                        "url_s",
+                        "url_m",
+                        "url_l",
+                        "views",
+                        "content_type",
+                    ]
                 ),
                 "format": "json",
                 "nojsoncallback": 1,
@@ -162,7 +175,6 @@ class FlickrDataIngester(ProviderDataIngester):
         title = data.get("title")
         creator = data.get("ownername")
         category = self._get_category(data)
-        filesize, filetype = self._get_file_properties(image_url)
         meta_data = self._create_meta_data_dict(data)
         raw_tags = self._create_tags_list(data)
         # Flickr includes a collection of sub-providers which are available to a wide
@@ -180,8 +192,6 @@ class FlickrDataIngester(ProviderDataIngester):
             "foreign_identifier": foreign_id,
             "width": width,
             "height": height,
-            "filesize": filesize,
-            "filetype": filetype,
             "creator": creator,
             "creator_url": creator_url,
             "title": title,
@@ -215,29 +225,6 @@ class FlickrDataIngester(ProviderDataIngester):
 
         license_, license_version = LICENSE_INFO.get(license_id)
         return get_license_info(license_=license_, license_version=license_version)
-
-    def _get_file_properties(self, image_url):
-        """
-        Get the size of the image in bytes and its filetype.
-        """
-        filesize, filetype = None, None
-        if image_url:
-            filetype = image_url.split(".")[-1]
-
-            # TODO: Temporarily commenting out this code to avoid making an additional
-            # request for every Flickr image to get filesize. We should test turning
-            # this back on, or else find another way of getting the data.
-            # https://github.com/WordPress/openverse-catalog/issues/811
-            # If re-enabled, we'll need to mock this method in the tests to prevent
-            # making requests to Flickr while testing.
-            #
-            # resp = self.delayed_requester.get(image_url)
-            # if resp:
-            #     filesize = int(resp.headers.get("X-TTDB-L", 0))
-        return (
-            filesize if filesize != 0 else None,
-            filetype if filetype != "" else None,
-        )
 
     @staticmethod
     def _create_meta_data_dict(image_data, max_description_length=2000):
@@ -286,8 +273,8 @@ class FlickrDataIngester(ProviderDataIngester):
 
 
 def main(date):
-    ingester = FlickrDataIngester()
-    ingester.ingest_records(date=date)
+    ingester = FlickrDataIngester(date=date)
+    ingester.ingest_records()
 
 
 if __name__ == "__main__":
