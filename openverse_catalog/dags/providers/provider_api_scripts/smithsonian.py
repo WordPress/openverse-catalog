@@ -271,21 +271,13 @@ class SmithsonianDataIngester(ProviderDataIngester):
             typed_input = unknown_input
         return typed_input
 
-    def _get_content_dict(self, row):
-        return self._check_type(row.get("content"), dict)
-
-    def _get_descriptive_non_repeating_dict(self, row):
-        logger.debug("Getting descriptive_non_repeating_dict from row")
-        desc = self._get_content_dict(row).get("descriptiveNonRepeating")
-        return self._check_type(desc, dict)
-
-    def _get_indexed_structured_dict(self, row):
-        logger.debug("Getting indexed_structured_dict from row")
-        content = self._get_content_dict(row).get("indexedStructured")
-        return self._check_type(content, dict)
+    def _get_content_dict(self, row, field):
+        logger.debug(f"Getting `{field}` from row")
+        content = self._check_type(row.get("content"), dict)
+        return self._check_type(content.get(field), dict)
 
     def _get_image_list(self, row):
-        dnr_dict = self._get_descriptive_non_repeating_dict(row)
+        dnr_dict = self._get_content_dict(row, "descriptiveNonRepeating")
         online_media = self._check_type(dnr_dict.get("online_media"), dict)
         return self._check_type(online_media.get("media"), list)
 
@@ -314,21 +306,18 @@ class SmithsonianDataIngester(ProviderDataIngester):
 
     def _get_foreign_landing_url(self, row):
         logger.debug("Getting foreign_landing_url from row")
-        dnr_dict = self._get_descriptive_non_repeating_dict(row)
+        dnr_dict = self._get_content_dict(row, "descriptiveNonRepeating")
         foreign_landing_url = dnr_dict.get("record_link")
         if foreign_landing_url is None:
             foreign_landing_url = dnr_dict.get("guid")
 
         return foreign_landing_url
 
-    def _get_freetext_dict(self, row):
-        logger.debug("Getting freetext_dict from row")
-        freetext = self._get_content_dict(row).get("freetext")
-        return self._check_type(freetext, dict)
-
     def _extract_meta_data(self, row) -> dict:
-        freetext = self._get_freetext_dict(row)
-        descriptive_non_repeating = self._get_descriptive_non_repeating_dict(row)
+        freetext = self._get_content_dict(row, "freetext")
+        descriptive_non_repeating = self._get_content_dict(
+            row, "descriptiveNonRepeating"
+        )
         description, label_texts = "", ""
         notes = self._check_type(freetext.get("notes"), list)
 
@@ -361,8 +350,8 @@ class SmithsonianDataIngester(ProviderDataIngester):
         return source
 
     def _get_creator(self, row):
-        freetext = self._get_freetext_dict(row)
-        indexed_structured = self._get_indexed_structured_dict(row)
+        freetext = self._get_content_dict(row, "freetext")
+        indexed_structured = self._get_content_dict(row, "indexedStructured")
         ordered_freetext_creator_objects = sorted(
             [
                 i
@@ -414,7 +403,7 @@ class SmithsonianDataIngester(ProviderDataIngester):
         return creator
 
     def _extract_tags(self, row):
-        indexed_structured = self._get_indexed_structured_dict(row)
+        indexed_structured = self._get_content_dict(row, "indexedStructured")
         tag_lists_generator = (
             self._check_type(indexed_structured.get(key), list)
             for key in self.tag_types
