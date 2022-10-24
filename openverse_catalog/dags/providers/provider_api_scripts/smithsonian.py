@@ -28,7 +28,7 @@ class SmithsonianDataIngester(ProviderDataIngester):
     providers = {"image": prov.SMITHSONIAN_DEFAULT_PROVIDER}
     sub_providers = prov.SMITHSONIAN_SUB_PROVIDERS
     base_endpoint = "https://api.si.edu/openaccess/api/v1.0/"
-    delay = 0.5
+    delay = 5.0
     batch_limit = 1000
     hash_prefix_length = 2
     description_types = {
