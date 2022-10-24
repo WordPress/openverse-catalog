@@ -4,7 +4,10 @@ from unittest.mock import patch
 
 import pytest
 from common.licenses import LicenseInfo
-from providers.provider_api_scripts.nypl import NyplDataIngester
+from providers.provider_api_scripts.nypl import (
+    NyplDataIngester,
+    get_value_from_dict_or_list,
+)
 
 
 RESOURCES = Path(__file__).parent / "resources/nypl"
@@ -146,3 +149,50 @@ def test_get_record_data_failure():
     with patch.object(nypl, "get_response_json", return_value=item_response):
         images = nypl.get_record_data(result)
     assert images is None
+
+
+@pytest.mark.parametrize(
+    "dict_or_list, keys, expected",
+    [
+        ({"genre": None}, [], {"genre": None}),
+        ({"genre": None}, ["$"], None),
+        ([{"genre": None}], ["$"], None),
+        (
+            {
+                "genre": {
+                    "$": "Maps",
+                    "authority": "lctgm",
+                    "valueURI": "http://id.loc.gov/vocabulary/graphicMaterials/tgm006261",
+                }
+            },
+            ["genre"],
+            {
+                "$": "Maps",
+                "authority": "lctgm",
+                "valueURI": "http://id.loc.gov/vocabulary/graphicMaterials/tgm006261",
+            },
+        ),
+        (
+            {
+                "genre": {
+                    "$": "Maps",
+                    "authority": "lctgm",
+                    "valueURI": "http://id.loc.gov/vocabulary/graphicMaterials/tgm006261",
+                }
+            },
+            ["genre", "$"],
+            "Maps",
+        ),
+        ({"a": [{"b": "b_value"}, {"c": "c_value"}]}, ["a", "c"], "c_value"),
+    ],
+    ids=[
+        "empty list of keys",
+        "key not present in a dict",
+        "key not present in a list",
+        "return a dict value with one key",
+        "return a string value with a list of keys",
+        "return a string value with a list of keys, from a list",
+    ],
+)
+def test_get_value_from_dict_or_list(keys, dict_or_list, expected):
+    assert get_value_from_dict_or_list(dict_or_list, keys) == expected
