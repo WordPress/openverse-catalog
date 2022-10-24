@@ -484,7 +484,7 @@ def test_extract_tags(input_is, expect_tags):
     ],
 )
 def test_process_image_list(input_media, expected_image_data):
-    partial_image_data = {
+    shared_image_data = {
         "foreign_landing_url": "https://foreignlanding.url",
         "title": "The Title",
         "license_info": ingester.license_info,
@@ -493,8 +493,8 @@ def test_process_image_list(input_media, expected_image_data):
         "source": "smithsonian_national_museum_of_natural_history",
         "raw_tags": ["tag", "list"],
     }
-    expected_result = [(img | partial_image_data) for img in expected_image_data]
-    actual_image_data = ingester._process_image_list(input_media, partial_image_data)
+    expected_result = [(img | shared_image_data) for img in expected_image_data]
+    actual_image_data = ingester._get_associated_images(input_media, shared_image_data)
     assert actual_image_data == expected_result
 
 

@@ -155,7 +155,7 @@ class SmithsonianDataIngester(ProviderDataIngester):
                 return None
 
             meta_data = self._extract_meta_data(data)
-            partial_image_data = {
+            shared_image_data = {
                 "foreign_landing_url": foreign_landing_url,
                 "title": data.get("title"),
                 "license_info": self.license_info,
@@ -171,7 +171,7 @@ class SmithsonianDataIngester(ProviderDataIngester):
                 # category
                 # watermarked
             }
-            images += self._process_image_list(image_list, partial_image_data)
+            images += self._get_associated_images(image_list, shared_image_data)
         return images
 
     @retry(ValueError, tries=3, delay=1, backoff=2)
@@ -290,7 +290,7 @@ class SmithsonianDataIngester(ProviderDataIngester):
         return self._check_type(online_media.get("media"), list)
 
     @staticmethod
-    def _process_image_list(image_list, partial_image_data: dict) -> list:
+    def _get_associated_images(image_list, partial_image_data: dict) -> list:
         images = []
         for image_data in image_list:
             usage = image_data.get("usage", {}).get("access")
