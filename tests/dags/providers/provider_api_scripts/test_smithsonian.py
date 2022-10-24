@@ -133,6 +133,130 @@ def test_get_next_query_params_updates_parameters():
 
 
 @pytest.mark.parametrize(
+    "input_row, expect_dnr_dict",
+    [
+        ({}, {}),
+        ({"content": {"key": {"key2", "val2"}}}, {}),
+        ({"noncontent": {"descriptiveNonRepeating": {"key2": "val2"}}}, {}),
+        ({"content": {"descriptiveNonRepeating": {"key2": "val2"}}}, {"key2": "val2"}),
+    ],
+)
+def test_get_descriptive_non_repeating_dict(input_row, expect_dnr_dict):
+    actual_dnr_dict = ingester._get_descriptive_non_repeating_dict(input_row)
+    assert actual_dnr_dict == expect_dnr_dict
+
+
+@pytest.mark.parametrize(
+    "input_row, expect_ind_struc_dict",
+    [
+        ({}, {}),
+        ({"content": {"key": {"key2", "val2"}}}, {}),
+        ({"noncontent": {"indexedStructured": {"key2": "val2"}}}, {}),
+        ({"content": {"indexedStructured": {"key2": "val2"}}}, {"key2": "val2"}),
+    ],
+)
+def test_get_indexed_structured_dict(input_row, expect_ind_struc_dict):
+    actual_ind_struc_dict = ingester._get_indexed_structured_dict(input_row)
+    assert actual_ind_struc_dict == expect_ind_struc_dict
+
+
+@pytest.mark.parametrize(
+    "input_row,expect_freetext_dict",
+    [
+        ({}, {}),
+        ({"content": {"key": {"key2", "val2"}}}, {}),
+        ({"noncontent": {"freetext": {"key2": "val2"}}}, {}),
+        ({"content": {"freetext": {"key2": "val2"}}}, {"key2": "val2"}),
+    ],
+)
+def test_get_freetext_dict(input_row, expect_freetext_dict):
+    actual_freetext_dict = ingester._get_freetext_dict(input_row)
+    assert actual_freetext_dict == expect_freetext_dict
+
+
+@pytest.mark.parametrize(
+    "required_type,default_input",
+    [
+        (str, ""),
+        (int, 0),
+        (float, 0.0),
+        (complex, 0j),
+        (list, []),
+        (tuple, ()),
+        (dict, {}),
+        (set, set()),
+        (bool, False),
+        (bytes, b""),
+    ],
+)
+def test_check_type_with_defaults(required_type, default_input):
+    assert ingester._check_type(default_input, required_type) == default_input
+
+
+@pytest.mark.parametrize(
+    "required_type,good_input",
+    [
+        (str, "abc"),
+        (int, 5),
+        (float, 1.2),
+        (complex, 3 + 2j),
+        (list, ["a", 2, 0, False]),
+        (tuple, (1, 0, False)),
+        (dict, {"key": "val", "f": False}),
+        (set, {1, False, "abc"}),
+        (bool, True),
+        (bytes, b"abc"),
+    ],
+)
+def test_check_type_with_truthy_good_inputs(required_type, good_input):
+    assert ingester._check_type(good_input, required_type) == good_input
+
+
+@pytest.mark.parametrize(
+    "required_type,good_indices,default",
+    [
+        (str, (0, 1), ""),
+        (int, (2, 3), 0),
+        (float, (4, 5), 0.0),
+        (complex, (6, 7), 0j),
+        (list, (8, 9), []),
+        (tuple, (10, 11), ()),
+        (dict, (12, 13), {}),
+        (set, (14, 15), set()),
+        (bool, (16, 17), False),
+        (bytes, (18, 19), b""),
+    ],
+)
+def test_check_type_with_bad_inputs(required_type, good_indices, default):
+    bad_input_list = [
+        "abc",
+        "",
+        5,
+        0,
+        1.2,
+        0.0,
+        3 + 2j,
+        0j,
+        ["a", 2],
+        [],
+        (1, 2),
+        (),
+        {"key": "val"},
+        {},
+        {1, "abc"},
+        set(),
+        True,
+        False,
+        b"abc",
+        b"",
+    ]
+    for i in sorted(good_indices, reverse=True):
+        del bad_input_list[i]
+    for bad_input in bad_input_list:
+        assert ingester._check_type(bad_input, required_type) == default
+
+
+@pytest.mark.parametrize(
     "input_dnr, expect_image_list",
     [
         ({}, []),
