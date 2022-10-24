@@ -48,7 +48,6 @@ The following are DAGs grouped by their primary tag:
 | [`recreate_audio_popularity_calculation`](#recreate_audio_popularity_calculation) | `None` |
 | [`recreate_image_popularity_calculation`](#recreate_image_popularity_calculation) | `None` |
 | [`report_pending_reported_media`](#report_pending_reported_media) | `@weekly` |
-| [`tsv_to_postgres_loader`](#tsv_to_postgres_loader) | `None` |
 
 
 
@@ -86,13 +85,12 @@ The following are DAGs grouped by their primary tag:
 | [`metropolitan_museum_workflow`](#metropolitan_museum_workflow) | `@daily` | `True` | image |
 | `museum_victoria_workflow` | `@monthly` | `False` | image |
 | `nypl_workflow` | `@monthly` | `False` | image |
-| [`phylopic_workflow`](#phylopic_workflow) | `@weekly` | `True` | image |
+| [`phylopic_workflow`](#phylopic_workflow) | `@daily` | `True` | image |
 | `rawpixel_workflow` | `@monthly` | `False` | image |
 | `science_museum_workflow` | `@monthly` | `False` | image |
 | [`smithsonian_workflow`](#smithsonian_workflow) | `@weekly` | `False` | image |
 | `smk_workflow` | `@monthly` | `False` | image |
 | [`stocksnap_workflow`](#stocksnap_workflow) | `@monthly` | `False` | image |
-| [`walters_workflow`](#walters_workflow) | `@monthly` | `False` | image |
 | [`wikimedia_commons_workflow`](#wikimedia_commons_workflow) | `@daily` | `True` | image, audio |
 | [`wordpress_workflow`](#wordpress_workflow) | `@monthly` | `False` | image |
 
@@ -132,8 +130,6 @@ The following is documentation associated with each DAG (where available):
  1. [`report_pending_reported_media`](#report_pending_reported_media)
  1. [`smithsonian_workflow`](#smithsonian_workflow)
  1. [`stocksnap_workflow`](#stocksnap_workflow)
- 1. [`tsv_to_postgres_loader`](#tsv_to_postgres_loader)
- 1. [`walters_workflow`](#walters_workflow)
  1. [`wikimedia_commons_workflow`](#wikimedia_commons_workflow)
  1. [`wikimedia_reingestion_workflow`](#wikimedia_reingestion_workflow)
  1. [`wordpress_workflow`](#wordpress_workflow)
@@ -203,13 +199,13 @@ Checks for DAGs that have silenced Slack alerts which may need to be turned back
 on.
 
 When a DAG has known failures, it can be ommitted from Slack error reporting by adding
-an entry to the `silenced_slack_notifications` Airflow variable. This is a dictionary
+an entry to the `SILENCED_SLACK_NOTIFICATIONS` Airflow variable. This is a dictionary
 where thekey is the `dag_id` of the affected DAG, and the value is a list of
 SilencedSlackNotifications (which map silenced notifications to GitHub URLs) for that
 DAG.
 
 The `check_silenced_dags` DAG iterates over the entries in the
-`silenced_slack_notifications` configuration and verifies that the associated GitHub
+`SILENCED_SLACK_NOTIFICATIONS` configuration and verifies that the associated GitHub
 issues are still open. If an issue has been closed, it is assumed that the DAG should
 have Slack reporting reenabled, and an alert is sent to prompt manual update of the
 configuration. This prevents developers from forgetting to reenable Slack reporting
@@ -284,6 +280,8 @@ Output:                 TSV file containing the image, the respective
 
 Notes:                  https://freesound.org/apiv2/search/text'
                         No rate limit specified.
+                        This script can be run either to ingest the full dataset or
+                        as a dated DAG.
 
 
 ## `image_data_refresh`
@@ -534,70 +532,6 @@ Notes:                  https://stocksnap.io/api/load-photos/date/desc/1
                         All images are licensed under CC0.
                         No rate limits or authorization required.
                         API is undocumented.
-
-
-## `tsv_to_postgres_loader`
-
-#### Database Loader DAG
-**DB Loader Apache Airflow DAG** (directed acyclic graph) takes the media data saved
-locally in TSV files, cleans it using an intermediate database table, and saves
-the cleaned-up data into the main database (also called upstream or Openledger).
-
-In production,"locally" means on AWS EC2 instance that runs the Apache Airflow
-webserver. Storing too much data there is dangerous, because if ingestion to the
-database breaks down, the disk of this server gets full, and breaks all
-Apache Airflow operations.
-
-As a first step, the DB Loader Apache Airflow DAG saves the data gathered by
-Provider API Scripts to S3 before attempting to load it to PostgreSQL, and delete
- it from disk if saving to S3 succeeds, even if loading to PostgreSQL fails.
-
-This way, we can delete data from the EC2 instance to open up disk space without
- the possibility of losing that data altogether. This will allow us to recover if
- we lose data from the DB somehow, because it will all be living in S3.
-It's also a prerequisite to the long-term plan of saving data only to S3
-(since saving it to the EC2 disk is a source of concern in the first place).
-
-This is one step along the path to avoiding saving data on the local disk at all.
-It should also be faster to load into the DB from S3, since AWS RDS instances
-provide special optimized functionality to load data from S3 into tables in the DB.
-
-Loading the data into the Database is a two-step process: first, data is saved
-to the intermediate table. Any items that don't have the required fields
-(media url, license, foreign landing url and foreign id), and duplicates as
-determined by combination of provider and foreign_id are deleted.
-Then the data from the intermediate table is upserted into the main database.
-If the same item is already present in the database, we update its information
-with newest (non-null) data, and merge any metadata or tags objects to preserve all
-previously downloaded data, and update any data that needs updating
-(eg. popularity metrics).
-
-You can find more background information on the loading process in the following
-issues and related PRs:
-
-- [[Feature] More sophisticated merging of columns in PostgreSQL when upserting](
-https://github.com/creativecommons/cccatalog/issues/378)
-
-- [DB Loader DAG should write to S3 as well as PostgreSQL](
-https://github.com/creativecommons/cccatalog/issues/333)
-
-- [DB Loader should take data from S3, rather than EC2 to load into PostgreSQL](
-https://github.com/creativecommons/cccatalog/issues/334)
-
-
-
-## `walters_workflow`
-
-
-Content Provider:       Walters Art Museum
-
-ETL Process:            Use the API to identify all CC licensed images.
-
-Output:                 TSV file containing the images and the
-                        respective meta-data.
-
-Notes:                  http://api.thewalters.org/
-                        Rate limit: 250000 Per Day Per Key
 
 
 ## `wikimedia_commons_workflow`

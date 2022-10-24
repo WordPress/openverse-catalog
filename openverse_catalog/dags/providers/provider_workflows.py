@@ -6,9 +6,13 @@ from typing import Dict, Optional, Sequence, Type
 from providers.provider_api_scripts.brooklyn_museum import BrooklynMuseumDataIngester
 from providers.provider_api_scripts.cleveland_museum import ClevelandDataIngester
 from providers.provider_api_scripts.finnish_museums import FinnishMuseumsDataIngester
+from providers.provider_api_scripts.freesound import FreesoundDataIngester
 from providers.provider_api_scripts.inaturalist import INaturalistDataIngester
+from providers.provider_api_scripts.jamendo import JamendoDataIngester
 from providers.provider_api_scripts.metropolitan_museum import MetMuseumDataIngester
 from providers.provider_api_scripts.museum_victoria import VictoriaDataIngester
+from providers.provider_api_scripts.nypl import NyplDataIngester
+from providers.provider_api_scripts.phylopic import PhylopicDataIngester
 from providers.provider_api_scripts.provider_data_ingester import ProviderDataIngester
 from providers.provider_api_scripts.science_museum import ScienceMuseumDataIngester
 from providers.provider_api_scripts.smithsonian import SmithsonianDataIngester
@@ -150,10 +154,12 @@ PROVIDER_WORKFLOWS = [
     ),
     ProviderWorkflow(
         provider_script="freesound",
+        ingestion_callable=FreesoundDataIngester,
         media_types=("audio",),
     ),
     ProviderWorkflow(
         provider_script="jamendo",
+        ingestion_callable=JamendoDataIngester,
         media_types=("audio",),
     ),
     ProviderWorkflow(
@@ -171,12 +177,14 @@ PROVIDER_WORKFLOWS = [
     ),
     ProviderWorkflow(
         provider_script="nypl",
+        ingestion_callable=NyplDataIngester,
         start_date=datetime(2020, 1, 1),
     ),
     ProviderWorkflow(
         provider_script="phylopic",
-        start_date=datetime(2011, 1, 1),
-        schedule_string="@weekly",
+        ingestion_callable=PhylopicDataIngester,
+        start_date=datetime(2011, 2, 7),
+        schedule_string="@daily",
         dated=True,
         pull_timeout=timedelta(hours=12),
     ),
@@ -204,10 +212,6 @@ PROVIDER_WORKFLOWS = [
     ProviderWorkflow(
         provider_script="stocksnap",
         ingestion_callable=StockSnapDataIngester,
-    ),
-    ProviderWorkflow(
-        provider_script="walters",
-        start_date=datetime(2020, 9, 27),
     ),
     ProviderWorkflow(
         provider_script="wikimedia_commons",
