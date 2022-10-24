@@ -133,45 +133,44 @@ def test_get_next_query_params_updates_parameters():
 
 
 @pytest.mark.parametrize(
-    "input_row, expect_dnr_dict",
+    "input_row, field, expected_dict",
     [
-        ({}, {}),
-        ({"content": {"key": {"key2", "val2"}}}, {}),
-        ({"noncontent": {"descriptiveNonRepeating": {"key2": "val2"}}}, {}),
-        ({"content": {"descriptiveNonRepeating": {"key2": "val2"}}}, {"key2": "val2"}),
+        # field: descriptiveNonRepeating
+        ({}, "descriptiveNonRepeating", {}),
+        ({"content": {"key": {"key2", "val2"}}}, "descriptiveNonRepeating", {}),
+        (
+            {"noncontent": {"descriptiveNonRepeating": {"key2": "val2"}}},
+            "descriptiveNonRepeating",
+            {},
+        ),
+        (
+            {"content": {"descriptiveNonRepeating": {"key2": "val2"}}},
+            "descriptiveNonRepeating",
+            {"key2": "val2"},
+        ),
+        # field: indexedStructured
+        ({}, "indexedStructured", {}),
+        ({"content": {"key": {"key2", "val2"}}}, "indexedStructured", {}),
+        (
+            {"noncontent": {"indexedStructured": {"key2": "val2"}}},
+            "indexedStructured",
+            {},
+        ),
+        (
+            {"content": {"indexedStructured": {"key2": "val2"}}},
+            "indexedStructured",
+            {"key2": "val2"},
+        ),
+        # field: freetext
+        ({}, "freetext", {}),
+        ({"content": {"key": {"key2", "val2"}}}, "freetext", {}),
+        ({"noncontent": {"freetext": {"key2": "val2"}}}, "freetext", {}),
+        ({"content": {"freetext": {"key2": "val2"}}}, "freetext", {"key2": "val2"}),
     ],
 )
-def test_get_descriptive_non_repeating_dict(input_row, expect_dnr_dict):
-    actual_dnr_dict = ingester._get_descriptive_non_repeating_dict(input_row)
-    assert actual_dnr_dict == expect_dnr_dict
-
-
-@pytest.mark.parametrize(
-    "input_row, expect_ind_struc_dict",
-    [
-        ({}, {}),
-        ({"content": {"key": {"key2", "val2"}}}, {}),
-        ({"noncontent": {"indexedStructured": {"key2": "val2"}}}, {}),
-        ({"content": {"indexedStructured": {"key2": "val2"}}}, {"key2": "val2"}),
-    ],
-)
-def test_get_indexed_structured_dict(input_row, expect_ind_struc_dict):
-    actual_ind_struc_dict = ingester._get_indexed_structured_dict(input_row)
-    assert actual_ind_struc_dict == expect_ind_struc_dict
-
-
-@pytest.mark.parametrize(
-    "input_row,expect_freetext_dict",
-    [
-        ({}, {}),
-        ({"content": {"key": {"key2", "val2"}}}, {}),
-        ({"noncontent": {"freetext": {"key2": "val2"}}}, {}),
-        ({"content": {"freetext": {"key2": "val2"}}}, {"key2": "val2"}),
-    ],
-)
-def test_get_freetext_dict(input_row, expect_freetext_dict):
-    actual_freetext_dict = ingester._get_freetext_dict(input_row)
-    assert actual_freetext_dict == expect_freetext_dict
+def test_content_dict(input_row, field, expected_dict):
+    actual_dict = ingester._get_content_dict(input_row, field)
+    assert actual_dict == expected_dict
 
 
 @pytest.mark.parametrize(
@@ -277,10 +276,10 @@ def test_check_type_with_bad_inputs(required_type, good_indices, default):
 def test_get_image_list(input_dnr, expect_image_list):
     input_row = {"key": "val"}
     with patch.object(
-        ingester, "_get_descriptive_non_repeating_dict", return_value=input_dnr
+        ingester, "_get_content_dict", return_value=input_dnr
     ) as mock_dnr:
         actual_image_list = ingester._get_image_list(input_row)
-    mock_dnr.assert_called_once_with(input_row)
+    mock_dnr.assert_called_once_with(input_row, "descriptiveNonRepeating")
     assert actual_image_list == expect_image_list
 
 
@@ -308,10 +307,10 @@ def test_get_media_type():
 def test_get_foreign_landing_url(input_dnr, expect_foreign_landing_url):
     input_row = {"key": "val"}
     with patch.object(
-        ingester, "_get_descriptive_non_repeating_dict", return_value=input_dnr
+        ingester, "_get_content_dict", return_value=input_dnr
     ) as mock_dnr:
         actual_foreign_landing_url = ingester._get_foreign_landing_url(input_row)
-    mock_dnr.assert_called_once_with(input_row)
+    mock_dnr.assert_called_once_with(input_row, "descriptiveNonRepeating")
     assert actual_foreign_landing_url == expect_foreign_landing_url
 
 
@@ -562,12 +561,10 @@ def test_extract_meta_data_dnr_fields(input_ft, input_dnr, expect_meta_data):
 )
 def test_extract_tags(input_is, expect_tags):
     input_row = {"test": "row"}
-    get_is = patch.object(
-        ingester, "_get_indexed_structured_dict", return_value=input_is
-    )
+    get_is = patch.object(ingester, "_get_content_dict", return_value=input_is)
     with get_is as mock_is:
         actual_tags = ingester._extract_tags(input_row)
-    mock_is.assert_called_once_with(input_row)
+    mock_is.assert_called_once_with(input_row, "indexedStructured")
     assert actual_tags == expect_tags
 
 
