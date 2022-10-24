@@ -24,7 +24,7 @@ def get_value_from_dict_or_list(
     """
     if not keys or not dict_or_list:
         return dict_or_list
-    current_key, updated_keys = keys[0], keys[1:]
+    current_key, *updated_keys = keys
     if isinstance(dict_or_list, list):
         for item in dict_or_list:
             if current_key in item:
