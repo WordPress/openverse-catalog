@@ -31,13 +31,13 @@ class EuropeanaRecordBuilder:
 
     def get_record_data(self, data: dict) -> dict:
         record = {
-            "foreign_landing_url": self.get_foreign_landing_url(data),
+            "foreign_landing_url": self._get_foreign_landing_url(data),
             "image_url": data.get("edmIsShownBy")[0],
             "foreign_identifier": data.get("id"),
-            "meta_data": self.get_meta_data_dict(data),
+            "meta_data": self._get_meta_data_dict(data),
             "title": data.get("title")[0],
             "license_info": get_license_info(
-                license_url=self.get_license_url(data.get("rights"))
+                license_url=self._get_license_url(data.get("rights"))
             ),
         }
 
@@ -61,7 +61,7 @@ class EuropeanaRecordBuilder:
             )
         }
 
-    def get_license_url(self, license_field) -> str | None:
+    def _get_license_url(self, license_field) -> str | None:
         if len(license_field) > 1:
             logger.warning("More than one license field found")
         for license_ in license_field:
@@ -69,29 +69,31 @@ class EuropeanaRecordBuilder:
                 return license_
         return None
 
-    def get_foreign_landing_url(self, data: dict) -> str:
+    def _get_foreign_landing_url(self, data: dict) -> str:
         original_url = data.get("edmIsShownAt")
         if original_url is not None:
             return original_url[0]
         europeana_url = data.get("guid")
         return europeana_url
 
-    def get_meta_data_dict(self, data: dict) -> dict:
+    def _get_meta_data_dict(self, data: dict) -> dict:
         meta_data = {
             "country": data.get("country"),
             "dataProvider": data.get("dataProvider"),
-            "description": self.get_description(data),
+            "description": self._get_description(data),
         }
 
         return {k: v for k, v in meta_data.items() if v is not None}
 
-    def get_description(self, data: dict) -> str | None:
+    def _get_description(self, data: dict) -> str | None:
+        description = None
         lang_aware_description = data.get("dcDescriptionLangAware")
         if lang_aware_description:
             description = lang_aware_description.get(
                 "en"
             ) or lang_aware_description.get("def")
-        else:
+
+        if not description:  # cover None and []
             description = data.get("dcDescription")
 
         if description:

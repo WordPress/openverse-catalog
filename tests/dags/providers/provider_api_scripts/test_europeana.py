@@ -2,7 +2,7 @@ import json
 import os
 
 import pytest
-from common.licenses import LicenseInfo
+from common.licenses import LicenseInfo, get_license_info
 from providers.provider_api_scripts.europeana import (
     EuropeanaDataIngester,
     EuropeanaRecordBuilder,
@@ -144,34 +144,42 @@ def test_record_builder_get_record_data(ingester, record_builder):
 
 
 def test_record_builder_get_license_url_with_real_example(record_builder):
-    rights_field = ["http://creativecommons.org/publicdomain/zero/1.0/"]
+    image_data = _get_resource_json("image_data_example.json")
+    image_data["rights"] = ["http://creativecommons.org/publicdomain/zero/1.0/"]
 
-    assert (
-        record_builder.get_license_url(rights_field)
-        == "http://creativecommons.org/publicdomain/zero/1.0/"
-    )
+    assert record_builder.get_record_data(image_data)[
+        "license_info"
+    ] == get_license_info("http://creativecommons.org/publicdomain/zero/1.0/")
 
 
 def test_get_license_url_with_non_cc_license(record_builder):
-    rights_field = ["http://noncc.org/"]
+    image_data = _get_resource_json("image_data_example.json")
+    image_data["rights"] = ["http://noncc.org/"]
 
-    assert record_builder.get_license_url(rights_field) is None
+    assert record_builder.get_record_data(image_data)["license_info"] == LicenseInfo(
+        None, None, None, None
+    )
 
 
 def test_get_license_url_with_multiple_license(record_builder):
-    rights_field = [
+    image_data = _get_resource_json("image_data_example.json")
+    image_data["rights"] = [
         "http://noncc.org/",
         "http://creativecommons.org/publicdomain/zero/1.0/",
     ]
-    expect_license = "http://creativecommons.org/publicdomain/zero/1.0/"
-    assert record_builder.get_license_url(rights_field) == expect_license
+    expect_license = get_license_info(
+        "http://creativecommons.org/publicdomain/zero/1.0/"
+    )
+    assert record_builder.get_record_data(image_data)["license_info"] == expect_license
 
 
 def test_get_foreign_landing_url_with_edmIsShownAt(record_builder):
     image_data = _get_resource_json("image_data_example.json")
     expect_url = "http://bibliotecadigital.jcyl.es/i18n/consulta/registro.cmd?id=26229"
 
-    assert record_builder.get_foreign_landing_url(image_data) == expect_url
+    assert (
+        record_builder.get_record_data(image_data)["foreign_landing_url"] == expect_url
+    )
 
 
 def test_get_foreign_landing_url_without_edmIsShownAt(record_builder):
@@ -182,7 +190,9 @@ def test_get_foreign_landing_url_without_edmIsShownAt(record_builder):
         "_es_26229_ent1?utm_source=api&utm_medium=api&utm_campaign=test_key"
     )
 
-    assert record_builder.get_foreign_landing_url(image_data) == expect_url
+    assert (
+        record_builder.get_record_data(image_data)["foreign_landing_url"] == expect_url
+    )
 
 
 def test_get_meta_data_dict(record_builder):
@@ -194,7 +204,7 @@ def test_get_meta_data_dict(record_builder):
         "description": "Sello en seco: España artística y monumental.",
     }
 
-    assert record_builder.get_meta_data_dict(image_data) == expect_meta_data
+    assert record_builder.get_record_data(image_data)["meta_data"] == expect_meta_data
 
 
 def test_get_meta_data_dict_without_country(record_builder):
@@ -206,10 +216,19 @@ def test_get_meta_data_dict_without_country(record_builder):
         "description": "Sello en seco: España artística y monumental.",
     }
 
-    assert record_builder.get_meta_data_dict(image_data) == expect_meta_data
+    assert record_builder.get_record_data(image_data)["meta_data"] == expect_meta_data
 
 
-def test_get_description_with_langaware_en(record_builder):
+@pytest.fixture
+def assert_description(record_builder):
+    def fn(image_data, expected_description):
+        record_data = record_builder.get_record_data(image_data)
+        assert record_data["meta_data"]["description"] == expected_description
+
+    return fn
+
+
+def test_get_description_with_langaware_en(assert_description):
     image_data = _get_resource_json("image_data_example.json")
     image_data["dcDescriptionLangAware"]["en"] = [
         "First English Description",
@@ -217,32 +236,42 @@ def test_get_description_with_langaware_en(record_builder):
     ]
     expect_description = "First English Description"
 
-    assert record_builder.get_description(image_data) == expect_description
+    assert_description(image_data, expect_description)
 
 
-def test_get_description_with_langaware_def(record_builder):
+def test_get_description_with_langaware_def(assert_description):
     image_data = _get_resource_json("image_data_example.json")
 
     expect_description = "Sello en seco: España artística y monumental."
 
-    assert record_builder.get_description(image_data) == expect_description
+    assert_description(image_data, expect_description)
 
 
-def test_get_description_without_langaware(record_builder):
+def test_get_description_without_langaware(assert_description):
     image_data = _get_resource_json("image_data_example.json")
     image_data.pop("dcDescriptionLangAware", None)
     expect_description = "Sello en seco: España artística y monumental."
 
-    assert record_builder.get_description(image_data) == expect_description
+    assert_description(image_data, expect_description)
 
 
-def test_get_description_without_description(record_builder):
+def test_get_description_without_description(assert_description):
     image_data = _get_resource_json("image_data_example.json")
     image_data.pop("dcDescriptionLangAware", None)
     image_data.pop("dcDescription", None)
     expect_description = ""
 
-    assert record_builder.get_description(image_data) == expect_description
+    assert_description(image_data, expect_description)
+
+
+def test_get_description_dcDescriptionLangAware_without_en_or_def(assert_description):
+    image_data = _get_resource_json("image_data_example.json")
+    # Need to give dcDescriptionLangAware _something_ to thwart naive
+    # falsy checks
+    image_data["dcDescriptionLangAware"] = {"pt": "Não sou uma descrição"}
+
+    expect_description = image_data["dcDescription"][0]
+    assert_description(image_data, expect_description)
 
 
 def test_process_image_data_with_sub_provider(record_builder):
