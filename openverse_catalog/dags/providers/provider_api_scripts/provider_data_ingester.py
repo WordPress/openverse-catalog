@@ -337,7 +337,7 @@ class ProviderDataIngester(ABC):
         """
         pass
 
-    def process_batch(self, media_batch):
+    def process_batch(self, media_batch) -> int:
         """
         Process a batch of records by adding them to the appropriate MediaStore.
         Returns the total count of records ingested up to this point, for all
@@ -371,14 +371,19 @@ class ProviderDataIngester(ABC):
 
         return record_count
 
-    @abstractmethod
     def get_media_type(self, record: dict) -> str:
         """
         For a given record, return the media type it represents (eg "image", "audio",
-        etc.) If a provider only supports a single media type, this may be hard-coded
-        to return that type.
+        etc.) If a provider only supports a single media type, this method defaults
+        to returning the only media type defined in the ``providers`` attribute.
         """
-        pass
+        if len(self.providers) == 1:
+            return list(self.providers.keys())[0]
+
+        raise NotImplementedError(
+            "Provider scripts that support multiple media types "
+            "must provide an override for ``get_media_type``."
+        )
 
     @abstractmethod
     def get_record_data(self, data: dict) -> dict | list[dict] | None:
