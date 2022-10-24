@@ -105,7 +105,6 @@ class EuropeanaRecordBuilder:
 class EuropeanaDataIngester(ProviderDataIngester):
     providers = {"image": prov.EUROPEANA_DEFAULT_PROVIDER}
     sub_providers = prov.EUROPEANA_SUB_PROVIDERS
-    batch_limit = 100
     endpoint = "https://www.europeana.eu/api/v2/search.json?"
     delay = 30
 
