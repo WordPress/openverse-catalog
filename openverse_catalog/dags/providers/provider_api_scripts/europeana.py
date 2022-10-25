@@ -132,6 +132,7 @@ class EuropeanaDataIngester(ProviderDataIngester):
             # ``self.date`` attribute for us, so we can construct that
             # ``query`` prop for the request params ahead of time.
             "query": self._get_timestamp_query_param(self.date),
+            "cursor": "*",
         }
 
         self.record_builder = EuropeanaRecordBuilder()
