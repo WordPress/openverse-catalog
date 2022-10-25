@@ -61,7 +61,7 @@ def test_get_signature(query_params, expected):
 
 
 def test_get_next_query_params_empty():
-    actual = rwp.get_query_params({})
+    actual = rwp.get_next_query_params({})
     actual.pop("s")
     assert actual == {
         "tags": "$publicdomain",
@@ -71,7 +71,7 @@ def test_get_next_query_params_empty():
 
 
 def test_get_next_query_params_increments_page_size():
-    actual = rwp.get_query_params({"foo": "bar", "page": 5})
+    actual = rwp.get_next_query_params({"foo": "bar", "page": 5})
     actual.pop("s")
     assert actual == {"foo": "bar", "page": 6}
 
