@@ -331,7 +331,7 @@ class ProviderDataIngester(ABC):
         return True
 
     @abstractmethod
-    def get_batch_data(self, response_json):
+    def get_batch_data(self, response_json) -> None | list[dict]:
         """
         Take an API response and return the list of records.
         """

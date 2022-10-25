@@ -156,16 +156,17 @@ class EuropeanaDataIngester(ProviderDataIngester):
             "cursor": self.cursor,
         }
 
-    def get_should_continue(self, response_json):
-        if response_json.get("success") != "True":
-            logger.warning('Request failed with ``success = "False"``')
-            return False
-
+    def get_should_continue(self, response_json: dict):
         self.cursor = response_json.get("nextCursor")
 
         return self.cursor is not None
 
-    def get_batch_data(self, response_json):
+    def get_batch_data(self, response_json: dict) -> None | list[dict]:
+        if response_json.get("success") != "True":
+            logger.warning('Request failed with ``success = "False"``')
+            # No batch data to process if the request failed.
+            return None
+
         return response_json.get("items")
 
     def get_record_data(self, data: dict) -> dict:
