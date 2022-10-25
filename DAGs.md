@@ -476,7 +476,7 @@ ETL Process:            Use the API to identify all CC-licensed images.
 
 Output:                 TSV file containing the image meta-data.
 
-Notes:                  Rawpixel has given us beta access to their API.
+Notes:                  Rawpixel has given Openverse beta access to their API.
                         This API is undocumented, and we will need to contact Rawpixel
                         directly if we run into any issues.
                         The public API max results range is limited to 100,000 results,
