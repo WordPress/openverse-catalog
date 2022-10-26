@@ -60,7 +60,6 @@ def test_get_file_info():
         "https://pd.w.org/2022/05/203627f31f8770f03.61535278-2048x1366.jpg",  # image_url
         1366,  # height
         2048,  # width
-        "jpg",  # filetype
         544284,  # filesize
     )
     assert actual_result == expected_result

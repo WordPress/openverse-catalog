@@ -10,7 +10,6 @@ Notes:                  https://wordpress.org/photos/wp-json/wp/v2
                         No rate limit specified.
 """
 import logging
-from pathlib import Path
 
 import lxml.html as html
 from common import constants
@@ -70,9 +69,7 @@ class WordPressDataIngester(ProviderDataIngester):
         except (KeyError, IndexError):
             return None
 
-        image_url, height, width, filetype, filesize = self._get_file_info(
-            media_details
-        )
+        image_url, height, width, filesize = self._get_file_info(media_details)
         if image_url is None:
             return None
 
@@ -89,7 +86,6 @@ class WordPressDataIngester(ProviderDataIngester):
             "image_url": image_url,
             "height": height,
             "width": width,
-            "filetype": filetype,
             "filesize": filesize,
             "license_info": self.license_info,
             "meta_data": metadata,
@@ -106,9 +102,6 @@ class WordPressDataIngester(ProviderDataIngester):
 
             height = file_details.get("height")
             width = file_details.get("width")
-            filetype = None
-            if filename := file_details.get("file"):
-                filetype = Path(filename).suffix.replace(".", "")
 
             filesize = (
                 media_details.get("filesize", 0)
@@ -118,8 +111,8 @@ class WordPressDataIngester(ProviderDataIngester):
             if not filesize or int(filesize) == 0:
                 filesize = self._get_filesize(image_url)
 
-            return image_url, height, width, filetype, filesize
-        return None, None, None, None, None
+            return image_url, height, width, filesize
+        return None, None, None, None
 
     def _get_filesize(self, image_url):
         resp = self.get_response_json(query_params={}, endpoint=image_url)
