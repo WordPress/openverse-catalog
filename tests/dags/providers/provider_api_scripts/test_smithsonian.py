@@ -313,259 +313,245 @@ def test_get_foreign_landing_url(input_dnr, expect_foreign_landing_url):
     assert actual_foreign_landing_url == expect_foreign_landing_url
 
 
-#
-# @pytest.mark.parametrize(
-#     "input_is, input_ft, expect_creator",
-#     [
-#         ({}, {}, None),
-#         ({"name": ["Alice"]}, {}, None),
-#         ({"name": "alice"}, {}, None),
-#         ({"name": [{"type": ["personal", "main"], "nocontent": "Alice"}]}, {}, None),
-#         ({"name": [{"type": "personal_main", "nocontent": "Alice"}]}, {}, None),
-#         ({"noname": [{"type": "personal_main", "content": "Alice"}]}, {}, None),
-#         ({"name": [{"label": "personal_main", "content": "Alice"}]}, {}, None),
-#         ({"name": [{"type": "impersonal_main", "content": "Alice"}]}, {}, None),
-#         (
-#             {"name": [{"type": "personal_main", "content": "Alice"}]},
-#             {"name": "Bob"},
-#             "Alice",
-#         ),
-#         (
-#             {"name": [{"type": "personal_main", "content": "Alice"}]},
-#             {"name": ["Bob"]},
-#             "Alice",
-#         ),
-#         (
-#             {"name": [{"type": "personal_main", "content": "Alice"}]},
-#             {"name": [{"label": "Creator", "nocontent": "Bob"}]},
-#             "Alice",
-#         ),
-#         (
-#             {"name": [{"type": "personal_main", "content": "Alice"}]},
-#             {"name": [{"nolabel": "Creator", "content": "Bob"}]},
-#             "Alice",
-#         ),
-#         (
-#             {"name": [{"type": "personal_main", "content": "Alice"}]},
-#             {"name": [{"label": "NotaCreator", "content": "Bob"}]},
-#             "Alice",
-#         ),
-#         (
-#             {"name": [{"type": "personal_main", "content": "Alice"}]},
-#             {"noname": [{"label": "Creator", "content": "Bob"}]},
-#             "Alice",
-#         ),
-#         (
-#             {"name": [{"type": "personal_main", "content": "Alice"}]},
-#             {"name": [{"label": "Creator", "content": "Bob"}]},
-#             "Bob",
-#         ),
-#         (
-#             {},
-#             {
-#                 "name": [
-#                     {"label": "Designer", "content": "Alice"},
-#                     {"label": "Creator", "content": "Bob"},
-#                 ]
-#             },
-#             "Bob",
-#         ),
-#         (
-#             {},
-#             {
-#                 "name": [
-#                     {"label": "AFTER", "content": "Bob"},
-#                     {"label": "Designer", "content": "Alice"},
-#                 ]
-#             },
-#             "Alice",
-#         ),
-#         (
-#             {},
-#             {
-#                 "name": [
-#                     {"label": "AFTER", "content": "Bob"},
-#                     {"label": "DESIGNER", "content": "Alice"},
-#                 ]
-#             },
-#             "Alice",
-#         ),
-#         (
-#             {
-#                 "name": [
-#                     {"type": "personal_main", "content": "Alice"},
-#                     {"type": "corporate_subj", "content": "Zoological Park"},
-#                 ]
-#             },
-#             {
-#                 "name": [
-#                     {"label": "Creator", "content": "Bob"},
-#                     {"label": "Subject", "content": "Zoological Park"},
-#                 ]
-#             },
-#             "Bob",
-#         ),
-#     ],
-# )
-# def test_get_creator(input_is, input_ft, expect_creator):
-#     creator_types = {"creator": 0, "designer": 1, "after": 3}
-#     input_row = {"test": "row"}
-#     get_is = patch.object(
-#         ingester, "_get_indexed_structured_dict", return_value=input_is
-#     )
-#     get_ft = patch.object(ingester, "_get_freetext_dict", return_value=input_ft)
-#     ct_patch = patch.object(ingester, "creator_types", creator_types)
-#     with get_is as mock_is, get_ft as mock_ft, ct_patch:
-#         actual_creator = ingester._get_creator(input_row)
-#
-#     mock_is.assert_called_once_with(input_row)
-#     mock_ft.assert_called_once_with(input_row)
-#     assert actual_creator == expect_creator
-#
-#
-# @pytest.mark.parametrize(
-#     "input_ft, input_dnr, expect_description",
-#     [
-#         ({}, {}, None),
-#         ({"notes": [{"label": "notthis", "content": "blah"}]}, {}, None),
-#         ({"notes": "notalist"}, {}, None),
-#         ({"notes": [{"label": "Summary", "content": "blah"}]}, {}, "blah"),
-#         (
-#             {
-#                 "notes": [
-#                     {"label": "Description", "content": "blah"},
-#                     {"label": "Summary", "content": "blah"},
-#                     {"label": "Description", "content": "blah"},
-#                 ]
-#             },
-#             {},
-#             "blah blah blah",
-#         ),
-#         (
-#             {
-#                 "notes": [
-#                     {"label": "notDescription", "content": "blah"},
-#                     {"label": "Summary", "content": "blah"},
-#                     {"label": "Description", "content": "blah"},
-#                 ]
-#             },
-#             {},
-#             "blah blah",
-#         ),
-#     ],
-# )
-# def test_ext_meta_data_description(input_ft, input_dnr, expect_description):
-#     description_types = {"description", "summary"}
-#     input_row = {"test": "row"}
-#     get_dnr = patch.object(
-#         ingester, "_get_descriptive_non_repeating_dict", return_value=input_dnr
-#     )
-#     get_ft = patch.object(ingester, "_get_freetext_dict", return_value=input_ft)
-#     dt_patch = patch.object(ingester, "description_types", description_types)
-#     with get_dnr as mock_dnr, get_ft as mock_ft, dt_patch:
-#         meta_data = ingester._extract_meta_data(input_row)
-#     actual_description = meta_data.get("description")
-#     mock_dnr.assert_called_once_with(input_row)
-#     mock_ft.assert_called_once_with(input_row)
-#     assert actual_description == expect_description
-#
-#
-# @pytest.mark.parametrize(
-#     "input_ft, input_dnr, expect_label_text",
-#     [
-#         ({}, {}, None),
-#         ({"notes": [{"label": "notthis", "content": "blah"}]}, {}, None),
-#         ({"notes": "notalist"}, {}, None),
-#         ({"notes": [{"label": "Label Text", "content": "blah"}]}, {}, "blah"),
-#         (
-#             {
-#                 "notes": [
-#                     {"label": "Label Text", "content": "blah"},
-#                     {"label": "Summary", "content": "halb"},
-#                     {"label": "Description", "content": "halb"},
-#                 ]
-#             },
-#             {},
-#             "blah",
-#         ),
-#     ],
-# )
-# def test_ext_meta_data_label_text(input_ft, input_dnr, expect_label_text):
-#     input_row = {"test": "row"}
-#     get_dnr = patch.object(
-#         ingester, "_get_descriptive_non_repeating_dict", return_value=input_dnr
-#     )
-#     get_ft = patch.object(ingester, "_get_freetext_dict", return_value=input_ft)
-#     with get_dnr as mock_dnr, get_ft as mock_ft:
-#         meta_data = ingester._extract_meta_data(input_row)
-#     actual_label_text = meta_data.get("label_text")
-#     mock_dnr.assert_called_once_with(input_row)
-#     mock_ft.assert_called_once_with(input_row)
-#     assert actual_label_text == expect_label_text
-#
-#
-# @pytest.mark.parametrize(
-#     "input_ft, input_dnr, expect_meta_data",
-#     [
-#         ({"nothing": "here"}, {"nothing_to": "see"}, {}),
-#         ({}, {"unit_code": "SIA"}, {"unit_code": "SIA"}),
-#         (
-#             {},
-#             {"data_source": "Smithsonian Institution Archives"},
-#             {"data_source": "Smithsonian Institution Archives"},
-#         ),
-#     ],
-# )
-# def test_extract_meta_data_dnr_fields(input_ft, input_dnr, expect_meta_data):
-#     input_row = {"test": "row"}
-#     get_dnr = patch.object(
-#         ingester, "_get_descriptive_non_repeating_dict", return_value=input_dnr
-#     )
-#     get_ft = patch.object(ingester, "_get_freetext_dict", return_value=input_ft)
-#     with get_dnr as mock_dnr, get_ft as mock_ft:
-#         actual_meta_data = ingester._extract_meta_data(input_row)
-#     mock_dnr.assert_called_once_with(input_row)
-#     mock_ft.assert_called_once_with(input_row)
-#     assert actual_meta_data == expect_meta_data
-#
-#
-# @pytest.mark.parametrize(
-#     "input_is, expect_tags",
-#     [
-#         ({}, []),
-#         ({"nothing": "here"}, []),
-#         (
-#             {
-#                 "date": ["", ""],
-#                 "place": ["Indian Ocean"],
-#             },
-#             ["Indian Ocean"],
-#         ),
-#         (
-#             {
-#                 "date": ["2000s"],
-#                 "object_type": ["Holotypes", "Taxonomic type specimens"],
-#                 "topic": ["Paleogeneral", "Protists"],
-#                 "place": ["Indian Ocean"],
-#             },
-#             [
-#                 "2000s",
-#                 "Holotypes",
-#                 "Taxonomic type specimens",
-#                 "Paleogeneral",
-#                 "Protists",
-#                 "Indian Ocean",
-#             ],
-#         ),
-#     ],
-# )
-# def test_extract_tags(input_is, expect_tags):
-#     input_row = {"test": "row"}
-#     get_is = patch.object(ingester, "_get_content_dict", return_value=input_is)
-#     with get_is as mock_is:
-#         actual_tags = ingester._extract_tags(input_row)
-#     mock_is.assert_called_once_with(input_row, "indexedStructured")
-#     assert actual_tags == expect_tags
+@pytest.mark.parametrize(
+    "input_is, input_ft, expected_creator",
+    [
+        ({}, {}, None),
+        ({"name": ["Alice"]}, {}, None),
+        ({"name": "alice"}, {}, None),
+        ({"name": [{"type": ["personal", "main"], "nocontent": "Alice"}]}, {}, None),
+        ({"name": [{"type": "personal_main", "nocontent": "Alice"}]}, {}, None),
+        ({"noname": [{"type": "personal_main", "content": "Alice"}]}, {}, None),
+        ({"name": [{"label": "personal_main", "content": "Alice"}]}, {}, None),
+        ({"name": [{"type": "impersonal_main", "content": "Alice"}]}, {}, None),
+        (
+            {"name": [{"type": "personal_main", "content": "Alice"}]},
+            {"name": "Bob"},
+            "Alice",
+        ),
+        (
+            {"name": [{"type": "personal_main", "content": "Alice"}]},
+            {"name": ["Bob"]},
+            "Alice",
+        ),
+        (
+            {"name": [{"type": "personal_main", "content": "Alice"}]},
+            {"name": [{"label": "Creator", "nocontent": "Bob"}]},
+            "Alice",
+        ),
+        (
+            {"name": [{"type": "personal_main", "content": "Alice"}]},
+            {"name": [{"nolabel": "Creator", "content": "Bob"}]},
+            "Alice",
+        ),
+        (
+            {"name": [{"type": "personal_main", "content": "Alice"}]},
+            {"name": [{"label": "NotaCreator", "content": "Bob"}]},
+            "Alice",
+        ),
+        (
+            {"name": [{"type": "personal_main", "content": "Alice"}]},
+            {"noname": [{"label": "Creator", "content": "Bob"}]},
+            "Alice",
+        ),
+        (
+            {"name": [{"type": "personal_main", "content": "Alice"}]},
+            {"name": [{"label": "Creator", "content": "Bob"}]},
+            "Bob",
+        ),
+        (
+            {},
+            {
+                "name": [
+                    {"label": "Designer", "content": "Alice"},
+                    {"label": "Creator", "content": "Bob"},
+                ]
+            },
+            "Bob",
+        ),
+        (
+            {},
+            {
+                "name": [
+                    {"label": "AFTER", "content": "Bob"},
+                    {"label": "Designer", "content": "Alice"},
+                ]
+            },
+            "Alice",
+        ),
+        (
+            {},
+            {
+                "name": [
+                    {"label": "AFTER", "content": "Bob"},
+                    {"label": "DESIGNER", "content": "Alice"},
+                ]
+            },
+            "Alice",
+        ),
+        (
+            {
+                "name": [
+                    {"type": "personal_main", "content": "Alice"},
+                    {"type": "corporate_subj", "content": "Zoological Park"},
+                ]
+            },
+            {
+                "name": [
+                    {"label": "Creator", "content": "Bob"},
+                    {"label": "Subject", "content": "Zoological Park"},
+                ]
+            },
+            "Bob",
+        ),
+    ],
+)
+def test_get_creator(input_is, input_ft, expected_creator):
+    creator_types = {"creator": 0, "designer": 1, "after": 3}
+    input_row = {
+        "test": "row",
+        "content": {"freetext": input_ft, "indexedStructured": input_is},
+    }
+    with patch.object(ingester, "creator_types", creator_types):
+        actual_creator = ingester._get_creator(input_row)
+
+    assert actual_creator == expected_creator
+
+
+@pytest.mark.parametrize(
+    "input_ft, input_dnr, expected_description",
+    [
+        ({}, {}, None),
+        ({"notes": [{"label": "notthis", "content": "blah"}]}, {}, None),
+        ({"notes": "notalist"}, {}, None),
+        ({"notes": [{"label": "Summary", "content": "blah"}]}, {}, "blah"),
+        (
+            {
+                "notes": [
+                    {"label": "Description", "content": "blah"},
+                    {"label": "Summary", "content": "blah"},
+                    {"label": "Description", "content": "blah"},
+                ]
+            },
+            {},
+            "blah blah blah",
+        ),
+        (
+            {
+                "notes": [
+                    {"label": "notDescription", "content": "blah"},
+                    {"label": "Summary", "content": "blah"},
+                    {"label": "Description", "content": "blah"},
+                ]
+            },
+            {},
+            "blah blah",
+        ),
+    ],
+)
+def test_ext_meta_data_description(input_ft, input_dnr, expected_description):
+    description_types = {"description", "summary"}
+    input_row = {
+        "test": "row",
+        "content": {"freetext": input_ft, "descriptiveNonRepeating": input_dnr},
+    }
+    with patch.object(ingester, "description_types", description_types):
+        meta_data = ingester._extract_meta_data(input_row)
+    actual_description = meta_data.get("description")
+
+    assert actual_description == expected_description
+
+
+@pytest.mark.parametrize(
+    "input_ft, input_dnr, expected_label_text",
+    [
+        ({}, {}, None),
+        ({"notes": [{"label": "notthis", "content": "blah"}]}, {}, None),
+        ({"notes": "notalist"}, {}, None),
+        ({"notes": [{"label": "Label Text", "content": "blah"}]}, {}, "blah"),
+        (
+            {
+                "notes": [
+                    {"label": "Label Text", "content": "blah"},
+                    {"label": "Summary", "content": "halb"},
+                    {"label": "Description", "content": "halb"},
+                ]
+            },
+            {},
+            "blah",
+        ),
+    ],
+)
+def test_ext_meta_data_label_text(input_ft, input_dnr, expected_label_text):
+    input_row = {
+        "test": "row",
+        "content": {"freetext": input_ft, "descriptiveNonRepeating": input_dnr},
+    }
+    meta_data = ingester._extract_meta_data(input_row)
+    actual_label_text = meta_data.get("label_text")
+
+    assert actual_label_text == expected_label_text
+
+
+@pytest.mark.parametrize(
+    "input_ft, input_dnr, expected_meta_data",
+    [
+        ({"nothing": "here"}, {"nothing_to": "see"}, {}),
+        ({}, {"unit_code": "SIA"}, {"unit_code": "SIA"}),
+        (
+            {},
+            {"data_source": "Smithsonian Institution Archives"},
+            {"data_source": "Smithsonian Institution Archives"},
+        ),
+    ],
+)
+def test_extract_meta_data_dnr_fields(input_ft, input_dnr, expected_meta_data):
+    input_row = {
+        "test": "row",
+        "content": {"freetext": input_ft, "descriptiveNonRepeating": input_dnr},
+    }
+    actual_meta_data = ingester._extract_meta_data(input_row)
+
+    assert actual_meta_data == expected_meta_data
+
+
+@pytest.mark.parametrize(
+    "input_is, expect_tags",
+    [
+        ({}, []),
+        ({"nothing": "here"}, []),
+        (
+            {
+                "date": ["", ""],
+                "place": ["Indian Ocean"],
+            },
+            ["Indian Ocean"],
+        ),
+        (
+            {
+                "date": ["2000s"],
+                "object_type": ["Holotypes", "Taxonomic type specimens"],
+                "topic": ["Paleogeneral", "Protists"],
+                "place": ["Indian Ocean"],
+            },
+            [
+                "2000s",
+                "Holotypes",
+                "Taxonomic type specimens",
+                "Paleogeneral",
+                "Protists",
+                "Indian Ocean",
+            ],
+        ),
+    ],
+)
+def test_extract_tags(input_is, expect_tags):
+    input_row = {"test": "row"}
+    get_is = patch.object(ingester, "_get_content_dict", return_value=input_is)
+    with get_is as mock_is:
+        actual_tags = ingester._extract_tags(input_row)
+    mock_is.assert_called_once_with(input_row, "indexedStructured")
+    assert actual_tags == expect_tags
 
 
 @pytest.mark.parametrize(
