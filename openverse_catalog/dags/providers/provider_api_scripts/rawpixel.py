@@ -207,7 +207,7 @@ class RawpixelDataIngester(ProviderDataIngester):
         return meta_data
 
     @staticmethod
-    def _get_source(data: dict) -> str | None:
+    def _get_creator(data: dict) -> str | None:
         source = data.get("artist_names", "")
         source = source.removesuffix("(Source)").strip()
         return source or None
@@ -266,7 +266,7 @@ class RawpixelDataIngester(ProviderDataIngester):
             "title": self._get_title(metadata),
             "meta_data": self._get_meta_data(data, metadata),
             "raw_tags": self._get_tags(metadata),
-            "creator": self._get_source(data),
+            "creator": self._get_creator(data),
             "filetype": data.get("name_ext"),
             # Filesize not available via the API and wouldn't reflect final image size
             # anyway since we reference reduced-sized images

@@ -171,7 +171,7 @@ def test_get_title(title, expected):
     ],
 )
 def test_get_source(data, expected):
-    actual = rwp._get_source(data)
+    actual = rwp._get_creator(data)
     assert actual == expected
 
 
