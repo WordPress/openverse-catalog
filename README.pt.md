@@ -18,7 +18,7 @@ Duas abordagens que atualmente estão em uso são:
 ## Dados Web Crawl
 
 A organização Common Crawl providencia um repositorio aberto contendo petabytes de
-dados percorridos da web. Um novo dataset é publicado a cada fim de mês composto 
+dados percorridos da web. Um novo dataset é publicado a cada fim de mês composto
 de cerca de 200 TiB de dados descompactados.
 
 Os dados estão disponiveis em três formatos de arquivo:
@@ -32,12 +32,12 @@ Para mais informações a cerca destes formatos, por favor veja:
 [Common Crawl documentation][ccrawl_doc].
 
 O catalogo do openvese utiliza os pipelines de dados da AWS para automaticamente criar
-um cluster EMR da amazon de 100 instancias c4.8xlarge que irão percorrer os arquivos 
+um cluster EMR da amazon de 100 instancias c4.8xlarge que irão percorrer os arquivos
 WAT para identificar todos os dominios que linkam ao creativecommons.org. Devido ao
 volume de dados, Apache Spark é utilizado para racionalizar o processo. A saída
 desta metodologia é uma série de arquivos parquet que possuem:
 
-- Os dominios e seus respectivos caminhos de conteudo e strings de query (i.e. 
+- Os dominios e seus respectivos caminhos de conteudo e strings de query (i.e.
   a pagina exata que conecta com creativecommons.org)
 - O CC que referencia o hypperlink (que pode indicar uma licença)
 - HTML meta data em formato JSON que indica o número de imagens em cada
@@ -45,7 +45,7 @@ desta metodologia é uma série de arquivos parquet que possuem:
 - A localização da página web no arquivo WARC de forma que os conteudos da página
   possam ser encontrados
 
-Os passos a seguir são realizados no [`ExtractCCLinks.py`][ex_cc_links]. 
+Os passos a seguir são realizados no [`ExtractCCLinks.py`][ex_cc_links].
 
 [ccrawl_doc]: https://commoncrawl.org/the-data/get-started/
 [ex_cc_links]: archive/ExtractCCLinks.py
@@ -112,21 +112,21 @@ O arquivo `.env` é dividido em quatro partes:
 1. Configurações do Airflow - este pode ser utilizado para puxar varias propriedades do Airflow.
 2. Chaves API - configure estas caso você pretenda testar algum dos provedores de API.
 3. Conexão/Informações de variavel - provavelmente não será necessario modifica-las para desenvolvimento local, entretanto seus valores devem ser alterados em produção.
-4. Outras configurações - misc, 
+4. Outras configurações - misc,
 4. Other config - misc. definições de configuração, algumas são uteis para desenvolvimento local.
 
 O arquivo `.env` não precisa ser modificado caso você somente queira rodar os testes.
 
 ### Rodando & Testando
 
-Há um [`docker-compose.yml`][dockercompose] providenciado no 
+Há um [`docker-compose.yml`][dockercompose] providenciado no
 [`openverse_catalog`][cc_airflow], portanto, neste diretório rode:
 
 ```shell
 just up
 ```
 
-Estes resultam, entre outras coisas, nos seguintes containers: 
+Estes resultam, entre outras coisas, nos seguintes containers:
 
 - `openverse_catalog_webserver_1`
 - `openverse_catalog_postgres_1`
@@ -212,7 +212,7 @@ openverse-catalog
 │   ├── airflow/                            #   - Workers e imagens do Airflow para o Docker
 │   └── local_postgres/                     #   - Imagem do docker para o desenvolvimento do banco Postgres
 ├── openverse_catalog/                      # Diretorio de código primario
-│   ├── dags/                               # Códigos de suporte DAGs & DAG 
+│   ├── dags/                               # Códigos de suporte DAGs & DAG
 │   │   ├── common/                         #   - Modulos compartilhados utilizados sobre DAGs
 │   │   ├── commoncrawl/                    #   - DAGs & códigos para parse do commoncrawl
 │   │   ├── database/                       #   - DAGs relacionadas a ações no database (matview refresh, cleaning, etc.)
