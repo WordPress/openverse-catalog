@@ -9,6 +9,7 @@ Output:                 TSV file containing the images and the
 Notes:                  https://www.europeana.eu/api/v2/search.json
 """
 import argparse
+import functools
 import logging
 from datetime import datetime, timedelta, timezone
 
@@ -23,6 +24,30 @@ logger = logging.getLogger(__name__)
 logging.getLogger(common.urls.__name__).setLevel(logging.WARNING)
 
 
+class EmptyRequiredFieldException(Exception):
+    def __init__(self, method_name: str, value):
+        super().__init__(f"`{method_name}` returned an empty value: {value}.")
+
+
+def raise_if_empty(fn):
+    """
+    Used to decorate RecordBuilder methods for "required" fields
+    to shortcut record building in the case where a record would
+    be missing some required fields and be thrown out anyway.
+    """
+
+    @functools.wraps(fn)
+    def inner(*args, **kwargs):
+        value = fn(*args, **kwargs)
+
+        if not value:
+            raise EmptyRequiredFieldException(fn.__name__, value)
+
+        return value
+
+    return inner
+
+
 class EuropeanaRecordBuilder:
     """
     A small class to contain the record building functionality
@@ -30,50 +55,76 @@ class EuropeanaRecordBuilder:
     """
 
     def get_record_data(self, data: dict) -> dict:
-        record = {
-            "foreign_landing_url": self._get_foreign_landing_url(data),
-            "image_url": data.get("edmIsShownBy")[0],
-            "foreign_identifier": data.get("id"),
-            "meta_data": self._get_meta_data_dict(data),
-            "title": data.get("title")[0],
-            "license_info": get_license_info(
-                license_url=self._get_license_url(data.get("rights"))
-            ),
-        }
+        try:
+            record = {
+                "foreign_landing_url": self._get_foreign_landing_url(data),
+                "image_url": self._get_image_url(data),
+                "foreign_identifier": self._get_foreign_identifier(data),
+                "meta_data": self._get_meta_data_dict(data),
+                "title": self._get_title(data),
+                "license_info": get_license_info(
+                    license_url=self._get_license_url(data)
+                ),
+            }
 
-        data_providers = set(record["meta_data"]["dataProvider"])
-        eligible_sub_providers = {
-            s
-            for s in EuropeanaDataIngester.sub_providers
-            if EuropeanaDataIngester.sub_providers[s] in data_providers
-        }
-        if len(eligible_sub_providers) > 1:
-            raise Exception(
-                f"More than one sub-provider identified for the "
-                f"image with foreign ID {record['foreign_identifier']}"
-            )
+            data_providers = set(record["meta_data"]["dataProvider"])
+            eligible_sub_providers = {
+                s
+                for s in EuropeanaDataIngester.sub_providers
+                if EuropeanaDataIngester.sub_providers[s] in data_providers
+            }
+            if len(eligible_sub_providers) > 1:
+                raise Exception(
+                    f"More than one sub-provider identified for the "
+                    f"image with foreign ID {record['foreign_identifier']}"
+                )
 
-        return record | {
-            "source": (
-                eligible_sub_providers.pop()
-                if len(eligible_sub_providers) == 1
-                else EuropeanaDataIngester.providers["image"]
-            )
-        }
+            return record | {
+                "source": (
+                    eligible_sub_providers.pop()
+                    if len(eligible_sub_providers) == 1
+                    else EuropeanaDataIngester.providers["image"]
+                )
+            }
+        except EmptyRequiredFieldException as exc:
+            logger.warning("A required field was empty", exc_info=exc)
+            return None
 
-    def _get_license_url(self, license_field) -> str | None:
+    @raise_if_empty
+    def _get_image_url(self, data: dict) -> str | None:
+        group = data.get("edmIsShownBy")
+        return group[0] if group else None
+
+    @raise_if_empty
+    def _get_foreign_identifier(self, data: dict) -> str | None:
+        return data.get("id")
+
+    @raise_if_empty
+    def _get_title(self, data: dict) -> str | None:
+        group = data.get("title")
+        return group[0] if group else None
+
+    @raise_if_empty
+    def _get_license_url(self, data: dict) -> str | None:
+        license_field = data.get("rights")
+        if not license_field:
+            return None
+
         if len(license_field) > 1:
             logger.warning("More than one license field found")
         for license_ in license_field:
             if "creativecommons" in license_:
                 return license_
+
         return None
 
+    @raise_if_empty
     def _get_foreign_landing_url(self, data: dict) -> str:
         original_url = data.get("edmIsShownAt")
-        if original_url is not None:
+        if original_url:
             return original_url[0]
         europeana_url = data.get("guid")
+
         return europeana_url
 
     def _get_meta_data_dict(self, data: dict) -> dict:
@@ -163,7 +214,7 @@ class EuropeanaDataIngester(ProviderDataIngester):
 
     def get_batch_data(self, response_json: dict) -> None | list[dict]:
         if response_json.get("success") != "True":
-            logger.warning('Request failed with ``success = "False"``')
+            logger.warning('Request failed with ``success != "True"``')
             # No batch data to process if the request failed.
             return None
 

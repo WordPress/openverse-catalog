@@ -86,17 +86,21 @@ def test_get_should_continue_updates_cursor(ingester):
 @pytest.mark.parametrize(
     ("response_json"),
     (
-        {"success": "True", "nextCursor": None},
-        {"success": "True"},
-        {"success": "False", "nextCursor": "blam"},
+        {},
+        {"nextCursor": None},
     ),
 )
 def test_get_should_continue_returns_false(ingester, response_json):
     assert ingester.get_should_continue(response_json) is False
 
 
+def test_get_batch_data_returns_None_if_success_not_True(ingester):
+    response_json = {"success": "False", "items": [1]}
+    assert ingester.get_batch_data(response_json) is None
+
+
 def test_get_batch_data_gets_items_property(ingester):
-    response_json = {"items": object()}
+    response_json = {"success": "True", "items": object()}
 
     assert ingester.get_batch_data(response_json) is response_json["items"]
 
@@ -156,9 +160,7 @@ def test_get_license_url_with_non_cc_license(record_builder):
     image_data = _get_resource_json("image_data_example.json")
     image_data["rights"] = ["http://noncc.org/"]
 
-    assert record_builder.get_record_data(image_data)["license_info"] == LicenseInfo(
-        None, None, None, None
-    )
+    assert record_builder.get_record_data(image_data) is None
 
 
 def test_get_license_url_with_multiple_license(record_builder):
@@ -304,3 +306,46 @@ def test_process_image_data_with_sub_provider(record_builder):
         "meta_data": expect_meta_data,
         "source": "wellcome_collection",
     }
+
+
+DELETE = object()
+
+
+@pytest.mark.parametrize(
+    ("field_name", "value", "extra_empty_fields"),
+    (
+        ("id", "", ()),
+        ("id", None, ()),
+        ("id", DELETE, ()),
+        ("edmIsShownAt", "", ("guid",)),
+        ("edmIsShownAt", [], ("guid",)),
+        ("edmIsShownAt", [""], ("guid",)),
+        ("edmIsShownAt", None, ("guid",)),
+        ("edmIsShownAt", DELETE, ("guid",)),
+        ("rights", [], ()),
+        ("rights", [""], ()),
+        ("rights", ["not-cc"], ()),
+        ("rights", DELETE, ()),
+        ("title", "", ()),
+        ("title", None, ()),
+        ("title", DELETE, ()),
+        ("edmIsShownBy", "", ()),
+        ("edmIsShownBy", None, ()),
+        ("edmIsShownBy", [], ()),
+        ("edmIsShownBy", [""], ()),
+        ("edmIsShownBy", DELETE, ()),
+    ),
+)
+def test_record_builder_returns_None_if_missing_required_field(
+    record_builder, field_name, value, extra_empty_fields
+):
+    image_data = _get_resource_json("image_data_example.json")
+    for empty_field in extra_empty_fields:
+        del image_data[empty_field]
+
+    if value is DELETE:
+        del image_data[field_name]
+    else:
+        image_data[field_name] = value
+
+    assert record_builder.get_record_data(image_data) is None
