@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+import pytest
 from providers.provider_api_scripts.wordpress import WordPressDataIngester
 
 
@@ -21,13 +22,13 @@ def test_get_query_params_returns_next_page():
     assert actual_result == expected_result
 
 
-def test_get_record_data_returns_none_when_no_foreign_id():
+@pytest.mark.parametrize("missing_field", ["slug", "link"])
+def test_get_record_data_returns_none_when_missing_necessary_data(missing_field):
     with open(SAMPLE_MEDIA_DATA) as f:
         image_data = json.load(f)
-        image_data.pop("slug", None)
+        image_data.pop(missing_field, None)
     actual_image_info = wp.get_record_data(image_data)
-    expected_image_info = None
-    assert actual_image_info is expected_image_info
+    assert actual_image_info is None
 
 
 def test_get_record_data_returns_none_when_no_image_url():

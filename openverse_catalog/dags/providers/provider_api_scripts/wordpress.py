@@ -55,10 +55,11 @@ class WordPressDataIngester(ProviderDataIngester):
         """
         Extract data for individual item.
         """
-        foreign_identifier = data.get("slug")
-        if foreign_identifier is None:
+        if (foreign_identifier := data.get("slug")) is None:
             return None
-        foreign_landing_url = data.get("link")
+
+        if (foreign_landing_url := data.get("link")) is None:
+            return None
 
         try:
             media_details = (
