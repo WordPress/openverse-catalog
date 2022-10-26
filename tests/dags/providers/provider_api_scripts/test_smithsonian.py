@@ -14,7 +14,8 @@ ingester = SmithsonianDataIngester()
 
 
 def test_get_hash_prefixes_with_len_one():
-    ingester.hash_prefix_length = 1
+    with patch.object(ingester, "hash_prefix_length", 1):
+        actual_prefix_list = list(ingester._get_hash_prefixes())
     expect_prefix_list = [
         "0",
         "1",
@@ -33,9 +34,7 @@ def test_get_hash_prefixes_with_len_one():
         "e",
         "f",
     ]
-    actual_prefix_list = list(ingester._get_hash_prefixes())
     assert actual_prefix_list == expect_prefix_list
-    ingester.hash_prefix_length = 2  # Undo the change
 
 
 def test_alert_new_unit_codes():
