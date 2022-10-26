@@ -202,7 +202,7 @@ just recreate
 [dockercompose]: docker-compose.yml
 [cc_airflow]: openverse_catalog/
 
-## Directory Structure
+## Estrutura do diretório
 
 ```text
 openverse-catalog
