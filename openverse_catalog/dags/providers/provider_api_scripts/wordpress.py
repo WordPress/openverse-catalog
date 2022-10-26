@@ -26,6 +26,20 @@ class WordPressDataIngester(ProviderDataIngester):
     endpoint = f"https://{host}/photos/wp-json/wp/v2/photos"
     providers = {constants.IMAGE: prov.WORDPRESS_DEFAULT_PROVIDER}
     license_url = "https://creativecommons.org/publicdomain/zero/1.0/"
+    metadata_extras = [
+        "aperture",
+        "camera",
+        "created_timestamp",
+        "focal_length",
+        "iso",
+        "shutter_speed",
+    ]
+    metadata_resource_mapping = {
+        "photo_category": "categories",
+        "photo_color": "colors",
+        "photo_orientation": "orientation",
+        "photo_tag": "tags",
+    }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -148,30 +162,18 @@ class WordPressDataIngester(ProviderDataIngester):
     def _get_metadata(media_data, media_details):
         raw_metadata = media_details.get("image_meta", {})
         metadata, tags = {}, []
-        extras = [
-            "aperture",
-            "camera",
-            "created_timestamp",
-            "focal_length",
-            "iso",
-            "shutter_speed",
-        ]
-        for key in extras:
+        for key in WordPressDataIngester.metadata_extras:
             value = raw_metadata.get(key)
             if value not in [None, ""]:
                 metadata[key] = value
 
         raw_related_resources = media_data.get("_embedded", {}).get("wp:term", [])
-        resource_mapping = {
-            "photo_category": "categories",
-            "photo_color": "colors",
-            "photo_orientation": "orientation",
-            "photo_tag": "tags",
-        }
         for resource_arr in raw_related_resources:
             for resource in resource_arr:
-                if (txy := resource.get("taxonomy")) in resource_mapping.keys():
-                    resource_key = resource_mapping[txy]
+                if (
+                    txy := resource.get("taxonomy")
+                ) in WordPressDataIngester.metadata_resource_mapping:
+                    resource_key = WordPressDataIngester.metadata_resource_mapping[txy]
                     resource_val = resource.get("name")
                     if txy == "photo_tag":
                         tags.append(resource_val)
