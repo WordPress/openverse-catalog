@@ -2,7 +2,6 @@ from datetime import datetime
 from unittest import mock
 
 import pytest
-import requests
 from airflow.models import DagRun, TaskInstance
 from providers import factory_utils
 
@@ -60,57 +59,6 @@ FakeDataIngesterClass.side_effect = _set_up_ingester
     "func, media_types, stores",
     [
         # Happy path
-        (fake_provider_module.main, ["image"], [fake_provider_module.image_store]),
-        # Empty case, no media types provided
-        (fake_provider_module.main, [], []),
-        # Provided function doesn't have a store at the module level
-        pytest.param(
-            requests.get,
-            ["image"],
-            [None],
-            marks=pytest.mark.raises(
-                exception=ValueError, match="Expected stores in .*? were missing.*"
-            ),
-        ),
-        # Provided function doesn't have all specified stores
-        pytest.param(
-            fake_provider_module.main,
-            ["image", "other"],
-            [None, None],
-            marks=pytest.mark.raises(
-                exception=ValueError, match="Expected stores in .*? were missing.*"
-            ),
-        ),
-    ],
-)
-def test_load_provider_script(func, media_types, stores):
-    actual_stores = factory_utils._load_provider_script_stores(
-        func,
-        media_types,
-    )
-    assert actual_stores == dict(zip(media_types, stores))
-
-
-@pytest.mark.parametrize(
-    "func, media_types, stores",
-    [
-        ##################################################
-        # Function-based
-        ##################################################
-        # Happy path
-        (fake_provider_module.main, ["image"], [fake_provider_module.image_store]),
-        # Multiple types
-        (
-            fake_provider_module.main,
-            ["image", "audio"],
-            [fake_provider_module.image_store, fake_provider_module.audio_store],
-        ),
-        # Empty case, no media types provided
-        (fake_provider_module.main, [], []),
-        ##################################################
-        # Class-based
-        ##################################################
-        # Happy path
         (FakeDataIngesterClass, ["image", "audio"], list(fdi.media_stores.values())),
         # No media types provided, ingester class still supplies stores
         (FakeDataIngesterClass, 2, list(fdi.media_stores.values())),
@@ -144,49 +92,6 @@ def test_generate_tsv_filenames(
 @pytest.mark.parametrize(
     "func, media_types, tsv_filenames, stores",
     [
-        ##################################################
-        # Function-based
-        ##################################################
-        # Happy path
-        (
-            fake_provider_module.main,
-            ["image"],
-            ["image_file_000.tsv"],
-            [fake_provider_module.image_store],
-        ),
-        # Multiple types
-        (
-            fake_provider_module.main,
-            ["image", "audio"],
-            ["image_file_000.tsv", "audio_file_111.tsv"],
-            [fake_provider_module.image_store, fake_provider_module.audio_store],
-        ),
-        # Empty case, no media types provided
-        (fake_provider_module.main, [], [], []),
-        # Fails if a mismatched # of items is provided
-        pytest.param(
-            fake_provider_module.main,
-            ["image", "other"],
-            ["file1.tsv"],
-            [fake_provider_module.image_store, fake_provider_module.audio_store],
-            marks=pytest.mark.raises(
-                exception=ValueError,
-                match="Provided media types and TSV filenames don't match.*",
-            ),
-        ),
-        pytest.param(
-            fake_provider_module.main,
-            ["image"],
-            ["file1.tsv", "file2.tsv"],
-            [fake_provider_module.image_store],
-            marks=pytest.mark.raises(
-                exception=ValueError,
-                match="Provided media types and TSV filenames don't match.*",
-            ),
-        ),
-        ##################################################
-        # Class-based
-        ##################################################
         # Happy path
         (
             FakeDataIngesterClass,
