@@ -117,13 +117,8 @@ PROVIDER_WORKFLOWS = [
         pull_timeout=timedelta(hours=12),
     ),
     ProviderWorkflow(
-<<<<<<< HEAD
-        ingestion_callable=EuropeanaDataIngester,
-        start_date=datetime(2022, 10, 27),
-=======
         ingester_class=EuropeanaDataIngester,
-        start_date=datetime(2011, 9, 1),
->>>>>>> 2b06403b (Rename 'ingestion_callable' to 'ingester_class')
+        start_date=datetime(2022, 10, 27),
         schedule_string="@daily",
         dated=True,
     ),
