@@ -100,6 +100,7 @@ The following are DAGs grouped by their primary tag:
 
 | DAG ID | Schedule Interval |
 | --- | --- |
+| [`europeana_reingestion_workflow`](#europeana_reingestion_workflow) | `@weekly` |
 | [`flickr_reingestion_workflow`](#flickr_reingestion_workflow) | `@weekly` |
 | [`metropolitan_museum_reingestion_workflow`](#metropolitan_museum_reingestion_workflow) | `@weekly` |
 | [`phylopic_reingestion_workflow`](#phylopic_reingestion_workflow) | `@weekly` |
@@ -113,6 +114,7 @@ The following is documentation associated with each DAG (where available):
  1. [`airflow_log_cleanup`](#airflow_log_cleanup)
  1. [`audio_data_refresh`](#audio_data_refresh)
  1. [`check_silenced_dags`](#check_silenced_dags)
+ 1. [`europeana_reingestion_workflow`](#europeana_reingestion_workflow)
  1. [`europeana_workflow`](#europeana_workflow)
  1. [`flickr_reingestion_workflow`](#flickr_reingestion_workflow)
  1. [`flickr_workflow`](#flickr_workflow)
@@ -215,6 +217,19 @@ configuration. This prevents developers from forgetting to reenable Slack report
 after the issue has been resolved.
 
 The DAG runs weekly.
+
+
+## `europeana_reingestion_workflow`
+
+
+Content Provider:       Europeana
+
+ETL Process:            Use the API to identify all CC licensed images.
+
+Output:                 TSV file containing the images and the
+                        respective meta-data.
+
+Notes:                  https://www.europeana.eu/api/v2/search.json
 
 
 ## `europeana_workflow`
