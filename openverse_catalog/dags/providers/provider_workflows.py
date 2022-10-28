@@ -1,4 +1,3 @@
-import importlib
 import inspect
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
@@ -33,7 +32,7 @@ class ProviderWorkflow:
     """
     Required Arguments:
 
-    ingestion_callable: ProviderDataIngester class whose `ingest_records` method is
+    ingester_class: ProviderDataIngester class whose `ingest_records` method is
                         to be run.
 
     Optional Arguments:
@@ -76,7 +75,7 @@ class ProviderWorkflow:
     tags:               list of any additional tags to apply to the generated DAG
     """
 
-    ingestion_callable: Type[ProviderDataIngester]
+    ingester_class: Type[ProviderDataIngester]
     dag_id: str = ""
     default_args: Optional[Dict] = None
     start_date: datetime = datetime(1970, 1, 1)
@@ -94,14 +93,14 @@ class ProviderWorkflow:
 
     def __post_init__(self):
         # Get the module the ProviderDataIngester was defined in
-        provider_script = inspect.getmodule(self.ingestion_callable)
+        provider_script = inspect.getmodule(self.ingester_class)
         self.provider_name = provider_script.__name__.split(".")[-1]
 
         if not self.dag_id:
             self.dag_id = f"{self.provider_name}_workflow"
 
         if not self.media_types:
-            self.media_types = list(self.ingestion_callable.providers.keys())
+            self.media_types = list(self.ingester_class.providers.keys())
 
         if not self.doc_md:
             self.doc_md = provider_script.__doc__
@@ -110,36 +109,41 @@ class ProviderWorkflow:
 PROVIDER_WORKFLOWS = [
     ProviderWorkflow(
         start_date=datetime(2020, 1, 1),
-        ingestion_callable=BrooklynMuseumDataIngester,
+        ingester_class=BrooklynMuseumDataIngester,
     ),
     ProviderWorkflow(
-        ingestion_callable=ClevelandDataIngester,
+        ingester_class=ClevelandDataIngester,
         start_date=datetime(2020, 1, 15),
         pull_timeout=timedelta(hours=12),
     ),
     ProviderWorkflow(
+<<<<<<< HEAD
         ingestion_callable=EuropeanaDataIngester,
         start_date=datetime(2022, 10, 27),
+=======
+        ingester_class=EuropeanaDataIngester,
+        start_date=datetime(2011, 9, 1),
+>>>>>>> 2b06403b (Rename 'ingestion_callable' to 'ingester_class')
         schedule_string="@daily",
         dated=True,
     ),
     ProviderWorkflow(
-        ingestion_callable=FinnishMuseumsDataIngester,
+        ingester_class=FinnishMuseumsDataIngester,
         start_date=datetime(2020, 9, 1),
         pull_timeout=timedelta(days=5),
         load_timeout=timedelta(days=5),
     ),
     ProviderWorkflow(
-        ingestion_callable=FlickrDataIngester,
+        ingester_class=FlickrDataIngester,
         start_date=datetime(2020, 11, 1),
         schedule_string="@daily",
         dated=True,
     ),
     ProviderWorkflow(
-        ingestion_callable=FreesoundDataIngester,
+        ingester_class=FreesoundDataIngester,
     ),
     ProviderWorkflow(
-        ingestion_callable=INaturalistDataIngester,
+        ingester_class=INaturalistDataIngester,
         create_preingestion_tasks=INaturalistDataIngester.create_preingestion_tasks,
         create_postingestion_tasks=INaturalistDataIngester.create_postingestion_tasks,
         schedule_string="@monthly",
@@ -147,60 +151,60 @@ PROVIDER_WORKFLOWS = [
         load_timeout=timedelta(days=5),
     ),
     ProviderWorkflow(
-        ingestion_callable=JamendoDataIngester,
+        ingester_class=JamendoDataIngester,
     ),
     ProviderWorkflow(
-        ingestion_callable=MetMuseumDataIngester,
+        ingester_class=MetMuseumDataIngester,
         start_date=datetime(2016, 9, 1),
         schedule_string="@daily",
         dated=True,
         pull_timeout=timedelta(hours=12),
     ),
     ProviderWorkflow(
-        ingestion_callable=VictoriaDataIngester,
+        ingester_class=VictoriaDataIngester,
         start_date=datetime(2020, 1, 1),
     ),
     ProviderWorkflow(
-        ingestion_callable=NyplDataIngester,
+        ingester_class=NyplDataIngester,
         start_date=datetime(2020, 1, 1),
     ),
     ProviderWorkflow(
-        ingestion_callable=PhylopicDataIngester,
+        ingester_class=PhylopicDataIngester,
         start_date=datetime(2011, 2, 7),
         schedule_string="@daily",
         dated=True,
         pull_timeout=timedelta(hours=12),
     ),
     ProviderWorkflow(
-        ingestion_callable=RawpixelDataIngester,
+        ingester_class=RawpixelDataIngester,
         pull_timeout=timedelta(hours=12),
     ),
     ProviderWorkflow(
-        ingestion_callable=ScienceMuseumDataIngester,
+        ingester_class=ScienceMuseumDataIngester,
         start_date=datetime(2020, 1, 1),
     ),
     ProviderWorkflow(
-        ingestion_callable=SmithsonianDataIngester,
+        ingester_class=SmithsonianDataIngester,
         start_date=datetime(2020, 1, 1),
         schedule_string="@weekly",
         load_timeout=timedelta(hours=4),
     ),
     ProviderWorkflow(
-        ingestion_callable=SmkDataIngester,
+        ingester_class=SmkDataIngester,
         start_date=datetime(2020, 1, 1),
     ),
     ProviderWorkflow(
-        ingestion_callable=StockSnapDataIngester,
+        ingester_class=StockSnapDataIngester,
     ),
     ProviderWorkflow(
-        ingestion_callable=WikimediaCommonsDataIngester,
+        ingester_class=WikimediaCommonsDataIngester,
         start_date=datetime(2020, 11, 1),
         schedule_string="@daily",
         dated=True,
         pull_timeout=timedelta(hours=12),
     ),
     ProviderWorkflow(
-        ingestion_callable=WordPressDataIngester,
+        ingester_class=WordPressDataIngester,
         pull_timeout=timedelta(hours=12),
     ),
 ]

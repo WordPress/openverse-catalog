@@ -1,18 +1,19 @@
 import logging
 import time
 from datetime import datetime
-from typing import Callable, Sequence
+from typing import Sequence, Type
 
 from airflow.models import DagRun, TaskInstance
 from airflow.utils.dates import cron_presets
 from common.constants import MediaType
+from providers.provider_api_scripts.provider_data_ingester import ProviderDataIngester
 
 
 logger = logging.getLogger(__name__)
 
 
 def generate_tsv_filenames(
-    ingestion_callable: Callable,
+    ingester_class: Type[ProviderDataIngester],
     media_types: list[MediaType],
     ti: TaskInstance,
     dag_run: DagRun,
@@ -33,10 +34,10 @@ def generate_tsv_filenames(
     # Initialize the ProviderDataIngester class, which will initialize the
     # DelayedRequester and appropriate media stores.
     logger.info(
-        f"Initializing ProviderIngester {ingestion_callable.__name__} in"
+        f"Initializing ProviderIngester {ingester_class.__name__} in"
         f"order to generate store filenames."
     )
-    ingester = ingestion_callable(dag_run.conf, *args)
+    ingester = ingester_class(dag_run.conf, *args)
     stores = ingester.media_stores
 
     # Push the media store output paths to XComs.
@@ -48,7 +49,7 @@ def generate_tsv_filenames(
 
 
 def pull_media_wrapper(
-    ingestion_callable: Callable,
+    ingester_class: Type[ProviderDataIngester],
     media_types: list[MediaType],
     tsv_filenames: list[str],
     ti: TaskInstance,
@@ -73,8 +74,8 @@ def pull_media_wrapper(
 
     # Initialize the ProviderDataIngester class, which will initialize the
     # media stores and DelayedRequester.
-    logger.info(f"Initializing ProviderIngester {ingestion_callable.__name__}")
-    ingester = ingestion_callable(dag_run.conf, *args)
+    logger.info(f"Initializing ProviderIngester {ingester_class.__name__}")
+    ingester = ingester_class(dag_run.conf, *args)
     stores = ingester.media_stores
 
     for store, tsv_filename in zip(stores.values(), tsv_filenames):
