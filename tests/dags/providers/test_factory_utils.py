@@ -5,7 +5,6 @@ import pytest
 from airflow.models import DagRun, TaskInstance
 from providers import factory_utils
 
-from tests.dags.common.test_resources import fake_provider_module
 from tests.dags.common.test_resources.fake_provider_data_ingester import (
     FakeDataIngester,
 )
