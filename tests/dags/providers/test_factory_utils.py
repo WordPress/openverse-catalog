@@ -89,25 +89,14 @@ def test_generate_tsv_filenames(
     internal_func_mock.assert_not_called()
 
 
-@pytest.mark.parametrize(
-    "func, media_types, tsv_filenames, stores",
-    [
-        # Happy path
-        (
-            FakeDataIngesterClass,
-            ["image", "audio"],
-            ["image_file_000.tsv", "audio_file_111.tsv"],
-            list(fdi.media_stores.values()),
-        ),
-    ],
-)
-def test_pull_media_wrapper(
-    func, media_types, tsv_filenames, stores, ti_mock, dagrun_mock, internal_func_mock
-):
+def test_pull_media_wrapper(ti_mock, dagrun_mock, internal_func_mock):
     value = 42
+    stores = list(fdi.media_stores.values())
+    tsv_filenames = ["image_file_000.tsv", "audio_file_111.tsv"]
+
     factory_utils.pull_media_wrapper(
-        func,
-        media_types,
+        FakeDataIngesterClass,
+        ["image", "audio"],
         tsv_filenames,
         ti_mock,
         dagrun_mock,
@@ -125,8 +114,7 @@ def test_pull_media_wrapper(
     internal_func_mock.assert_called_once_with(value)
 
 
-@pytest.mark.parametrize("func", [fake_provider_module.main, FakeDataIngesterClass])
-def test_pull_media_wrapper_always_pushes_duration(func, ti_mock, dagrun_mock):
+def test_pull_media_wrapper_always_pushes_duration(ti_mock, dagrun_mock):
     error_message = "Whoops!"
 
     def _raise_an_error(text):
@@ -134,7 +122,7 @@ def test_pull_media_wrapper_always_pushes_duration(func, ti_mock, dagrun_mock):
 
     with pytest.raises(ValueError, match=error_message):
         factory_utils.pull_media_wrapper(
-            func,
+            FakeDataIngesterClass,
             ["image"],
             ["file1.tsv"],
             ti_mock,
