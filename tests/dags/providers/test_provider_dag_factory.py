@@ -34,7 +34,7 @@ def clean_db():
     _clean_dag_from_db()
 
 
-def _generate_tsv_mock(ingestion_callable, media_types, ti, **kwargs):
+def _generate_tsv_mock(ingester_class, media_types, ti, **kwargs):
     for media_type in media_types:
         ti.xcom_push(
             key=f"{media_type}_tsv", value=f"/tmp/{media_type}_does_not_exist.tsv"
