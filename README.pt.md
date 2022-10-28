@@ -54,7 +54,7 @@ Os passos a seguir são realizados no [`ExtractCCLinks.py`][ex_cc_links].
 
 [Apache Airflow](https://airflow.apache.org/) é utilizado para gerenciar o workflow
 para varios jobs de API ETL que puxam e processam data de um grande numero de APIs
-abertas da internet
+abertas da internet.
 
 ### API Workflows
 
@@ -67,8 +67,8 @@ Veja as notas de script da API de cada provedor em seus respectivos [handbook][o
 
 ## Setup de desenvolvimento para Airflow e scripts de API puller
 
-Existe um número de scripts no diretorio
-[`openverse_catalog/dags/provider_api_scripts`][api_scripts] eventualmente carregado em um database que será indexado para buscar dentro da API do Openverse.
+No diretorio
+[`openverse_catalog/dags/provider_api_scripts`][api_scripts] existem scripts que são usadas para buscar dados dos provedores e carregar-los em um database que será indexado para buscar dentro da API do Openverse.
 Eles rodam em um diferente ambiente que a porção PySpark do projeto, portanto possuem  suas próprias dependencias.
 
 Para instruções feitas especificamente para a produção de deployments, veja [DEPLOYMENT.md](DEPLOYMENT.md)
@@ -112,8 +112,7 @@ O arquivo `.env` é dividido em quatro partes:
 1. Configurações do Airflow - este pode ser utilizado para puxar varias propriedades do Airflow.
 2. Chaves API - configure estas caso você pretenda testar algum dos provedores de API.
 3. Conexão/Informações de variavel - provavelmente não será necessario modifica-las para desenvolvimento local, entretanto seus valores devem ser alterados em produção.
-4. Outras configurações - misc,
-4. Other config - misc. definições de configuração, algumas são uteis para desenvolvimento local.
+4. Outras configurações - misc. definições de configuração, algumas são uteis para desenvolvimento local.
 
 O arquivo `.env` não precisa ser modificado caso você somente queira rodar os testes.
 
@@ -136,9 +135,9 @@ e em algumas configurações de rede de forma que haja comunicação.
 
 - `openverse_catalog_webserver_1` esta rodando Apache Airflow daemon, como também possui algumas ferramentas de desenvolvimento instaladas (e.g., `pytest`)
 - `openverse_catalog_postgres_1` esta rodando PostgreSQL, e esta configurado com alguns databases e tabelas para emular o ambiente de produção. Este também providencia um database para o Airflow armazenar seu estado atual.
-- O diretorio contem todos os arquivos de módulo (incluindo DAGs, dependencias, e       outras ferramentas) sera criado na pasta `/usr/local/airflow/openverse_catalog` no container `openverse_catalog_webserver_1`. Em produção, somente as pastas DAGs serão montadas, e.g. `/usr/local/airflow/openverse_catalog/dags`.
+- O diretorio contem todos os arquivos de módulo (incluindo DAGs, dependencias, e outras ferramentas) sera criado na pasta `/usr/local/airflow/openverse_catalog` no container `openverse_catalog_webserver_1`. Em produção, somente as pastas DAGs serão montadas, e.g. `/usr/local/airflow/openverse_catalog/dags`.
 
-Os varios serviços poedm ser acessados através destes links:
+Os varios serviços podem ser acessados através destes links:
 
 - Airflow: `localhost:9090` (Tanto o usuário quanto senha padão são `airflow`.)
 - Minio Console: `localhost:5011` (O usuario padrão é `test_key` e a senha `test_secret`)
@@ -190,7 +189,7 @@ Para ressetar o DB de teste (excluindo todos os outros databases, schemas e tabe
 just down -v
 ```
 
-`docker colume prune` pode tambem ser util caso você ja tenha derrubado os containers, mas fique atento que isto irá remover todos os volumes associados com os containers parados, não somente os do openverse-catalog.
+`docker volume prune` pode tambem ser util caso você ja tenha derrubado os containers, mas fique atento que isto irá remover todos os volumes associados com os containers parados, não somente os do openverse-catalog.
 
 Para recriar tudo desde o começo, você pode utilizar:
 
@@ -232,7 +231,7 @@ A imagem do docker para o catalogo (Airflow) é publicada para o ghcr.io/WordPre
 
 ## Contribuindo
 
-Pull requests são bem-vindos! Sinta-se a vontade para nos juntar no [join us on Slack][wp_slack] e discutir o projeto com os engenheiros e membros da comunidade no #openverse
+Pull requests são bem-vindos! Sinta-se a vontade para nos juntar no [Slack do WordPress Make][wp_slack] e discutir o projeto com os engenheiros e membros da comunidade no #openverse
 
 ## Reconhecimentos
 
