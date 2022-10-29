@@ -57,6 +57,7 @@ LOADER_ARGS = {
     "identifier": "{{ ts_nodash }}",
     "media_type": MEDIA_TYPE,
 }
+OUTPUT_DIR = Path(os.getenv("OUTPUT_DIR", "/tmp/"))
 
 
 class INaturalistDataIngester(ProviderDataIngester):
@@ -145,37 +146,36 @@ class INaturalistDataIngester(ProviderDataIngester):
     @staticmethod
     def load_catalog_of_life_names():
         COL_URL = "https://api.checklistbank.org/dataset/9840/export.zip?format=ColDP"
-        # Tried importing common.loader.paths.STAGING_DIRECTORY but it didn't work in
-        # local environment, TO DO: find a better place for this process.
-        DATA_DIR = Path(__file__).parents[4]
         local_zip_file = "COL_archive.zip"
         name_usage_file = "NameUsage.tsv"
         vernacular_file = "VernacularName.tsv"
         # download zip file from Catalog of Life
-        if (DATA_DIR / local_zip_file).exists():
+        if (OUTPUT_DIR / local_zip_file).exists():
             logger.info(
-                f"No download from Catalog of Life. {DATA_DIR}/{local_zip_file} exists."
+                f"{OUTPUT_DIR}/{local_zip_file} exists, so no Catalog of Life download."
             )
         else:
             with requests.get(COL_URL, stream=True) as r:
                 r.raise_for_status()
-                with open(DATA_DIR / local_zip_file, "wb") as f:
+                with open(OUTPUT_DIR / local_zip_file, "wb") as f:
                     for chunk in r.iter_content(chunk_size=8192):
                         f.write(chunk)
-            logger.info(f"Saved Catalog of Life download: {DATA_DIR}/{local_zip_file}")
+            logger.info(
+                f"Saved Catalog of Life download: {OUTPUT_DIR}/{local_zip_file}"
+            )
         # Extract specific files we need from the zip file
-        if (DATA_DIR / name_usage_file).exists() and (
-            DATA_DIR / vernacular_file
+        if (OUTPUT_DIR / name_usage_file).exists() and (
+            OUTPUT_DIR / vernacular_file
         ).exists():
             logger.info("No extract, both Catalog of Life tsv files exist.")
         else:
-            with zipfile.ZipFile(DATA_DIR / local_zip_file) as z:
-                with open(DATA_DIR / name_usage_file, "wb") as f:
+            with zipfile.ZipFile(OUTPUT_DIR / local_zip_file) as z:
+                with open(OUTPUT_DIR / name_usage_file, "wb") as f:
                     f.write(z.read(name_usage_file))
-                logger.info(f"Extracted raw file: {DATA_DIR}/{name_usage_file}")
-                with open(DATA_DIR / vernacular_file, "wb") as f:
+                logger.info(f"Extracted raw file: {OUTPUT_DIR}/{name_usage_file}")
+                with open(OUTPUT_DIR / vernacular_file, "wb") as f:
                     f.write(z.read(vernacular_file))
-                logger.info(f"Extracted raw file: {DATA_DIR}/{vernacular_file}")
+                logger.info(f"Extracted raw file: {OUTPUT_DIR}/{vernacular_file}")
         # set up for loading data
         pg = PostgresHook(POSTGRES_CONN_ID)
         COPY_SQL = (
@@ -184,7 +184,7 @@ class INaturalistDataIngester(ProviderDataIngester):
         )
         COUNT_SQL = "SELECT count(*) FROM inaturalist.{};"
         # upload vernacular names file to postgres
-        pg.copy_expert(COPY_SQL.format("col_vernacular"), DATA_DIR / vernacular_file)
+        pg.copy_expert(COPY_SQL.format("col_vernacular"), OUTPUT_DIR / vernacular_file)
         vernacular_records = pg.get_records(COUNT_SQL.format("col_vernacular"))
         if vernacular_records[0][0] == 0:
             raise AirflowNotFoundException("No Catalog of Life vernacular data loaded.")
@@ -193,7 +193,7 @@ class INaturalistDataIngester(ProviderDataIngester):
                 f"Loaded {vernacular_records[0][0]} records from {vernacular_file}"
             )
         # upload name usage file to postgres
-        pg.copy_expert(COPY_SQL.format("col_name_usage"), DATA_DIR / name_usage_file)
+        pg.copy_expert(COPY_SQL.format("col_name_usage"), OUTPUT_DIR / name_usage_file)
         name_usage_records = pg.get_records(COUNT_SQL.format("col_name_usage"))
         if name_usage_records[0][0] == 0:
             raise AirflowNotFoundException("No Catalog of Life name usage data loaded.")
@@ -202,9 +202,9 @@ class INaturalistDataIngester(ProviderDataIngester):
                 f"Loaded {name_usage_records[0][0]} records from {name_usage_file}"
             )
         # # TO DO: save source files on s3? just delete every time?
-        # os.remove(DATA_DIR / local_zip_file)
-        # os.remove(DATA_DIR / vernacular_file)
-        # os.remove(DATA_DIR / name_usage_file)
+        # os.remove(OUTPUT_DIR / local_zip_file)
+        # os.remove(OUTPUT_DIR / vernacular_file)
+        # os.remove(OUTPUT_DIR / name_usage_file)
         return {
             "COL Name Usage Records": name_usage_records[0][0],
             "COL Vernacular Records": vernacular_records[0][0],
