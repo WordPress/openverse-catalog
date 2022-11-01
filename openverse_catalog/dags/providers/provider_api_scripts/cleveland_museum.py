@@ -105,7 +105,7 @@ class ClevelandDataIngester(ProviderDataIngester):
             "credit_line": data.get("creditline"),
             "classification": data.get("type"),
             "tombstone": data.get("tombstone"),
-            "culture": ",".join([i for i in data.get("culture") if i is not None]) if data.get("culture") is not None else None,
+            "culture": ",".join([i for i in data.get("culture", []) if i is not None]) or None,
         }
         metadata = {k: v for k, v in metadata.items() if v is not None}
         return metadata
