@@ -1,8 +1,12 @@
+# Retiring the dags/commoncrawl module so retiring this test file
+
 from unittest.mock import patch
 
+import pytest
 from commoncrawl import commoncrawl_utils
 
 
+@pytest.mark.skip(reason="commoncrawl module is retired")
 def test_load_file_to_s3_uses_connection_id():
     local_file = "/test/file/here.txt"
     remote_key = "abc/def/here.txt"
@@ -19,6 +23,7 @@ def test_load_file_to_s3_uses_connection_id():
     mock_s3.assert_called_once_with(aws_conn_id=aws_conn_id)
 
 
+@pytest.mark.skip(reason="commoncrawl module is retired")
 def test_load_file_to_s3_loads_file():
     local_file = "/test/file/here.txt"
     remote_key = "abc/def/here.txt"
