@@ -1,8 +1,10 @@
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import timedelta
 
+from providers.provider_api_scripts.europeana import EuropeanaDataIngester
 from providers.provider_api_scripts.flickr import FlickrDataIngester
 from providers.provider_api_scripts.metropolitan_museum import MetMuseumDataIngester
+from providers.provider_api_scripts.phylopic import PhylopicDataIngester
 from providers.provider_api_scripts.wikimedia_commons import (
     WikimediaCommonsDataIngester,
 )
@@ -45,14 +47,19 @@ class ProviderReingestionWorkflow(ProviderWorkflow):
 
     def __post_init__(self):
         if not self.dag_id:
-            self.dag_id = f"{self.provider_script}_reingestion_workflow"
+            # Call super() first to initialize the provider_name
+            super().__post_init__()
+            # Override the dag_id
+            self.dag_id = f"{self.provider_name}_reingestion_workflow"
+            return
+
+        super().__post_init__()
 
 
 PROVIDER_REINGESTION_WORKFLOWS = [
     ProviderReingestionWorkflow(
         # 60 total reingestion days
-        provider_script="europeana",
-        start_date=datetime(2013, 11, 21),
+        ingester_class=EuropeanaDataIngester,
         max_active_tasks=3,
         pull_timeout=timedelta(hours=12),
         daily_list_length=7,
@@ -61,8 +68,7 @@ PROVIDER_REINGESTION_WORKFLOWS = [
     ),
     ProviderReingestionWorkflow(
         # 128 total reingestion days
-        provider_script="flickr",
-        ingestion_callable=FlickrDataIngester,
+        ingester_class=FlickrDataIngester,
         pull_timeout=timedelta(minutes=30),
         daily_list_length=7,
         weekly_list_length=12,
@@ -73,8 +79,17 @@ PROVIDER_REINGESTION_WORKFLOWS = [
     ),
     ProviderReingestionWorkflow(
         # 64 total reingestion days
-        provider_script="metropolitan_museum",
-        ingestion_callable=MetMuseumDataIngester,
+        ingester_class=MetMuseumDataIngester,
+        max_active_tasks=2,
+        pull_timeout=timedelta(hours=12),
+        daily_list_length=6,
+        one_month_list_length=9,
+        three_month_list_length=18,
+        six_month_list_length=30,
+    ),
+    ProviderReingestionWorkflow(
+        # 64 total reingestion days
+        ingester_class=PhylopicDataIngester,
         max_active_tasks=2,
         pull_timeout=timedelta(hours=12),
         daily_list_length=6,
@@ -85,10 +100,8 @@ PROVIDER_REINGESTION_WORKFLOWS = [
     ProviderReingestionWorkflow(
         # 64 total reingestion days
         dag_id="wikimedia_reingestion_workflow",
-        provider_script="wikimedia_commons",
-        ingestion_callable=WikimediaCommonsDataIngester,
+        ingester_class=WikimediaCommonsDataIngester,
         pull_timeout=timedelta(minutes=90),
-        media_types=("image", "audio"),
         max_active_tasks=2,
         daily_list_length=6,
         one_month_list_length=9,
