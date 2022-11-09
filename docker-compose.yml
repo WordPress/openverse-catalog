@@ -5,11 +5,23 @@ services:
     image: ghcr.io/wordpress/openverse-catalog:${DOCKER_IMAGE_TAG:-latest}
     env_file: .env
     restart: always
+    command: webserver
     ports:
       - "${AIRFLOW_PORT}:8080"
     volumes:
+      - ./openverse_catalog/dags:/opt/airflow/openverse_catalog/dags
+
+  scheduler:
+    image: ghcr.io/wordpress/openverse-catalog:${DOCKER_IMAGE_TAG:-latest}
+    env_file: .env
+    restart: always
+    command: scheduler
+    environment:
+      # Upgrade the DB on startup
+      _AIRFLOW_DB_UPGRADE: true
+    volumes:
       - airflow:/var/workflow_output
-      - ./openverse_catalog/dags:/usr/local/airflow/openverse_catalog/dags
+      - ./openverse_catalog/dags:/opt/airflow/openverse_catalog/dags
 
 volumes:
   airflow:

@@ -81,9 +81,9 @@ _deps:
     # The test directory is mounted into the container only during testing
     docker-compose {{ DOCKER_FILES }} run \
         -e AIRFLOW_VAR_INGESTION_LIMIT=1000000 \
-        -v {{ justfile_directory() }}/tests:/usr/local/airflow/tests/ \
-        -v {{ justfile_directory() }}/docker:/usr/local/airflow/docker/ \
-        -v {{ justfile_directory() }}/pytest.ini:/usr/local/airflow/pytest.ini \
+        -v {{ justfile_directory() }}/tests:/opt/airflow/tests/ \
+        -v {{ justfile_directory() }}/pytest.ini:/opt/airflow/pytest.ini \
+        -v {{ justfile_directory() }}/docker:/opt/airflow/docker/ \
         --rm \
         {{ SERVICE }} \
         {{ command }}
@@ -94,7 +94,7 @@ test-session:
 
 # Run pytest using the webserver image
 test *pytestargs:
-    @just _mount-tests "/usr/local/airflow/.local/bin/pytest {{ pytestargs }}"
+    @just _mount-tests "/opt/airflow/.local/bin/pytest {{ pytestargs }}"
 
 # Open a shell into the webserver container
 shell: up
@@ -104,10 +104,10 @@ shell: up
 ipython: _deps
     docker-compose {{ DOCKER_FILES }} run \
         --rm \
-        -w /usr/local/airflow/openverse_catalog/dags \
-        -v {{ justfile_directory() }}/.ipython:/usr/local/airflow/.ipython:z \
+        -w /opt/airflow/openverse_catalog/dags \
+        -v {{ justfile_directory() }}/.ipython:/opt/airflow/.ipython:z \
         {{ SERVICE }} \
-        /usr/local/airflow/.local/bin/ipython
+        /opt/airflow/.local/bin/ipython
 
 # Run a given command using the webserver image
 run *args: _deps
