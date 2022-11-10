@@ -8,7 +8,7 @@ IS_PROD := env_var_or_default("IS_PROD", "")
 DOCKER_FILES := "--file=docker-compose.yml" + (
     if IS_PROD != "true" {" --file=docker-compose.override.yml"} else {""}
 )
-SERVICE := "webserver"
+SERVICE := env_var_or_default("SERVICE", "webserver")
 
 export PROJECT_PY_VERSION := `grep '# PYTHON' requirements_prod.txt | awk -F= '{print $2}'`
 export PROJECT_AIRFLOW_VERSION := `grep '^apache-airflow' requirements_prod.txt | awk -F= '{print $3}'`
@@ -40,17 +40,21 @@ install: check-py-version
 dotenv:
     @([ ! -f .env ] && cp env.template .env) || true
 
+# Run docker compose with the specified command
+_dc *args:
+    docker-compose {{ DOCKER_FILES }} {{ args }}
+
 # Build all (or specified) container(s)
 build service="": dotenv
-    docker-compose {{ DOCKER_FILES }} build {{ service }}
+    @just _dc build {{ service }}
 
 # Bring all Docker services up
 up flags="": dotenv
-    docker-compose {{ DOCKER_FILES }} up -d {{ flags }}
+    @just _dc up -d {{ flags }}
 
 # Take all Docker services down
 down flags="":
-    docker-compose {{ DOCKER_FILES }} down {{ flags }}
+    @just _dc down {{ flags }}
 
 # Recreate all volumes and containers from scratch
 recreate: dotenv
@@ -59,7 +63,7 @@ recreate: dotenv
 
 # Show logs of all, or named, Docker services
 logs service="": up
-    docker-compose {{ DOCKER_FILES }} logs -f {{ service }}
+    @just _dc logs -f {{ service }}
 
 # Pull, build, and deploy all services
 deploy:
@@ -79,7 +83,7 @@ _deps:
 # Mount the tests directory and run a particular command
 @_mount-tests command: _deps
     # The test directory is mounted into the container only during testing
-    docker-compose {{ DOCKER_FILES }} run \
+    @just _dc run \
         -e AIRFLOW_VAR_INGESTION_LIMIT=1000000 \
         -v {{ justfile_directory() }}/tests:/opt/airflow/tests/ \
         -v {{ justfile_directory() }}/pytest.ini:/opt/airflow/pytest.ini \
@@ -98,11 +102,11 @@ test *pytestargs:
 
 # Open a shell into the webserver container
 shell: up
-    docker-compose {{ DOCKER_FILES }} exec {{ SERVICE }} /bin/bash
+    @just _dc exec {{ SERVICE }} /bin/bash
 
 # Launch an IPython REPL using the webserver image
 ipython: _deps
-    docker-compose {{ DOCKER_FILES }} run \
+    @just _dc run \
         --rm \
         -w /opt/airflow/openverse_catalog/dags \
         -v {{ justfile_directory() }}/.ipython:/opt/airflow/.ipython:z \
@@ -111,11 +115,11 @@ ipython: _deps
 
 # Run a given command using the webserver image
 run *args: _deps
-    docker-compose {{ DOCKER_FILES }} run --rm {{ SERVICE }} {{ args }}
+    @just _dc run --rm {{ SERVICE }} {{ args }}
 
 # Launch a pgcli shell on the postgres container (defaults to openledger) use "airflow" for airflow metastore
 db-shell args="openledger": up
-    docker-compose {{ DOCKER_FILES }} exec postgres pgcli {{ args }}
+    @just _dc exec postgres pgcli {{ args }}
 
 # Generate the DAG documentation
 generate-dag-docs fail_on_diff="false":

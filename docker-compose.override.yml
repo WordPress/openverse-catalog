@@ -96,9 +96,12 @@ services:
       exit 0;
       "
 
-  # Dev changes for the webserver container
-  webserver:
+  # Dev changes for the scheduler
+  scheduler:
     <<: *airflow-common
+    depends_on:
+      - postgres
+      - s3
     environment:
       _AIRFLOW_WWW_USER_CREATE: true
       _AIRFLOW_WWW_USER_USERNAME: airflow
@@ -106,12 +109,16 @@ services:
       _AIRFLOW_WWW_USER_FIRSTNAME: Air
       _AIRFLOW_WWW_USER_LASTNAME: Flow
       _AIRFLOW_WWW_USER_EMAIL: airflow@example.com
-    command: webserver
-
-  # Dev changes for the scheduler
-  scheduler:
-    <<: *airflow-common
     # This command ensures an admin account is created on startup
+    command: scheduler
+
+  # Dev changes for the webserver container
+  webserver:
+    <<: *airflow-common
+    depends_on:
+      - postgres
+      - s3
+      - scheduler
     command: webserver
 
 volumes:
