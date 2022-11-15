@@ -22,8 +22,6 @@ DAG_PATHS = [
     "data_refresh/dag_factory.py",
     "oauth2/authorize_dag.py",
     "oauth2/token_refresh_dag.py",
-    #    "commoncrawl/sync_commoncrawl_workflow.py", # retired
-    #    "commoncrawl/commoncrawl_etl.py", #retired
 ]
 
 # Expected count from the DagBag once a file has been parsed
