@@ -58,10 +58,10 @@ class DelayedRequester:
 
         Required Arguments:
 
+        method:   `requests` module request method.
         url:      URL to make the request as a string.
-        params:   Dictionary of query string params
         **kwargs: Optional arguments that will be passed to the `requests`
-                  module request
+                  module request.
         """
         self._delay_processing()
         self._last_request = time.time()
