@@ -34,8 +34,16 @@ class FinnishMuseumsDataIngester(ProviderDataIngester):
     def get_next_query_params(self, prev_query_params, **kwargs):
         if not prev_query_params:
             building = kwargs.get("building")
+            start_date = f"{self.date}T00:00:00Z"
+            end_date = f"{self.date}T23:59:59Z"
+
             return {
-                "filter[]": [f'format:"{self.format_type}"', f'building:"{building}"'],
+                "facet[]": ["last_indexed"],
+                "filter[]": [
+                    f'format:"{self.format_type}"',
+                    f'building:"{building}"',
+                    f'last_indexed:"[{start_date} TO {end_date}]"',
+                ],
                 "limit": self.batch_limit,
                 "page": 1,
             }
