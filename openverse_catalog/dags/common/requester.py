@@ -1,5 +1,6 @@
 import logging
 import time
+from collections.abc import Callable
 
 import oauth2
 import requests
@@ -49,7 +50,9 @@ class DelayedRequester:
         self._last_request = 0
         self.session = requests.Session()
 
-    def _make_request(self, method, url, **kwargs):
+    def _make_request(
+        self, method: Callable[..., requests.models.Response], url: str, **kwargs
+    ):
         """
         Make a request, and return the response object if it exists.
 
