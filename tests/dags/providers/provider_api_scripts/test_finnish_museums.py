@@ -17,7 +17,8 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s", level=logging.DEBUG
 )
 
-fm = FinnishMuseumsDataIngester()
+FROZEN_DATE = "2020-04-10"
+fm = FinnishMuseumsDataIngester(date=FROZEN_DATE)
 image_store = ImageStore(provider=prov.FINNISH_DEFAULT_PROVIDER)
 fm.media_stores = {"image": image_store}
 
@@ -31,7 +32,12 @@ def _get_resource_json(json_name):
 def test_build_query_param_default():
     actual_param_made = fm.get_next_query_params(None, building="0/Museovirasto/")
     expected_param = {
-        "filter[]": ['format:"0/Image/"', 'building:"0/Museovirasto/"'],
+        "facet[]": ["last_indexed"],
+        "filter[]": [
+            'format:"0/Image/"',
+            'building:"0/Museovirasto/"',
+            'last_indexed:"[2020-04-10T00:00:00Z TO 2020-04-10T23:59:59Z]"',
+        ],
         "limit": 100,
         "page": 1,
     }
