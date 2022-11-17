@@ -99,10 +99,10 @@ class DelayedRequester:
             return None
 
     def get(self, url, params=None, **kwargs):
-        self._make_request(self.session.get, url, params=params, **kwargs)
+        return self._make_request(self.session.get, url, params=params, **kwargs)
 
     def head(self, url, **kwargs):
-        self._make_request(self.session.head, url, **kwargs)
+        return self._make_request(self.session.head, url, **kwargs)
 
     def _delay_processing(self):
         wait = self._DELAY - (time.time() - self._last_request)
