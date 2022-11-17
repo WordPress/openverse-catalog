@@ -99,9 +99,26 @@ class DelayedRequester:
             return None
 
     def get(self, url, params=None, **kwargs):
+        """
+        Make a GET request, and return the response object if it exists.
+
+        Required Arguments:
+
+        url:      URL to make the request as a string.
+        params:   Dictionary of query string params.
+        **kwargs: Optional arguments that will be passed to `requests.get`.
+        """
         return self._make_request(self.session.get, url, params=params, **kwargs)
 
     def head(self, url, **kwargs):
+        """
+        Make a HEAD request, and return the response object if it exists.
+
+        Required Arguments:
+
+        url:      URL to make the request as a string.
+        **kwargs: Optional arguments that will be passed to `requests.head`.
+        """
         return self._make_request(self.session.head, url, **kwargs)
 
     def _delay_processing(self):
