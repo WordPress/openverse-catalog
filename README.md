@@ -58,7 +58,7 @@ series of parquet files that contain:
 - the location of the webpage in the WARC file so that the page contents can be
   found.
 
-The steps above are were in [`ExtractCCLinks.py`][ex_cc_links].
+The steps above were performed in [`ExtractCCLinks.py`][ex_cc_links].
 
 This method was retired in 2021.
 
