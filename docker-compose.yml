@@ -1,7 +1,6 @@
 version: "3"
 
 services:
-
   scheduler:
     image: ghcr.io/wordpress/openverse-catalog:${DOCKER_IMAGE_TAG:-latest}
     env_file: .env
@@ -11,7 +10,7 @@ services:
       _AIRFLOW_DB_UPGRADE: "true"
     command: scheduler
     expose:
-      - "8793"  # Used for fetching logs
+      - "8793" # Used for fetching logs
     volumes:
       - airflow:/var/workflow_output
       - ./openverse_catalog/dags:/opt/airflow/openverse_catalog/dags
