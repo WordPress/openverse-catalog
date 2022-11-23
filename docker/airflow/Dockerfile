@@ -41,7 +41,7 @@ RUN apt-get update && apt-get -yqq install \
     libffi-dev \
     && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/*
-RUN mkdir -p ${OUTPUT_DIR} && chown airflow ${OUTPUT_DIR}
+RUN mkdir -p ${OUTPUT_DIR} /home/airflow/.ipython && chown airflow ${OUTPUT_DIR} /home/airflow/.ipython
 USER airflow
 
 WORKDIR  ${AIRFLOW_HOME}
