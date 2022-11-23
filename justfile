@@ -9,6 +9,7 @@ DOCKER_FILES := "--file=docker-compose.yml" + (
     if IS_PROD != "true" {" --file=docker-compose.override.yml"} else {""}
 )
 SERVICE := env_var_or_default("SERVICE", "scheduler")
+DC_USER := env_var_or_default("DC_USER", "airflow")
 
 export PROJECT_PY_VERSION := `grep '# PYTHON' requirements_prod.txt | awk -F= '{print $2}'`
 export PROJECT_AIRFLOW_VERSION := `grep '^apache-airflow' requirements_prod.txt | awk -F= '{print $3}'`
@@ -113,7 +114,7 @@ ipython: _deps
 
 # Run a given command in bash using the scheduler image
 run *args: _deps
-    @just _dc run --rm {{ SERVICE }} bash -c \'{{ args }}\'
+    @just _dc run --rm -u {{ DC_USER }} {{ SERVICE }} bash -c \'{{ args }}\'
 
 # Launch a pgcli shell on the postgres container (defaults to openledger) use "airflow" for airflow metastore
 db-shell args="openledger": up
@@ -123,7 +124,7 @@ db-shell args="openledger": up
 generate-dag-docs fail_on_diff="false":
     #!/bin/bash
     set -e
-    just run python openverse_catalog/utilities/dag_doc_gen/dag_doc_generation.py
+    DC_USER=root just run python openverse_catalog/utilities/dag_doc_gen/dag_doc_generation.py
     # Move the file to the top level, since that level is not mounted into the container
     mv openverse_catalog/utilities/dag_doc_gen/DAGs.md DAGs.md
     if {{ fail_on_diff }}; then
