@@ -8,7 +8,7 @@ IS_PROD := env_var_or_default("IS_PROD", "")
 DOCKER_FILES := "--file=docker-compose.yml" + (
     if IS_PROD != "true" {" --file=docker-compose.override.yml"} else {""}
 )
-SERVICE := env_var_or_default("SERVICE", "webserver")
+SERVICE := env_var_or_default("SERVICE", "scheduler")
 
 export PROJECT_PY_VERSION := `grep '# PYTHON' requirements_prod.txt | awk -F= '{print $2}'`
 export PROJECT_AIRFLOW_VERSION := `grep '^apache-airflow' requirements_prod.txt | awk -F= '{print $3}'`
@@ -67,9 +67,8 @@ logs service="": up
 
 # Pull, build, and deploy all services
 deploy:
-    @just down
     -git pull
-    @just build
+    @just pull
     @just up
 
 # Run pre-commit on all files
@@ -98,24 +97,23 @@ test-session:
 
 # Run pytest using the webserver image
 test *pytestargs:
-    @just _mount-tests "/opt/airflow/.local/bin/pytest {{ pytestargs }}"
+    @just _mount-tests "bash -c \'pytest {{ pytestargs }}\'"
 
 # Open a shell into the webserver container
-shell: up
-    @just _dc exec {{ SERVICE }} /bin/bash
+shell user="airflow": up
+    @just _dc exec -u {{ user }} {{ SERVICE }} /bin/bash
 
 # Launch an IPython REPL using the webserver image
 ipython: _deps
     @just _dc run \
         --rm \
         -w /opt/airflow/openverse_catalog/dags \
-        -v {{ justfile_directory() }}/.ipython:/opt/airflow/.ipython:z \
         {{ SERVICE }} \
-        /opt/airflow/.local/bin/ipython
+        bash -c \'ipython\'
 
-# Run a given command using the webserver image
+# Run a given command in bash using the scheduler image
 run *args: _deps
-    @just _dc run --rm {{ SERVICE }} {{ args }}
+    @just _dc run --rm {{ SERVICE }} bash -c \'{{ args }}\'
 
 # Launch a pgcli shell on the postgres container (defaults to openledger) use "airflow" for airflow metastore
 db-shell args="openledger": up

@@ -18,6 +18,7 @@ x-airflow-common:
     dockerfile: docker/airflow/Dockerfile
   volumes:
     - ./openverse_catalog:/opt/airflow/openverse_catalog
+    - ipython:/home/airflow/.ipython
 
 
 services:
@@ -103,14 +104,12 @@ services:
       - postgres
       - s3
     environment:
-      _AIRFLOW_WWW_USER_CREATE: true
+      _AIRFLOW_WWW_USER_CREATE: "true"
       _AIRFLOW_WWW_USER_USERNAME: airflow
       _AIRFLOW_WWW_USER_PASSWORD: airflow
       _AIRFLOW_WWW_USER_FIRSTNAME: Air
       _AIRFLOW_WWW_USER_LASTNAME: Flow
       _AIRFLOW_WWW_USER_EMAIL: airflow@example.com
-    # This command ensures an admin account is created on startup
-    command: scheduler
 
   # Dev changes for the webserver container
   webserver:
@@ -119,8 +118,8 @@ services:
       - postgres
       - s3
       - scheduler
-    command: webserver
 
 volumes:
   postgres:
   minio:
+  ipython:

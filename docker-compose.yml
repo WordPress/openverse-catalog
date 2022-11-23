@@ -8,7 +8,7 @@ services:
     restart: always
     environment:
       # Upgrade the DB on startup
-      _AIRFLOW_DB_UPGRADE: true
+      _AIRFLOW_DB_UPGRADE: "true"
     command: scheduler
     expose:
       - "8793"  # Used for fetching logs
@@ -18,6 +18,8 @@ services:
 
   webserver:
     image: ghcr.io/wordpress/openverse-catalog:${DOCKER_IMAGE_TAG:-latest}
+    depends_on:
+      - scheduler
     env_file: .env
     restart: always
     command: webserver
