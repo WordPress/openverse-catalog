@@ -124,7 +124,7 @@ db-shell args="openledger": up
 generate-dag-docs fail_on_diff="false":
     #!/bin/bash
     set -e
-    DC_USER=root just run python openverse_catalog/utilities/dag_doc_gen/dag_doc_generation.py
+    DC_USER=root just run 'python openverse_catalog/utilities/dag_doc_gen/dag_doc_generation.py \&\& chmod 666 /opt/airflow/openverse_catalog/utilities/dag_doc_gen/DAGs.md'
     # Move the file to the top level, since that level is not mounted into the container
     mv openverse_catalog/utilities/dag_doc_gen/DAGs.md DAGs.md
     if {{ fail_on_diff }}; then
