@@ -127,7 +127,7 @@ PROVIDER_WORKFLOWS = [
         start_date=datetime(2015, 11, 1),
         pull_timeout=timedelta(days=5),
         load_timeout=timedelta(days=5),
-        schedule_string="@daily",
+        schedule_string="@monthly",
         dated=True,
     ),
     ProviderWorkflow(
