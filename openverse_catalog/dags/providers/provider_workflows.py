@@ -124,7 +124,7 @@ PROVIDER_WORKFLOWS = [
     ),
     ProviderWorkflow(
         ingester_class=FinnishMuseumsDataIngester,
-        start_date=datetime(2016, 1, 1),
+        start_date=datetime(2015, 11, 1),
         pull_timeout=timedelta(days=5),
         load_timeout=timedelta(days=5),
         schedule_string="@daily",

@@ -1,8 +1,10 @@
 import logging
+from datetime import datetime, timezone
 from itertools import chain
 
 from common.licenses import get_license_info
 from common.loader import provider_details as prov
+from dateutil.relativedelta import relativedelta
 from providers.provider_api_scripts.provider_data_ingester import ProviderDataIngester
 
 
@@ -31,11 +33,24 @@ class FinnishMuseumsDataIngester(ProviderDataIngester):
             logger.info(f"Obtaining images of building {building}")
             super().ingest_records(building=building)
 
+    def _get_timestamp_query_params(self):
+        # Get the logical date for the DagRun
+        date_obj = datetime.strptime(self.date, "%Y-%m-%d")
+        utc_date = date_obj.replace(tzinfo=timezone.utc)
+
+        # We will consume up to one month of records.
+        start_date = utc_date
+        end_date = utc_date + relativedelta(months=+1)
+
+        start_timestamp = start_date.isoformat().replace("+00:00", "Z")
+        end_timestamp = end_date.isoformat().replace("+00:00", "Z")
+
+        return start_timestamp, end_timestamp
+
     def get_next_query_params(self, prev_query_params, **kwargs):
         if not prev_query_params:
             building = kwargs.get("building")
-            start_date = f"{self.date}T00:00:00Z"
-            end_date = f"{self.date}T23:59:59Z"
+            start_date, end_date = self._get_timestamp_query_params()
 
             return {
                 "facet[]": ["last_indexed"],

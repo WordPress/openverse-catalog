@@ -17,7 +17,7 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s", level=logging.DEBUG
 )
 
-FROZEN_DATE = "2020-04-10"
+FROZEN_DATE = "2020-04-01"
 fm = FinnishMuseumsDataIngester(date=FROZEN_DATE)
 image_store = ImageStore(provider=prov.FINNISH_DEFAULT_PROVIDER)
 fm.media_stores = {"image": image_store}
@@ -29,6 +29,24 @@ def _get_resource_json(json_name):
     return resource_json
 
 
+@pytest.mark.parametrize(
+    "date, expected_start_date, expected_end_date",
+    (
+        # "Normal" path, date is the first day of the month
+        ("2020-04-01", "2020-04-01T00:00:00Z", "2020-05-01T00:00:00Z"),
+        # Date range extends into following year
+        ("2020-12-01", "2020-12-01T00:00:00Z", "2021-01-01T00:00:00Z"),
+        # Date is in the middle of a month
+        ("2022-04-10", "2022-04-10T00:00:00Z", "2022-05-10T00:00:00Z"),
+    ),
+)
+def test_get_timestamp_query_param(date, expected_start_date, expected_end_date):
+    fm = FinnishMuseumsDataIngester(date=date)
+    actual_start, actual_end = fm._get_timestamp_query_params()
+    assert actual_start == expected_start_date
+    assert actual_end == expected_end_date
+
+
 def test_build_query_param_default():
     actual_param_made = fm.get_next_query_params(None, building="0/Museovirasto/")
     expected_param = {
@@ -36,7 +54,7 @@ def test_build_query_param_default():
         "filter[]": [
             'format:"0/Image/"',
             'building:"0/Museovirasto/"',
-            'last_indexed:"[2020-04-10T00:00:00Z TO 2020-04-10T23:59:59Z]"',
+            'last_indexed:"[2020-04-01T00:00:00Z TO 2020-05-01T00:00:00Z]"',
         ],
         "limit": 100,
         "page": 1,
