@@ -1,3 +1,19 @@
+"""
+Content Provider:       Finnish Museums
+
+ETL Process:            Use the API to identify all CC licensed images.
+
+Output:                 TSV file containing the images and the
+                        respective meta-data.
+
+Notes:                  https://api.finna.fi/swagger-ui/
+                        https://www.finna.fi/Content/help-syntax?lng=en-gb
+                        The Finnish Museums provider script is a dated DAG that
+                        runs on a monthly schedule and ingests all records that
+                        were last updated sometime in the last month. Because of
+                        this, it is not necessary to run a separate reingestion
+                        DAG.
+"""
 import logging
 from datetime import datetime, timezone
 from itertools import chain
