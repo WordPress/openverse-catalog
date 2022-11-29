@@ -69,7 +69,6 @@ class FinnishMuseumsDataIngester(ProviderDataIngester):
             start_date, end_date = self._get_timestamp_query_params()
 
             return {
-                "facet[]": ["last_indexed"],
                 "filter[]": [
                     f'format:"{self.format_type}"',
                     f'building:"{building}"',
@@ -91,6 +90,8 @@ class FinnishMuseumsDataIngester(ProviderDataIngester):
             or len(response_json.get("records")) == 0
         ):
             return None
+
+        logger.info(response_json["resultCount"])
 
         return response_json["records"]
 

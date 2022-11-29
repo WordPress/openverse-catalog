@@ -50,7 +50,6 @@ def test_get_timestamp_query_param(date, expected_start_date, expected_end_date)
 def test_build_query_param_default():
     actual_param_made = fm.get_next_query_params(None, building="0/Museovirasto/")
     expected_param = {
-        "facet[]": ["last_indexed"],
         "filter[]": [
             'format:"0/Image/"',
             'building:"0/Museovirasto/"',
