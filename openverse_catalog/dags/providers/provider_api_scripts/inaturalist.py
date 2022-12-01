@@ -155,10 +155,13 @@ class INaturalistDataIngester(ProviderDataIngester):
                 f"{OUTPUT_DIR}/{local_zip_file} exists, so no Catalog of Life download."
             )
         else:
-            with requests.get(COL_URL, stream=True) as r:
-                r.raise_for_status()
+            # This is a static method so that it can be used to create preingestion
+            # tasks for airflow. Unfortunately, that means it does not have access to
+            # the delayed requester. So, we are just using requests for now.
+            with requests.get(COL_URL, stream=True) as response:
+                response.raise_for_status()
                 with open(OUTPUT_DIR / local_zip_file, "wb") as f:
-                    for chunk in r.iter_content(chunk_size=8192):
+                    for chunk in response.iter_content(chunk_size=8192):
                         f.write(chunk)
             logger.info(
                 f"Saved Catalog of Life download: {OUTPUT_DIR}/{local_zip_file}"
