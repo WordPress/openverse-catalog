@@ -27,7 +27,7 @@ Tags:
 Representing tags in this way to be consistent with python processing
 "_enrich_tags":
 https://github.com/WordPress/openverse-catalog/blob/337ea7aede228609cbd5031e3a501f22b6ccc482/openverse_catalog/dags/common/storage/media.py#L265
-TO DO: consider normalizing image tags to a separate table instead.
+TO DO: Find a DRYer way to do this enrichment with SQL (see issue #902)
 
 Could also consider declaring types and using row to json to replace
 repeated json build statements, for example
