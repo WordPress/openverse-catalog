@@ -1,4 +1,5 @@
 import logging
+import re
 
 from common import constants
 from common.licenses import get_license_info
@@ -15,6 +16,7 @@ class SmkDataIngester(ProviderDataIngester):
     batch_limit = 2000
     headers = {"Accept": "application/json"}
     providers = {"image": prov.SMK_DEFAULT_PROVIDER}
+    thumbnail_width_px = 600
 
     def get_media_type(self, record: dict) -> str:
         return constants.IMAGE
@@ -53,8 +55,6 @@ class SmkDataIngester(ProviderDataIngester):
     def _get_image_url(image_iiif_id: str, image_size=2048):
         # For high quality IIIF-enabled images, restrict the image size to prevent
         # loading very large files.
-        # TODO: consider just using the full "image_native" when adding the
-        # "image_thumbnail".
         image_url = f"{image_iiif_id}/full/!{image_size},/0/default.jpg"
         return image_url
 
@@ -78,6 +78,7 @@ class SmkDataIngester(ProviderDataIngester):
     @staticmethod
     def _get_images(item: dict) -> list:
         images = []
+        thumbs_width = SmkDataIngester.thumbnail_width_px
 
         # Legacy images do not have an iiif_id; fall back to the ID from the
         # collection DB.
@@ -91,6 +92,7 @@ class SmkDataIngester(ProviderDataIngester):
             else:
                 image_url = SmkDataIngester._get_image_url(iiif_id)
 
+            thumbnail_url = re.sub(r"!\d+,", f"!{thumbs_width},", image_url)
             height = item.get("image_height")
             width = item.get("image_width")
             filesize = item.get("image_size") or item.get("size")
@@ -98,6 +100,7 @@ class SmkDataIngester(ProviderDataIngester):
                 {
                     "id": image_id,
                     "image_url": image_url,
+                    "thumbnail_url": thumbnail_url,
                     "height": height,
                     "width": width,
                     "filesize": filesize,
@@ -114,6 +117,7 @@ class SmkDataIngester(ProviderDataIngester):
                         # 'id', so we must skip if `iiif_id` is not present.
                         continue
                     image_url = SmkDataIngester._get_image_url(iiif_id)
+                    thumbnail_url = re.sub(r"!\d+,", f"!{thumbs_width},", image_url)
                     height = alt_img.get("height")
                     width = alt_img.get("width")
                     filesize = alt_img.get("image_size") or alt_img.get("size")
@@ -122,6 +126,7 @@ class SmkDataIngester(ProviderDataIngester):
                         {
                             "id": iiif_id,
                             "image_url": image_url,
+                            "thumbnail_url": thumbnail_url,
                             "height": height,
                             "width": width,
                             "filesize": filesize,
@@ -157,6 +162,7 @@ class SmkDataIngester(ProviderDataIngester):
                     "foreign_identifier": img.get("id"),
                     "foreign_landing_url": self._get_foreign_landing_url(data),
                     "image_url": img.get("image_url"),
+                    "thumbnail_url": img.get("thumbnail_url"),
                     "license_info": license_info,
                     "title": self._get_title(data),
                     "creator": self._get_creator(data),
