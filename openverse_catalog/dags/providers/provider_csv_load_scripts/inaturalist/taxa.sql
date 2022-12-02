@@ -28,10 +28,6 @@ Representing tags in this way to be consistent with python processing
 "_enrich_tags":
 https://github.com/WordPress/openverse-catalog/blob/337ea7aede228609cbd5031e3a501f22b6ccc482/openverse_catalog/dags/common/storage/media.py#L265
 TO DO: Find a DRYer way to do this enrichment with SQL (see issue #902)
-
-Could also consider declaring types and using row to json to replace
-repeated json build statements, for example
-create type openverse_tag as (name varchar(255), provider varchar(255));
 */
 
 /* ********** Load raw iNaturalist Data ********* */
@@ -54,7 +50,16 @@ SELECT aws_s3.table_import_from_s3('inaturalist.taxa',
 ALTER TABLE inaturalist.taxa ADD PRIMARY KEY (taxon_id);
 COMMIT;
 
-/* ********** Integrate Catalog of Life Data ********* */
+/*
+                ********** Integrate Catalog of Life Data *********
+
++ aggregate the catalog of life vernacular names table to the scientific name level,
+  with string lists of English names and JSON ready strings for tags in other
+  languages
++ add in information from the manual table of common names and from inaturalist taxa,
+  so that every taxon record has the best possible title
+
+*/
 drop table if exists inaturalist.taxa_with_vernacular;
 create table inaturalist.taxa_with_vernacular as
 (
@@ -77,7 +82,7 @@ create table inaturalist.taxa_with_vernacular as
         FROM inaturalist.col_name_usage n
             INNER JOIN inaturalist.col_vernacular v on v.taxonid = n.id
         where length(n.id) <= 10
-        group by cast(md5(n.scientificname) as uuid)
+        group by 1
     )
     select
         taxa.taxon_id,
@@ -101,7 +106,14 @@ create table inaturalist.taxa_with_vernacular as
 ALTER TABLE inaturalist.taxa_with_vernacular ADD PRIMARY KEY (taxon_id);
 COMMIT;
 
-/* ********** Create enriched table with ancestry tags ********* */
+/*
+           ********** Create enriched table with ancestry tags *********
+Join each record to all of its ancestor records and aggregate ancestor titles into the
+tags along with json-ready strings from the enriched data above.
+    + expand each ancestry string into an array
+    + get the taxa record for each value of the array
+    + aggregate back to the original taxon level, with tags for ancestor names (titles)
+*/
 DROP table if exists inaturalist.taxa_enriched;
 create table inaturalist.taxa_enriched as
 (
