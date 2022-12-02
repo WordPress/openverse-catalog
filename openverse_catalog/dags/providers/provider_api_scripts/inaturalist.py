@@ -17,10 +17,6 @@ Notes:      [The iNaturalist API is not intended for data scraping.]
             We use the table structure defined [here,]
             (https://github.com/inaturalist/inaturalist-open-data/blob/main/Metadata/structure.sql)
             except for adding ancestry tags to the taxa table.
-
-TO DO:      - need to get better at post run reporting
-            - figure out a better way to store batch limit for DRYer code
-            - decide about writing source files to s3, which ones, what to delete
 """
 
 import logging

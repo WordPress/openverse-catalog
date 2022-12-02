@@ -21,11 +21,10 @@ INSERT INTO {intermediate_table}
         The same photo_id can have multiple records, for example if there are multiple
         observations for separate species. But it only actually happens in about 0.1% of
         the photos. For now, we're skipping them.
-        TO DO: Figure out aggregating tags and titles or formatting alternate foreign
-        identifiers for photos with multiple taxa and process them separately.
+        TO DO #685: Figure out aggregating tags and titles or formatting alternate
+        foreign ids for photos with multiple taxa and process them separately.
         (If we go the alternate foreign id way, we'd want to drop photos loaded in the
         first inaturalist load.)
-        https://github.com/WordPress/openverse-catalog/issues/685
         */
         INATURALIST.PHOTOS.PHOTO_ID as FOREIGN_ID,
         'https://www.inaturalist.org/photos/' || INATURALIST.PHOTOS.PHOTO_ID

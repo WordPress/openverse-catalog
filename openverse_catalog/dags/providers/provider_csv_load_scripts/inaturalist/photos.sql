@@ -6,8 +6,6 @@ PHOTOS
     constraint on observer_id in order to save load time
 --  photo_id is not unique. There are ~130,000 duplicate photo_ids (~0.1% of photos).
     Both records are saved to the TSV and only one is loaded back into to postgres.
---  TO DO: See https://github.com/WordPress/openverse-catalog/issues/685 for more on
-    handling duplicate photo ids.
 
 Taking DDL from
 https://github.com/inaturalist/inaturalist-open-data/blob/main/Metadata/structure.sql

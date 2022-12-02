@@ -27,7 +27,7 @@ Tags:
 Representing tags in this way to be consistent with python processing
 "_enrich_tags":
 https://github.com/WordPress/openverse-catalog/blob/337ea7aede228609cbd5031e3a501f22b6ccc482/openverse_catalog/dags/common/storage/media.py#L265
-TO DO: Find a DRYer way to do this enrichment with SQL (see issue #902)
+TO DO #902: Find a DRYer way to do this enrichment with SQL
 */
 
 /* ********** Load raw iNaturalist Data ********* */
