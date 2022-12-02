@@ -38,8 +38,7 @@ CREATE TABLE inaturalist.taxa (
     rank_level double precision,
     rank character varying(255),
     name character varying(255),
-    active boolean /*,
-    ancestor_names text */
+    active boolean
 );
 SELECT aws_s3.table_import_from_s3('inaturalist.taxa',
     'taxon_id, ancestry, rank_level, rank, name, active',
@@ -100,7 +99,8 @@ create table inaturalist.taxa_with_vernacular as
     from inaturalist.taxa
     LEFT JOIN catalog_of_life
         on (cast(md5(taxa.name) as uuid) = catalog_of_life.md5_scientificname)
-    LEFT JOIN inaturalist.manual_name_additions on (taxa.taxon_id = manual_name_additions.taxon_id)
+    LEFT JOIN inaturalist.manual_name_additions
+        on (cast(md5(taxa.name) as uuid) = manual_name_additions.md5_scientificname)
     where taxa.name <> 'Not assigned'
 );
 ALTER TABLE inaturalist.taxa_with_vernacular ADD PRIMARY KEY (taxon_id);

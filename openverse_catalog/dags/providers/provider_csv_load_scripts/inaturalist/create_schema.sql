@@ -131,20 +131,19 @@ DROP TABLE IF EXISTS inaturalist.manual_name_additions;
 COMMIT;
 
 CREATE TABLE inaturalist.manual_name_additions (
-    taxon_id int,
+    md5_scientificname uuid,
     vernacular_name varchar(100)
 );
 INSERT INTO inaturalist.manual_name_additions
-    (taxon_id, vernacular_name)
-    VALUES
-    (1, 'Animals'),
-    (47118, 'Spider'),
-    (47124, 'Flowers'),
-    (47126, 'Plants'),
-    (47157, 'Butterflies and Moths'),
-    (47158, 'Insect'),
-    (47167, 'Mushroom'),
-    (47434, 'Grass'),
-    (47604, 'Daisy'),
-    (48662, 'Monarch Butterfly');
+    (md5_scientificname, vernacular_name)
+    (cast(md5('Animalia') as uuid), 'Animals'),
+    (cast(md5('Araneae') as uuid), 'Spider'),
+    (cast(md5('Magnoliopsida') as uuid), 'Flowers'),
+    (cast(md5('Plantae') as uuid), 'Plants'),
+    (cast(md5('Lepidoptera') as uuid), 'Butterflies and Moths'),
+    (cast(md5('Insecta') as uuid), 'Insect'),
+    (cast(md5('Agaricales') as uuid), 'Mushroom'),
+    (cast(md5('Poaceae') as uuid), 'Grass'),
+    (cast(md5('Asteraceae') as uuid), 'Daisy'),
+    (cast(md5('Danaus plexippus') as uuid), 'Monarch Butterfly');
 COMMIT;
