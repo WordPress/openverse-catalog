@@ -1,3 +1,12 @@
+"""
+Content Provider:       Statens Museum for Kunst (National Gallery of Denmark)
+
+ETL Process:            Use the API to identify all openly licensed media.
+
+Output:                 TSV file containing the media metadata.
+
+Notes:                  https://www.smk.dk/en/article/smk-api/
+"""
 import logging
 
 from common import constants
