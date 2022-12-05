@@ -1,5 +1,4 @@
 import logging
-import re
 
 from common import constants
 from common.licenses import get_license_info
@@ -16,7 +15,6 @@ class SmkDataIngester(ProviderDataIngester):
     batch_limit = 2000
     headers = {"Accept": "application/json"}
     providers = {"image": prov.SMK_DEFAULT_PROVIDER}
-    thumbnail_width_px = 600
 
     def get_media_type(self, record: dict) -> str:
         return constants.IMAGE
@@ -78,7 +76,6 @@ class SmkDataIngester(ProviderDataIngester):
     @staticmethod
     def _get_images(item: dict) -> list:
         images = []
-        thumbs_width = SmkDataIngester.thumbnail_width_px
 
         # Legacy images do not have an iiif_id; fall back to the ID from the
         # collection DB.
@@ -92,7 +89,7 @@ class SmkDataIngester(ProviderDataIngester):
             else:
                 image_url = SmkDataIngester._get_image_url(iiif_id)
 
-            thumbnail_url = re.sub(r"!\d+,", f"!{thumbs_width},", image_url)
+            thumbnail_url = item.get("image_thumbnail")
             height = item.get("image_height")
             width = item.get("image_width")
             filesize = item.get("image_size") or item.get("size")
@@ -117,7 +114,7 @@ class SmkDataIngester(ProviderDataIngester):
                         # 'id', so we must skip if `iiif_id` is not present.
                         continue
                     image_url = SmkDataIngester._get_image_url(iiif_id)
-                    thumbnail_url = re.sub(r"!\d+,", f"!{thumbs_width},", image_url)
+                    thumbnail_url = alt_img.get("thumbnail")
                     height = alt_img.get("height")
                     width = alt_img.get("width")
                     filesize = alt_img.get("image_size") or alt_img.get("size")
