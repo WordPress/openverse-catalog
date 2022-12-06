@@ -43,10 +43,11 @@ class ScienceMuseumDataIngester(ProviderDataIngester):
         self.page_number = 0
 
     @staticmethod
-    def _get_year_ranges(final_year):
+    def _get_year_ranges(final_year: int) -> list[tuple[int, int]]:
         """
-        The Science Museum API raises a 400 when attempting to access any
-        page number higher than 50.
+        The Science Museum API currently raises a 400 when attempting to access
+        any page number higher than 50
+        (https://github.com/TheScienceMuseum/collectionsonline/issues/1470).
 
         To avoid this, we ingest data for small ranges of years at a time,
         in order to split the data into batches less than 50 pages each.
