@@ -25,6 +25,8 @@ from airflow.providers.amazon.aws.sensors.rds import RdsSnapshotExistenceSensor
 
 logger = logging.getLogger(__name__)
 
+DAG_ID = "check_silenced_dags"
+MAX_ACTIVE = 1
 
 AIRFLOW_RDS_ARN = Variable.get("AIRFLOW_RDS_ARN")
 AIRFLOW_RDS_SNAPSHOTS_TO_RETAIN = Variable.get(
@@ -56,10 +58,16 @@ def delete_previous_snapshots():
 
 
 @dag(
+    dag_id=DAG_ID,
     # At 00:00 on Saturday, this puts it before the data refresh starts
     schedule="0 0 * * 6",
     start_date=datetime(2022, 12, 2),
     tags=["maintenance"],
+    max_active_tasks=MAX_ACTIVE,
+    max_active_runs=MAX_ACTIVE,
+    catchup=False,
+    # Use the docstring at the top of the file as md docs in the UI
+    doc_md=__doc__,
 )
 def rotate_db_snapshots():
     snapshot_id = "airflow-{{ ds }}"
