@@ -134,16 +134,28 @@ CREATE TABLE inaturalist.manual_name_additions (
     md5_scientificname uuid,
     vernacular_name varchar(100)
 );
+with records as
+    (
+        select cast(md5('Animalia') as uuid) as md5_scientificname, 'Animals' as vernacular_name
+        union all
+        select cast(md5('Araneae') as uuid) as md5_scientificname, 'Spider' as vernacular_name
+        union all
+        select cast(md5('Magnoliopsida') as uuid) as md5_scientificname, 'Flowers' as vernacular_name
+        union all
+        select cast(md5('Plantae') as uuid) as md5_scientificname, 'Plants' as vernacular_name
+        union all
+        select cast(md5('Lepidoptera') as uuid) as md5_scientificname, 'Butterflies and Moths' as vernacular_name
+        union all
+        select cast(md5('Insecta') as uuid) as md5_scientificname, 'Insect' as vernacular_name
+        union all
+        select cast(md5('Agaricales') as uuid) as md5_scientificname, 'Mushroom' as vernacular_name
+        union all
+        select cast(md5('Poaceae') as uuid) as md5_scientificname, 'Grass' as vernacular_name
+        union all
+        select cast(md5('Asteraceae') as uuid) as md5_scientificname, 'Daisy' as vernacular_name
+        union all
+        select cast(md5('Danaus plexippus') as uuid) as md5_scientificname, 'Monarch Butterfly' as vernacular_name
+    )
 INSERT INTO inaturalist.manual_name_additions
-    (md5_scientificname, vernacular_name)
-    (cast(md5('Animalia') as uuid), 'Animals'),
-    (cast(md5('Araneae') as uuid), 'Spider'),
-    (cast(md5('Magnoliopsida') as uuid), 'Flowers'),
-    (cast(md5('Plantae') as uuid), 'Plants'),
-    (cast(md5('Lepidoptera') as uuid), 'Butterflies and Moths'),
-    (cast(md5('Insecta') as uuid), 'Insect'),
-    (cast(md5('Agaricales') as uuid), 'Mushroom'),
-    (cast(md5('Poaceae') as uuid), 'Grass'),
-    (cast(md5('Asteraceae') as uuid), 'Daisy'),
-    (cast(md5('Danaus plexippus') as uuid), 'Monarch Butterfly');
+(select * from records);
 COMMIT;
