@@ -1,3 +1,18 @@
+"""
+Manages weekly database snapshots. RDS does not support weekly snapshots
+schedules on its own, so we need a DAG to manage this for us.
+
+It runs on Saturdays at 00:00 UTC in order to happen before the data refresh.
+
+The DAG will automatically delete the oldest snapshots when more snaphots
+exist than it is configured to retain.
+
+Requires two variables:
+
+`AIRFLOW_RDS_ARN`: The ARN of the RDS DB instance that needs snapshots.
+`AIRFLOW_RDS_SNAPSHOTS_TO_RETAIN`: How many historical snapshots to retain.
+"""
+
 import logging
 from datetime import datetime
 
@@ -44,6 +59,7 @@ def delete_previous_snapshots():
     # At 00:00 on Saturday, this puts it before the data refresh starts
     schedule="0 0 * * 6",
     start_date=datetime(2022, 12, 2),
+    tags=["maintenance"],
 )
 def rotate_db_snapshots():
     snapshot_id = "airflow-{{ ds }}"

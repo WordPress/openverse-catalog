@@ -44,6 +44,7 @@ The following are DAGs grouped by their primary tag:
 | [`airflow_log_cleanup`](#airflow_log_cleanup) | `@weekly`         |
 | [`check_silenced_dags`](#check_silenced_dags) | `@weekly`         |
 | [`pr_review_reminders`](#pr_review_reminders) | `0 0 * * 1-5`     |
+| `rotate_db_snapshots`                         | `0 0 * * 6`       |
 
 ## Oauth
 
