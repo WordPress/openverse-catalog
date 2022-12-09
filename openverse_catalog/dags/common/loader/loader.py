@@ -34,37 +34,19 @@ def load_s3_data(
     )
 
 
-def load_from_s3(
-    bucket: str,
-    key: str,
-    postgres_conn_id: str,
-    media_type: str,
-    identifier: str,
-) -> int:
-    """
-    Loads data from S3 into the intermediary loading table.
-
-    Returns the int number of rows that were loaded.
-    """
-    return sql.load_s3_data_to_intermediate_table(
-        postgres_conn_id, bucket, key, identifier, media_type
-    )
-
-
 def upsert_data(
     postgres_conn_id: str,
     media_type: str,
     tsv_version: str,
     identifier: str,
     loaded_count: int,
+    duplicates_count: tuple[int, int],
 ) -> RecordMetrics:
     """
-    Cleans data in the intermediary loading table, and then upserts it into
-    the Catalog DB.
+    Upserts data into the catalog DB from the loading table, and calculates
+    final record metrics.
     """
-    missing_columns, foreign_id_dup = sql.clean_intermediate_table_data(
-        postgres_conn_id, identifier, media_type
-    )
+    missing_columns, foreign_id_dup = duplicates_count
     upserted = sql.upsert_records_to_db_table(
         postgres_conn_id, identifier, media_type=media_type, tsv_version=tsv_version
     )

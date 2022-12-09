@@ -18,5 +18,7 @@ def test_upsert_data_calculations(load_value, clean_data_value, upsert_value, ex
         sql_mock.clean_intermediate_table_data.return_value = clean_data_value
         sql_mock.upsert_records_to_db_table.return_value = upsert_value
 
-        actual = loader.upsert_data(mock.Mock(), "fake", "fake", "fake", load_value)
+        actual = loader.upsert_data(
+            mock.Mock(), "fake", "fake", "fake", load_value, clean_data_value
+        )
         assert actual == expected

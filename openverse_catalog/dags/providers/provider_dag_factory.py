@@ -198,13 +198,25 @@ def create_ingestion_workflow(
                 load_from_s3 = PythonOperator(
                     task_id=append_day_shift("load_from_s3"),
                     retries=1,
-                    python_callable=loader.load_from_s3,
+                    python_callable=sql.load_s3_data_to_intermediate_table,
                     op_kwargs={
-                        "bucket": OPENVERSE_BUCKET,
-                        "key": XCOM_PULL_TEMPLATE.format(copy_to_s3.task_id, "s3_key"),
                         "postgres_conn_id": DB_CONN_ID,
-                        "media_type": media_type,
+                        "bucket": OPENVERSE_BUCKET,
+                        "s3_key": XCOM_PULL_TEMPLATE.format(
+                            copy_to_s3.task_id, "s3_key"
+                        ),
                         "identifier": identifier,
+                        "media_type": media_type,
+                    },
+                )
+                clean_data = PythonOperator(
+                    task_id=append_day_shift("clean_data"),
+                    retries=1,
+                    python_callable=sql.clean_intermediate_table_data,
+                    op_kwargs={
+                        "postgres_conn_id": DB_CONN_ID,
+                        "identifier": identifier,
+                        "media_type": media_type,
                     },
                 )
                 upsert_data = PythonOperator(
@@ -222,6 +234,9 @@ def create_ingestion_workflow(
                         "loaded_count": XCOM_PULL_TEMPLATE.format(
                             load_from_s3.task_id, "return_value"
                         ),
+                        "duplicates_count": XCOM_PULL_TEMPLATE.format(
+                            clean_data.task_id, "return_value"
+                        ),
                     },
                 )
                 drop_loading_table = PythonOperator(
@@ -235,7 +250,7 @@ def create_ingestion_workflow(
                     trigger_rule=TriggerRule.ALL_DONE,
                 )
                 [create_loading_table, copy_to_s3] >> load_from_s3
-                load_from_s3 >> upsert_data >> drop_loading_table
+                load_from_s3 >> clean_data >> upsert_data >> drop_loading_table
 
                 record_counts_by_media_type[media_type] = XCOM_PULL_TEMPLATE.format(
                     upsert_data.task_id, "return_value"
