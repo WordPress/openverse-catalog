@@ -183,7 +183,7 @@ PROVIDER_WORKFLOWS = [
         ingester_class=SmithsonianDataIngester,
         start_date=datetime(2020, 1, 1),
         schedule_string="@weekly",
-        upsert_timeout=timedelta(hours=4),
+        upsert_timeout=timedelta(hours=6),
     ),
     ProviderWorkflow(
         ingester_class=SmkDataIngester,
