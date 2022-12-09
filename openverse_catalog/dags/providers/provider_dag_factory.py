@@ -221,7 +221,7 @@ def create_ingestion_workflow(
                 )
                 upsert_data = PythonOperator(
                     task_id=append_day_shift("upsert_data"),
-                    execution_timeout=conf.load_timeout,
+                    execution_timeout=conf.upsert_timeout,
                     retries=1,
                     python_callable=loader.upsert_data,
                     op_kwargs={
