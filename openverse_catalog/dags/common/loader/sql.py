@@ -125,8 +125,6 @@ def load_local_data_to_intermediate_table(
             "Exceeded the maximum number of allowed defective rows"
         )
 
-    clean_intermediate_table_data(postgres_conn_id, identifier, media_type)
-
 
 def _handle_s3_load_result(cursor) -> int:
     """
