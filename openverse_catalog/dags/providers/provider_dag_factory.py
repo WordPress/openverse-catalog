@@ -197,7 +197,6 @@ def create_ingestion_workflow(
                 )
                 load_from_s3 = PythonOperator(
                     task_id=append_day_shift("load_from_s3"),
-                    execution_timeout=conf.load_timeout,
                     retries=1,
                     python_callable=loader.load_from_s3,
                     op_kwargs={
@@ -205,10 +204,24 @@ def create_ingestion_workflow(
                         "key": XCOM_PULL_TEMPLATE.format(copy_to_s3.task_id, "s3_key"),
                         "postgres_conn_id": DB_CONN_ID,
                         "media_type": media_type,
+                        "identifier": identifier,
+                    },
+                )
+                upsert_data = PythonOperator(
+                    task_id=append_day_shift("upsert_data"),
+                    execution_timeout=conf.load_timeout,
+                    retries=1,
+                    python_callable=loader.upsert_data,
+                    op_kwargs={
+                        "postgres_conn_id": DB_CONN_ID,
+                        "media_type": media_type,
                         "tsv_version": XCOM_PULL_TEMPLATE.format(
                             copy_to_s3.task_id, "tsv_version"
                         ),
                         "identifier": identifier,
+                        "loaded_count": XCOM_PULL_TEMPLATE.format(
+                            load_from_s3.task_id, "return_value"
+                        ),
                     },
                 )
                 drop_loading_table = PythonOperator(
@@ -222,10 +235,10 @@ def create_ingestion_workflow(
                     trigger_rule=TriggerRule.ALL_DONE,
                 )
                 [create_loading_table, copy_to_s3] >> load_from_s3
-                load_from_s3 >> drop_loading_table
+                load_from_s3 >> upsert_data >> drop_loading_table
 
                 record_counts_by_media_type[media_type] = XCOM_PULL_TEMPLATE.format(
-                    load_from_s3.task_id, "return_value"
+                    upsert_data.task_id, "return_value"
                 )
                 load_tasks.append(load_data)
 
