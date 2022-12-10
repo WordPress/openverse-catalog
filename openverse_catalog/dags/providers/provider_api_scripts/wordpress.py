@@ -81,7 +81,11 @@ class WordPressDataIngester(ProviderDataIngester):
         self.current_page += 1
 
         # Do not continue if we have exceeded the total pages
-        return self.current_page <= self.total_pages
+        if self.current_page > self.total_pages:
+            logger.info("The final page of data has been processed. Halting ingestion.")
+            return False
+
+        return True
 
     def get_record_data(self, data):
         """
