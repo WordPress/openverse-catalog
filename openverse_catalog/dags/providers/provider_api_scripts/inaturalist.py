@@ -62,6 +62,8 @@ class INaturalistDataIngester(ProviderDataIngester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.pg = PostgresHook(POSTGRES_CONN_ID)
+        # Over-ride test batch limit logic for bulk load. Instead, use small test source
+        # files in tests/s3-data/inaturalist-open-data.
         self.batch_limit = 2_000_000
 
     def get_next_query_params(self, prev_query_params=None, **kwargs):
