@@ -14,22 +14,12 @@ The DAGs are shown in two forms:
 
 The following are DAGs grouped by their primary tag:
 
- 1. [Commoncrawl](#commoncrawl)
  1. [Data Refresh](#data_refresh)
  1. [Database](#database)
  1. [Maintenance](#maintenance)
  1. [Oauth](#oauth)
  1. [Provider](#provider)
  1. [Provider Reingestion](#provider-reingestion)
-
-## Commoncrawl
-
-| DAG ID | Schedule Interval |
-| --- | --- |
-| `commoncrawl_etl_workflow` | `0 0 * * 1` |
-| `sync_commoncrawl_workflow` | `0 16 15 * *` |
-
-
 
 ## Data Refresh
 
@@ -48,7 +38,6 @@ The following are DAGs grouped by their primary tag:
 | [`recreate_audio_popularity_calculation`](#recreate_audio_popularity_calculation) | `None` |
 | [`recreate_image_popularity_calculation`](#recreate_image_popularity_calculation) | `None` |
 | [`report_pending_reported_media`](#report_pending_reported_media) | `@weekly` |
-| [`tsv_to_postgres_loader`](#tsv_to_postgres_loader) | `None` |
 
 
 
@@ -86,11 +75,11 @@ The following are DAGs grouped by their primary tag:
 | [`metropolitan_museum_workflow`](#metropolitan_museum_workflow) | `@daily` | `True` | image |
 | `museum_victoria_workflow` | `@monthly` | `False` | image |
 | `nypl_workflow` | `@monthly` | `False` | image |
-| [`phylopic_workflow`](#phylopic_workflow) | `@weekly` | `True` | image |
-| `rawpixel_workflow` | `@monthly` | `False` | image |
-| `science_museum_workflow` | `@monthly` | `False` | image |
+| [`phylopic_workflow`](#phylopic_workflow) | `@daily` | `True` | image |
+| [`rawpixel_workflow`](#rawpixel_workflow) | `@monthly` | `False` | image |
+| [`science_museum_workflow`](#science_museum_workflow) | `@monthly` | `False` | image |
 | [`smithsonian_workflow`](#smithsonian_workflow) | `@weekly` | `False` | image |
-| `smk_workflow` | `@monthly` | `False` | image |
+| [`smk_workflow`](#smk_workflow) | `@monthly` | `False` | image |
 | [`stocksnap_workflow`](#stocksnap_workflow) | `@monthly` | `False` | image |
 | [`wikimedia_commons_workflow`](#wikimedia_commons_workflow) | `@daily` | `True` | image, audio |
 | [`wordpress_workflow`](#wordpress_workflow) | `@monthly` | `False` | image |
@@ -103,6 +92,8 @@ The following are DAGs grouped by their primary tag:
 | --- | --- |
 | [`europeana_reingestion_workflow`](#europeana_reingestion_workflow) | `@weekly` |
 | [`flickr_reingestion_workflow`](#flickr_reingestion_workflow) | `@weekly` |
+| [`metropolitan_museum_reingestion_workflow`](#metropolitan_museum_reingestion_workflow) | `@weekly` |
+| [`phylopic_reingestion_workflow`](#phylopic_reingestion_workflow) | `@weekly` |
 | [`wikimedia_reingestion_workflow`](#wikimedia_reingestion_workflow) | `@weekly` |
 
 
@@ -121,17 +112,21 @@ The following is documentation associated with each DAG (where available):
  1. [`image_data_refresh`](#image_data_refresh)
  1. [`inaturalist_workflow`](#inaturalist_workflow)
  1. [`jamendo_workflow`](#jamendo_workflow)
+ 1. [`metropolitan_museum_reingestion_workflow`](#metropolitan_museum_reingestion_workflow)
  1. [`metropolitan_museum_workflow`](#metropolitan_museum_workflow)
  1. [`oauth2_authorization`](#oauth2_authorization)
  1. [`oauth2_token_refresh`](#oauth2_token_refresh)
+ 1. [`phylopic_reingestion_workflow`](#phylopic_reingestion_workflow)
  1. [`phylopic_workflow`](#phylopic_workflow)
  1. [`pr_review_reminders`](#pr_review_reminders)
+ 1. [`rawpixel_workflow`](#rawpixel_workflow)
  1. [`recreate_audio_popularity_calculation`](#recreate_audio_popularity_calculation)
  1. [`recreate_image_popularity_calculation`](#recreate_image_popularity_calculation)
  1. [`report_pending_reported_media`](#report_pending_reported_media)
+ 1. [`science_museum_workflow`](#science_museum_workflow)
  1. [`smithsonian_workflow`](#smithsonian_workflow)
+ 1. [`smk_workflow`](#smk_workflow)
  1. [`stocksnap_workflow`](#stocksnap_workflow)
- 1. [`tsv_to_postgres_loader`](#tsv_to_postgres_loader)
  1. [`wikimedia_commons_workflow`](#wikimedia_commons_workflow)
  1. [`wikimedia_reingestion_workflow`](#wikimedia_reingestion_workflow)
  1. [`wordpress_workflow`](#wordpress_workflow)
@@ -201,13 +196,13 @@ Checks for DAGs that have silenced Slack alerts which may need to be turned back
 on.
 
 When a DAG has known failures, it can be ommitted from Slack error reporting by adding
-an entry to the `silenced_slack_notifications` Airflow variable. This is a dictionary
+an entry to the `SILENCED_SLACK_NOTIFICATIONS` Airflow variable. This is a dictionary
 where thekey is the `dag_id` of the affected DAG, and the value is a list of
 SilencedSlackNotifications (which map silenced notifications to GitHub URLs) for that
 DAG.
 
 The `check_silenced_dags` DAG iterates over the entries in the
-`silenced_slack_notifications` configuration and verifies that the associated GitHub
+`SILENCED_SLACK_NOTIFICATIONS` configuration and verifies that the associated GitHub
 issues are still open. If an issue has been closed, it is assumed that the DAG should
 have Slack reporting reenabled, and an alert is sent to prompt manual update of the
 configuration. This prevents developers from forgetting to reenable Slack reporting
@@ -364,6 +359,35 @@ Notes:                  https://api.jamendo.com/v3.0/tracks/
                         channels: 1/2
 
 
+## `metropolitan_museum_reingestion_workflow`
+
+
+Content Provider:       Metropolitan Museum of Art
+
+ETL Process:            Use the API to identify all CC0 artworks.
+
+Output:                 TSV file containing the image, their respective
+                        meta-data.
+
+Notes:                  https://metmuseum.github.io/#search
+                        "Please limit requests to 80 requests per second." May need to
+                        bump up the delay (e.g. to 3 seconds), to avoid of blocking
+                        during local development testing.
+
+                        Some analysis to improve data quality was conducted using a
+                        separate csv file here: https://github.com/metmuseum/openaccess
+
+                        Get a list of object IDs:
+                        https://collectionapi.metmuseum.org/public/collection/v1/objects?metadataDate=2022-08-10
+                        Get a specific object:
+                        https://collectionapi.metmuseum.org/public/collection/v1/objects/1027
+                        The search functionality requires a specific query (term search)
+                        in addition to date and public domain. It seems like it won't
+                        connect with just date and license.
+                        https://collectionapi.metmuseum.org/public/collection/v1/search?isPublicDomain=true&metadataDate=2022-08-07
+
+
+
 ## `metropolitan_museum_workflow`
 
 
@@ -431,6 +455,20 @@ update the tokens stored in the Variable upon successful refresh.
 - Freesound
 
 
+## `phylopic_reingestion_workflow`
+
+
+Content Provider:       PhyloPic
+
+ETL Process:            Use the API to identify all CC licensed images.
+
+Output:                 TSV file containing the image,
+                        their respective meta-data.
+
+Notes:                  http://phylopic.org/api/
+                        No rate limit specified.
+
+
 ## `phylopic_workflow`
 
 
@@ -466,6 +504,23 @@ when determining how much time has passed since the review.
 Unfortunately the DAG does not know when someone is on vacation. It is up to the
 author of the PR to re-assign review if one of the randomly selected reviewers
 is unavailable for the time period during which the PR should be reviewed.
+
+
+## `rawpixel_workflow`
+
+
+Content Provider:       Rawpixel
+
+ETL Process:            Use the API to identify all CC-licensed images.
+
+Output:                 TSV file containing the image meta-data.
+
+Notes:                  Rawpixel has given Openverse beta access to their API.
+                        This API is undocumented, and we will need to contact Rawpixel
+                        directly if we run into any issues.
+                        The public API max results range is limited to 100,000 results,
+                        although the API key we've been given can circumvent this limit.
+                        https://www.rawpixel.com/api/v1/search?tags=$publicdomain&page=1&pagesize=100
 
 
 ## `recreate_audio_popularity_calculation`
@@ -507,17 +562,42 @@ taken. If a record has been reported multiple times, it only needs to be
 reviewed once and so is only counted once in the reporting by this DAG.
 
 
+## `science_museum_workflow`
+
+
+Content Provider:       Science Museum
+
+ETL Process:            Use the API to identify all CC-licensed images.
+
+Output:                 TSV file containing the image, the respective
+                        meta-data.
+
+Notes:                  https://github.com/TheScienceMuseum/collectionsonline/wiki/Collections-Online-API  # noqa
+                        Rate limited, no specific rate given.
+
+
 ## `smithsonian_workflow`
 
 
-Content Provider:  Smithsonian
+Content Provider:   Smithsonian
 
-ETL Process:       Use the API to identify all CC licensed images.
+ETL Process:        Use the API to identify all CC licensed images.
 
-Output:            TSV file containing the images and the respective
-                   meta-data.
+Output:             TSV file containing the images and the respective meta-data.
 
-Notes:             None
+Notes:              https://api.si.edu/openaccess/api/v1.0/search
+
+
+## `smk_workflow`
+
+
+Content Provider:       Statens Museum for Kunst (National Gallery of Denmark)
+
+ETL Process:            Use the API to identify all openly licensed media.
+
+Output:                 TSV file containing the media metadata.
+
+Notes:                  https://www.smk.dk/en/article/smk-api/
 
 
 ## `stocksnap_workflow`
@@ -534,56 +614,6 @@ Notes:                  https://stocksnap.io/api/load-photos/date/desc/1
                         All images are licensed under CC0.
                         No rate limits or authorization required.
                         API is undocumented.
-
-
-## `tsv_to_postgres_loader`
-
-#### Database Loader DAG
-**DB Loader Apache Airflow DAG** (directed acyclic graph) takes the media data saved
-locally in TSV files, cleans it using an intermediate database table, and saves
-the cleaned-up data into the main database (also called upstream or Openledger).
-
-In production,"locally" means on AWS EC2 instance that runs the Apache Airflow
-webserver. Storing too much data there is dangerous, because if ingestion to the
-database breaks down, the disk of this server gets full, and breaks all
-Apache Airflow operations.
-
-As a first step, the DB Loader Apache Airflow DAG saves the data gathered by
-Provider API Scripts to S3 before attempting to load it to PostgreSQL, and delete
- it from disk if saving to S3 succeeds, even if loading to PostgreSQL fails.
-
-This way, we can delete data from the EC2 instance to open up disk space without
- the possibility of losing that data altogether. This will allow us to recover if
- we lose data from the DB somehow, because it will all be living in S3.
-It's also a prerequisite to the long-term plan of saving data only to S3
-(since saving it to the EC2 disk is a source of concern in the first place).
-
-This is one step along the path to avoiding saving data on the local disk at all.
-It should also be faster to load into the DB from S3, since AWS RDS instances
-provide special optimized functionality to load data from S3 into tables in the DB.
-
-Loading the data into the Database is a two-step process: first, data is saved
-to the intermediate table. Any items that don't have the required fields
-(media url, license, foreign landing url and foreign id), and duplicates as
-determined by combination of provider and foreign_id are deleted.
-Then the data from the intermediate table is upserted into the main database.
-If the same item is already present in the database, we update its information
-with newest (non-null) data, and merge any metadata or tags objects to preserve all
-previously downloaded data, and update any data that needs updating
-(eg. popularity metrics).
-
-You can find more background information on the loading process in the following
-issues and related PRs:
-
-- [[Feature] More sophisticated merging of columns in PostgreSQL when upserting](
-https://github.com/creativecommons/cccatalog/issues/378)
-
-- [DB Loader DAG should write to S3 as well as PostgreSQL](
-https://github.com/creativecommons/cccatalog/issues/333)
-
-- [DB Loader should take data from S3, rather than EC2 to load into PostgreSQL](
-https://github.com/creativecommons/cccatalog/issues/334)
-
 
 
 ## `wikimedia_commons_workflow`

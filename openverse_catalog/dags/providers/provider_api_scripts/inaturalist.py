@@ -24,7 +24,6 @@ import os
 import zipfile
 from datetime import timedelta
 from pathlib import Path
-from typing import Dict
 
 import pendulum
 import requests
@@ -72,7 +71,7 @@ class INaturalistDataIngester(ProviderDataIngester):
             next_offset = prev_query_params["offset_num"] + self.batch_limit
             return {"offset_num": next_offset}
 
-    def get_response_json(self, query_params: Dict):
+    def get_response_json(self, query_params):
         raise NotImplementedError("TSV files from AWS S3 processed in postgres.")
 
     def get_batch_data(self, response_json):

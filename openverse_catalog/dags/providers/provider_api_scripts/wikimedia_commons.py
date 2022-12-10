@@ -14,7 +14,6 @@ import argparse
 import logging
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
-from typing import Optional
 
 import lxml.html as html
 from common.constants import AUDIO, IMAGE
@@ -51,15 +50,15 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
 
     # The batch_limit applies to the number of pages received by the API, rather
     # than the number of individual records. This means that for Wikimedia Commons
-    # setting a global `ingestion_limit` will still limit the number of records, but
+    # setting a global `INGESTION_LIMIT` will still limit the number of records, but
     # the exact limit may not be respected.
     batch_limit = 250
 
-    def __init__(self, conf: dict = None, date: str | None = None):
-        self.start_timestamp, self.end_timestamp = self.derive_timestamp_pair(date)
-        self.continue_token = {}
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-        super().__init__(conf, date)
+        self.start_timestamp, self.end_timestamp = self.derive_timestamp_pair(self.date)
+        self.continue_token = {}
 
     def get_next_query_params(self, prev_query_params, **kwargs):
         return {
@@ -290,7 +289,7 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
                 return "pronunciation"
 
     @staticmethod
-    def extract_ext_value(media_info: dict, ext_key: str) -> Optional[str]:
+    def extract_ext_value(media_info: dict, ext_key: str) -> str | None:
         return media_info.get("extmetadata", {}).get(ext_key, {}).get("value")
 
     @staticmethod

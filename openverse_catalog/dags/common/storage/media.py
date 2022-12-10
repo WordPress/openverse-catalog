@@ -2,7 +2,6 @@ import abc
 import logging
 import os
 from datetime import datetime
-from typing import Optional, Union
 
 from common.extensions import extract_filetype
 from common.licenses import is_valid_license_info
@@ -49,28 +48,21 @@ class MediaStore(metaclass=abc.ABCMeta):
     date:           Date String in the form YYYY-MM-DD. This is the date for
                     which data is being stored. If provided, it will be appended to
                     the tsv filename.
-    output_file:    String giving a temporary .tsv filename (*not* the
-                    full path) where the media info should be stored.
-    output_dir:     String giving a path where `output_file` should be placed.
     buffer_length:  Integer giving the maximum number of media information rows
                     to store in memory before writing them to disk.
     """
 
     def __init__(
         self,
-        provider: Optional[str] = None,
-        output_file: Optional[str] = None,
-        output_dir: Optional[str] = None,
+        provider: str | None = None,
         buffer_length: int = 100,
-        media_type: Optional[str] = "generic",
+        media_type: str | None = "generic",
     ):
         logger.info(f"Initialized {media_type} MediaStore with provider {provider}")
         self.media_type = media_type
         self.provider = provider
         self.buffer_length = buffer_length
-        self.output_path = self._initialize_output_path(
-            output_dir, output_file, provider
-        )
+        self.output_path = self._initialize_output_path(provider)
         self.columns = None
         self._media_buffer = []
         self._total_items = 0
@@ -97,7 +89,7 @@ class MediaStore(metaclass=abc.ABCMeta):
         """
         pass
 
-    def clean_media_metadata(self, **media_data) -> Optional[dict]:
+    def clean_media_metadata(self, **media_data) -> dict | None:
         """
         Cleans and enriches the base media metadata common for all media types.
         Even though we clean license info in the provider API scripts,
@@ -157,10 +149,8 @@ class MediaStore(metaclass=abc.ABCMeta):
 
     def _initialize_output_path(
         self,
-        output_dir: Optional[str],
-        output_file: Optional[str],
-        provider: Optional[str],
-        version: Optional[str] = None,
+        provider: str | None,
+        version: str | None = None,
     ) -> str:
         """Creates the path for the tsv file.
         If output_dir and output_file ar not given,
@@ -170,9 +160,8 @@ class MediaStore(metaclass=abc.ABCMeta):
         Returns:
             Path of the tsv file to write media data pulled from providers
         """
-        if output_dir is None:
-            logger.info("No given output directory. Using OUTPUT_DIR from environment.")
-            output_dir = os.getenv("OUTPUT_DIR")
+
+        output_dir = os.getenv("OUTPUT_DIR")
         if output_dir is None:
             logger.warning(
                 "OUTPUT_DIR is not set in the environment. Output will go to /tmp."
@@ -180,13 +169,9 @@ class MediaStore(metaclass=abc.ABCMeta):
             output_dir = "/tmp"
         if version is None:
             version = CURRENT_VERSION[self.media_type]
-        if output_file is not None:
-            output_file = str(output_file)
-        else:
-            datetime_string = datetime.now().strftime("%Y%m%d%H%M%S")
-            output_file = (
-                f"{provider}_{self.media_type}_v{version}_{datetime_string}.tsv"
-            )
+
+        datetime_string = datetime.now().strftime("%Y%m%d%H%M%S")
+        output_file = f"{provider}_{self.media_type}_v{version}_{datetime_string}.tsv"
 
         output_path = os.path.join(output_dir, output_file)
         logger.info(f"Output path: {output_path}")
@@ -228,7 +213,7 @@ class MediaStore(metaclass=abc.ABCMeta):
         return buffer_length
 
     @staticmethod
-    def _tag_blacklisted(tag: Union[str, dict]) -> bool:
+    def _tag_blacklisted(tag: str | dict) -> bool:
         """
         Tag is banned or contains a banned substring.
         :param tag: the tag to be verified against the blacklist
@@ -262,7 +247,7 @@ class MediaStore(metaclass=abc.ABCMeta):
             )
         return enriched_meta_data
 
-    def _enrich_tags(self, raw_tags) -> Optional[list]:
+    def _enrich_tags(self, raw_tags) -> list | None:
         """Takes a list of tags and adds provider information to them
 
         Args:

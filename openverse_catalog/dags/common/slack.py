@@ -12,7 +12,7 @@ More information can be found here: https://app.slack.com/block-kit-builder.
 
 Messages or alerts sent using `send_message` or `on_failure_callback` will only
 send if a Slack connection is defined and we are running in production. You can
-manually override this for testing purposes by setting the `slack_message_override`
+manually override this for testing purposes by setting the `SLACK_MESSAGE_OVERRIDE`
 variable to `true` in the Airflow UI.
 
 ## Send multiple messages - payload is reset after sending
@@ -50,8 +50,9 @@ variable to `true` in the Airflow UI.
 
 import json
 import logging
+from collections.abc import Callable
 from os.path import basename
-from typing import Any, Callable, Optional, TypedDict
+from typing import Any, TypedDict
 
 from airflow.exceptions import AirflowNotFoundException
 from airflow.models import Variable
@@ -112,7 +113,7 @@ class SlackMessage:
 
     @staticmethod
     def _image_block(
-        url: str, title: Optional[str] = None, alt_text: Optional[str] = None
+        url: str, title: str | None = None, alt_text: str | None = None
     ) -> JsonDict:
         img = {"type": "image", "image_url": url}
         if title:
@@ -169,7 +170,7 @@ class SlackMessage:
             plain_text=plain_text,
         )
 
-    def add_context_image(self, url: str, alt_text: Optional[str] = None) -> None:
+    def add_context_image(self, url: str, alt_text: str | None = None) -> None:
         """Display context image inline within a text block"""
         self._add_context(self._image_block, url, alt_text=alt_text)
 
@@ -192,7 +193,7 @@ class SlackMessage:
         self._add_block({"type": "section", "text": text})
 
     def add_image(
-        self, url, title: Optional[str] = None, alt_text: Optional[str] = None
+        self, url, title: str | None = None, alt_text: str | None = None
     ) -> None:
         """Add an image block, with optional title and alt text."""
         self._add_block(self._image_block(url, title, alt_text))
@@ -230,7 +231,7 @@ class SlackMessage:
 
 def should_silence_message(text, username, dag_id):
     """
-    Checks the `silenced_slack_notifications` Airflow variable to see if the message
+    Checks the `SILENCED_SLACK_NOTIFICATIONS` Airflow variable to see if the message
     should be silenced for this DAG.
     """
     # Match on message text and username
@@ -238,7 +239,7 @@ def should_silence_message(text, username, dag_id):
 
     # Get the configuration for silenced messages for this DAG
     silenced_notifications: list[SilencedSlackNotification] = Variable.get(
-        "silenced_slack_notifications", default_var={}, deserialize_json=True
+        "SILENCED_SLACK_NOTIFICATIONS", default_var={}, deserialize_json=True
     ).get(dag_id, [])
 
     return bool(silenced_notifications) and any(
@@ -269,9 +270,9 @@ def should_send_message(
         return False
 
     # Exit early if we aren't on production or if force alert is not set
-    environment = Variable.get("environment", default_var="dev")
+    environment = Variable.get("ENVIRONMENT", default_var="dev")
     force_message = Variable.get(
-        "slack_message_override", default_var=False, deserialize_json=True
+        "SLACK_MESSAGE_OVERRIDE", default_var=False, deserialize_json=True
     )
     return environment == "prod" or force_message
 
@@ -291,7 +292,7 @@ def send_message(
     if not should_send_message(text, username, dag_id, http_conn_id):
         return
 
-    environment = Variable.get("environment", default_var="dev")
+    environment = Variable.get("ENVIRONMENT", default_var="dev")
     s = SlackMessage(
         f"{username} | {environment}",
         icon_emoji,
@@ -337,7 +338,7 @@ def on_failure_callback(context: dict) -> None:
     dag = context["dag"]
     ti = context["task_instance"]
     execution_date = context["execution_date"]
-    exception: Optional[Exception] = context.get("exception")
+    exception: Exception | None = context.get("exception")
     exception_message = ""
 
     if exception:

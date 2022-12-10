@@ -124,7 +124,7 @@ def create_ingestion_workflow(
         identifier = f"{provider_name}_{{{{ ts_nodash }}}}_{day_shift}"
 
         ingestion_kwargs = {
-            "ingestion_callable": conf.ingestion_callable,
+            "ingester_class": conf.ingester_class,
             "media_types": conf.media_types,
         }
         if conf.dated:
@@ -294,6 +294,7 @@ def create_provider_api_workflow_dag(conf: ProviderWorkflow):
         tags=[
             "provider",
             *[f"provider: {media_type}" for media_type in conf.media_types],
+            f"ingestion: {'dated' if conf.dated else 'full'}",
             *conf.tags,
         ],
         render_template_as_native_obj=True,
