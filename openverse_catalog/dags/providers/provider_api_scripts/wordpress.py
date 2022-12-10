@@ -45,20 +45,24 @@ class WordPressDataIngester(ProviderDataIngester):
         super().__init__(*args, **kwargs)
         self.license_info = get_license_info(license_url=self.license_url)
 
-        # Make a HEAD request to determine the number of pages of results in
-        # advance, so we know when to halt ingestion. This prevents errors
-        # from attempting to access too large a page number.
-        # https://github.com/WordPress/openverse-catalog/issues/853
-        response = self.delayed_requester.head(
-            self.endpoint, params={"per_page": self.batch_limit, "_embed": "true"}
-        )
-        self.total_pages = int(response.headers.get("X-WP-TotalPages", 0))
+        # Total pages is determined on the first request
+        self.total_pages = None
         self.current_page = 1
 
     def get_media_type(self, record: dict) -> str:
         return constants.IMAGE
 
     def get_next_query_params(self, prev_query_params: dict | None, **kwargs) -> dict:
+        if self.total_pages is None:
+            # On the first request, make a HEAD request to get the number of pages of
+            # results, so we know when to halt ingestion. This prevents errors
+            # from attempting to access too large a page number.
+            # https://github.com/WordPress/openverse-catalog/issues/853
+            response = self.delayed_requester.head(
+                self.endpoint, params={"per_page": self.batch_limit, "_embed": "true"}
+            )
+            self.total_pages = int(response.headers.get("X-WP-TotalPages", 0))
+
         return {
             "format": "json",
             "page": self.current_page,
