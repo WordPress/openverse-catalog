@@ -302,16 +302,7 @@ def create_provider_api_workflow_dag(conf: ProviderWorkflow):
     )
 
     with dag:
-
-        if callable(
-            getattr(conf.ingestion_callable, "create_ingestion_workflow", None)
-        ):
-            (
-                ingest_data,
-                ingestion_metrics,
-            ) = conf.ingestion_callable.create_ingestion_workflow()
-        else:
-            ingest_data, ingestion_metrics = create_ingestion_workflow(conf)
+        ingest_data, ingestion_metrics = create_ingestion_workflow(conf)
 
         report_load_completion = create_report_load_completion(
             conf.dag_id, conf.media_types, ingestion_metrics, conf.dated
