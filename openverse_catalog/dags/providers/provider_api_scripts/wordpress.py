@@ -62,6 +62,7 @@ class WordPressDataIngester(ProviderDataIngester):
                 self.endpoint, params={"per_page": self.batch_limit, "_embed": "true"}
             )
             self.total_pages = int(response.headers.get("X-WP-TotalPages", 0))
+            logger.info(f"{self.total_pages} pages detected.")
 
         return {
             "format": "json",
