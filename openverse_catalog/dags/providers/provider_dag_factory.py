@@ -302,7 +302,14 @@ def create_provider_api_workflow_dag(conf: ProviderWorkflow):
     )
 
     with dag:
-        ingest_data, ingestion_metrics = create_ingestion_workflow(conf)
+        # @stacimc is this stretching your beautiful default class a bit too far?
+        if callable(getattr(conf.ingester_class, "create_ingestion_workflow", None)):
+            (
+                ingest_data,
+                ingestion_metrics,
+            ) = conf.ingester_class.create_ingestion_workflow()
+        else:
+            ingest_data, ingestion_metrics = create_ingestion_workflow(conf)
 
         report_load_completion = create_report_load_completion(
             conf.dag_id, conf.media_types, ingestion_metrics, conf.dated
