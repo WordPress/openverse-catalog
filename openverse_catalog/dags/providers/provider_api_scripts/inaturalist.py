@@ -201,7 +201,7 @@ class INaturalistDataIngester(ProviderDataIngester):
             logger.info(
                 f"Loaded {name_usage_records[0][0]} records from {name_usage_file}"
             )
-        # # TO DO: save source files on s3? just delete every time?
+        # # TO DO #917: save source files on s3?
         # os.remove(OUTPUT_DIR / local_zip_file)
         # os.remove(OUTPUT_DIR / vernacular_file)
         # os.remove(OUTPUT_DIR / name_usage_file)
@@ -249,23 +249,24 @@ class INaturalistDataIngester(ProviderDataIngester):
 
     @staticmethod
     def create_postingestion_tasks():
-        with TaskGroup(group_id="postingestion_tasks") as postingestion_tasks:
-            drop_inaturalist_schema = PostgresOperator(
-                task_id="drop_inaturalist_schema",
-                postgres_conn_id=POSTGRES_CONN_ID,
-                sql="DROP SCHEMA IF EXISTS inaturalist CASCADE",
-                doc_md="Drop iNaturalist source tables and their schema",
-                trigger_rule=TriggerRule.NONE_SKIPPED,
-            )
-            drop_loading_table = PythonOperator(
-                task_id="drop_loading_table",
-                python_callable=sql.drop_load_table,
-                op_kwargs=LOADER_ARGS,
-                doc_md="Drop the temporary (transformed) loading table",
-                trigger_rule=TriggerRule.NONE_SKIPPED,
-            )
-            [drop_inaturalist_schema, drop_loading_table]
-        return postingestion_tasks
+        # with TaskGroup(group_id="postingestion_tasks") as postingestion_tasks:
+        #     drop_inaturalist_schema = PostgresOperator(
+        #         task_id="drop_inaturalist_schema",
+        #         postgres_conn_id=POSTGRES_CONN_ID,
+        #         sql="DROP SCHEMA IF EXISTS inaturalist CASCADE",
+        #         doc_md="Drop iNaturalist source tables and their schema",
+        #         trigger_rule=TriggerRule.NONE_SKIPPED,
+        #     )
+        drop_loading_table = PythonOperator(
+            task_id="drop_loading_table",
+            python_callable=sql.drop_load_table,
+            op_kwargs=LOADER_ARGS,
+            doc_md="Drop the temporary (transformed) loading table",
+            trigger_rule=TriggerRule.NONE_SKIPPED,
+        )
+        return drop_loading_table
+        #     [drop_inaturalist_schema, drop_loading_table]
+        # return postingestion_tasks
 
     def create_ingestion_workflow():
 

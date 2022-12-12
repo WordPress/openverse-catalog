@@ -159,3 +159,7 @@ with records as
 INSERT INTO inaturalist.manual_name_additions
 (select * from records);
 COMMIT;
+
+select distinct table_schema
+from information_schema.tables
+where table_schema='inaturalist';
