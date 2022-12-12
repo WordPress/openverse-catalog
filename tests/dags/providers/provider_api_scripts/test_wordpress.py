@@ -34,8 +34,6 @@ def test_get_query_params_returns_defaults_and_sets_total_pages():
 
 
 def test_get_query_params_increments_current_page(ingester):
-    ingester.current_page = 2
-
     expected_result = {"format": "json", "page": 3, "per_page": 100, "_embed": "true"}
     actual_result = ingester.get_next_query_params({**expected_result, "page": 2})
     assert actual_result == expected_result

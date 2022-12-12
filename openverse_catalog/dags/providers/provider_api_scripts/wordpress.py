@@ -47,7 +47,7 @@ class WordPressDataIngester(ProviderDataIngester):
 
         # Total pages is determined on the first request
         self.total_pages = None
-        self.current_page = 0
+        self.current_page = 1
 
     def get_media_type(self, record: dict) -> str:
         return constants.IMAGE
@@ -64,8 +64,9 @@ class WordPressDataIngester(ProviderDataIngester):
             self.total_pages = int(response.headers.get("X-WP-TotalPages", 0))
             logger.info(f"{self.total_pages} pages detected.")
 
-        # Increment the page number for the next batch
-        self.current_page += 1
+        # Increment the page number for subsequent batches
+        if prev_query_params:
+            self.current_page = prev_query_params["page"] + 1
 
         return {
             "format": "json",
