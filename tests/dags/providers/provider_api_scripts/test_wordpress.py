@@ -33,8 +33,8 @@ def test_get_query_params_returns_defaults_and_sets_total_pages():
     assert wp.total_pages == 5
 
 
-def test_get_query_params_returns_current_page(ingester):
-    ingester.current_page = 3
+def test_get_query_params_increments_current_page(ingester):
+    ingester.current_page = 2
 
     expected_result = {"format": "json", "page": 3, "per_page": 100, "_embed": "true"}
     actual_result = ingester.get_next_query_params({**expected_result, "page": 2})
@@ -42,25 +42,23 @@ def test_get_query_params_returns_current_page(ingester):
 
 
 @pytest.mark.parametrize(
-    "current_page, expected_next_page, should_continue",
+    "current_page, should_continue",
     [
         # Note that total_pages is 50
-        # the next page is less than total_pages
-        (10, 11, True),
-        # the next page is the last page
-        (49, 50, True),
-        # the next page is greater than total_pages
-        (50, 51, False),
-        (51, 52, False),
+        # the current page is less than total_pages
+        (10, True),
+        (49, True),
+        # the current page is the last page
+        (50, False),
+        # the current page is after the last page (Note: this should not arise)
+        (51, False),
     ],
 )
-def test_get_should_continue_increments_page(
-    ingester, current_page, expected_next_page, should_continue
+def test_get_should_continue_checks_total_pages(
+    ingester, current_page, should_continue
 ):
     ingester.current_page = current_page
-
     assert ingester.get_should_continue({}) == should_continue
-    assert ingester.current_page == expected_next_page
 
 
 @pytest.mark.parametrize("missing_field", ["slug", "link"])

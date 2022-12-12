@@ -47,7 +47,7 @@ class WordPressDataIngester(ProviderDataIngester):
 
         # Total pages is determined on the first request
         self.total_pages = None
-        self.current_page = 1
+        self.current_page = 0
 
     def get_media_type(self, record: dict) -> str:
         return constants.IMAGE
@@ -64,6 +64,9 @@ class WordPressDataIngester(ProviderDataIngester):
             self.total_pages = int(response.headers.get("X-WP-TotalPages", 0))
             logger.info(f"{self.total_pages} pages detected.")
 
+        # Increment the page number for the next batch
+        self.current_page += 1
+
         return {
             "format": "json",
             "page": self.current_page,
@@ -77,11 +80,8 @@ class WordPressDataIngester(ProviderDataIngester):
         return None
 
     def get_should_continue(self, response_json):
-        # Increment the page number for the next batch
-        self.current_page += 1
-
         # Do not continue if we have exceeded the total pages
-        if self.current_page > self.total_pages:
+        if self.current_page >= self.total_pages:
             logger.info("The final page of data has been processed. Halting ingestion.")
             return False
 
