@@ -46,6 +46,9 @@ SPECIES NAMES
 The Catalog of Life (COL) has data on vernacular names which we use to optimize titles
 and tags based on iNaturalist taxon information. But there a few very common taxon_ids
 that do not have matches in the COL so I am adding them hard coded here.
+
+Another option would be the Integrated Taxonomic Information System
+https://www.itis.gov/dwca_format.html which also has vernacular names / synonyms.
 */
 
 DROP TABLE IF EXISTS inaturalist.col_vernacular;
