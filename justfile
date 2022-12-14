@@ -135,6 +135,10 @@ generate-dag-docs fail_on_diff="false":
           exit 1
       fi
     fi
+    echo -n "Running linting..."
+    # Linting step afterwards is necessary since the generated output differs greatly from what prettier expects
+    just lint &>/dev/null || true
+    echo "Done!"
 
 # Generate files for a new provider
 add-provider provider_name endpoint +media_types="image":
