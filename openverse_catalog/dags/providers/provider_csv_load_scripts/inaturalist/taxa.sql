@@ -164,6 +164,4 @@ create table inaturalist.taxa_enriched as
 ALTER TABLE inaturalist.taxa_enriched ADD PRIMARY KEY (taxon_id);
 COMMIT;
 
-select jsonb_array_length(tags), count(*) from inaturalist.taxa_enriched group by 1 order by 1;
-
 SELECT count(*) FROM inaturalist.taxa_enriched;
