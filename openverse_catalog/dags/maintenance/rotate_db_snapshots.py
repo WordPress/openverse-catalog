@@ -25,7 +25,7 @@ from airflow.providers.amazon.aws.sensors.rds import RdsSnapshotExistenceSensor
 
 logger = logging.getLogger(__name__)
 
-DAG_ID = "check_silenced_dags"
+DAG_ID = "rotate_db_snapshots"
 MAX_ACTIVE = 1
 
 AIRFLOW_RDS_ARN = Variable.get("AIRFLOW_RDS_ARN")
