@@ -18,7 +18,6 @@ from datetime import datetime
 
 import boto3
 from airflow.decorators import dag, task
-from airflow.models import Variable
 from airflow.providers.amazon.aws.operators.rds import RdsCreateDbSnapshotOperator
 from airflow.providers.amazon.aws.sensors.rds import RdsSnapshotExistenceSensor
 
@@ -28,27 +27,18 @@ logger = logging.getLogger(__name__)
 DAG_ID = "rotate_db_snapshots"
 MAX_ACTIVE = 1
 
-AIRFLOW_RDS_ARN = Variable.get("AIRFLOW_RDS_ARN")
-AIRFLOW_RDS_SNAPSHOTS_TO_RETAIN = Variable.get(
-    "AIRFLOW_RDS_SNAPSHOTS_TO_RETAIN",
-    default_var=7,
-    deserialize_json=True,
-)
-
 
 @task()
-def delete_previous_snapshots():
+def delete_previous_snapshots(rds_arn: str, snapshots_to_retain: int):
     rds = boto3.client("rds")
     # Snapshot object documentation:
     # https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_DBSnapshot.html
     snapshots = rds.describe_db_snapshots(
-        DBInstanceIdentifier=AIRFLOW_RDS_ARN,
+        DBInstanceIdentifier=rds_arn,
     )
 
-    to_retain = int(AIRFLOW_RDS_SNAPSHOTS_TO_RETAIN)
-
-    if len(snapshots) <= to_retain or not (
-        snapshots_to_delete := snapshots[to_retain:]
+    if len(snapshots) <= snapshots_to_retain or not (
+        snapshots_to_delete := snapshots[snapshots_to_retain:]
     ):
         logger.info("No snapshots to delete.")
         return
@@ -70,13 +60,15 @@ def delete_previous_snapshots():
     catchup=False,
     # Use the docstring at the top of the file as md docs in the UI
     doc_md=__doc__,
+    render_template_as_native_obj=True,
 )
 def rotate_db_snapshots():
     snapshot_id = "airflow-{{ ds }}"
+    db_identifier_template = "{{ var.json.AIRFLOW_RDS_ARN }}"
     create_db_snapshot = RdsCreateDbSnapshotOperator(
         task_id="create_snapshot",
         db_type="instance",
-        db_identifier=AIRFLOW_RDS_ARN,
+        db_identifier=db_identifier_template,
         db_snapshot_identifier=snapshot_id,
     )
     wait_for_snapshot_availability = RdsSnapshotExistenceSensor(
@@ -87,7 +79,14 @@ def rotate_db_snapshots():
         target_statuses=["available"],
     )
 
-    create_db_snapshot >> wait_for_snapshot_availability >> delete_previous_snapshots()
+    (
+        create_db_snapshot
+        >> wait_for_snapshot_availability
+        >> delete_previous_snapshots(
+            rds_arn=db_identifier_template,
+            snapshots_to_retain="{{ var.json.AIRFLOW_RDS_SNAPSHOTS_TO_RETAIN }}",
+        )
+    )
 
 
 rotate_db_snapshots()
