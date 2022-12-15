@@ -30,7 +30,9 @@ MAX_ACTIVE = 1
 
 AIRFLOW_RDS_ARN = Variable.get("AIRFLOW_RDS_ARN")
 AIRFLOW_RDS_SNAPSHOTS_TO_RETAIN = Variable.get(
-    "AIRFLOW_RDS_SNAPSHOTS_TO_RETAIN", default_var="7"
+    "AIRFLOW_RDS_SNAPSHOTS_TO_RETAIN",
+    default_var=7,
+    deserialize_json=True,
 )
 
 
