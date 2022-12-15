@@ -208,6 +208,12 @@ To fully recreate everything from the ground up, you can use:
 just recreate
 ```
 
+> **Note**:
+> Any recipes or scripts which output files to the container's mounted volumes will
+> need to be run as the root user. This can be done with the `DC_USER=root`
+> environment variable for `just` recipes. For example, see the
+> [generate-dag-docs recipe](https://github.com/WordPress/openverse-catalog/blob/c9be67e483e49e9eda7cd21b52bcde8857cd3922/justfile#L126).
+
 [justfile]: justfile
 [dockercompose]: docker-compose.yml
 [cc_airflow]: openverse_catalog/
