@@ -1,3 +1,9 @@
+"""
+Script used to visualize load performance as in this google sheet:
+https://docs.google.com/spreadsheets/d/1gaVsvFnsYby2iwzRm0Ta9IPhvNixCpQdHByGLo1r_pg/edit#gid=2126228032
+Download airflow log to this directory and Adjust LOG_FILE_NAME to use.
+"""
+
 import re
 from pathlib import Path
 
