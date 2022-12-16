@@ -26,7 +26,7 @@ INSERT INTO {intermediate_table}
         (If we go the alternate foreign id way, we'd want to drop photos loaded in the
         first inaturalist load.)
         */
-        INATURALIST.PHOTOS.PHOTO_ID as FOREIGN_ID,
+        INATURALIST.PHOTOS.PHOTO_ID as FOREIGN_IDENTIFIER,
         'https://www.inaturalist.org/photos/' || INATURALIST.PHOTOS.PHOTO_ID
             as LANDING_URL,
         'https://inaturalist-open-data.s3.amazonaws.com/photos/'
@@ -74,5 +74,5 @@ INSERT INTO {intermediate_table}
 ;
 COMMIT;
 
-SELECT count(*) records
+SELECT count(*) transformed_records, max(FOREIGN_IDENTIFIER) max_id_loaded
 FROM {intermediate_table} ;

@@ -93,14 +93,16 @@ class INaturalistDataIngester(ProviderDataIngester):
         raise NotImplementedError("Normalized TSV files from AWS S3 means no endpoint.")
 
     @staticmethod
-    def load_intermediate_table(
+    def load_transformed_data(
         intermediate_table: str,
         page_length: int,
         postgres_conn_id=POSTGRES_CONN_ID,
         sql_template_file_name="transformed_table.template.sql",
+        identifier: str = None,
     ):
         pg = PostgresHook(postgres_conn_id)
         sql_template = (SCRIPT_DIR / sql_template_file_name).read_text()
+        total_records = 0
         # get the number of "pages" in the photos table
         max_id = pg.get_records("SELECT max(photo_id) FROM inaturalist.photos")[0][0]
         total_pages = int(max_id / page_length) + 1
@@ -110,14 +112,32 @@ class INaturalistDataIngester(ProviderDataIngester):
         for page_start in range(0, max_id, page_length):
             page_end = page_start + page_length - 1
             page_log = f"page {int(page_start / page_length) + 1} of {total_pages}"
-            logger.info(f"Starting at photo_id {page_start}, " + page_log)
-            sql = sql_template.format(
-                intermediate_table=intermediate_table,
-                page_start=page_start,
-                page_end=page_end,
+            logger.info(f"Starting at photo_id {page_start}, {page_log}")
+            (transformed_records, max_id_loaded) = pg.get_records(
+                sql_template.format(
+                    intermediate_table=intermediate_table,
+                    page_start=page_start,
+                    page_end=page_end,
+                )
+            )[0]
+            logger.info(
+                f"Inserted {transformed_records} into {intermediate_table}. "
+                f"Last photo_id loaded was {max_id_loaded}, as of {page_log}."
             )
-            total_records = pg.get_records(sql)[0][0]
-            logger.info(f"Loaded {total_records} records, as of " + page_log)
+            # Run standard cleaning on this batch of records
+            sql.clean_transformed_provider_s3_data(
+                identifier=identifier,
+                postgres_conn_id=postgres_conn_id,
+            )
+            # Add transformed records to the target catalog image table.
+            total_records += sql.upsert_records_to_db_table(
+                identifier=identifier,
+                postgres_conn_id=postgres_conn_id,
+            )
+            logger.info(f"Loaded {total_records} records, as of {page_log}.")
+            # Truncate the temp table and vacuum the two tables
+            pg.run(f"truncate table {intermediate_table};")
+        return total_records
 
     @staticmethod
     def compare_update_dates(
@@ -249,24 +269,23 @@ class INaturalistDataIngester(ProviderDataIngester):
 
     @staticmethod
     def create_postingestion_tasks():
-        # with TaskGroup(group_id="postingestion_tasks") as postingestion_tasks:
-        #     drop_inaturalist_schema = PostgresOperator(
-        #         task_id="drop_inaturalist_schema",
-        #         postgres_conn_id=POSTGRES_CONN_ID,
-        #         sql="DROP SCHEMA IF EXISTS inaturalist CASCADE",
-        #         doc_md="Drop iNaturalist source tables and their schema",
-        #         trigger_rule=TriggerRule.NONE_SKIPPED,
-        #     )
-        drop_loading_table = PythonOperator(
-            task_id="drop_loading_table",
-            python_callable=sql.drop_load_table,
-            op_kwargs=LOADER_ARGS,
-            doc_md="Drop the temporary (transformed) loading table",
-            trigger_rule=TriggerRule.NONE_SKIPPED,
-        )
-        return drop_loading_table
-        #     [drop_inaturalist_schema, drop_loading_table]
-        # return postingestion_tasks
+        with TaskGroup(group_id="postingestion_tasks") as postingestion_tasks:
+            drop_inaturalist_schema = PostgresOperator(
+                task_id="drop_inaturalist_schema",
+                postgres_conn_id=POSTGRES_CONN_ID,
+                sql="DROP SCHEMA IF EXISTS inaturalist CASCADE",
+                doc_md="Drop iNaturalist source tables and their schema",
+                trigger_rule=TriggerRule.NONE_SKIPPED,
+            )
+            drop_loading_table = PythonOperator(
+                task_id="drop_loading_table",
+                python_callable=sql.drop_load_table,
+                op_kwargs=LOADER_ARGS,
+                doc_md="Drop the temporary (transformed) loading table",
+                trigger_rule=TriggerRule.NONE_SKIPPED,
+            )
+            [drop_inaturalist_schema, drop_loading_table]
+        return postingestion_tasks
 
     def create_ingestion_workflow():
 
@@ -288,8 +307,7 @@ class INaturalistDataIngester(ProviderDataIngester):
             with TaskGroup(group_id="load_image_data") as loader_tasks:
 
                 # Using the existing set up, but the indexes on the temporary table
-                # probably slow down the load quite a bit. TO DO: Consider adding
-                # indices _after_ loading data into the table.
+                # probably slows down the load a bit.
                 create_loading_table = PythonOperator(
                     task_id="create_loading_table",
                     python_callable=sql.create_loading_table,
@@ -300,55 +318,36 @@ class INaturalistDataIngester(ProviderDataIngester):
                     ),
                 )
 
-                load_intermediate_table = PythonOperator(
-                    task_id="load_intermediate_table",
-                    python_callable=INaturalistDataIngester.load_intermediate_table,
-                    execution_timeout=timedelta(hours=24),
+                load_transformed_data = PythonOperator(
+                    task_id="load_transformed_data",
+                    python_callable=INaturalistDataIngester.load_transformed_data,
+                    execution_timeout=timedelta(hours=48),
                     retries=0,
                     op_kwargs={
                         "intermediate_table": sql._get_load_table_name(
                             LOADER_ARGS["identifier"]
                         ),
                         "page_length": 2_000_000,
+                        "postgres_conn_id": LOADER_ARGS["postgres_conn_id"],
+                        "identifier": LOADER_ARGS["identifier"],
                     },
                     doc_md=(
                         "Load data from source tables to intermediate table in batches."
                     ),
                 )
 
-                clean_transformed_provider_s3_data = PythonOperator(
-                    task_id="clean_transformed_provider_s3_data",
-                    python_callable=sql.clean_transformed_provider_s3_data,
-                    op_kwargs=LOADER_ARGS,
-                    execution_timeout=timedelta(hours=6),
-                    doc_md="Remove duplicates and records missing required fields.",
-                )
-
-                upsert_records_to_db_table = PythonOperator(
-                    task_id="upsert_records_to_db_table",
-                    python_callable=sql.upsert_records_to_db_table,
-                    op_kwargs=LOADER_ARGS,
-                    execution_timeout=timedelta(hours=6),
-                    doc_md="Add transformed records to the target catalog image table.",
-                )
-
                 # TO DO: integrate clean-up stats via xcoms here, keeping in mind that
                 # some dupes are excluded up front.
                 record_counts_by_media_type[MEDIA_TYPE] = reporting.RecordMetrics(
                     upserted=XCOM_PULL_TEMPLATE.format(
-                        upsert_records_to_db_table.task_id, "return_value"
+                        load_transformed_data.task_id, "return_value"
                     ),
                     missing_columns=0,
                     foreign_id_dup=0,
                     url_dup=0,
                 )
 
-                (
-                    create_loading_table
-                    >> load_intermediate_table
-                    >> clean_transformed_provider_s3_data
-                    >> upsert_records_to_db_table
-                )
+                (create_loading_table >> load_transformed_data)
 
             postingestion_tasks = INaturalistDataIngester.create_postingestion_tasks()
 
@@ -360,7 +359,7 @@ class INaturalistDataIngester(ProviderDataIngester):
         # table takes a lot longer anyway.
         ingestion_metrics = {
             "duration": XCOM_PULL_TEMPLATE.format(
-                load_intermediate_table.task_id, "duration"
+                load_transformed_data.task_id, "duration"
             ),
             "record_counts_by_media_type": record_counts_by_media_type,
         }
