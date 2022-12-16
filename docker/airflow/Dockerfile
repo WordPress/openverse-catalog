@@ -40,8 +40,14 @@ RUN apt-get update && apt-get -yqq install \
     libpq-dev \
     libffi-dev \
     && apt-get autoremove -y \
-    && rm -rf /var/lib/apt/lists/*
-RUN mkdir -p ${OUTPUT_DIR} /home/airflow/.ipython && chown airflow ${OUTPUT_DIR} /home/airflow/.ipython
+    && rm -rf /var/lib/apt/lists/* \
+
+# Create and set the ownership of directories so airflow user can write to them
+# The .ipython directories are not needed in production but it's easier to perform
+# this step here while we're doing it for the output directory
+RUN mkdir -p ${OUTPUT_DIR} /home/airflow/.ipython && \
+    chown airflow ${OUTPUT_DIR} /home/airflow/.ipython \
+
 USER airflow
 
 WORKDIR  ${AIRFLOW_HOME}
