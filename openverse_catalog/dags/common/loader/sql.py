@@ -2,7 +2,7 @@ import logging
 from textwrap import dedent
 
 from airflow.providers.postgres.hooks.postgres import PostgresHook
-from common.constants import AUDIO, IMAGE
+from common.constants import AUDIO, IMAGE, MediaType
 from common.loader import provider_details as prov
 from common.loader.paths import _extract_media_type
 from common.storage import columns as col
@@ -170,9 +170,9 @@ def load_s3_data_to_intermediate_table(
 
 
 def clean_intermediate_table_data(
-    postgres_conn_id,
-    identifier,
-    media_type=IMAGE,
+    postgres_conn_id: str,
+    identifier: str,
+    media_type: MediaType = IMAGE,
 ) -> tuple[int, int]:
     """
     Necessary for old TSV files that have not been cleaned up,
