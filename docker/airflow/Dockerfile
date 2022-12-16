@@ -40,7 +40,7 @@ RUN apt-get update && apt-get -yqq install \
     libpq-dev \
     libffi-dev \
     && apt-get autoremove -y \
-    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /var/lib/apt/lists/*
 
 # Create and set the ownership of directories so airflow user can write to them
 # The .ipython directories are not needed in production but it's easier to perform
