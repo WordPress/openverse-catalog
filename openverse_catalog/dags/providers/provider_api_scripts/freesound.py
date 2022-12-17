@@ -42,13 +42,13 @@ class FreesoundDataIngester(ProviderDataIngester):
         "preview-lq-ogg": 80000,
     }
 
-    headers = {
-        "Accept": "application/json",
-    }
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.api_key = Variable.get("API_KEY_FREESOUND")
+        self.headers = {
+            "Accept": "application/json",
+            "Authorization": f"Token {self.api_key}",
+        }
 
     def get_media_type(self, record: dict) -> str:
         return constants.AUDIO
@@ -64,7 +64,6 @@ class FreesoundDataIngester(ProviderDataIngester):
                 )
             return {
                 "format": "json",
-                "token": self.api_key,
                 "query": "",
                 "page_size": self.batch_limit,
                 "fields": ",".join(
