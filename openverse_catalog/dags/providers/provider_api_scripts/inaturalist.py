@@ -34,7 +34,7 @@ from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
-from common.constants import POSTGRES_CONN_ID, XCOM_PULL_TEMPLATE
+from common.constants import IMAGE, POSTGRES_CONN_ID, XCOM_PULL_TEMPLATE
 from common.loader import provider_details, reporting, sql
 from providers.provider_api_scripts.provider_data_ingester import ProviderDataIngester
 
@@ -46,11 +46,10 @@ OPENVERSE_BUCKET = os.getenv("OPENVERSE_BUCKET", "openverse-storage")
 PROVIDER = provider_details.INATURALIST_DEFAULT_PROVIDER
 SCRIPT_DIR = Path(__file__).parents[1] / "provider_csv_load_scripts/inaturalist"
 SOURCE_FILE_NAMES = ["photos", "observations", "taxa", "observers"]
-MEDIA_TYPE = "image"
 LOADER_ARGS = {
     "postgres_conn_id": POSTGRES_CONN_ID,
     "identifier": "{{ ts_nodash }}",
-    "media_type": MEDIA_TYPE,
+    "media_type": IMAGE,
 }
 OUTPUT_DIR = Path(os.getenv("OUTPUT_DIR", "/tmp/"))
 
@@ -85,9 +84,7 @@ class INaturalistDataIngester(ProviderDataIngester):
     def get_media_type(self, record):
         # This provider only supports Images via S3, though they have some audio files
         # on site and in the API.
-        # I'm using a constant here, which maybe should just be a class constant, but
-        # it's there to work with the static methods.
-        return MEDIA_TYPE
+        return IMAGE
 
     def endpoint(self):
         raise NotImplementedError("Normalized TSV files from AWS S3 means no endpoint.")
@@ -338,7 +335,7 @@ class INaturalistDataIngester(ProviderDataIngester):
 
                 # TO DO: integrate clean-up stats via xcoms here, keeping in mind that
                 # some dupes are excluded up front.
-                record_counts_by_media_type[MEDIA_TYPE] = reporting.RecordMetrics(
+                record_counts_by_media_type[IMAGE] = reporting.RecordMetrics(
                     upserted=XCOM_PULL_TEMPLATE.format(
                         load_transformed_data.task_id, "return_value"
                     ),
