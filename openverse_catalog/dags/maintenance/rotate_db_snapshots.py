@@ -35,6 +35,10 @@ def delete_previous_snapshots(rds_arn: str, snapshots_to_retain: int):
     # https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_DBSnapshot.html
     snapshots = rds.describe_db_snapshots(
         DBInstanceIdentifier=rds_arn,
+    )["DBSnapshots"]
+
+    snapshots.sort(
+        key=lambda x: datetime.fromisoformat(x["SnapshotCreateTime"]), reverse=True
     )
 
     if len(snapshots) <= snapshots_to_retain or not (
