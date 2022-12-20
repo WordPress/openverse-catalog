@@ -20,6 +20,7 @@ from airflow.models import Variable
 from common import constants
 from common.licenses.licenses import get_license_info
 from common.loader import provider_details as prov
+from common.requester import RetriesExceeded
 from providers.provider_api_scripts.provider_data_ingester import ProviderDataIngester
 from requests.exceptions import ConnectionError, SSLError
 from retry import retry
@@ -138,13 +139,20 @@ class FreesoundDataIngester(ProviderDataIngester):
 
     @functools.lru_cache(maxsize=1024)
     def _get_set_info(self, set_url):
-        response_json = self.get_response_json(
-            query_params={"token": self.api_key},
-            endpoint=set_url,
-        )
-        set_id = response_json.get("id")
-        set_name = response_json.get("name")
-        return set_id, set_name
+        try:
+            response_json = self.get_response_json(
+                query_params={},
+                endpoint=set_url,
+            )
+            set_id = response_json.get("id")
+            set_name = response_json.get("name")
+            return set_id, set_name
+        except RetriesExceeded:
+            # https://github.com/WordPress/openverse-catalog/issues/659
+            # This should be temporary for the full run of Freesound, as
+            # some historical audio sets 404.
+            logger.warning("Unable to fetch audio_set information")
+            return None, None
 
     def _get_audio_set_info(self, media_data):
         # set id, set name, set url
