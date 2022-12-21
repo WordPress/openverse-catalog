@@ -78,6 +78,8 @@ create table inaturalist.taxa_with_vernacular as
         select cast(md5(n.scientificname) as uuid) as md5_scientificname,
             v.name_language,
             v.taxon_name,
+            /* This is prioritizing English vernacular names, and should be cut or
+            reorganized if the 20 tag limit is not a thing. */
             row_number() OVER (partition by n.scientificname
                 order by case when v.name_language='eng' then 0 else 1 end,
                 v.taxon_name)
@@ -88,6 +90,9 @@ create table inaturalist.taxa_with_vernacular as
                 as english_names
         FROM inaturalist.col_name_usage n
             INNER JOIN inaturalist.col_vernacular v on v.taxonid = n.id
+        /* catalog of life seems to be integrating a number of different data sources
+        and none of the vernacular names have taxon ids with more than 10 characters,
+        so allowing postgres to filter before the join saves a little time. */
         where length(n.id) <= 10
     ),
     catalog_of_life as
@@ -100,6 +105,9 @@ create table inaturalist.taxa_with_vernacular as
             jsonb_agg(DISTINCT cast((taxon_name, 'inaturalist') as openverse_tag))
                 FILTER (where name_rank > english_names) as tags_nonenglish_vernacular
         FROM catalog_of_life_names
+        /* Don't keep more than 20 alternative names for any scientific name if we have
+        a limit of 20 tags per image. There are some extreme terms that would have
+        thousands of tags. */
         where name_rank <= 20
         group by 1
     )
@@ -135,6 +143,34 @@ tags along with json strings from the enriched data above.
     + expand each ancestry string into an array
     + get the taxa record for each value of the array
     + aggregate back to the original taxon level, with tags for ancestor names (titles)
+
+For example, in the taxa table there is the following record, think of this as a single
+child leaf on a tree of different taxonomic groups:
+    taxon_id: 6930
+    ancestry: "48460/1/2/355675/3/6888/6912/6922"
+    rank_level: 10
+    rank: species
+    name: Anas platyrhynchos
+    active: TRUE
+
+Expanding the ancestry string into an array gets us this array of taxon_ids:
+    [48460, 1, 2, 355675, 3, 6888, 6912, 6922]
+
+Using a self-join on the taxa table to bring together all of the other taxa records that
+match any of those taxon_ids gets us something like:
+    child.taxon_id child.title          ancestor.taxon_id ancestor.title
+    -------------- -------------------- ----------------- ------------------
+    6930           Anas platyrhynchos   48460             Life
+    6930           Anas platyrhynchos   1                 Animalia
+    6930           Anas platyrhynchos   2                 Chordata
+    6930           Anas platyrhynchos   355675            Vertebrata
+    6930           Anas platyrhynchos   3                 Aves
+    6930           Anas platyrhynchos   6888              Anseriformes
+    6930           Anas platyrhynchos   6912              Anatidae
+    6930           Anas platyrhynchos   6922              Anas
+
+Which we can then group / aggregate back up to the child taxon level when we're
+generating a tag list.
 */
 DROP table if exists inaturalist.taxa_enriched;
 create table inaturalist.taxa_enriched as
@@ -144,6 +180,8 @@ create table inaturalist.taxa_enriched as
         child.title,
         jsonb_path_query_array(
             (
+                /* concatenating jsonb arrays works as long as you have an empty array
+                rather than a null::jsonb */
                 coalesce(child.inaturalist_name_tag, to_jsonb(array[]::openverse_tag[]))
                 || coalesce(jsonb_agg(DISTINCT
                     cast((ancestors.title,'inaturalist') as openverse_tag))
@@ -152,6 +190,13 @@ create table inaturalist.taxa_enriched as
                 || coalesce(child.tags_nonenglish_vernacular,
                     to_jsonb(array[]::openverse_tag[]))
             ),
+            /*
+            Use the jsonb query to retrieve only the first 20 values of the array that
+            combines vernacular and ancestor tags.
+            @AetherUnbound, I had thought that I saw code somewhere limiting to a max of
+            20 tags, but now I can't find that code. Should I leave this out? It would
+            definitely help with language access.
+            */
             '$[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]')
         as tags
     from
