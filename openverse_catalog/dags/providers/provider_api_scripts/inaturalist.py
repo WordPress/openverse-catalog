@@ -240,7 +240,7 @@ class INaturalistDataIngester(ProviderDataIngester):
                         f"{file_name}.csv.gz" for file_name in SOURCE_FILE_NAMES
                     ],
                 },
-                doc_md="Has iNaturalist published new data to s3?",
+                doc_md="Check for iNaturalist files added to S3 since last load",
             )
 
             create_inaturalist_schema = PostgresOperator(
