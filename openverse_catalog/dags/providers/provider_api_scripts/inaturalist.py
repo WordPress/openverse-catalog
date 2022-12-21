@@ -122,7 +122,7 @@ class INaturalistDataIngester(ProviderDataIngester):
                 f"Last photo_id loaded was {max_id_loaded}, as of {page_log}."
             )
             # Run standard cleaning on this batch of records
-            sql.clean_transformed_provider_s3_data(
+            sql.clean_intermediate_table_data(
                 identifier=identifier,
                 postgres_conn_id=postgres_conn_id,
             )

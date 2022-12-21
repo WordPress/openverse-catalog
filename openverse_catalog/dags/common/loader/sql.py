@@ -126,23 +126,6 @@ def load_local_data_to_intermediate_table(
         )
 
 
-def clean_transformed_provider_s3_data(
-    postgres_conn_id, identifier, media_type="image"
-):
-    """
-    Apply standard cleaning where data has been loaded from provider files on S3, and
-    transformed in SQL.
-    TO DO: if this process is ever used for a provider other than inaturalist, with
-    types other than image, consider adapting `_extract_media_type`
-    """
-    postgres = PostgresHook(postgres_conn_id)
-    load_table = _get_load_table_name(identifier, media_type=media_type)
-    missing_columns, foreign_id_dup = _clean_intermediate_table_data(
-        postgres, load_table
-    )
-    # TO DO: return missing_columns and foreign_id_dup to XCOMs and reporting
-
-
 def _handle_s3_load_result(cursor) -> int:
     """
     Handle the results of the aws_s3.table_import_from_s3 function. Locally this will
