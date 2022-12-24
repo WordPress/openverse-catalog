@@ -330,7 +330,6 @@ def create_provider_api_workflow_dag(conf: ProviderWorkflow):
     )
 
     with dag:
-        # @stacimc is this stretching your beautiful default class a bit too far?
         if callable(getattr(conf.ingester_class, "create_ingestion_workflow", None)):
             (
                 ingest_data,
