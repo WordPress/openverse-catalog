@@ -1,32 +1,31 @@
 """
 Provider:   iNaturalist
 
-Output:     TSV file containing the media metadata.
+Output:     Records loaded to the image catalog table.
 
-Notes:      [The iNaturalist API is not intended for data scraping.]
-            (https://api.inaturalist.org/v1/docs/)
-
-            [But there is a full dump intended for sharing on S3.]
-            (https://github.com/inaturalist/inaturalist-open-data/tree/documentation/Metadata)
-
+Notes:      The iNaturalist API is not intended for data scraping.
+            https://api.inaturalist.org/v1/docs/
+            But there is a full dump intended for sharing on S3.
+            https://github.com/inaturalist/inaturalist-open-data/tree/documentation/Metadata
             Because these are very large normalized tables, as opposed to more document
             oriented API responses, we found that bringing the data into postgres first
-            was the most effective approach. [More detail in slack here.]
-            (https://wordpress.slack.com/archives/C02012JB00N/p1653145643080479?thread_ts=1653082292.714469&cid=C02012JB00N)
-
-            We use the table structure defined [here,]
-            (https://github.com/inaturalist/inaturalist-open-data/blob/main/Metadata/structure.sql)
+            was the most effective approach. More detail in slack here:
+            https://wordpress.slack.com/archives/C02012JB00N/p1653145643080479?thread_ts=1653082292.714469&cid=C02012JB00N
+            We use the table structure defined here,
+            https://github.com/inaturalist/inaturalist-open-data/blob/main/Metadata/structure.sql
             except for adding ancestry tags to the taxa table.
 """
 
 import logging
 import os
+import time
 import zipfile
 from datetime import timedelta
 from pathlib import Path
 
 import pendulum
 import requests
+from airflow import XComArg
 from airflow.exceptions import AirflowNotFoundException, AirflowSkipException
 from airflow.operators.python import PythonOperator
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
@@ -58,19 +57,10 @@ class INaturalistDataIngester(ProviderDataIngester):
 
     providers = {"image": provider_details.INATURALIST_DEFAULT_PROVIDER}
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.pg = PostgresHook(POSTGRES_CONN_ID)
-        # Over-ride test batch limit logic for bulk load. Instead, use small test source
-        # files in tests/s3-data/inaturalist-open-data.
-        self.batch_limit = 2_000_000
-
     def get_next_query_params(self, prev_query_params=None, **kwargs):
-        if prev_query_params is None:
-            return {"offset_num": 0}
-        else:
-            next_offset = prev_query_params["offset_num"] + self.batch_limit
-            return {"offset_num": next_offset}
+        raise NotImplementedError(
+            "Instead we use get_batches to dynamically create subtasks."
+        )
 
     def get_response_json(self, query_params):
         raise NotImplementedError("TSV files from AWS S3 processed in postgres.")
@@ -90,51 +80,101 @@ class INaturalistDataIngester(ProviderDataIngester):
         raise NotImplementedError("Normalized TSV files from AWS S3 means no endpoint.")
 
     @staticmethod
-    def load_transformed_data(
-        intermediate_table: str,
-        page_length: int,
+    def get_batches(
+        batch_length: int,
         postgres_conn_id=POSTGRES_CONN_ID,
-        sql_template_file_name="transformed_table.template.sql",
-        identifier: str = None,
     ):
         pg = PostgresHook(postgres_conn_id)
-        sql_template = (SCRIPT_DIR / sql_template_file_name).read_text()
-        total_records = 0
-        # get the number of "pages" in the photos table
         max_id = pg.get_records("SELECT max(photo_id) FROM inaturalist.photos")[0][0]
-        total_pages = int(max_id / page_length) + 1
-        logger.info(f"Loading {intermediate_table}...")
-        logger.info(f"Max photo_id={max_id}. Transform {page_length} ids / iteration.")
-        # then cycle through the pages
-        for page_start in range(0, max_id, page_length):
-            page_end = page_start + page_length - 1
-            page_log = f"page {int(page_start / page_length) + 1} of {total_pages}"
-            logger.info(f"Starting at photo_id {page_start}, {page_log}")
-            (transformed_records, max_id_loaded) = pg.get_records(
-                sql_template.format(
-                    intermediate_table=intermediate_table,
-                    page_start=page_start,
-                    page_end=page_end,
+        # Return the list of batch starts and ends, which will be passed to op_args,
+        # which expects each arg to be a list. So, it's a list of lists, not a list of
+        # tuples.
+        return [[(x, x + batch_length - 1)] for x in range(0, max_id, batch_length)]
+
+    @staticmethod
+    def load_transformed_data(
+        batch: tuple[int, int],
+        intermediate_table: str,
+        identifier: str,
+        postgres_conn_id=POSTGRES_CONN_ID,
+        sql_template_file_name="transformed_table.template.sql",
+    ):
+        """
+        Processes a single batch of inaturalist photo ids. batch_start is the minimum
+        photo_id for the batch. get_batches generates a list for xcoms to use in
+        generating tasks that use this function.
+        """
+        start_time = time.perf_counter()
+        (batch_start, batch_end) = batch
+        pg = PostgresHook(postgres_conn_id)
+        sql_template = (SCRIPT_DIR / sql_template_file_name).read_text()
+        batch_number = int(batch_start / (batch_end - batch_start + 1)) + 1
+        logger.info(f"Starting at photo_id {batch_start}, on batch {batch_number}.")
+        # Load records to the intermediate table
+        (loaded_records, max_id_loaded) = pg.get_records(
+            sql_template.format(
+                intermediate_table=intermediate_table,
+                batch_start=batch_start,
+                batch_end=batch_end,
+            )
+        )[0]
+        logger.info(
+            f"Inserted {loaded_records} into {intermediate_table}. "
+            f"Last photo_id loaded was {max_id_loaded}, from batch {batch_number}."
+        )
+        # Run standard cleaning
+        (missing_columns, foreign_id_dup) = sql.clean_intermediate_table_data(
+            identifier=identifier,
+            postgres_conn_id=postgres_conn_id,
+        )
+        # Add transformed records to the target catalog image table.
+        # TO DO: Would it be better to use loader.upsert_records here? Would need to
+        # trace back the parameters that need to be passed in for different stats.
+        upserted_records = sql.upsert_records_to_db_table(
+            identifier=identifier,
+            postgres_conn_id=postgres_conn_id,
+        )
+        logger.info(f"Upserted {upserted_records} records, from batch {batch_number}.")
+        # Truncate the temp table
+        pg.run(f"truncate table {intermediate_table};")
+        # Return results for consolidation
+        end_time = time.perf_counter()
+        duration = end_time - start_time
+        return {
+            "loaded": loaded_records,
+            "max_id_loaded": max_id_loaded,
+            "missing_columns": missing_columns,
+            "foreign_id_dup": foreign_id_dup,
+            "upserted": upserted_records,
+            "duration": duration,
+        }
+
+    @staticmethod
+    def consolidate_load_statistics(all_results, ti):
+        """
+        all_results should be a list of all of the return_values from dynamically
+        generated subtasks under load_transformed_data. This just totals the individual
+        stats from each step.
+        """
+        if all_results is None:
+            return
+        else:
+            loaded_sum = sum([x["loaded"] for x in all_results])
+            missing_columns_sum = sum([x["missing_columns"] for x in all_results])
+            foreign_id_dup_sum = sum([x["foreign_id_dup"] for x in all_results])
+            upserted_sum = sum([x["upserted"] for x in all_results])
+            durations = [x["duration"] for x in all_results]
+            # url dups are just a remainder, per common.loader.upsert_data
+            url_dup_sum = (
+                loaded_sum - missing_columns_sum - foreign_id_dup_sum - upserted_sum
+            )
+            # return metrics
+            ti.xcom_push(key="duration", value=durations)
+            return {
+                IMAGE: reporting.RecordMetrics(
+                    upserted_sum, missing_columns_sum, foreign_id_dup_sum, url_dup_sum
                 )
-            )[0]
-            logger.info(
-                f"Inserted {transformed_records} into {intermediate_table}. "
-                f"Last photo_id loaded was {max_id_loaded}, as of {page_log}."
-            )
-            # Run standard cleaning on this batch of records
-            sql.clean_intermediate_table_data(
-                identifier=identifier,
-                postgres_conn_id=postgres_conn_id,
-            )
-            # Add transformed records to the target catalog image table.
-            total_records += sql.upsert_records_to_db_table(
-                identifier=identifier,
-                postgres_conn_id=postgres_conn_id,
-            )
-            logger.info(f"Loaded {total_records} records, as of {page_log}.")
-            # Truncate the temp table and vacuum the two tables
-            pg.run(f"truncate table {intermediate_table};")
-        return total_records
+            }
 
     @staticmethod
     def compare_update_dates(
@@ -286,8 +326,6 @@ class INaturalistDataIngester(ProviderDataIngester):
 
     def create_ingestion_workflow():
 
-        record_counts_by_media_type: reporting.MediaTypeRecordMetrics = {}
-
         with TaskGroup(group_id="ingest_data") as ingest_data:
 
             preingestion_tasks = INaturalistDataIngester.create_preingestion_tasks()
@@ -315,50 +353,72 @@ class INaturalistDataIngester(ProviderDataIngester):
                     ),
                 )
 
-                load_transformed_data = PythonOperator(
+                get_batches = PythonOperator(
+                    task_id="get_batches",
+                    python_callable=INaturalistDataIngester.get_batches,
+                    op_kwargs={
+                        "batch_length": 2_000_000,
+                        "postgres_conn_id": LOADER_ARGS["postgres_conn_id"],
+                    },
+                )
+
+                load_transformed_data = PythonOperator.partial(
                     task_id="load_transformed_data",
                     python_callable=INaturalistDataIngester.load_transformed_data,
-                    execution_timeout=timedelta(hours=48),
+                    # In testing this locally, the longest iteration took 39 minutes,
+                    # median was 18 minutes. We should probably adjust the timeouts with
+                    # more info from production runs.
+                    execution_timeout=timedelta(hours=1),
                     retries=0,
+                    max_active_tis_per_dag=1,
                     op_kwargs={
-                        "intermediate_table": sql._get_load_table_name(
-                            LOADER_ARGS["identifier"]
+                        "intermediate_table": XCOM_PULL_TEMPLATE.format(
+                            create_loading_table.task_id, "return_value"
                         ),
-                        "page_length": 2_000_000,
-                        "postgres_conn_id": LOADER_ARGS["postgres_conn_id"],
                         "identifier": LOADER_ARGS["identifier"],
                     },
                     doc_md=(
-                        "Load data from source tables to intermediate table in batches."
+                        "Load one batch of data from source tables to target table."
                     ),
+                ).expand(
+                    op_args=XComArg(get_batches),
                 )
 
-                # TO DO: integrate clean-up stats via xcoms here, keeping in mind that
-                # some dupes are excluded up front.
-                record_counts_by_media_type[IMAGE] = reporting.RecordMetrics(
-                    upserted=XCOM_PULL_TEMPLATE.format(
-                        load_transformed_data.task_id, "return_value"
+                consolidate_load_statistics = PythonOperator(
+                    task_id="consolidate_load_statistics",
+                    python_callable=INaturalistDataIngester.consolidate_load_statistics,
+                    op_kwargs={
+                        "all_results": XCOM_PULL_TEMPLATE.format(
+                            load_transformed_data.task_id, "return_value"
+                        ),
+                    },
+                    doc_md=(
+                        "Total load counts across batches from load_transformed_data."
                     ),
-                    missing_columns=0,
-                    foreign_id_dup=0,
-                    url_dup=0,
+                    retries=0,
                 )
 
-                (create_loading_table >> load_transformed_data)
+                (
+                    create_loading_table
+                    >> get_batches
+                    >> load_transformed_data
+                    >> consolidate_load_statistics
+                )
 
             postingestion_tasks = INaturalistDataIngester.create_postingestion_tasks()
 
             (preingestion_tasks >> pull_data >> loader_tasks >> postingestion_tasks)
 
         # Reporting on the time it takes to load transformed data into the intermediate
-        # table rather than the time it takes to load from the s3 source, because it's
-        # easier to report out on a task than a task group and loading the intermediate
-        # table takes a lot longer anyway.
+        # table, clean it, and upsert it to the final target. This is not strictly
+        # comparable to the time it takes to load from the s3 source.
         ingestion_metrics = {
             "duration": XCOM_PULL_TEMPLATE.format(
-                load_transformed_data.task_id, "duration"
+                consolidate_load_statistics.task_id, "duration"
             ),
-            "record_counts_by_media_type": record_counts_by_media_type,
+            "record_counts_by_media_type": XCOM_PULL_TEMPLATE.format(
+                consolidate_load_statistics.task_id, "return_value"
+            ),
         }
 
         return ingest_data, ingestion_metrics

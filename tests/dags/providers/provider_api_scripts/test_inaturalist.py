@@ -54,16 +54,13 @@ def test_load_data(file_name, expected):
     assert actual == expected
 
 
-def test_get_next_query_params_no_prior():
-    expected = {"offset_num": 0}
-    actual = INAT.get_next_query_params()
-    assert expected == actual
-
-
-def test_get_next_query_params_prior_0():
-    expected = {"offset_num": INAT.batch_limit}
-    actual = INAT.get_next_query_params({"offset_num": 0})
-    assert expected == actual
+@pytest.mark.parametrize("value", [None, {"offset_num": 0}])
+def test_get_next_query_params(value):
+    with pytest.raises(
+        NotImplementedError,
+        match="Instead we use get_batches to dynamically create subtasks.",
+    ):
+        INAT.get_next_query_params(value)
 
 
 @pytest.mark.parametrize("value", [None, {}])

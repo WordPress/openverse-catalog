@@ -96,6 +96,7 @@ def create_loading_table(
     create_index(col.PROVIDER.db_name, None)
     create_index(col.FOREIGN_ID.db_name, "provider")
     create_index(col.DIRECT_URL.db_name, "provider")
+    return load_table
 
 
 def load_local_data_to_intermediate_table(
