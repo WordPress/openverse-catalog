@@ -159,22 +159,21 @@ class INaturalistDataIngester(ProviderDataIngester):
         if all_results is None:
             return
         else:
-            loaded_sum = sum([x["loaded"] for x in all_results])
-            missing_columns_sum = sum([x["missing_columns"] for x in all_results])
-            foreign_id_dup_sum = sum([x["foreign_id_dup"] for x in all_results])
-            upserted_sum = sum([x["upserted"] for x in all_results])
-            durations = [x["duration"] for x in all_results]
+            METRICS = ["loaded", "missing_columns", "foreign_id_dup", "upserted"]
+            metric_output = {}
+            for metric in METRICS:
+                metric_output[metric] = sum([x[metric] for x in all_results])
             # url dups are just a remainder, per common.loader.upsert_data
-            url_dup_sum = (
-                loaded_sum - missing_columns_sum - foreign_id_dup_sum - upserted_sum
+            metric_output["url_dup"] = (
+                metric_output["loaded"]
+                - metric_output["missing_columns"]
+                - metric_output["foreign_id_dup"]
+                - metric_output["upserted"]
             )
-            # return metrics
-            ti.xcom_push(key="duration", value=durations)
-            return {
-                IMAGE: reporting.RecordMetrics(
-                    upserted_sum, missing_columns_sum, foreign_id_dup_sum, url_dup_sum
-                )
-            }
+            # splitting metrics to be consistent with common.reporting.report_completion
+            metric_output["duration"] = [x["duration"] for x in all_results]
+            ti.xcom_push(key="duration", value=metric_output["duration"])
+            return {IMAGE: reporting.RecordMetrics(metric_output)}
 
     @staticmethod
     def compare_update_dates(
