@@ -1,9 +1,12 @@
 from ast import literal_eval
 from pathlib import Path
+from unittest import mock
 
 import pytest
+from airflow.models import TaskInstance
 from airflow.providers.postgres.hooks.postgres import PostgresHook
-from common.constants import POSTGRES_CONN_ID
+from common.constants import IMAGE, POSTGRES_CONN_ID
+from common.loader.reporting import RecordMetrics
 from providers.provider_api_scripts import inaturalist
 
 
@@ -103,4 +106,40 @@ def test_get_record_data_full_response():
 def test_get_media_type():
     expected = "image"
     actual = INAT.get_media_type({"some test": "data"})
+    assert actual == expected
+
+
+ti_mock = mock.MagicMock(spec=TaskInstance)
+
+
+@pytest.mark.parametrize(
+    "all_results, ti, expected",
+    [
+        (None, ti_mock, None),
+        (
+            [
+                {
+                    "loaded": 0,
+                    "max_id_loaded": None,
+                    "missing_columns": 0,
+                    "foreign_id_dup": 0,
+                    "upserted": 0,
+                    "duration": 0.07186045899288729,
+                },
+                {
+                    "loaded": 1,
+                    "max_id_loaded": "10314159",
+                    "missing_columns": 0,
+                    "foreign_id_dup": 0,
+                    "upserted": 1,
+                    "duration": 0.0823216249991674,
+                },
+            ],
+            ti_mock,
+            {IMAGE: RecordMetrics(1, 0, 0, 0)},
+        ),
+    ],
+)
+def test_consolidate_load_statistics(all_results, ti, expected):
+    actual = INAT.consolidate_load_statistics(all_results, ti)
     assert actual == expected

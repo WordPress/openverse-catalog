@@ -170,10 +170,10 @@ class INaturalistDataIngester(ProviderDataIngester):
                 - metric_output["foreign_id_dup"]
                 - metric_output["upserted"]
             )
+            metric_output.pop("loaded")
             # splitting metrics to be consistent with common.reporting.report_completion
-            metric_output["duration"] = [x["duration"] for x in all_results]
-            ti.xcom_push(key="duration", value=metric_output["duration"])
-            return {IMAGE: reporting.RecordMetrics(metric_output)}
+            ti.xcom_push(key="duration", value=[x["duration"] for x in all_results])
+            return {IMAGE: reporting.RecordMetrics(**metric_output)}
 
     @staticmethod
     def compare_update_dates(
