@@ -124,7 +124,7 @@ def create_ingestion_workflow(
         identifier = f"{provider_name}_{{{{ ts_nodash }}}}_{day_shift}"
 
         ingestion_kwargs = {
-            "ingestion_callable": conf.ingestion_callable,
+            "ingester_class": conf.ingester_class,
             "media_types": conf.media_types,
         }
         if conf.dated:
@@ -197,18 +197,46 @@ def create_ingestion_workflow(
                 )
                 load_from_s3 = PythonOperator(
                     task_id=append_day_shift("load_from_s3"),
-                    execution_timeout=conf.load_timeout,
                     retries=1,
-                    python_callable=loader.load_from_s3,
+                    python_callable=sql.load_s3_data_to_intermediate_table,
                     op_kwargs={
+                        "postgres_conn_id": DB_CONN_ID,
                         "bucket": OPENVERSE_BUCKET,
-                        "key": XCOM_PULL_TEMPLATE.format(copy_to_s3.task_id, "s3_key"),
+                        "s3_key": XCOM_PULL_TEMPLATE.format(
+                            copy_to_s3.task_id, "s3_key"
+                        ),
+                        "identifier": identifier,
+                        "media_type": media_type,
+                    },
+                )
+                clean_data = PythonOperator(
+                    task_id=append_day_shift("clean_data"),
+                    retries=1,
+                    python_callable=sql.clean_intermediate_table_data,
+                    op_kwargs={
+                        "postgres_conn_id": DB_CONN_ID,
+                        "identifier": identifier,
+                        "media_type": media_type,
+                    },
+                )
+                upsert_data = PythonOperator(
+                    task_id=append_day_shift("upsert_data"),
+                    execution_timeout=conf.upsert_timeout,
+                    retries=1,
+                    python_callable=loader.upsert_data,
+                    op_kwargs={
                         "postgres_conn_id": DB_CONN_ID,
                         "media_type": media_type,
                         "tsv_version": XCOM_PULL_TEMPLATE.format(
                             copy_to_s3.task_id, "tsv_version"
                         ),
                         "identifier": identifier,
+                        "loaded_count": XCOM_PULL_TEMPLATE.format(
+                            load_from_s3.task_id, "return_value"
+                        ),
+                        "duplicates_count": XCOM_PULL_TEMPLATE.format(
+                            clean_data.task_id, "return_value"
+                        ),
                     },
                 )
                 drop_loading_table = PythonOperator(
@@ -222,10 +250,10 @@ def create_ingestion_workflow(
                     trigger_rule=TriggerRule.ALL_DONE,
                 )
                 [create_loading_table, copy_to_s3] >> load_from_s3
-                load_from_s3 >> drop_loading_table
+                load_from_s3 >> clean_data >> upsert_data >> drop_loading_table
 
                 record_counts_by_media_type[media_type] = XCOM_PULL_TEMPLATE.format(
-                    load_from_s3.task_id, "return_value"
+                    upsert_data.task_id, "return_value"
                 )
                 load_tasks.append(load_data)
 
@@ -294,6 +322,7 @@ def create_provider_api_workflow_dag(conf: ProviderWorkflow):
         tags=[
             "provider",
             *[f"provider: {media_type}" for media_type in conf.media_types],
+            f"ingestion: {'dated' if conf.dated else 'full'}",
             *conf.tags,
         ],
         render_template_as_native_obj=True,

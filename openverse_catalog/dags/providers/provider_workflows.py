@@ -1,22 +1,31 @@
-import importlib
+import inspect
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import Dict, Optional, Sequence, Type
 
 from providers.provider_api_scripts.brooklyn_museum import BrooklynMuseumDataIngester
 from providers.provider_api_scripts.cleveland_museum import ClevelandDataIngester
+from providers.provider_api_scripts.europeana import EuropeanaDataIngester
 from providers.provider_api_scripts.finnish_museums import FinnishMuseumsDataIngester
+from providers.provider_api_scripts.flickr import FlickrDataIngester
+from providers.provider_api_scripts.freesound import FreesoundDataIngester
 from providers.provider_api_scripts.inaturalist import INaturalistDataIngester
+from providers.provider_api_scripts.jamendo import JamendoDataIngester
 from providers.provider_api_scripts.metropolitan_museum import MetMuseumDataIngester
 from providers.provider_api_scripts.museum_victoria import VictoriaDataIngester
 from providers.provider_api_scripts.nappy import NappyDataIngester
+from providers.provider_api_scripts.nypl import NyplDataIngester
+from providers.provider_api_scripts.phylopic import PhylopicDataIngester
 from providers.provider_api_scripts.provider_data_ingester import ProviderDataIngester
+from providers.provider_api_scripts.rawpixel import RawpixelDataIngester
 from providers.provider_api_scripts.science_museum import ScienceMuseumDataIngester
+from providers.provider_api_scripts.smithsonian import SmithsonianDataIngester
 from providers.provider_api_scripts.smk import SmkDataIngester
 from providers.provider_api_scripts.stocksnap import StockSnapDataIngester
 from providers.provider_api_scripts.wikimedia_commons import (
     WikimediaCommonsDataIngester,
 )
+from providers.provider_api_scripts.wordpress import WordPressDataIngester
 
 
 @dataclass
@@ -24,22 +33,14 @@ class ProviderWorkflow:
     """
     Required Arguments:
 
-    provider_script:  string path for the provider_script file whose main
-                      function is to be run. If the optional argument
-                      `dated` is True, then the function must take a
-                      single parameter (date) which will be a string of
-                      the form 'YYYY-MM-DD'. Otherwise, the function
-                      should take no arguments.
+    ingester_class: ProviderDataIngester class whose `ingest_records` method is
+                        to be run.
 
     Optional Arguments:
 
     dag_id:             string giving a unique id of the DAG to be created. By
                         default this will be set to the name of the provider_script,
                         appended with 'workflow'.
-    ingestion_callable: ProviderDataIngester class whose `ingest_records` method is
-                        to be run. Temporarily, may also be a `main` function for
-                        providers that have not yet been refactored. TODO: Remove this
-                        comment when refactors are completed.
     default_args:       dictionary which is passed to the airflow.dag.DAG
                         __init__ method and used to optionally override the
                         DAG_DEFAULT_ARGS.
@@ -59,11 +60,13 @@ class ProviderWorkflow:
                         which data should be ingested).
     pull_timeout:       datetime.timedelta giving the amount of time a given data
                         pull may take.
-    load_timeout:       datetime.timedelta giving the amount of time the load_data
+    upsert_timeout:     datetime.timedelta giving the amount of time the upsert_data
                         task may take.
     doc_md:             string which should be used for the DAG's documentation markdown
     media_types:        list describing the media type(s) that this provider handles
-                        (e.g. `["audio"]`, `["image", "audio"]`, etc.)
+                        (e.g. `["audio"]`, `["image", "audio"]`, etc.) By default this
+                        will be set to the list of media_types supported in the
+                        ProviderDataIngester.
     create_preingestion_tasks: callable that returns an airflow task or task group to
                         to run any necessary pre-ingestion tasks, such as loading bulk
                         data from S3
@@ -73,36 +76,32 @@ class ProviderWorkflow:
     tags:               list of any additional tags to apply to the generated DAG
     """
 
-    provider_script: str
-    # TODO: update the ingestion_callable to only accept ProviderDataIngester classes
-    # when all provider scripts have been refactored.
-    ingestion_callable: Type[ProviderDataIngester] | callable = None
+    ingester_class: type[ProviderDataIngester]
     dag_id: str = ""
-    default_args: Optional[Dict] = None
+    default_args: dict | None = None
     start_date: datetime = datetime(1970, 1, 1)
     max_active_runs: int = 1
     max_active_tasks: int = 1
     schedule_string: str = "@monthly"
     dated: bool = False
     pull_timeout: timedelta = timedelta(hours=24)
-    load_timeout: timedelta = timedelta(hours=1)
+    upsert_timeout: timedelta = timedelta(hours=1)
     doc_md: str = ""
-    media_types: Sequence[str] = ("image",)
-    create_preingestion_tasks: Optional[callable] = None
-    create_postingestion_tasks: Optional[callable] = None
+    media_types: Sequence[str] = ()
+    create_preingestion_tasks: Callable | None = None
+    create_postingestion_tasks: Callable | None = None
     tags: list[str] = field(default_factory=list)
 
     def __post_init__(self):
+        # Get the module the ProviderDataIngester was defined in
+        provider_script = inspect.getmodule(self.ingester_class)
+        self.provider_name = provider_script.__name__.split(".")[-1]
+
         if not self.dag_id:
-            self.dag_id = f"{self.provider_script}_workflow"
+            self.dag_id = f"{self.provider_name}_workflow"
 
-        provider_script = importlib.import_module(
-            f"providers.provider_api_scripts.{self.provider_script}"
-        )
-
-        if not self.ingestion_callable:
-            self.ingestion_callable = provider_script.main
-            self.tags.append("legacy-ingestion")
+        if not self.media_types:
+            self.media_types = list(self.ingester_class.providers.keys())
 
         if not self.doc_md:
             self.doc_md = provider_script.__doc__
@@ -110,119 +109,102 @@ class ProviderWorkflow:
 
 PROVIDER_WORKFLOWS = [
     ProviderWorkflow(
-        provider_script="brooklyn_museum",
         start_date=datetime(2020, 1, 1),
-        ingestion_callable=BrooklynMuseumDataIngester,
+        ingester_class=BrooklynMuseumDataIngester,
     ),
     ProviderWorkflow(
-        provider_script="cleveland_museum",
-        ingestion_callable=ClevelandDataIngester,
+        ingester_class=ClevelandDataIngester,
         start_date=datetime(2020, 1, 15),
         pull_timeout=timedelta(hours=12),
     ),
     ProviderWorkflow(
-        provider_script="europeana",
-        start_date=datetime(2011, 9, 1),
+        ingester_class=EuropeanaDataIngester,
+        start_date=datetime(2022, 10, 27),
         schedule_string="@daily",
         dated=True,
     ),
     ProviderWorkflow(
-        provider_script="finnish_museums",
-        ingestion_callable=FinnishMuseumsDataIngester,
-        start_date=datetime(2020, 9, 1),
-        pull_timeout=timedelta(days=5),
-        load_timeout=timedelta(days=5),
-    ),
-    ProviderWorkflow(
-        provider_script="flickr",
-        start_date=datetime(2004, 2, 1),
+        ingester_class=FinnishMuseumsDataIngester,
+        start_date=datetime(2015, 11, 1),
+        upsert_timeout=timedelta(hours=5),
         schedule_string="@daily",
         dated=True,
     ),
     ProviderWorkflow(
-        provider_script="inaturalist",
-        ingestion_callable=INaturalistDataIngester,
+        ingester_class=FlickrDataIngester,
+        start_date=datetime(2020, 11, 1),
+        schedule_string="@daily",
+        dated=True,
+    ),
+    ProviderWorkflow(
+        ingester_class=FreesoundDataIngester,
+    ),
+    ProviderWorkflow(
+        ingester_class=INaturalistDataIngester,
         create_preingestion_tasks=INaturalistDataIngester.create_preingestion_tasks,
         create_postingestion_tasks=INaturalistDataIngester.create_postingestion_tasks,
         schedule_string="@monthly",
         pull_timeout=timedelta(days=5),
-        load_timeout=timedelta(days=5),
+        upsert_timeout=timedelta(days=5),
     ),
     ProviderWorkflow(
-        provider_script="freesound",
-        media_types=("audio",),
+        ingester_class=JamendoDataIngester,
     ),
     ProviderWorkflow(
-        provider_script="jamendo",
-        media_types=("audio",),
-    ),
-    ProviderWorkflow(
-        provider_script="metropolitan_museum",
-        ingestion_callable=MetMuseumDataIngester,
+        ingester_class=MetMuseumDataIngester,
         start_date=datetime(2016, 9, 1),
         schedule_string="@daily",
         dated=True,
         pull_timeout=timedelta(hours=12),
     ),
     ProviderWorkflow(
-        provider_script="museum_victoria",
-        ingestion_callable=VictoriaDataIngester,
+        ingester_class=VictoriaDataIngester,
         start_date=datetime(2020, 1, 1),
     ),
     ProviderWorkflow(
-        provider_script="nappy",
-        ingestion_callable=NappyDataIngester,
+        ingester_class=NappyDataIngester,
     ),
     ProviderWorkflow(
-        provider_script="nypl",
+        ingester_class=NyplDataIngester,
         start_date=datetime(2020, 1, 1),
     ),
     ProviderWorkflow(
-        provider_script="phylopic",
-        start_date=datetime(2011, 1, 1),
-        schedule_string="@weekly",
+        ingester_class=PhylopicDataIngester,
+        start_date=datetime(2011, 2, 7),
+        schedule_string="@daily",
         dated=True,
         pull_timeout=timedelta(hours=12),
     ),
     ProviderWorkflow(
-        provider_script="rawpixel",
+        ingester_class=RawpixelDataIngester,
         pull_timeout=timedelta(hours=12),
     ),
     ProviderWorkflow(
-        provider_script="science_museum",
-        ingestion_callable=ScienceMuseumDataIngester,
+        ingester_class=ScienceMuseumDataIngester,
         start_date=datetime(2020, 1, 1),
     ),
     ProviderWorkflow(
-        provider_script="smithsonian",
+        ingester_class=SmithsonianDataIngester,
         start_date=datetime(2020, 1, 1),
         schedule_string="@weekly",
-        load_timeout=timedelta(hours=4),
+        upsert_timeout=timedelta(hours=6),
     ),
     ProviderWorkflow(
-        provider_script="smk",
-        ingestion_callable=SmkDataIngester,
+        ingester_class=SmkDataIngester,
         start_date=datetime(2020, 1, 1),
     ),
     ProviderWorkflow(
-        provider_script="stocksnap",
-        ingestion_callable=StockSnapDataIngester,
+        ingester_class=StockSnapDataIngester,
     ),
     ProviderWorkflow(
-        provider_script="walters",
-        start_date=datetime(2020, 9, 27),
-    ),
-    ProviderWorkflow(
-        provider_script="wikimedia_commons",
-        ingestion_callable=WikimediaCommonsDataIngester,
+        ingester_class=WikimediaCommonsDataIngester,
         start_date=datetime(2020, 11, 1),
         schedule_string="@daily",
         dated=True,
         pull_timeout=timedelta(hours=12),
-        media_types=("image", "audio"),
     ),
     ProviderWorkflow(
-        provider_script="wordpress",
+        ingester_class=WordPressDataIngester,
         pull_timeout=timedelta(hours=12),
     ),
 ]

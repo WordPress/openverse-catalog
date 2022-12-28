@@ -89,16 +89,8 @@ def test_MediaStore_includes_media_type_in_output_file_string():
 
 
 def test_MediaStore_add_item_flushes_buffer(tmpdir):
-    output_file = "testing.tsv"
-    tmp_directory = tmpdir
-    output_dir = str(tmp_directory)
-    tmp_file = tmp_directory.join(output_file)
-    tmp_path_full = str(tmp_file)
-
     image_store = image.ImageStore(
         provider="testing_provider",
-        output_file=output_file,
-        output_dir=output_dir,
         buffer_length=3,
     )
     image_store.add_item(
@@ -126,7 +118,7 @@ def test_MediaStore_add_item_flushes_buffer(tmpdir):
         license_info=PD_LICENSE_INFO,
     )
     assert len(image_store._media_buffer) == 1
-    with open(tmp_path_full) as f:
+    with open(image_store.output_path) as f:
         lines = f.read().split("\n")
     assert len(lines) == 4  # recall the last '\n' will create an empty line.
 
@@ -301,6 +293,7 @@ def test_MediaStore_get_image_gets_source(
         license_info=BY_LICENSE_INFO,
         foreign_landing_url=TEST_FOREIGN_LANDING_URL,
         image_url=TEST_IMAGE_URL,
+        thumbnail_url=None,
         filetype=None,
         filesize=None,
         foreign_identifier=None,
@@ -358,6 +351,7 @@ def test_MediaStore_add_image_replaces_non_dict_meta_data_with_no_license_url():
             license_info=BY_LICENSE_INFO,
             foreign_landing_url="",
             image_url="",
+            thumbnail_url=None,
             foreign_identifier=None,
             width=None,
             height=None,
@@ -393,6 +387,7 @@ def test_MediaStore_add_item_creates_meta_data_with_valid_license_url(
             license_info=LicenseInfo("by", "4.0", valid_license_url, license_url),
             foreign_landing_url="",
             image_url="",
+            thumbnail_url=None,
             foreign_identifier=None,
             width=None,
             height=None,

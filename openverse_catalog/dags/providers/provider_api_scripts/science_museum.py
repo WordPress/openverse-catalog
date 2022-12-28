@@ -1,7 +1,19 @@
+"""
+Content Provider:       Science Museum
+
+ETL Process:            Use the API to identify all CC-licensed images.
+
+Output:                 TSV file containing the image, the respective
+                        meta-data.
+
+Notes:                  https://github.com/TheScienceMuseum/collectionsonline/wiki/Collections-Online-API  # noqa
+                        Rate limited, no specific rate given.
+"""
 import logging
 import re
-from typing import Dict, Optional, Tuple
+from datetime import date
 
+from common import slack
 from common.licenses import get_license_info
 from common.loader import provider_details as prov
 from providers.provider_api_scripts.provider_data_ingester import ProviderDataIngester
@@ -12,20 +24,6 @@ logger = logging.getLogger(__name__)
 LIMIT = 100
 
 CC0_LICENSE = get_license_info(license_="cc0", license_version="1.0")
-
-YEAR_RANGES = [
-    (0, 1500),
-    (1500, 1750),
-    (1750, 1825),
-    (1825, 1850),
-    (1850, 1875),
-    (1875, 1900),
-    (1900, 1915),
-    (1915, 1940),
-    (1940, 1965),
-    (1965, 1990),
-    (1990, 2020),
-]
 
 
 class ScienceMuseumDataIngester(ProviderDataIngester):
@@ -40,31 +38,59 @@ class ScienceMuseumDataIngester(ProviderDataIngester):
         # instance variable to prevent duplicate records
         self.RECORD_IDS = set()
 
+        # track page number as instance variable so we can more
+        # easily detect when the page limit is reached
+        self.page_number = 0
+
+    @staticmethod
+    def _get_year_ranges(final_year: int) -> list[tuple[int, int]]:
+        """
+        The Science Museum API currently raises a 400 when attempting to access
+        any page number higher than 50
+        (https://github.com/TheScienceMuseum/collectionsonline/issues/1470).
+
+        To avoid this, we ingest data for small ranges of years at a time,
+        in order to split the data into batches less than 50 pages each.
+        Because more recent data is more numerous, the length of the year
+        ranges decreases as they get closer to the current day.
+        """
+        # Start with some very large ranges for old data
+        year_ranges = [
+            (0, 1500),
+            (1500, 1750),
+        ]
+        # Add a range for every 25 years between 1750 and 1875
+        year_ranges.extend([(x, x + 25) for x in range(1750, 1875, 25)])
+        # Add a range for every 10 years between 1875 and 'next year'
+        # relative to when the DAG is being run.
+        year_ranges.extend(
+            [(x, min(x + 10, final_year)) for x in range(1875, final_year, 10)]
+        )
+        return year_ranges
+
     def ingest_records(self, **kwargs):
-        for year_range in YEAR_RANGES:
+        next_year = date.today().year + 1
+        for year_range in self._get_year_ranges(next_year):
             logger.info(f"==Starting on year range: {year_range}==")
             super().ingest_records(year_range=year_range)
 
     def get_next_query_params(self, prev_query_params, **kwargs):
         from_, to_ = kwargs["year_range"]
         if not prev_query_params:
-            # Return default query params on the first request
-            return {
-                "has_image": 1,
-                "image_license": "CC",
-                "page[size]": LIMIT,
-                "page[number]": 0,
-                "date[from]": from_,
-                "date[to]": to_,
-            }
+            # Reset the page number to 0
+            self.page_number = 0
         else:
-            # Increment `skip` by the batch limit.
-            return {
-                **prev_query_params,
-                "date[from]": from_,
-                "date[to]": to_,
-                "page[number]": prev_query_params["page[number]"] + 1,
-            }
+            # Increment the page number
+            self.page_number += 1
+
+        return {
+            "has_image": 1,
+            "image_license": "CC",
+            "page[size]": LIMIT,
+            "page[number]": self.page_number,
+            "date[from]": from_,
+            "date[to]": to_,
+        }
 
     def get_media_type(self, record):
         # This provider only supports Images.
@@ -150,7 +176,7 @@ class ScienceMuseumDataIngester(ProviderDataIngester):
         return f"https://coimages.sciencemuseumgroup.org.uk/images/{image_url}"
 
     @staticmethod
-    def _get_dimensions(image_data: Dict) -> Tuple[int | None, int | None]:
+    def _get_dimensions(image_data: dict) -> tuple[int | None, int | None]:
         """
         Returns the height and width of the image from "image_data"."measurements"
         with keys of "dimension", "units", "value".
@@ -166,8 +192,8 @@ class ScienceMuseumDataIngester(ProviderDataIngester):
 
     @staticmethod
     def _get_image_info(
-        processed: Dict,
-    ) -> Tuple[Optional[str], Optional[int], Optional[int], Optional[str]]:
+        processed: dict,
+    ) -> tuple[str | None, int | None, int | None, str | None]:
         height, width, filetype = None, None, None
         image_data = processed.get("large")
         if image_data is None:
@@ -180,7 +206,7 @@ class ScienceMuseumDataIngester(ProviderDataIngester):
         return image_url, height, width, filetype
 
     @staticmethod
-    def _get_first_list_value(key: str, attributes: Dict) -> str | None:
+    def _get_first_list_value(key: str, attributes: dict) -> str | None:
         val = attributes.get(key)
         if isinstance(val, list):
             return val[0].get("value")
@@ -208,7 +234,7 @@ class ScienceMuseumDataIngester(ProviderDataIngester):
         return metadata
 
     @staticmethod
-    def _get_license(image_data):
+    def _get_license(image_data) -> None | tuple[str, str]:
         rights = image_data.get("source", {}).get("legal", {}).get("rights")
         if isinstance(rights, list):
             license_name = rights[0].get("usage_terms")
@@ -216,13 +242,37 @@ class ScienceMuseumDataIngester(ProviderDataIngester):
                 return None
             license_name = license_name.lower()
             license_name = re.sub("^cc[ -]", "", license_name)
+            if license_name.count(" ") != 1:
+                # Unidentifiable license
+                return None
             license_, version = license_name.split(" ")
             return license_, version
         return None
 
+    def get_should_continue(self, response_json) -> bool:
+        next_page_url = response_json.get("links", {}).get("next")
+
+        # No more data left to process
+        if next_page_url is None:
+            return False
+
+        # Special case where we must halt ingestion early to prevent
+        # external API errors caused by accessing a page number higher
+        # than 50.
+        if self.page_number == 50:
+            current_url = response_json.get("links", {}).get("self")
+            message = (
+                f"Request {current_url} contains more than 50 pages of"
+                " data and cannot be fully ingested. Reduce the size of"
+                " the year range in order to complete ingestion."
+            )
+            slack.send_alert(message, dag_id=self.dag_id)
+            return False
+
+        return True
+
 
 def main():
-    logger.info("Begin: Science Museum data ingestion")
     ingester = ScienceMuseumDataIngester()
     ingester.ingest_records()
 
