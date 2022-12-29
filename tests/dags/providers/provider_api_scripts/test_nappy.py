@@ -108,7 +108,6 @@ def test_get_should_continue(response_json, expected_result):
                     "phone",
                     "laying",
                     "room",
-                    "sexy",
                 ],
                 "width": 2048,
                 "height": 1361,
