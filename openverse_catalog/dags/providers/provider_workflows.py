@@ -163,6 +163,7 @@ PROVIDER_WORKFLOWS = [
     ),
     ProviderWorkflow(
         ingester_class=NappyDataIngester,
+        start_date=datetime(2022, 12, 1),
     ),
     ProviderWorkflow(
         ingester_class=NyplDataIngester,
