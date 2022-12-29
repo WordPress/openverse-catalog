@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 class NappyDataIngester(ProviderDataIngester):
-    providers = {"image": prov.NAPPY_DEFAULT_PROVIDER}
+    providers = {constants.IMAGE: prov.NAPPY_DEFAULT_PROVIDER}
     endpoint = "https://api.nappy.co/v1/openverse/images"
     headers = {"User-Agent": prov.UA_STRING, "Accept": "application/json"}
 
@@ -34,7 +34,6 @@ class NappyDataIngester(ProviderDataIngester):
             }
         else:
             return {
-                **prev_query_params,
                 "page": prev_query_params["page"] + 1,
             }
 
@@ -85,7 +84,7 @@ class NappyDataIngester(ProviderDataIngester):
         creator = data.get("creator")
         creator_url = data.get("creator_url")
         title = data.get("title")
-        meta_data = {"thumbnail": thumbnail_url}
+        meta_data = {}
         raw_tags = data.get("tags").split(",")
         width = data.get("width")
         height = data.get("height")
@@ -93,6 +92,7 @@ class NappyDataIngester(ProviderDataIngester):
         return {
             "foreign_landing_url": foreign_landing_url,
             "image_url": image_url,
+            "thumbnail_url": thumbnail_url,
             "license_info": license_info,
             "foreign_identifier": foreign_identifier,
             "filesize": filesize,
