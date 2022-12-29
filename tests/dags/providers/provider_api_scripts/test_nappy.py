@@ -1,22 +1,17 @@
-"""
-TODO: Add additional tests for any methods you added in your subclass.
-Try to test edge cases (missing keys, different data types returned, Nones, etc).
-You may also need to update the given test names to be more specific.
-
-Run your tests locally with `just test -k nappy`
-"""
-
 import json
-
-# import logging
+from ast import literal_eval
 from pathlib import Path
 
-# import pytest
+import pytest
+from common.constants import IMAGE
+from common.licenses import get_license_info
 from providers.provider_api_scripts.nappy import NappyDataIngester
 
 
-# TODO: API responses used for testing can be added to this directory
-RESOURCES = Path(__file__).parent / "tests/resources/nappy"
+# resource files
+RESOURCES = Path(__file__).parent / "resources/nappy"
+FULL_BATCH_RESPONSE = json.loads((RESOURCES / "images.json").read_text())
+SINGLE_ITEM = literal_eval((RESOURCES / "single_item.json").read_text())
 
 # Set up test class
 ingester = NappyDataIngester()
@@ -24,47 +19,104 @@ ingester = NappyDataIngester()
 
 def test_get_next_query_params_default_response():
     actual_result = ingester.get_next_query_params(None)
-    expected_result = {
-        # TODO: Fill out expected default query params
-    }
+    expected_result = {"page": 1}
     assert actual_result == expected_result
 
 
 def test_get_next_query_params_updates_parameters():
-    previous_query_params = {
-        # TODO: Fill out a realistic set of previous query params
-    }
+    previous_query_params = {"page": 42}
     actual_result = ingester.get_next_query_params(previous_query_params)
-
-    expected_result = {
-        # TODO: Fill out what the next set of query params should be,
-        # incrementing offsets or page numbers if necessary
-    }
+    expected_result = {"page": 43}
     assert actual_result == expected_result
 
 
-def test_get_media_type():
-    # TODO: Test the correct media type is returned for each possible media type.
-    pass
+# this is based on the assumption that Nappy will only ever send us image data
+@pytest.mark.parametrize(
+    "record",
+    [None, {}, {"here is": "some data"}],
+)
+def test_get_media_type(record):
+    expected_result = IMAGE
+    actual_result = ingester.get_media_type(record)
+    assert actual_result == expected_result
 
 
-def test_get_record_data():
-    # High level test for `get_record_data`. One way to test this is to create a
-    # `tests/resources/Nappy/single_item.json` file containing a sample json
-    # representation of a record from the API under test, call `get_record_data` with
-    # the json, and directly compare to expected output.
-    #
-    # Make sure to add additional tests for records of each media type supported by
-    # your provider.
+@pytest.mark.parametrize(
+    "response_json, expected",
+    [
+        pytest.param(
+            FULL_BATCH_RESPONSE,
+            FULL_BATCH_RESPONSE["images"],
+            id="happy_path",
+        ),
+        pytest.param({}, None, id="empty_dict"),
+        pytest.param(None, None, id="None"),
+    ],
+)
+def test_get_batch_data(response_json, expected):
+    actual = ingester.get_batch_data(response_json)
+    assert actual == expected
 
-    # Sample code for loading in the sample json
-    with open(RESOURCES / "single_item.json") as f:
-        resource_json = json.load(f)
 
-    actual_data = ingester.get_record_data(resource_json)
+@pytest.mark.parametrize(
+    "response_json, expected_result",
+    [
+        ({}, False),
+        (FULL_BATCH_RESPONSE, True),
+        (SINGLE_ITEM, False),
+    ],
+)
+def test_get_should_continue(response_json, expected_result):
+    actual_result = ingester.get_should_continue(response_json)
+    assert actual_result == expected_result
 
-    expected_data = {
-        # TODO: Fill out the expected data which will be saved to the Catalog
-    }
 
+# def get_record_data(self, data: dict) -> dict | list[dict] | None:
+@pytest.mark.parametrize(
+    "response_json, expected_data",
+    [
+        pytest.param({}, None, id="empty_dict"),
+        pytest.param(FULL_BATCH_RESPONSE, None, id="no_urls"),
+        pytest.param(
+            SINGLE_ITEM,
+            {
+                "foreign_landing_url": "https://nappy.co/photo/9/woman-with-tattoos",
+                "image_url": "https://images.nappy.co/uploads/large/101591721349meykm7s6hvaswwvslpjrwibeyzru1fcxtxh0hf09cs7kdhmtptef4y3k4ua5z1bkyrbxov8tmagnafm8upwa3hxaxururtx7azaf.jpg",
+                "license_info": get_license_info(
+                    "https://creativecommons.org/publicdomain/zero/1.0/"
+                ),
+                "foreign_identifier": 9,
+                "filesize": 233500,
+                "filetype": "jpg",
+                "creator": "iamconnorrm",
+                "creator_url": "https://nappy.co/iamconnorrm",
+                "title": "woman with tattoos",
+                "thumbnail_url": "https://images.nappy.co/uploads/large/101591721349meykm7s6hvaswwvslpjrwibeyzru1fcxtxh0hf09cs7kdhmtptef4y3k4ua5z1bkyrbxov8tmagnafm8upwa3hxaxururtx7azaf.jpg?auto=format&w=600&q=75",
+                "meta_data": {},
+                "raw_tags": [
+                    "indoor",
+                    "bed",
+                    "arthropod",
+                    "dark",
+                    "lobster",
+                    "braids",
+                    "female",
+                    "red",
+                    "blue",
+                    "tattoo",
+                    "earring",
+                    "phone",
+                    "laying",
+                    "room",
+                    "sexy",
+                ],
+                "width": 2048,
+                "height": 1361,
+            },
+            id="happy_path",
+        ),
+    ],
+)
+def test_get_record_data(response_json, expected_data):
+    actual_data = ingester.get_record_data(response_json)
     assert actual_data == expected_data
