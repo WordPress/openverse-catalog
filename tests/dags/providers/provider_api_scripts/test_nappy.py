@@ -92,7 +92,11 @@ def test_get_should_continue(response_json, expected_result):
                 "creator_url": "https://nappy.co/iamconnorrm",
                 "title": "woman with tattoos",
                 "thumbnail_url": "https://images.nappy.co/uploads/large/101591721349meykm7s6hvaswwvslpjrwibeyzru1fcxtxh0hf09cs7kdhmtptef4y3k4ua5z1bkyrbxov8tmagnafm8upwa3hxaxururtx7azaf.jpg?auto=format&w=600&q=75",
-                "meta_data": {},
+                "meta_data": {
+                    "views": 82692,
+                    "saves": 18,
+                    "downloads": 1329,
+                },
                 "raw_tags": [
                     "indoor",
                     "bed",

@@ -84,7 +84,11 @@ class NappyDataIngester(ProviderDataIngester):
         creator = data.get("creator")
         creator_url = data.get("creator_url")
         title = data.get("title")
-        meta_data = {}
+        meta_data = {
+            "views": data.get("views"),
+            "saves": data.get("saves"),
+            "downloads": data.get("downloads"),
+        }
         raw_tags = data.get("tags").split(",")
         width = data.get("width")
         height = data.get("height")
