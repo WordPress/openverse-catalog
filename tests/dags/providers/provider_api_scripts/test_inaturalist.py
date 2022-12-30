@@ -140,3 +140,17 @@ def test_consolidate_load_statistics(all_results, expected):
     ti_mock = mock.MagicMock(spec=TaskInstance)
     actual = INAT.consolidate_load_statistics(all_results, ti_mock)
     assert actual == expected
+
+
+@pytest.mark.parametrize(
+    "batch_length, max_id, expected",
+    [
+        pytest.param(10, [(22,)], [[(0, 9)], [(10, 19)], [(20, 29)]], id="happy_path"),
+        pytest.param(10, [(2,)], [[(0, 9)]], id="bigger_batch_than_id"),
+        pytest.param(10, [(None,)], None, id="no_data"),
+    ],
+)
+def test_get_batches(batch_length, max_id, expected):
+    with mock.patch.object(PostgresHook, "get_records", return_value=max_id) as pg_mock:
+        actual = INAT.get_batches(batch_length, pg_mock)
+        assert actual == expected

@@ -81,15 +81,20 @@ class INaturalistDataIngester(ProviderDataIngester):
 
     @staticmethod
     def get_batches(
-        batch_length: int,
+        batch_length: int,  # must be a positive, non-zero integer
         postgres_conn_id=POSTGRES_CONN_ID,
     ):
         pg = PostgresHook(postgres_conn_id)
         max_id = pg.get_records("SELECT max(photo_id) FROM inaturalist.photos")[0][0]
-        # Return the list of batch starts and ends, which will be passed to op_args,
-        # which expects each arg to be a list. So, it's a list of lists, not a list of
-        # tuples.
-        return [[(x, x + batch_length - 1)] for x in range(0, max_id, batch_length)]
+        if max_id is None:
+            # This would only happen if there were no data loaded to inaturalist.photos
+            # yet, but just in case.
+            return
+        else:
+            # Return the list of batch starts and ends, which will be passed to op_args,
+            # which expects each arg to be a list. So, it's a list of lists, not a list
+            # of tuples.
+            return [[(x, x + batch_length - 1)] for x in range(0, max_id, batch_length)]
 
     @staticmethod
     def load_transformed_data(
