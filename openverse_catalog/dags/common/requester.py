@@ -1,5 +1,6 @@
 import logging
 import time
+from collections.abc import Callable
 
 import oauth2
 import requests
@@ -30,44 +31,52 @@ class RetriesExceeded(Exception):
 
 class DelayedRequester:
     """
-    Provides a method `get` that is a wrapper around `get` from the
-    `requests` module (i.e., it simply passes along whatever arguments it
-    receives).  The difference is that when this class is initialized
-    with a non-zero `delay` parameter, it waits for at least that number
-    of seconds between consecutive requests. This is to avoid hitting
-    rate limits of APIs.
+    Provides methods `get` and `head` that are wrappers around the `requests`
+    module methods with the same name (i.e., it simply passes along whatever
+    arguments it receives).  The difference is that when this class is initialized
+    with a non-zero `delay` parameter, it waits for at least that number of seconds
+    between consecutive requests. This is to avoid hitting rate limits of APIs.
 
     Optional Arguments:
-    delay:  an integer giving the minimum number of seconds to wait
-            between consecutive requests via the `get` method.
+    delay:   an integer giving the minimum number of seconds to wait
+             between consecutive requests via the `get` method.
+    headers: a dict that will be passed in all requests, unless overridden
+             by kwargs in specific calls to the get method
     """
 
-    def __init__(self, delay=0):
+    def __init__(self, delay=0, headers=None):
         self._DELAY = delay
+        self.headers = headers or {}
         self._last_request = 0
         self.session = requests.Session()
 
-    def get(self, url, params=None, **kwargs):
+    def _make_request(
+        self, method: Callable[..., requests.models.Response], url: str, **kwargs
+    ):
         """
-        Make a get request, and return the response object if it exists.
+        Make a request, and return the response object if it exists.
 
         Required Arguments:
 
+        method:   `requests` module request method.
         url:      URL to make the request as a string.
-        params:   Dictionary of query string params
-        **kwargs: Optional arguments that will be passed to `requests.get`
+        **kwargs: Optional arguments that will be passed to the `requests`
+                  module request.
         """
         self._delay_processing()
         self._last_request = time.time()
+        request_kwargs = kwargs or {}
+        if "headers" not in kwargs:
+            request_kwargs["headers"] = self.headers
         try:
-            response = self.session.get(url, params=params, **kwargs)
+            response = method(url, **request_kwargs)
             if response.status_code == requests.codes.ok:
                 logger.debug(f"Received response from url {response.url}")
             elif response.status_code == requests.codes.unauthorized:
                 logger.error(f"Authorization failed for URL: {response.url}")
             else:
                 logger.warning(
-                    f"Unable to request URL: {response.url}.  "
+                    f"Unable to request URL: {response.url}  "
                     f"Status code: {response.status_code}"
                 )
             return response
@@ -82,11 +91,35 @@ class DelayedRequester:
             # sent a SIGTERM, which means that the task should be stopped.
             raise
         except Exception as e:
-            logger.error(f"Error with the request for URL: {url}.")
+            logger.error(f"Error with the request for URL: {url}")
             logger.info(f"{type(e).__name__}: {e}")
-            logger.info(f"Using query parameters {params}")
-            logger.info(f'Using headers {kwargs.get("headers")}')
+            if params := request_kwargs.get("params"):
+                logger.info(f"Using query parameters {params}")
+            logger.info(f'Using headers {request_kwargs.get("headers")}')
             return None
+
+    def get(self, url, params=None, **kwargs):
+        """
+        Make a GET request, and return the response object if it exists.
+
+        Required Arguments:
+
+        url:      URL to make the request as a string.
+        params:   Dictionary of query string params.
+        **kwargs: Optional arguments that will be passed to `requests.get`.
+        """
+        return self._make_request(self.session.get, url, params=params, **kwargs)
+
+    def head(self, url, **kwargs):
+        """
+        Make a HEAD request, and return the response object if it exists.
+
+        Required Arguments:
+
+        url:      URL to make the request as a string.
+        **kwargs: Optional arguments that will be passed to `requests.head`.
+        """
+        return self._make_request(self.session.head, url, **kwargs)
 
     def _delay_processing(self):
         wait = self._DELAY - (time.time() - self._last_request)

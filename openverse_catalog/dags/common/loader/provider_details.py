@@ -33,6 +33,7 @@ STOCKSNAP_DEFAULT_PROVIDER = "stocksnap"
 WORDPRESS_DEFAULT_PROVIDER = "wordpress"
 FREESOUND_DEFAULT_PROVIDER = "freesound"
 INATURALIST_DEFAULT_PROVIDER = "inaturalist"
+PHYLOPIC_DEFAULT_PROVIDER = "phylopic"
 
 # Finnish parameters
 FINNISH_SUB_PROVIDERS = {
@@ -65,6 +66,7 @@ EUROPEANA_SUB_PROVIDERS = {"wellcome_collection": "Wellcome Collection"}
 # Smithsonian parameters
 SMITHSONIAN_SUB_PROVIDERS = {
     "smithsonian_national_museum_of_natural_history": {
+        "NMNHANTHRO",  # NMNH - Anthropology Dept.
         "NMNHBIRDS",  # NMNH - Vertebrate Zoology - Birds Division
         "NMNHBOTANY",  # NMNH - Botany Dept.
         "NMNHEDUCATION",  # NMNH - Education & Outreach

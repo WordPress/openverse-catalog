@@ -58,9 +58,9 @@ def test_build_query_param_increments_offset():
     assert actual_param == expected_param
 
 
-def test_get_image_type_web():
+def test_get_image_data_web():
     image_data = _get_resource_json("image_type_web.json")
-    actual_image = clm._get_image_type(image_data)
+    actual_image = clm._get_image_data(image_data)
 
     expected_image = {
         "url": "https://openaccess-cdn.clevelandart.org/1335.1917/1335.1917_web.jpg",
@@ -72,9 +72,9 @@ def test_get_image_type_web():
     assert actual_image == expected_image
 
 
-def test_get_image_type_print():
+def test_get_image_data_print():
     image_data = _get_resource_json("image_type_print.json")
-    actual_image = clm._get_image_type(image_data)
+    actual_image = clm._get_image_data(image_data)
 
     expected_image = {
         "url": "https://openaccess-cdn.clevelandart.org/1335.1917/1335.1917_print.jpg",
@@ -87,9 +87,9 @@ def test_get_image_type_print():
     assert actual_image == expected_image
 
 
-def test_get_image_type_full():
+def test_get_image_data_full():
     image_data = _get_resource_json("image_type_full.json")
-    actual_image = clm._get_image_type(image_data)
+    actual_image = clm._get_image_data(image_data)
 
     expected_image = {
         "url": "https://openaccess-cdn.clevelandart.org/1335.1917/1335.1917_full.tif",
@@ -102,17 +102,37 @@ def test_get_image_type_full():
     assert actual_image == expected_image
 
 
-def test_get_image_type_none():
+def test_get_image_data_none():
     image_data = _get_resource_json("image_type_none.json")
-    actual_image = clm._get_image_type(image_data)
+    actual_image = clm._get_image_data(image_data)
 
     assert actual_image is None
+
+
+def test_get_image_data_no_data():
+    # When image_data is None
+    assert clm._get_image_data(None) is None
 
 
 def test_get_metadata():
     data = _get_resource_json("complete_data.json")
     actual_metadata = clm._get_metadata(data)
     expected_metadata = _get_resource_json("expect_metadata.json")
+    assert actual_metadata == expected_metadata
+
+
+def test_get_metadata_missing_attrs():
+    data = _get_resource_json("complete_data.json")
+    # Remove data to simulate it being missing
+    data.pop("technique")
+    data.pop("culture")
+    actual_metadata = clm._get_metadata(data)
+
+    # Remove data from expected values too
+    expected_metadata = _get_resource_json("expect_metadata.json")
+    expected_metadata.pop("technique")
+    expected_metadata.pop("culture")
+
     assert actual_metadata == expected_metadata
 
 
@@ -143,27 +163,6 @@ def test_get_response_no_data():
     assert mock_get.call_count == 1
     assert batch == []
     assert len(batch) == 0
-
-
-def test_get_response_failure():
-    query_param = {"cc": 1, "has_image": 1, "limit": 1, "skip": -1}
-    r = requests.Response()
-    r.status_code = 500
-    r.json = MagicMock(return_value={"error": ""})
-    with patch.object(clm.delayed_requester, "get", return_value=r) as mock_get:
-        batch, should_continue = clm.get_batch(query_param)
-
-    assert mock_get.call_count == 4
-    assert batch is None
-
-
-def test_get_response_None():
-    query_param = {"cc": 1, "has_image": 1, "limit": 1, "skip": -1}
-    with patch.object(clm.delayed_requester, "get", return_value=None) as mock_get:
-        batch, _ = clm.get_batch(query_param)
-
-    assert batch is None
-    assert mock_get.call_count == 4
 
 
 def test_handle_response():

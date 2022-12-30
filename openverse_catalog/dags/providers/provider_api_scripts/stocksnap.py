@@ -19,10 +19,6 @@ from common.loader import provider_details as prov
 from providers.provider_api_scripts.provider_data_ingester import ProviderDataIngester
 
 
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s",
-    level=logging.INFO,
-)
 logger = logging.getLogger(__name__)
 
 HOST = "stocksnap.io"
@@ -37,18 +33,19 @@ class StockSnapDataIngester(ProviderDataIngester):
     delay = 1  # in seconds
     headers = {
         "Accept": "application/json",
+        "User-Agent": prov.UA_STRING,
     }
     license_url = "https://creativecommons.org/publicdomain/zero/1.0/"
     license_info = get_license_info(license_url=license_url)
 
-    def __init__(self):
-        super(StockSnapDataIngester, self).__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._page_counter = 0
 
     def get_next_query_params(self, prev_query_params, **kwargs):
         # StockSnap uses /{page} at the end of the endpoint url instead of query params.
         self._page_counter += 1
-        return None
+        return {}
 
     def get_media_type(self, record):
         return "image"
@@ -154,7 +151,7 @@ class StockSnapDataIngester(ProviderDataIngester):
         """
         Get the size of the image in bytes.
         """
-        resp = self.delayed_requester.get(image_url)
+        resp = self.delayed_requester.head(image_url)
         if resp:
             filesize = int(resp.headers.get("Content-Length", 0))
             return filesize if filesize != 0 else None

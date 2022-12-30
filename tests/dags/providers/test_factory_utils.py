@@ -2,11 +2,9 @@ from datetime import datetime
 from unittest import mock
 
 import pytest
-import requests
 from airflow.models import DagRun, TaskInstance
 from providers import factory_utils
 
-from tests.dags.common.test_resources import fake_provider_module
 from tests.dags.common.test_resources.fake_provider_data_ingester import (
     FakeDataIngester,
 )
@@ -34,7 +32,7 @@ def internal_func_mock():
 fdi = FakeDataIngester()
 
 
-def _set_up_ingester(mock_conf, mock_func, value):
+def _set_up_ingester(mock_conf, mock_dag_id, mock_func, value):
     """
     Set up ingest records as a proxy for calling the mock function, then return
     the instance. This is necessary because the args are only handed in during
@@ -59,57 +57,6 @@ FakeDataIngesterClass.side_effect = _set_up_ingester
 @pytest.mark.parametrize(
     "func, media_types, stores",
     [
-        # Happy path
-        (fake_provider_module.main, ["image"], [fake_provider_module.image_store]),
-        # Empty case, no media types provided
-        (fake_provider_module.main, [], []),
-        # Provided function doesn't have a store at the module level
-        pytest.param(
-            requests.get,
-            ["image"],
-            [None],
-            marks=pytest.mark.raises(
-                exception=ValueError, match="Expected stores in .*? were missing.*"
-            ),
-        ),
-        # Provided function doesn't have all specified stores
-        pytest.param(
-            fake_provider_module.main,
-            ["image", "other"],
-            [None, None],
-            marks=pytest.mark.raises(
-                exception=ValueError, match="Expected stores in .*? were missing.*"
-            ),
-        ),
-    ],
-)
-def test_load_provider_script(func, media_types, stores):
-    actual_stores = factory_utils._load_provider_script_stores(
-        func,
-        media_types,
-    )
-    assert actual_stores == dict(zip(media_types, stores))
-
-
-@pytest.mark.parametrize(
-    "func, media_types, stores",
-    [
-        ##################################################
-        # Function-based
-        ##################################################
-        # Happy path
-        (fake_provider_module.main, ["image"], [fake_provider_module.image_store]),
-        # Multiple types
-        (
-            fake_provider_module.main,
-            ["image", "audio"],
-            [fake_provider_module.image_store, fake_provider_module.audio_store],
-        ),
-        # Empty case, no media types provided
-        (fake_provider_module.main, [], []),
-        ##################################################
-        # Class-based
-        ##################################################
         # Happy path
         (FakeDataIngesterClass, ["image", "audio"], list(fdi.media_stores.values())),
         # No media types provided, ingester class still supplies stores
@@ -141,68 +88,14 @@ def test_generate_tsv_filenames(
     internal_func_mock.assert_not_called()
 
 
-@pytest.mark.parametrize(
-    "func, media_types, tsv_filenames, stores",
-    [
-        ##################################################
-        # Function-based
-        ##################################################
-        # Happy path
-        (
-            fake_provider_module.main,
-            ["image"],
-            ["image_file_000.tsv"],
-            [fake_provider_module.image_store],
-        ),
-        # Multiple types
-        (
-            fake_provider_module.main,
-            ["image", "audio"],
-            ["image_file_000.tsv", "audio_file_111.tsv"],
-            [fake_provider_module.image_store, fake_provider_module.audio_store],
-        ),
-        # Empty case, no media types provided
-        (fake_provider_module.main, [], [], []),
-        # Fails if a mismatched # of items is provided
-        pytest.param(
-            fake_provider_module.main,
-            ["image", "other"],
-            ["file1.tsv"],
-            [fake_provider_module.image_store, fake_provider_module.audio_store],
-            marks=pytest.mark.raises(
-                exception=ValueError,
-                match="Provided media types and TSV filenames don't match.*",
-            ),
-        ),
-        pytest.param(
-            fake_provider_module.main,
-            ["image"],
-            ["file1.tsv", "file2.tsv"],
-            [fake_provider_module.image_store],
-            marks=pytest.mark.raises(
-                exception=ValueError,
-                match="Provided media types and TSV filenames don't match.*",
-            ),
-        ),
-        ##################################################
-        # Class-based
-        ##################################################
-        # Happy path
-        (
-            FakeDataIngesterClass,
-            ["image", "audio"],
-            ["image_file_000.tsv", "audio_file_111.tsv"],
-            list(fdi.media_stores.values()),
-        ),
-    ],
-)
-def test_pull_media_wrapper(
-    func, media_types, tsv_filenames, stores, ti_mock, dagrun_mock, internal_func_mock
-):
+def test_pull_media_wrapper(ti_mock, dagrun_mock, internal_func_mock):
     value = 42
+    stores = list(fdi.media_stores.values())
+    tsv_filenames = ["image_file_000.tsv", "audio_file_111.tsv"]
+
     factory_utils.pull_media_wrapper(
-        func,
-        media_types,
+        FakeDataIngesterClass,
+        ["image", "audio"],
         tsv_filenames,
         ti_mock,
         dagrun_mock,
@@ -220,8 +113,7 @@ def test_pull_media_wrapper(
     internal_func_mock.assert_called_once_with(value)
 
 
-@pytest.mark.parametrize("func", [fake_provider_module.main, FakeDataIngesterClass])
-def test_pull_media_wrapper_always_pushes_duration(func, ti_mock, dagrun_mock):
+def test_pull_media_wrapper_always_pushes_duration(ti_mock, dagrun_mock):
     error_message = "Whoops!"
 
     def _raise_an_error(text):
@@ -229,7 +121,7 @@ def test_pull_media_wrapper_always_pushes_duration(func, ti_mock, dagrun_mock):
 
     with pytest.raises(ValueError, match=error_message):
         factory_utils.pull_media_wrapper(
-            func,
+            FakeDataIngesterClass,
             ["image"],
             ["file1.tsv"],
             ti_mock,
@@ -247,8 +139,10 @@ def test_pull_media_wrapper_always_pushes_duration(func, ti_mock, dagrun_mock):
     assert duration > 0
 
 
+# Set up parametrizations for the schedule and reingestion_date,
+# which result in different components of the path
 @pytest.mark.parametrize(
-    "schedule_interval, expected",
+    "schedule, expected_schedule_prefix",
     [
         # Hourly should have year/month/day
         ("@hourly", "year=2022/month=02/day=03"),
@@ -266,9 +160,21 @@ def test_pull_media_wrapper_always_pushes_duration(func, ti_mock, dagrun_mock):
         (None, "year=2022"),
     ],
 )
-def test_date_partition_for_prefix(schedule_interval, expected):
+@pytest.mark.parametrize(
+    "reingestion_date, expected_reingestion_prefix",
+    [
+        # No reingestion date provided
+        (None, ""),
+        ("2022-01-01", "/reingestion=2022-01-01"),
+    ],
+)
+def test_date_partition_for_prefix(
+    schedule,
+    expected_schedule_prefix,
+    reingestion_date,
+    expected_reingestion_prefix,
+):
     actual = factory_utils.date_partition_for_prefix(
-        schedule_interval,
-        datetime(2022, 2, 3),
+        schedule, datetime(2022, 2, 3), reingestion_date
     )
-    assert actual == expected
+    assert actual == expected_schedule_prefix + expected_reingestion_prefix

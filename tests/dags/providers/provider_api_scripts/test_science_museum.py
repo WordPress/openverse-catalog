@@ -67,6 +67,26 @@ default_params = {
 }
 
 
+def test_get_year_ranges():
+    # Expected list when using 1923 as the final year
+    expected_list = [
+        (0, 1500),
+        (1500, 1750),
+        (1750, 1775),
+        (1775, 1800),
+        (1800, 1825),
+        (1825, 1850),
+        (1850, 1875),
+        (1875, 1885),
+        (1885, 1895),
+        (1895, 1905),
+        (1905, 1915),
+        (1915, 1923),
+    ]
+    actual_list = sm._get_year_ranges(1923)
+    assert actual_list == expected_list
+
+
 def test_get_query_param_default():
     actual_param = sm.get_next_query_params({}, **{"year_range": (0, 1500)})
     expected_param = default_params | {
@@ -79,6 +99,8 @@ def test_get_query_param_default():
 
 
 def test_get_query_param_offset_page_number():
+    sm = ScienceMuseumDataIngester()
+    sm.page_number = 10
     actual_param = sm.get_next_query_params(
         default_params | {"page[number]": 10}, **{"year_range": (1500, 2000)}
     )
@@ -235,42 +257,83 @@ def test_get_dimensions_none():
     assert actual_width is None
 
 
-def test_get_license():
-    source = _get_resource_json("license_source.json")
-    actual_license = sm._get_license(source)
-    expected_license = ("by-nc-sa", "4.0")
-
-    assert actual_license == expected_license
-
-
-def test_get_license_with_space():
-    source = _get_resource_json("license_source.json")
-    source["source"]["legal"]["rights"][0]["usage_terms"] = "CC BY-NC-SA 4.0"
-    actual_license = sm._get_license(source)
-    expected_license = ("by-nc-sa", "4.0")
-
-    assert actual_license == expected_license
-
-
-def test_get_license_none_type1():
-    image_data = {}
+@pytest.mark.parametrize(
+    "image_data, expected",
+    [
+        # Typical license with dash
+        (
+            {"source": {"legal": {"rights": [{"usage_terms": "CC-BY-NC-SA 4.0"}]}}},
+            ("by-nc-sa", "4.0"),
+        ),
+        (
+            {"source": {"legal": {"rights": [{"usage_terms": "CC-BY-NC-ND 4.0"}]}}},
+            ("by-nc-nd", "4.0"),
+        ),
+        # Typical license with space
+        (
+            {"source": {"legal": {"rights": [{"usage_terms": "CC BY-NC-SA 4.0"}]}}},
+            ("by-nc-sa", "4.0"),
+        ),
+        (
+            {"source": {"legal": {"rights": [{"usage_terms": "CC BY-SA 4.0"}]}}},
+            ("by-sa", "4.0"),
+        ),
+        # No legal section
+        (
+            {"source": {}},
+            None,
+        ),
+        # No usage terms
+        (
+            {"source": {"legal": {"rights": [{"details": "Details!"}]}}},
+            None,
+        ),
+        # Invalid usage terms
+        (
+            {
+                "source": {
+                    "legal": {
+                        "rights": [
+                            {
+                                "usage_terms": "Contact the picture library team (SMG Images) to clear permissions"
+                            }
+                        ]
+                    }
+                }
+            },
+            None,
+        ),
+        (
+            {
+                "source": {
+                    "legal": {
+                        "rights": [
+                            {
+                                "usage_terms": "© The Board of Trustees of the Science Museum, London"
+                            }
+                        ]
+                    }
+                }
+            },
+            None,
+        ),
+        (
+            {
+                "source": {
+                    "legal": {
+                        "rights": [
+                            {"usage_terms": "Restricted - Not for Commercial Use"}
+                        ]
+                    }
+                }
+            },
+            None,
+        ),
+    ],
+)
+def test_get_license(image_data, expected):
     actual_license_version = sm._get_license(image_data)
-
-    assert actual_license_version is None
-
-
-def test_get_license_none_type2():
-    image_data = _get_resource_json("no_license_no_legal.json")
-    actual_license_version = sm._get_license(image_data)
-
-    assert actual_license_version is None
-
-
-def test_get_license_none_type3():
-    image_data = _get_resource_json("no_license_no_usage_terms.json")
-    actual_license_version = sm._get_license(image_data)
-
-    assert actual_license_version is None
+    assert actual_license_version == expected
 
 
 def test_get_metadata():
@@ -286,3 +349,41 @@ def test_handle_obj_data_none(object_data):
     actual_images = sm.get_record_data(object_data)
 
     assert actual_images is None
+
+
+@pytest.mark.parametrize(
+    "next_url, page_number, should_continue, should_alert",
+    [
+        # Happy path, should continue
+        (
+            "https://collection.sciencemuseumgroup.org.uk/search/date[from]/1875/date[to]/1900/images/image_license?page[size]=100&page[number]=20",
+            20,
+            True,
+            False,
+        ),
+        # Don't continue when next_url is None, regardless of page number
+        (None, 20, False, False),
+        (None, 50, False, False),
+        # Don't continue and DO alert when page number is 50 and there is a next_url
+        (
+            "https://collection.sciencemuseumgroup.org.uk/search/date[from]/1875/date[to]/1900/images/image_license?page[size]=100&page[number]=50",
+            50,
+            False,
+            True,
+        ),
+    ],
+)
+def test_get_should_continue(next_url, page_number, should_continue, should_alert):
+    response_json = {"links": {"next": next_url}}
+    sm = ScienceMuseumDataIngester()
+    sm.page_number = page_number
+
+    with patch("common.slack.send_alert") as send_alert_mock:
+        assert sm.get_should_continue(response_json) == should_continue
+        assert send_alert_mock.called == should_alert
+
+
+def test_get_should_continue_last_page():
+    response_json = {"links": {"next": None}}
+
+    assert sm.get_should_continue(response_json) is False

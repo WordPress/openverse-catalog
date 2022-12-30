@@ -39,18 +39,20 @@ def load_s3_data(
     )
 
 
-def load_from_s3(
+def upsert_data(
     task_run_id,
-    bucket,
-    key,
-    postgres_conn_id,
-    media_type,
-    tsv_version,
-    identifier,
+    postgres_conn_id: str,
+    media_type: str,
+    tsv_version: str,
+    identifier: str,
+    loaded_count: int,
+    duplicates_count: tuple[int, int],
 ) -> RecordMetrics:
-    loaded, missing_columns, foreign_id_dup = sql.load_s3_data_to_intermediate_table(
-        task_run_id, postgres_conn_id, bucket, key, identifier, media_type
-    )
+    """
+    Upserts data into the catalog DB from the loading table, and calculates
+    final record metrics.
+    """
+    missing_columns, foreign_id_dup = duplicates_count
     upserted = sql.upsert_records_to_db_table(
         task_run_id,
         postgres_conn_id,
@@ -58,5 +60,6 @@ def load_from_s3(
         media_type=media_type,
         tsv_version=tsv_version,
     )
-    url_dup = loaded - missing_columns - foreign_id_dup - upserted
+
+    url_dup = loaded_count - missing_columns - foreign_id_dup - upserted
     return RecordMetrics(upserted, missing_columns, foreign_id_dup, url_dup)

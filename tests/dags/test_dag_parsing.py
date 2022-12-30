@@ -3,8 +3,8 @@ from pathlib import Path
 import pytest
 from airflow.models import DagBag
 from common.constants import MEDIA_TYPES
-from providers.provider_ingestion_workflows import (
-    PROVIDER_INGESTION_WORKFLOWS as INGESTION_WORKFLOW_CONFIGS,
+from providers.provider_reingestion_workflows import (
+    PROVIDER_REINGESTION_WORKFLOWS as REINGESTION_WORKFLOW_CONFIGS,
 )
 from providers.provider_workflows import PROVIDER_WORKFLOWS as PROVIDER_WORKFLOW_CONFIGS
 
@@ -18,9 +18,7 @@ DAG_PATHS = [
     "providers/provider_workflow_dag_factory.py",
     "maintenance/airflow_log_cleanup_workflow.py",
     "maintenance/pr_review_reminders/pr_review_reminders_dag.py",
-    "commoncrawl/sync_commoncrawl_workflow.py",
-    "commoncrawl/commoncrawl_etl.py",
-    "database/loader_workflow.py",
+    "maintenance/rotate_db_snapshots.py",
     "database/recreate_popularity_calculation_dag_factory.py",
     "data_refresh/dag_factory.py",
     "oauth2/authorize_dag.py",
@@ -32,7 +30,7 @@ DAG_PATHS = [
 EXPECTED_COUNT = {
     "providers/provider_workflow_dag_factory.py": len(PROVIDER_WORKFLOW_CONFIGS),
     "providers/provider_ingestion_workflow_dag_factory.py": len(
-        INGESTION_WORKFLOW_CONFIGS
+        REINGESTION_WORKFLOW_CONFIGS
     ),
     "database/recreate_popularity_calculation_dag_factory.py": len(MEDIA_TYPES),
     "data_refresh/dag_factory.py": len(MEDIA_TYPES),

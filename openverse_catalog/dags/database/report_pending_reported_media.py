@@ -127,14 +127,14 @@ The following media have been reported and require manual review:
 {media_type_reports}
 """
 
-    slack.send_alert(message, username="Reported Media Requires Review")
+    slack.send_alert(message, dag_id=DAG_ID, username="Reported Media Requires Review")
 
 
 def create_dag():
     dag = DAG(
         dag_id=DAG_ID,
         default_args=DAG_DEFAULT_ARGS,
-        schedule_interval="@weekly",
+        schedule="@weekly",
         catchup=False,
         tags=["database"],
         doc_md=__doc__,

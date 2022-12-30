@@ -1,5 +1,4 @@
 import logging
-from typing import Dict
 
 from common.licenses import get_license_info
 from common.loader import provider_details as prov
@@ -47,7 +46,7 @@ class ClevelandDataIngester(ProviderDataIngester):
         if foreign_id is None:
             return None
 
-        image = self._get_image_type(data.get("images", {}))
+        image = self._get_image_data(data.get("images", {}))
         if image is None or image.get("url") is None:
             return None
 
@@ -70,15 +69,19 @@ class ClevelandDataIngester(ProviderDataIngester):
         }
 
     @staticmethod
-    def _get_image_type(image_data):
-        # Returns the image url and key for the image in `image_data` dict.
+    def _get_image_data(image_data):
+        # Returns the best available image in the `image_data` dict,
+        # preferring `web` and falling back to other types.
+        if image_data is None:
+            return None
+
         for key in ["web", "print", "full"]:
             if keyed_image := image_data.get(key):
                 return keyed_image
         return None
 
     @staticmethod
-    def _get_int_value(data: Dict, key: str) -> int | None:
+    def _get_int_value(data: dict, key: str) -> int | None:
         """
         Converts the value of the key `key` in `data` to an integer.
         Returns None if the value is not convertible to an integer, or
@@ -95,13 +98,14 @@ class ClevelandDataIngester(ProviderDataIngester):
     @staticmethod
     def _get_metadata(data):
         metadata = {
-            "accession_number": data.get("accession_number", ""),
-            "technique": data.get("technique", ""),
-            "date": data.get("creation_date", ""),
-            "credit_line": data.get("creditline", ""),
-            "classification": data.get("type", ""),
-            "tombstone": data.get("tombstone", ""),
-            "culture": ",".join([i for i in data.get("culture", []) if i is not None]),
+            "accession_number": data.get("accession_number"),
+            "technique": data.get("technique"),
+            "date": data.get("creation_date"),
+            "credit_line": data.get("creditline"),
+            "classification": data.get("type"),
+            "tombstone": data.get("tombstone"),
+            "culture": ",".join([i for i in data.get("culture", []) if i is not None])
+            or None,
         }
         metadata = {k: v for k, v in metadata.items() if v is not None}
         return metadata

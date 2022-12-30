@@ -21,7 +21,6 @@ Notes:      [The iNaturalist API is not intended for data scraping.]
 
 import os
 from pathlib import Path
-from typing import Dict
 
 import pendulum
 from airflow.exceptions import AirflowSkipException
@@ -31,7 +30,7 @@ from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 from airflow.utils.task_group import TaskGroup
 from common.constants import POSTGRES_CONN_ID
-from common.licenses import LicenseInfo, get_license_info
+from common.licenses import NO_LICENSE_FOUND, get_license_info
 from common.loader import provider_details as prov
 from common.on_failure_callback import PG_SET_NAME_TEMPLATE, get_task_app_name
 from providers.provider_api_scripts.provider_data_ingester import ProviderDataIngester
@@ -47,8 +46,8 @@ class INaturalistDataIngester(ProviderDataIngester):
 
     providers = {"image": prov.INATURALIST_DEFAULT_PROVIDER}
 
-    def __init__(self, *kwargs):
-        super(INaturalistDataIngester, self).__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.pg = PostgresHook(POSTGRES_CONN_ID)
 
         # adjustments to buffer limits. TO DO: try to integrate this with the dev
@@ -65,7 +64,7 @@ class INaturalistDataIngester(ProviderDataIngester):
             next_offset = prev_query_params["offset_num"] + self.batch_limit
             return {"offset_num": next_offset}
 
-    def get_response_json(self, query_params: Dict):
+    def get_response_json(self, query_params: dict):
         """
         Call the SQL to pull json from Postgres, where the raw data has been loaded.
         """
@@ -88,7 +87,7 @@ class INaturalistDataIngester(ProviderDataIngester):
             return None
         license_url = data.get("license_url")
         license_info = get_license_info(license_url=license_url)
-        if license_info == LicenseInfo(None, None, None, None):
+        if license_info == NO_LICENSE_FOUND:
             return None
         record_data = {k: data[k] for k in data.keys() if k != "license_url"}
         record_data["license_info"] = license_info
