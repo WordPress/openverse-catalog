@@ -109,13 +109,10 @@ def test_get_media_type():
     assert actual == expected
 
 
-ti_mock = mock.MagicMock(spec=TaskInstance)
-
-
 @pytest.mark.parametrize(
-    "all_results, ti, expected",
+    "all_results, expected",
     [
-        (None, ti_mock, None),
+        (None, None),
         (
             [
                 {
@@ -135,11 +132,11 @@ ti_mock = mock.MagicMock(spec=TaskInstance)
                     "duration": 0.0823216249991674,
                 },
             ],
-            ti_mock,
             {IMAGE: RecordMetrics(1, 0, 0, 0)},
         ),
     ],
 )
-def test_consolidate_load_statistics(all_results, ti, expected):
-    actual = INAT.consolidate_load_statistics(all_results, ti)
+def test_consolidate_load_statistics(all_results, expected):
+    ti_mock = mock.MagicMock(spec=TaskInstance)
+    actual = INAT.consolidate_load_statistics(all_results, ti_mock)
     assert actual == expected
