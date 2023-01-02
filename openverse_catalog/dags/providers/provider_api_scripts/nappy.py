@@ -48,8 +48,6 @@ class NappyDataIngester(ProviderDataIngester):
         return constants.IMAGE
 
     def get_record_data(self, data: dict) -> dict | list[dict] | None:
-        # Parse out the necessary info from the record data into a dictionary.
-
         if (foreign_landing_url := data.get("foreign_landing_url")) is None:
             return None
 
