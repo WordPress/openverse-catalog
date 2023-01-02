@@ -7,6 +7,7 @@ Output:                 TSV file containing the image meta-data.
 
 Notes:                  This api was written specially for Openverse.
                         There are no known limits or restrictions.
+                        https://nappy.co/
 
 """
 import logging
