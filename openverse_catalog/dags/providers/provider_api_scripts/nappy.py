@@ -74,8 +74,6 @@ class NappyDataIngester(ProviderDataIngester):
 
             return int(round(float(data.get("filesize")[:-2]) * multiplier))
 
-        # OPTIONAL FIELDS
-        # Obtain as many optional fields as possible.
         foreign_identifier = data.get("foreign_identifier")
         thumbnail_url = data.get("url") + "?auto=format&w=600&q=75"
         filesize = _convert_filesize(data.get("filesize"))
