@@ -74,6 +74,38 @@ drop table if exists inaturalist.taxa_with_vernacular;
 create table inaturalist.taxa_with_vernacular as
 (
     with
+    col_vernacular_country_counts as
+    (
+        /*
+        Some vernacular names differ only in case or punctuation, and
+        combining all of those into meaningful search terms is out of scope for
+        PR #745. See for example names associated with inaturalist taxon_id 47229
+        +------------------------+---------+--------------------+---------+-----------+
+        | scientificname         | taxonid | taxon_name         | records | countries |
+        |------------------------+---------+--------------------+---------+-----------|
+        | Selar crumenophthalmus | 4WD4V   | bigeye scad        | 19      | 16        |
+        | Selar crumenophthalmus | 4WD4V   | big eye scad       | 3       | 3         |
+        | Selar crumenophthalmus | 4WD4V   | big-eye scad       | 2       | 2         |
+        | Selar crumenophthalmus | 4WD4V   | big-eyed scad      | 1       | 0         |
+        | Selar crumenophthalmus | 4WD4V   | bigeye scad atulai | 1       | 1         |
+        | Selaroides leptolepis  | 4WD5B   | bigeye scad        | 1       | 0         |
+        +------------------------+---------+--------------------+---------+-----------+
+        But, about 2/3 of the vernacular records do have some country information, so we
+        will use the distinct number of countries associated with a vernacular name to
+        prioritize it in terms of featuring it in titles and child tags, if there are
+        too many names to fit. We will also make everything lower case, to minimize
+        repetition.
+        TO DO: There is some risk that a missing country means "this is used everywhere"
+        and if so, we're deprioritizing the most important names, but I am going to hope
+        for the best for now.
+        */
+        select
+            taxonid,
+            lower(trim(taxon_name)) as taxon_name,
+            count(distinct country) as countries
+        from inaturalist.col_vernacular
+        group by 1, 2
+    ),
     catalog_of_life_names as
     (
         select
@@ -82,24 +114,20 @@ create table inaturalist.taxa_with_vernacular as
             characters long.
             */
             cast(md5(n.scientificname) as uuid) as md5_scientificname,
-            v.name_language,
             v.taxon_name,
             /*
             name_string_length -- Cumulative length of the title string (taxon names
                 plus comma and space) up to and including the current name, within each
-                scientific name. There is no hierarchy / priority field within the
-                vernacular table, so the names are ordered with English names first, and
-                then alphabetical order.
-                In the target table the title can be no more than 5,000 characters long.
-                So, if there are vernacular names that would make the title more than
-                5,000 characters they will be used as tags instead of title below.
+                scientific name, prioritizing names that are used in more countries.
+                Since we use ancestor titles as tags, this will help us choose a
+                sensible maximum length for titles.
             */
             sum(length(v.taxon_name)+2) OVER (partition by n.scientificname
-                order by case when v.name_language='eng' then 0 else 1 end, v.taxon_name
+                order by countries desc, v.taxon_name asc
                 rows between unbounded preceding and current row)
                 as name_string_length
         FROM inaturalist.col_name_usage n
-            INNER JOIN inaturalist.col_vernacular v on v.taxonid = n.id
+            INNER JOIN col_vernacular_country_counts v on v.taxonid = n.id
     ),
     catalog_of_life as
     (
@@ -108,13 +136,17 @@ create table inaturalist.taxa_with_vernacular as
             /*
             Put as many vernacular names as possible in the title, and put the rest in
             tags.
+            Originally, we were using the image.title field length (5,000) as the cutoff
+            here. But, we're using ancestor titles as tags downstream. It doesn't make
+            sense to have tags that are thousands of characters long. And 99.9% of taxa
+            have titles under 300 characters long anyway.
             */
             string_agg(DISTINCT
-                case when name_string_length < 5000
+                case when name_string_length < 256
                 then taxon_name end,
                 ', ') name_string,
             array_agg(DISTINCT cast((taxon_name, 'inaturalist') as openverse_tag))
-                FILTER (where name_string_length > 5000)
+                FILTER (where name_string_length >= 256)
                 as tags_vernacular
         FROM catalog_of_life_names
         group by 1

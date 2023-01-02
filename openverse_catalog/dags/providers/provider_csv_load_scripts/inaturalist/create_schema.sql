@@ -158,6 +158,10 @@ with records as
         select cast(md5('Asteraceae') as uuid) as md5_scientificname, 'Daisy' as vernacular_name
         union all
         select cast(md5('Danaus plexippus') as uuid) as md5_scientificname, 'Monarch Butterfly' as vernacular_name
+        union all
+        select cast(md5('Felinae') as uuid) as md5_scientificname, 'Cats' as vernacular_name
+        union all
+        select cast(md5('Canis') as uuid) as md5_scientificname, 'Dogs' as vernacular_name
     )
 INSERT INTO inaturalist.manual_name_additions
 (select * from records);
