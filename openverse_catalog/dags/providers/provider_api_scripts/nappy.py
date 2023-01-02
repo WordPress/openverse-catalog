@@ -30,9 +30,11 @@ class NappyDataIngester(ProviderDataIngester):
         if not prev_query_params:
             return {
                 "page": 1,
+                "per_page": self.batch_limit,
             }
         else:
             return {
+                **prev_query_params,
                 "page": prev_query_params["page"] + 1,
             }
 
