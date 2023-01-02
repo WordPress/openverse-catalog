@@ -26,6 +26,11 @@ class NappyDataIngester(ProviderDataIngester):
     endpoint = "https://api.nappy.co/v1/openverse/images"
     headers = {"User-Agent": prov.UA_STRING, "Accept": "application/json"}
 
+    # Hardoded to CC0, the only license Nappy.co uses
+    license_info = get_license_info(
+        "https://creativecommons.org/publicdomain/zero/1.0/"
+    )
+
     def get_next_query_params(self, prev_query_params: dict | None, **kwargs) -> dict:
         if not prev_query_params:
             return {
@@ -54,13 +59,6 @@ class NappyDataIngester(ProviderDataIngester):
             return None
 
         if (image_url := data.get("url")) is None:
-            return None
-
-        # Hardoded to CC0, the only license Nappy.co uses
-        license_info = get_license_info(
-            "https://creativecommons.org/publicdomain/zero/1.0/"
-        )
-        if license_info is None:
             return None
 
         def _convert_filesize(raw_filesize_string: str) -> int:
@@ -92,7 +90,7 @@ class NappyDataIngester(ProviderDataIngester):
             "foreign_landing_url": foreign_landing_url,
             "image_url": image_url,
             "thumbnail_url": thumbnail_url,
-            "license_info": license_info,
+            "license_info": self.license_info,
             "foreign_identifier": foreign_identifier,
             "filesize": filesize,
             "filetype": filetype,
