@@ -107,8 +107,6 @@ class NappyDataIngester(ProviderDataIngester):
 
 
 def main():
-    # Allows running ingestion from the CLI without Airflow running for debugging
-    # purposes.
     logger.info("Begin: Nappy data ingestion")
     ingester = NappyDataIngester()
     ingester.ingest_records()
