@@ -17,16 +17,26 @@ SINGLE_ITEM = literal_eval((RESOURCES / "single_item.json").read_text())
 ingester = NappyDataIngester()
 
 
-def test_get_next_query_params_default_response():
-    actual_result = ingester.get_next_query_params(None)
-    expected_result = {"page": 1}
-    assert actual_result == expected_result
-
-
-def test_get_next_query_params_updates_parameters():
-    previous_query_params = {"page": 42}
-    actual_result = ingester.get_next_query_params(previous_query_params)
-    expected_result = {"page": 43}
+@pytest.mark.parametrize(
+    "previous, expected_result",
+    [
+        pytest.param(
+            None, {"per_page": ingester.batch_limit, "page": 1}, id="default_response"
+        ),
+        pytest.param(
+            {"per_page": ingester.batch_limit, "page": 42},
+            {"per_page": ingester.batch_limit, "page": 43},
+            id="basic_increment",
+        ),
+        pytest.param(
+            {"thing1": "some", "thing2": "data", "page": 0},
+            {"thing1": "some", "thing2": "data", "page": 1},
+            id="other_parameters",
+        ),
+    ],
+)
+def test_get_next_query_params(previous, expected_result):
+    actual_result = ingester.get_next_query_params(previous)
     assert actual_result == expected_result
 
 
