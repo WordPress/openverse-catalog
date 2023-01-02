@@ -37,8 +37,6 @@ class NappyDataIngester(ProviderDataIngester):
             }
 
     def get_batch_data(self, response_json):
-        # Takes the raw API response from calling `get` on the endpoint, and returns
-        # the list of records to process.
         if response_json:
             return response_json.get("images")
         return None
