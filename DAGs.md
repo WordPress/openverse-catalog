@@ -390,7 +390,7 @@ ETL Process: Use the API to identify all CC0-licensed images.
 Output: TSV file containing the image meta-data.
 
 Notes: This api was written specially for Openverse. There are no known limits
-or restrictions.
+or restrictions. https://nappy.co/
 
 ## `oauth2_authorization`
 
