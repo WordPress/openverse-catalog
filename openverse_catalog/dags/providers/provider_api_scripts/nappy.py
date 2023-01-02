@@ -27,8 +27,6 @@ class NappyDataIngester(ProviderDataIngester):
     headers = {"User-Agent": prov.UA_STRING, "Accept": "application/json"}
 
     def get_next_query_params(self, prev_query_params: dict | None, **kwargs) -> dict:
-        # On the first request, `prev_query_params` will be `None`. We can detect this
-        # and return our default params.
         if not prev_query_params:
             return {
                 "page": 1,
