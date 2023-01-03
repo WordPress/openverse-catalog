@@ -54,6 +54,22 @@ class NappyDataIngester(ProviderDataIngester):
     def get_media_type(self, record: dict):
         return constants.IMAGE
 
+    @staticmethod
+    def _convert_filesize(raw_filesize_string: str) -> int:
+        """
+        Convert sizes from strings to byte integers, ex. "187.8kB" to 188.
+        """
+        FILETYPE_MULTIPLIERS = {"kB": 1000, "MB": 1_000_000, "GB": 1_000_000_000}
+        if isinstance(raw_filesize_string, str) and len(raw_filesize_string) > 2:
+            stripped = raw_filesize_string.strip()
+            if stripped[-2:] in FILETYPE_MULTIPLIERS:
+                try:
+                    units = float(stripped[:-2])
+                except ValueError:
+                    return
+                multiplier = FILETYPE_MULTIPLIERS[stripped[-2:]]
+                return round(units * multiplier)
+
     def get_record_data(self, data: dict) -> dict | list[dict] | None:
         if (foreign_landing_url := data.get("foreign_landing_url")) is None:
             return None
@@ -61,18 +77,9 @@ class NappyDataIngester(ProviderDataIngester):
         if (image_url := data.get("url")) is None:
             return None
 
-        def _convert_filesize(raw_filesize_string: str) -> int:
-            """
-            Convert sizes from strings to byte integers, ex. "187.8kB" to 188.
-            """
-            filetype_multipliers = {"kB": 1000, "MB": 1_000_000, "GB": 1_000_000_000}
-            multiplier = filetype_multipliers[raw_filesize_string[-2:]]
-
-            return int(round(float(data.get("filesize")[:-2]) * multiplier))
-
         foreign_identifier = data.get("foreign_identifier")
         thumbnail_url = data.get("url") + "?auto=format&w=600&q=75"
-        filesize = _convert_filesize(data.get("filesize"))
+        filesize = self._convert_filesize(data.get("filesize"))
         filetype = data.get("filetype")
         creator = data.get("creator")
         creator_url = data.get("creator_url")

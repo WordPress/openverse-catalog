@@ -133,3 +133,23 @@ def test_get_should_continue(response_json, expected_result):
 def test_get_record_data(response_json, expected_data):
     actual_data = ingester.get_record_data(response_json)
     assert actual_data == expected_data
+
+
+@pytest.mark.parametrize(
+    "raw_filesize_string, expected_result",
+    [
+        pytest.param("4kB", 4_000, id="happy_kB"),
+        pytest.param("4MB", 4_000_000, id="happy_MB"),
+        pytest.param("4GB", 4_000_000_000, id="happy_GB"),
+        pytest.param("", None, id="empty_string"),
+        pytest.param([], None, id="not_a_string"),
+        pytest.param("gibberish", None, id="gibberish"),
+        pytest.param("10.3kB", 10_300, id="decimal"),
+        pytest.param("10.12345kB", 10_123, id="rounding"),
+        pytest.param(" 4 kB ", 4_000, id="extra_spaces"),
+    ],
+)
+def test_convert_filesize(raw_filesize_string, expected_result):
+    # this is a static method, so not using the instance for testing
+    actual_result = NappyDataIngester._convert_filesize(raw_filesize_string)
+    assert actual_result == expected_result
