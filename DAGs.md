@@ -261,9 +261,8 @@ ETL Process: Use the API to identify all CC-licensed images.
 
 Output: TSV file containing the image, the respective meta-data.
 
-Notes: https://freesound.org/docs/api/ Rate limit: 60 requests per minute, 2000
-requests per day. This script can be run either to ingest the full dataset or as
-a dated DAG.
+Notes: https://freesound.org/docs/api/ Rate limit: No limit for our API key.
+This script can be run either to ingest the full dataset or as a dated DAG.
 
 ## `image_data_refresh`
 
