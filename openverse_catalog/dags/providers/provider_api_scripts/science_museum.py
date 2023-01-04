@@ -56,8 +56,8 @@ class ScienceMuseumDataIngester(ProviderDataIngester):
         """
         # Start with some very large ranges for old data
         year_ranges = [
-            (0, 1250),
-            (1250, 1500),
+            (0, 200),
+            (200, 1500),
             (1500, 1750),
         ]
         # Add a range for every 25 years between 1750 and 1825

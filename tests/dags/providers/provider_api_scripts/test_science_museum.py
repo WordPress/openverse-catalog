@@ -70,8 +70,8 @@ default_params = {
 def test_get_year_ranges():
     # Expected list when using 1933 as the final year
     expected_list = [
-        (0, 1250),
-        (1250, 1500),
+        (0, 200),
+        (200, 1500),
         (1500, 1750),
         (1750, 1775),
         (1775, 1800),
