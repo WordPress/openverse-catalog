@@ -44,12 +44,13 @@ class FreesoundDataIngester(ProviderDataIngester):
     }
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
         self.api_key = Variable.get("API_KEY_FREESOUND")
         self.headers = {
             "Accept": "application/json",
             "Authorization": f"Token {self.api_key}",
         }
+
+        super().__init__(*args, **kwargs)
 
     def get_media_type(self, record: dict) -> str:
         return constants.AUDIO
