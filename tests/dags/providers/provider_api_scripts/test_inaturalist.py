@@ -18,8 +18,8 @@ from providers.provider_api_scripts import inaturalist
 #  - 10 of the remaining photo ids appear on multiple records, load one per photo_id.
 #  - One of the photos has a taxon without any ancestors in the source table.
 #
-# To really get at data quality issues, it's worth loading bigger sample files to minio
-# and running the dag in airflow locally:
+# To get at data quality issues, it's worth loading bigger sample files to minio and
+# running the dag in airflow locally:
 #  - Use the aws cli to download these separate files observations.csv.gz,
 #    observers.csv.gz, photos.csv.gz, and taxa.csv.gz from s3://inaturalist-open-data
 #  - Consider whether you want to really test the full dataset, which may take a couple
@@ -31,7 +31,10 @@ from providers.provider_api_scripts import inaturalist
 #  - Run `just down -v` and then `just recreate` to make sure that the test data gets to
 #    the test s3 instance. That process may take on the order of 15 minutes for the full
 #    dataset. You'll know that it's done when the s3-load container in docker exits.
-#  - Then you can run the dag in airflow, and see how it goes.
+#  - Then, in airflow, trigger the dag possibly with configuration
+#    {"sql_rm_source_data_after_ingesting": false} so that a) you don't have to
+#    download catalog of life data over and over, and b) you can compare the results in
+#    the image table to the raw data in the inaturalist schema.
 
 
 INAT = inaturalist.INaturalistDataIngester()

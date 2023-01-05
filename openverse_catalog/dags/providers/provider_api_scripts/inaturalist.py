@@ -27,7 +27,7 @@ import pendulum
 import requests
 from airflow import XComArg
 from airflow.exceptions import AirflowNotFoundException, AirflowSkipException
-from airflow.operators.python import PythonOperator
+from airflow.operators.python import PythonOperator, ShortCircuitOperator
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.providers.postgres.operators.postgres import PostgresOperator
@@ -202,7 +202,7 @@ class INaturalistDataIngester(ProviderDataIngester):
         raise AirflowSkipException("Nothing new to ingest")
 
     @staticmethod
-    def load_catalog_of_life_names():
+    def load_catalog_of_life_names(remove_api_files: bool):
         COL_URL = "https://api.checklistbank.org/dataset/9840/export.zip?format=ColDP"
         local_zip_file = "COL_archive.zip"
         name_usage_file = "NameUsage.tsv"
@@ -262,10 +262,11 @@ class INaturalistDataIngester(ProviderDataIngester):
             logger.info(
                 f"Loaded {name_usage_records[0][0]} records from {name_usage_file}"
             )
-        # # TO DO #917: save source files on s3?
-        # os.remove(OUTPUT_DIR / local_zip_file)
-        # os.remove(OUTPUT_DIR / vernacular_file)
-        # os.remove(OUTPUT_DIR / name_usage_file)
+        # TO DO #917: save source files on s3?
+        if remove_api_files:
+            os.remove(OUTPUT_DIR / local_zip_file)
+            os.remove(OUTPUT_DIR / vernacular_file)
+            os.remove(OUTPUT_DIR / name_usage_file)
         return {
             "COL Name Usage Records": name_usage_records[0][0],
             "COL Vernacular Records": vernacular_records[0][0],
@@ -298,6 +299,9 @@ class INaturalistDataIngester(ProviderDataIngester):
                 task_id="load_catalog_of_life_names",
                 python_callable=INaturalistDataIngester.load_catalog_of_life_names,
                 doc_md="Load vernacular taxon names from Catalog of Life",
+                op_kwargs={
+                    "remove_api_files": "{{params.sql_rm_source_data_after_ingesting}}"
+                },
             )
 
             (
@@ -311,21 +315,28 @@ class INaturalistDataIngester(ProviderDataIngester):
     @staticmethod
     def create_postingestion_tasks():
         with TaskGroup(group_id="postingestion_tasks") as postingestion_tasks:
+            check_drop_parameter = ShortCircuitOperator(
+                task_id="check_drop_parameter",
+                doc_md="Skip post-ingestion if NOT sql_rm_source_data_after_ingesting.",
+                op_args=["{{ params.sql_rm_source_data_after_ingesting }}"],
+                python_callable=(lambda x: x),
+                trigger_rule=TriggerRule.NONE_SKIPPED,
+                # just skip the drop steps, not the final reporting step in the dag
+                ignore_downstream_trigger_rules=False,
+            )
             drop_inaturalist_schema = PostgresOperator(
                 task_id="drop_inaturalist_schema",
                 postgres_conn_id=POSTGRES_CONN_ID,
                 sql="DROP SCHEMA IF EXISTS inaturalist CASCADE",
                 doc_md="Drop iNaturalist source tables and their schema",
-                trigger_rule=TriggerRule.NONE_SKIPPED,
             )
             drop_loading_table = PythonOperator(
                 task_id="drop_loading_table",
                 python_callable=sql.drop_load_table,
                 op_kwargs=LOADER_ARGS,
                 doc_md="Drop the temporary (transformed) loading table",
-                trigger_rule=TriggerRule.NONE_SKIPPED,
             )
-            [drop_inaturalist_schema, drop_loading_table]
+            (check_drop_parameter >> [drop_inaturalist_schema, drop_loading_table])
         return postingestion_tasks
 
     def create_ingestion_workflow():
