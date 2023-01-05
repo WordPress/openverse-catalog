@@ -35,7 +35,7 @@ class PhylopicDataIngester(ProviderDataIngester):
     def endpoint(self) -> str:
         """
         Due to the way this DAG is run (via a dated range), **only one request is ever
-        issued** to retrieve all updated IDs. As such, the dated version will only
+        issued** to retrieve all updated IDs. As such, it will only
         return one endpoint.
         """
         list_endpoint = f"{self.base_endpoint}/list"
@@ -55,7 +55,7 @@ class PhylopicDataIngester(ProviderDataIngester):
 
     def get_should_continue(self, response_json):
         """
-        Override for upstream "return True". Dated runs will only ever make 1 query so
+        Override for upstream "return True". This DAG will only ever make 1 query so
         they should not continue to loop.
         """
         return False
