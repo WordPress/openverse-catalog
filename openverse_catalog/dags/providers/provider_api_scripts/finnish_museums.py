@@ -19,7 +19,6 @@ from datetime import datetime, timedelta, timezone
 from itertools import chain
 
 from airflow.exceptions import AirflowException
-from common import slack
 from common.licenses import get_license_info
 from common.loader import provider_details as prov
 from providers.provider_api_scripts.provider_data_ingester import ProviderDataIngester
@@ -240,12 +239,10 @@ class FinnishMuseumsDataIngester(ProviderDataIngester):
         # Detect a bug when the API continues serving pages of data in excess of
         # the stated resultCount.
         if self.fetched_count > total_count:
-            slack.send_alert(
+            raise AirflowException(
                 f"Expected {total_count} records, but {self.fetched_count} have"
-                " been fetched. Halting ingestion. Consider reducing the ingestion"
-                " interval."
+                " been fetched. Consider reducing the ingestion interval."
             )
-            raise AirflowException
 
         return response_json["records"]
 

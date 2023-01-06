@@ -193,7 +193,6 @@ def test_ingest_records_raises_error_if_the_total_count_has_been_exceeded():
         patch.object(fm, "_get_timestamp_pairs") as ts_mock,
         patch.object(fm, "get_response_json") as get_mock,
         patch.object(fm, "process_batch", return_value=2) as process_mock,
-        patch("common.slack.send_alert") as slack_alert_mock,
     ):
         ts_mock.return_value = [
             (
@@ -210,8 +209,12 @@ def test_ingest_records_raises_error_if_the_total_count_has_been_exceeded():
             "resultCount": 2,  # Claim there are only two records total
         }
 
+        expected_error_string = (
+            "Expected 2 records, but 4 have been fetched. Consider reducing the ingestion"
+            " interval."
+        )
         # Assert that attempting to ingest records raises an exception
-        with (pytest.raises(AirflowException)):
+        with (pytest.raises(AirflowException, match=expected_error_string)):
             fm.ingest_records()
 
         # get_mock should have been called 2 times. Each time, it returned 2 'new' records,
@@ -220,8 +223,6 @@ def test_ingest_records_raises_error_if_the_total_count_has_been_exceeded():
         # process_mock should only have been called once. We raise an error when getting the
         # second batch as soon as it is detected that we've processed too many records.
         assert process_mock.call_count == 1
-        # Slack should have been alerted to the issue
-        assert slack_alert_mock.called is True
 
 
 def test_build_query_param_default():
