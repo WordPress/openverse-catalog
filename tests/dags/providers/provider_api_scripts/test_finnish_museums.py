@@ -35,60 +35,6 @@ def _get_resource_json(json_name):
     return resource_json
 
 
-def test_get_timestamp_query_params_list():
-    start = FROZEN_UTC_DATE
-    end = start + timedelta(days=1)
-    actual_list = fm._get_timestamp_query_params_list(start, end, 9)
-    # Expected timestamp list from splitting the FROZEN_DATE into 9 segments
-    expected_list = [
-        (
-            datetime(2020, 4, 1, 0, 0, tzinfo=timezone.utc),
-            datetime(2020, 4, 1, 2, 40, tzinfo=timezone.utc),
-        ),
-        (
-            datetime(2020, 4, 1, 2, 40, tzinfo=timezone.utc),
-            datetime(2020, 4, 1, 5, 20, tzinfo=timezone.utc),
-        ),
-        (
-            datetime(2020, 4, 1, 5, 20, tzinfo=timezone.utc),
-            datetime(2020, 4, 1, 8, 0, tzinfo=timezone.utc),
-        ),
-        (
-            datetime(2020, 4, 1, 8, 0, tzinfo=timezone.utc),
-            datetime(2020, 4, 1, 10, 40, tzinfo=timezone.utc),
-        ),
-        (
-            datetime(2020, 4, 1, 10, 40, tzinfo=timezone.utc),
-            datetime(2020, 4, 1, 13, 20, tzinfo=timezone.utc),
-        ),
-        (
-            datetime(2020, 4, 1, 13, 20, tzinfo=timezone.utc),
-            datetime(2020, 4, 1, 16, 0, tzinfo=timezone.utc),
-        ),
-        (
-            datetime(2020, 4, 1, 16, 0, tzinfo=timezone.utc),
-            datetime(2020, 4, 1, 18, 40, tzinfo=timezone.utc),
-        ),
-        (
-            datetime(2020, 4, 1, 18, 40, tzinfo=timezone.utc),
-            datetime(2020, 4, 1, 21, 20, tzinfo=timezone.utc),
-        ),
-        (
-            datetime(2020, 4, 1, 21, 20, tzinfo=timezone.utc),
-            datetime(2020, 4, 2, 0, 0, tzinfo=timezone.utc),
-        ),
-    ]
-    assert actual_list == expected_list
-
-
-def test_get_timestamp_query_params_list_errors_if_division_not_even():
-    # TODO, throw an error if you pass a number_of_divisions in which does
-    # not divide evenly into the given time slice
-    # parametrize test with different time slices and divisions that are and
-    # aren't even
-    pass
-
-
 # TODO Tests:
 # 1. Test that get_timestamp_pairs returns empty list if no records
 # 2. Test get_record_count itself
@@ -111,6 +57,48 @@ def test_get_timestamp_pairs_returns_empty_list_when_no_records_found():
         actual_pairs_list = fm._get_timestamp_pairs("test_building")
 
         assert len(actual_pairs_list) == 0
+
+
+@pytest.mark.parametrize(
+    "num_divisions, expected_pairs",
+    [
+        # One division
+        (1, [(datetime(2020, 4, 1, 1, 0), datetime(2020, 4, 1, 2, 0))]),
+        # Two divisions divides into 30 min increments
+        (
+            2,
+            [
+                (datetime(2020, 4, 1, 1, 0), datetime(2020, 4, 1, 1, 30)),
+                (datetime(2020, 4, 1, 1, 30), datetime(2020, 4, 1, 2, 0)),
+            ],
+        ),
+        # 8 divisions divides into 7.5 min increments
+        (
+            8,
+            [
+                (datetime(2020, 4, 1, 1, 0, 0), datetime(2020, 4, 1, 1, 7, 30)),
+                (datetime(2020, 4, 1, 1, 7, 30), datetime(2020, 4, 1, 1, 15, 0)),
+                (datetime(2020, 4, 1, 1, 15, 0), datetime(2020, 4, 1, 1, 22, 30)),
+                (datetime(2020, 4, 1, 1, 22, 30), datetime(2020, 4, 1, 1, 30, 0)),
+                (datetime(2020, 4, 1, 1, 30, 0), datetime(2020, 4, 1, 1, 37, 30)),
+                (datetime(2020, 4, 1, 1, 37, 30), datetime(2020, 4, 1, 1, 45, 0)),
+                (datetime(2020, 4, 1, 1, 45, 0), datetime(2020, 4, 1, 1, 52, 30)),
+                (datetime(2020, 4, 1, 1, 52, 30), datetime(2020, 4, 1, 2, 0, 0)),
+            ],
+        ),
+        # 7 does not divide evenly into 60, so error is raised
+        pytest.param(7, None, marks=pytest.mark.raises(exception=ValueError)),
+    ],
+)
+def test_get_timestamp_query_params_list(num_divisions, expected_pairs):
+    # Hour long time slice
+    start_date = datetime(2020, 4, 1, 1, 0)
+    end_date = datetime(2020, 4, 1, 2, 0)
+
+    actual_pairs = fm._get_timestamp_query_params_list(
+        start_date, end_date, num_divisions
+    )
+    assert actual_pairs == expected_pairs
 
 
 def test_get_timestamp_pairs_returns_full_day_when_few_records_found():

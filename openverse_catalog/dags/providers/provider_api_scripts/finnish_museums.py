@@ -94,8 +94,12 @@ class FinnishMuseumsDataIngester(ProviderDataIngester):
         """
         seconds_in_time_slice = (end_date - start_date).total_seconds()
         portion = int(seconds_in_time_slice / number_of_divisions)
-        # TODO: should there be an error if the division ^ does not result in even
-        # portions? Definitely if we make this configurable by dag conf.
+        # Double check that the division resulted in even portions
+        if portion != seconds_in_time_slice / number_of_divisions:
+            raise ValueError(
+                f"The time slice from {start_date} to {end_date} cannot be divided "
+                f"evenly into {number_of_divisions} !"
+            )
 
         # Generate the start/end timestamps for each 'slice' of the interval
         return [
@@ -233,7 +237,9 @@ class FinnishMuseumsDataIngester(ProviderDataIngester):
             return None
 
         total_count = response_json.get("resultCount")
-        # Update the number of records we have pulled for this iteration
+        # Update the number of records we have pulled for this iteration.
+        # Note that this tracks the number of records pulled from the API, not
+        # the number actually written to TSV.
         self.ingested_count += len(response_json.get("records"))
 
         if self.new_iteration:
