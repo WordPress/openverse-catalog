@@ -62,9 +62,9 @@ class FinnishMuseumsDataIngester(ProviderDataIngester):
         # A flag that is True only when we are processing the first batch of data in
         # a new iteration.
         self.new_iteration = True
-        # Use to keep track of the number of records we've ingested so far, specifically
-        # in this iteration.
-        self.ingested_count = 0
+        # Use to keep track of the number of records we've fetched from the API so far,
+        # specifically in this iteration.
+        self.fetched_count = 0
 
         super().__init__(*args, **kwargs)
 
@@ -188,7 +188,7 @@ class FinnishMuseumsDataIngester(ProviderDataIngester):
             for start_ts, end_ts in self.timestamp_pairs:
                 # Reset counts before we start
                 self.new_iteration = True
-                self.ingested_count = 0
+                self.fetched_count = 0
 
                 logger.info(f"Ingesting data for start: {start_ts}, end: {end_ts}")
                 super().ingest_records(
@@ -227,8 +227,9 @@ class FinnishMuseumsDataIngester(ProviderDataIngester):
         total_count = response_json.get("resultCount")
         # Update the number of records we have pulled for this iteration.
         # Note that this tracks the number of records pulled from the API, not
-        # the number actually written to TSV.
-        self.ingested_count += len(response_json.get("records"))
+        # the number actually written to TSV (which may be larger or smaller
+        # as some records are discarded or have additional related images.)
+        self.fetched_count += len(response_json.get("records"))
 
         if self.new_iteration:
             # This is the first batch of a new iteration.
@@ -237,10 +238,10 @@ class FinnishMuseumsDataIngester(ProviderDataIngester):
 
         # Detect a bug when the API continues serving pages of data in excess of
         # the stated resultCount.
-        if self.ingested_count > total_count:
+        if self.fetched_count > total_count:
             slack.send_alert(
-                f"Expected {total_count} records, but {self.ingested_count} have"
-                " been ingested. Halting ingestion. Consider reducing the ingestion"
+                f"Expected {total_count} records, but {self.fetched_count} have"
+                " been fetched. Halting ingestion. Consider reducing the ingestion"
                 " interval."
             )
             # Returning None will halt ingestion for this iteration, and the DAG will
