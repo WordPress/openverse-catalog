@@ -6,6 +6,7 @@ from itertools import repeat
 from unittest.mock import MagicMock, patch
 
 import pytest
+from airflow.exceptions import AirflowException
 from common.licenses import LicenseInfo
 from common.loader import provider_details as prov
 from common.storage.image import ImageStore
@@ -35,28 +36,22 @@ def _get_resource_json(json_name):
     return resource_json
 
 
-# TODO Tests:
-# 1. Test that get_timestamp_pairs returns empty list if no records
-# 2. Test get_record_count itself
-# 3. Test get_timestamp_pairs returns one pair for whole day if <10k
-# 4. Test get_timestamp_pairs with several hours that have no records, and at
-#    least one hour with more than 100k hours and one with less than 100k
-# 5. Test that get_batch_data quits early if we consume more than the total
-# 6. Better integration test, call ingest_records and test that it quits early
-#    if we exceed the total_records. That's a lot to mock
-# 7. Test that ingest_records resets counts between buildings
-
-
-def test_get_record_count():
-    pass
-
-
-def test_get_timestamp_pairs_returns_empty_list_when_no_records_found():
-    # mock _get_record_count to return 0 records
-    with patch.object(fm, "_get_record_count", return_value=0):
-        actual_pairs_list = fm._get_timestamp_pairs("test_building")
-
-        assert len(actual_pairs_list) == 0
+@pytest.mark.parametrize(
+    "response_json, expected_count",
+    [
+        # Happy path
+        ({"resultCount": 20}, 20),
+        # Defaults to 0
+        (None, 0),
+        ({}, 0),
+    ],
+)
+def test_get_record_count(response_json, expected_count):
+    with patch.object(fm, "get_response_json", return_value=response_json):
+        actual_count = fm._get_record_count(
+            datetime(2022, 4, 1), datetime(2022, 4, 2), "test_building"
+        )
+        assert actual_count == expected_count
 
 
 @pytest.mark.parametrize(
@@ -101,6 +96,14 @@ def test_get_timestamp_query_params_list(num_divisions, expected_pairs):
     assert actual_pairs == expected_pairs
 
 
+def test_get_timestamp_pairs_returns_empty_list_when_no_records_found():
+    # mock _get_record_count to return 0 records
+    with patch.object(fm, "_get_record_count", return_value=0):
+        actual_pairs_list = fm._get_timestamp_pairs("test_building")
+
+        assert len(actual_pairs_list) == 0
+
+
 def test_get_timestamp_pairs_returns_full_day_when_few_records_found():
     # When < 10_000 records are found for the day, we should get back a single
     # timestamp pair representing the whole day
@@ -121,13 +124,13 @@ def test_get_timestamp_pairs_with_large_record_counts():
         # Mock the calls to _get_record_count in order
         mock_count.side_effect = [
             150_000,  # Getting total count for the entire day
-            0,  # Count for first hour, should be ommitted
-            10,  # Count for second hour, should have one slice
-            101_000,  # Count for third hour, should be split into 3min intervals
-            49_090,  # Count for fourth hour, should be split into 5min intervals
+            0,  # Get count for first hour, count == 0
+            10,  # Get count for second hour, count < 10_000
+            101_000,  # Get count for third hour, count > 100_000
+            49_090,  # Get count for fourth hour, 10_000 < count < 100_000
         ] + list(
             repeat(0, 20)
-        )  # fill list with 0 for the remaining hours
+        )  # Fill list with count == 0 for the remaining hours
 
         # We only get timestamp pairs for the hours that had records. For the
         # hour with > 100k records, we get 20 3-min pairs. For the hour with
@@ -179,61 +182,46 @@ def test_get_timestamp_pairs_with_large_record_counts():
         assert formatted_actual_pairs_list == expected_pairs_list
 
 
-def test_ingest_records_halts_early_if_the_total_count_has_been_exceeded():
-    # TODO: Clean this test up, better doc strings
-    # Top level doc string which describes what is expected to happen over the course
-    # of the test.
+def test_ingest_records_raises_error_if_the_total_count_has_been_exceeded():
+    # Test that `ingest_records` raises an AirflowException if the external
+    # API continues returning data in excess of the stated `resultCount`
+    # (https://github.com/WordPress/openverse-catalog/pull/934)
     fm = FinnishMuseumsDataIngester(date=FROZEN_DATE)
     fm.buildings = ["test_building"]
 
-    # Mock _get_timestamp_pairs to return two timestamps. Later we'll
-    # mock the first interval to simulate the bug, and the second will
-    # work as normal.
-    with patch.object(fm, "_get_timestamp_pairs") as ts_mock:
+    with (
+        patch.object(fm, "_get_timestamp_pairs") as ts_mock,
+        patch.object(fm, "get_response_json") as get_mock,
+        patch.object(fm, "process_batch", return_value=2) as process_mock,
+        patch("common.slack.send_alert") as slack_alert_mock,
+    ):
         ts_mock.return_value = [
             (
                 datetime(2020, 4, 1, 11, 0, tzinfo=timezone.utc),
                 datetime(2020, 4, 1, 12, 0, tzinfo=timezone.utc),
             ),
-            (
-                datetime(2020, 4, 1, 12, 0, tzinfo=timezone.utc),
-                datetime(2020, 4, 1, 13, 0, tzinfo=timezone.utc),
-            ),
         ]
 
-        mock_response = {
+        # Each time get_response_json is called, it will return json containing
+        # 2 records, and a resultCount of 2
+        get_mock.return_value = {
             "status": "ok",
             "records": [MagicMock(), MagicMock()],  # Two mock records,
             "resultCount": 2,  # Claim there are only two records total
         }
 
-        with (
-            patch.object(fm, "get_response_json") as get_mock,
-            patch.object(fm, "process_batch", return_value=2) as process_mock,
-            patch("common.slack.send_alert") as slack_alert_mock,
-        ):
-            # mock get_response_json calls in order
-            get_mock.side_effect = [
-                # First call, get the first page which says there are 2 records
-                mock_response,
-                # Second call, have it get a second page even though we've already ingested 2 records
-                mock_response,
-                # Third call, this should be for the SECOND timeslice (should've returned early last time)
-                mock_response,
-                # Fourth call halts ingestion entirely
-                None,
-            ]
-
-            # Now try to ingest records
+        # Assert that attempting to ingest records raises an exception
+        with (pytest.raises(AirflowException)):
             fm.ingest_records()
 
-            # get_mock should have been called 4 times
-            assert get_mock.call_count == 4
-            # process_mock should only have been called twice. The second 'batch' for the first time slice
-            # should have returned early
-            assert process_mock.call_count == 2
-            # Slack should have been alerted to the issue
-            assert slack_alert_mock.called is True
+        # get_mock should have been called 2 times. Each time, it returned 2 'new' records,
+        # even though the resultCount indicated there should only be 2 records total.
+        assert get_mock.call_count == 2
+        # process_mock should only have been called once. We raise an error when getting the
+        # second batch as soon as it is detected that we've processed too many records.
+        assert process_mock.call_count == 1
+        # Slack should have been alerted to the issue
+        assert slack_alert_mock.called is True
 
 
 def test_build_query_param_default():
