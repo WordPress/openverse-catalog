@@ -24,12 +24,6 @@ from common.loader import provider_details as prov
 from providers.provider_api_scripts.provider_data_ingester import ProviderDataIngester
 
 
-# TODO can some of this be a utility method? Can Flickr reuse this? Freesound?
-# TODO can we make it easier to increase the number of divisions for "big" hours
-# with a conf option or something? I'm imagining being able to re-run DagRuns with a
-# conf option in order to test it at new slices, without needing code changes every
-# time.
-
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s", level=logging.INFO
 )
@@ -146,12 +140,6 @@ class FinnishMuseumsDataIngester(ProviderDataIngester):
         start_ts = datetime.strptime(self.date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
         end_ts = start_ts + timedelta(days=1)
 
-        # TODO: The 10k and 100k threshholds are somewhat random. Test to see how they
-        # perform, probably move to constants. Should they be overridable?
-        # If this gets pulled out into a shared util that can be used by other DAGs,
-        # we should definitely at least make it so each DAG can provide its own
-        # threshold value.
-
         record_count = self._get_record_count(start_ts, end_ts, building)
         if record_count == 0:
             logger.info(f"No data for {building}. Continuing.")
@@ -181,10 +169,10 @@ class FinnishMuseumsDataIngester(ProviderDataIngester):
             # If we got this far, this hour has a lot of data. It is split into 12 5-min
             # intervals if it has fewer than 100k, or 20 3-min intervals if more.
             num_divisions = 12 if record_count < 100_000 else 20
-            min_slices = self._get_timestamp_query_params_list(
+            minute_slices = self._get_timestamp_query_params_list(
                 start_hour, end_hour, num_divisions
             )
-            pairs_list.extend(min_slices)
+            pairs_list.extend(minute_slices)
 
         return pairs_list
 
