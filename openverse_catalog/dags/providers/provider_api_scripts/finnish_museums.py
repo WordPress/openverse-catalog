@@ -18,6 +18,7 @@ import logging
 from datetime import datetime, timedelta, timezone
 from itertools import chain
 
+from airflow.exceptions import AirflowException
 from common import slack
 from common.licenses import get_license_info
 from common.loader import provider_details as prov
@@ -244,9 +245,7 @@ class FinnishMuseumsDataIngester(ProviderDataIngester):
                 " been fetched. Halting ingestion. Consider reducing the ingestion"
                 " interval."
             )
-            # Returning None will halt ingestion for this iteration, and the DAG will
-            # continue on to the next building or time interval.
-            return None
+            raise AirflowException
 
         return response_json["records"]
 
