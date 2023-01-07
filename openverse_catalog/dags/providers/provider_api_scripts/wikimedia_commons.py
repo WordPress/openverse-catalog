@@ -46,6 +46,7 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
         "audio": prov.WIKIMEDIA_AUDIO_PROVIDER,
     }
     endpoint = f"https://{HOST}/w/api.php"
+    delay =0.1
     headers = {"User-Agent": prov.UA_STRING}
 
     # The batch_limit applies to the number of pages received by the API, rather
