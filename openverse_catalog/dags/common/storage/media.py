@@ -36,7 +36,7 @@ COMMON_CRAWL = "commoncrawl"
 PROVIDER_API = "provider_api"
 
 FILETYPE_EQUIVALENTS = {"jpeg": "jpg", "tif": "tiff"}
-INTEGER_MAXIMUM = 2147483647
+PG_INTEGER_MAXIMUM = 2147483647
 
 
 class MediaStore(metaclass=abc.ABCMeta):
@@ -299,7 +299,7 @@ class MediaStore(metaclass=abc.ABCMeta):
         https://github.com/WordPress/openverse-catalog/issues/730
         https://github.com/WordPress/openverse-catalog/issues/873
         """
-        if value and value >= INTEGER_MAXIMUM:
+        if value and value >= PG_INTEGER_MAXIMUM:
             logger.warning(f"Value exceeds Postgres maximum integer value: {value}")
             return None
         return value

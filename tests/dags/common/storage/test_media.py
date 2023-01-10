@@ -57,8 +57,8 @@ INT_MAX_PARAMETERIZATION = pytest.mark.parametrize(
     [
         (None, None),
         (123, 123),
-        (media.INTEGER_MAXIMUM - 1, media.INTEGER_MAXIMUM - 1),
-        (media.INTEGER_MAXIMUM, None),
+        (media.PG_INTEGER_MAXIMUM - 1, media.PG_INTEGER_MAXIMUM - 1),
+        (media.PG_INTEGER_MAXIMUM, None),
     ],
 )
 
