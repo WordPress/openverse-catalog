@@ -89,10 +89,10 @@ class FinnishMuseumsDataIngester(ProviderDataIngester):
         seconds_in_time_slice = (end_date - start_date).total_seconds()
         portion = int(seconds_in_time_slice / number_of_divisions)
         # Double check that the division resulted in even portions
-        if portion != seconds_in_time_slice / number_of_divisions:
+        if seconds_in_time_slice % number_of_divisions:
             raise ValueError(
                 f"The time slice from {start_date} to {end_date} cannot be divided "
-                f"evenly into {number_of_divisions} !"
+                f"evenly into {number_of_divisions} parts!"
             )
 
         # Generate the start/end timestamps for each 'slice' of the interval
