@@ -420,7 +420,10 @@ def test_should_silence_message(silenced_notifications, should_silence):
         MockVariable.get.side_effect = [silenced_notifications]
         assert (
             should_silence_message(
-                "KeyError: 'image'", "Airflow DAG Failure", "test_dag_id"
+                "KeyError: 'image'",
+                "Airflow DAG Failure",
+                "test_dag_id",
+                "test_task_id_1",
             )
             == should_silence
         )
@@ -461,6 +464,7 @@ def test_send_alert():
             False,
             False,
             http_conn_id=SLACK_ALERTS_CONN_ID,
+            task_id=None,
         )
 
 
