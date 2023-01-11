@@ -62,7 +62,7 @@ class INaturalistDataIngester(ProviderDataIngester):
             "Instead we use get_batches to dynamically create subtasks."
         )
 
-    def get_response_json(self, query_params):
+    def get_response_json(self, query_params, **kwargs):
         raise NotImplementedError("TSV files from AWS S3 processed in postgres.")
 
     def get_batch_data(self, response_json):
