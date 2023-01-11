@@ -29,8 +29,8 @@ from airflow import XComArg
 from airflow.exceptions import AirflowNotFoundException, AirflowSkipException
 from airflow.operators.python import PythonOperator, ShortCircuitOperator
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
+from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 from airflow.providers.postgres.hooks.postgres import PostgresHook
-from airflow.providers.postgres.operators.postgres import PostgresOperator
 from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
 from common.constants import IMAGE, POSTGRES_CONN_ID, XCOM_PULL_TEMPLATE
@@ -272,6 +272,7 @@ class INaturalistDataIngester(ProviderDataIngester):
             "COL Vernacular Records": vernacular_records[0][0],
         }
 
+    @staticmethod
     def create_preingestion_tasks():
 
         with TaskGroup(group_id="preingestion_tasks") as preingestion_tasks:
@@ -288,9 +289,9 @@ class INaturalistDataIngester(ProviderDataIngester):
                 doc_md="Check for iNaturalist files added to S3 since last load",
             )
 
-            create_inaturalist_schema = PostgresOperator(
+            create_inaturalist_schema = SQLExecuteQueryOperator(
                 task_id="create_inaturalist_schema",
-                postgres_conn_id=POSTGRES_CONN_ID,
+                conn_id=POSTGRES_CONN_ID,
                 sql=(SCRIPT_DIR / "create_schema.sql").read_text(),
                 doc_md="Create temporary schema and license table",
             )
@@ -324,9 +325,9 @@ class INaturalistDataIngester(ProviderDataIngester):
                 # just skip the drop steps, not the final reporting step in the dag
                 ignore_downstream_trigger_rules=False,
             )
-            drop_inaturalist_schema = PostgresOperator(
+            drop_inaturalist_schema = SQLExecuteQueryOperator(
                 task_id="drop_inaturalist_schema",
-                postgres_conn_id=POSTGRES_CONN_ID,
+                conn_id=POSTGRES_CONN_ID,
                 sql="DROP SCHEMA IF EXISTS inaturalist CASCADE",
                 doc_md="Drop iNaturalist source tables and their schema",
             )
@@ -339,6 +340,7 @@ class INaturalistDataIngester(ProviderDataIngester):
             (check_drop_parameter >> [drop_inaturalist_schema, drop_loading_table])
         return postingestion_tasks
 
+    @staticmethod
     def create_ingestion_workflow():
 
         with TaskGroup(group_id="ingest_data") as ingest_data:
@@ -347,9 +349,9 @@ class INaturalistDataIngester(ProviderDataIngester):
 
             with TaskGroup(group_id="pull_image_data") as pull_data:
                 for source_name in SOURCE_FILE_NAMES:
-                    PostgresOperator(
+                    SQLExecuteQueryOperator(
                         task_id=f"load_{source_name}",
-                        postgres_conn_id=POSTGRES_CONN_ID,
+                        conn_id=POSTGRES_CONN_ID,
                         sql=(SCRIPT_DIR / f"{source_name}.sql").read_text(),
                         doc_md=f"Load iNaturalist {source_name} from s3 to postgres",
                     ),
