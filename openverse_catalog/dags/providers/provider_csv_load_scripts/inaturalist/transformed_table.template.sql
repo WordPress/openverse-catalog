@@ -30,7 +30,7 @@ INSERT INTO {intermediate_table}
         'https://www.inaturalist.org/photos/' || INATURALIST.PHOTOS.PHOTO_ID
             as LANDING_URL,
         'https://inaturalist-open-data.s3.amazonaws.com/photos/'
-        || INATURALIST.PHOTOS.PHOTO_ID || '/medium.' || INATURALIST.PHOTOS.EXTENSION
+        || INATURALIST.PHOTOS.PHOTO_ID || '/original.' || INATURALIST.PHOTOS.EXTENSION
             as DIRECT_URL,
         -- TO DO #810: Add the thumbnail url here.
         null::varchar(10) as THUMBNAIL,
