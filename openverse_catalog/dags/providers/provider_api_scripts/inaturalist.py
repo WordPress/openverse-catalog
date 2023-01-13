@@ -71,7 +71,8 @@ class INaturalistDataIngester(ProviderDataIngester):
     def get_record_data(self, data):
         raise NotImplementedError("TSV files from AWS S3 processed in postgres.")
 
-    def get_media_type(self, record):
+    @staticmethod
+    def get_media_type(record):
         # This provider only supports Images via S3, though they have some audio files
         # on site and in the API.
         return IMAGE
