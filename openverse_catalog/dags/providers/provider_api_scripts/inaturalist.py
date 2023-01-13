@@ -41,8 +41,6 @@ from providers.provider_api_scripts.provider_data_ingester import ProviderDataIn
 logger = logging.getLogger(__name__)
 
 AWS_CONN_ID = os.getenv("AWS_CONN_ID", "test_conn_id")
-OPENVERSE_BUCKET = os.getenv("OPENVERSE_BUCKET", "openverse-storage")
-PROVIDER = provider_details.INATURALIST_DEFAULT_PROVIDER
 SCRIPT_DIR = Path(__file__).parents[1] / "provider_csv_load_scripts/inaturalist"
 SOURCE_FILE_NAMES = ["photos", "observations", "taxa", "observers"]
 LOADER_ARGS = {
