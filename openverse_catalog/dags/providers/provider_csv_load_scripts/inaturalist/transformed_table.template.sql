@@ -39,8 +39,7 @@ INSERT INTO {intermediate_table}
         null::int as FILESIZE,
         INATURALIST.LICENSE_CODES.OPENVERSE_CODE as LICENSE,
         INATURALIST.LICENSE_CODES.LICENSE_VERSION,
-        COALESCE(INATURALIST.OBSERVERS.LOGIN, INATURALIST.PHOTOS.OBSERVER_ID::text)
-            as CREATOR,
+        INATURALIST.OBSERVERS.CREATOR,
         'https://www.inaturalist.org/users/' || INATURALIST.PHOTOS.OBSERVER_ID
             as CREATOR_URL,
         taxa_enriched.title,
