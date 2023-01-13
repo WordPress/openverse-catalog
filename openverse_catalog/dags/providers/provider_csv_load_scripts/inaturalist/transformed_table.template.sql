@@ -34,7 +34,7 @@ INSERT INTO {intermediate_table}
             as DIRECT_URL,
         -- TO DO #810: Add the thumbnail url here.
         null::varchar(10) as THUMBNAIL,
-        -- only jpg, jpeg, png & gif in 6/2022 data, all in extensions.py for images
+        -- TO DO #966: jpg, jpeg, png & gif in 6/2022 data
         lower(INATURALIST.PHOTOS.EXTENSION) as FILETYPE,
         null::int as FILESIZE,
         INATURALIST.LICENSE_CODES.OPENVERSE_CODE as LICENSE,
