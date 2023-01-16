@@ -160,7 +160,12 @@ class PhylopicDataIngester(ProviderDataIngester):
         submitter = result.get("submitter", {})
         first_name = submitter.get("firstName")
         last_name = submitter.get("lastName")
-        if first_name and last_name:
+        if first_name or last_name:
+            if first_name:
+                creator= f"{first_name}"
+            else:
+                creator=f"{last_name}"
+        else:
             creator = f"{first_name} {last_name}".strip()
 
         if credit := result.get("credit"):
