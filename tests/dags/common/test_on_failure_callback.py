@@ -92,7 +92,7 @@ def test_get_task_app_name_index_error():
 
 # with DAG("killer_pg_test",
 #     start_date=datetime(2022, 9, 4),
-#     schedule_interval=None,
+#     schedule=None,
 # ) as dag:
 
 #     create_tracking_table = PostgresOperator(
