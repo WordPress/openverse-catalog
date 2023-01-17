@@ -24,6 +24,7 @@ def pull_media_wrapper(
     Run the provided callable after pushing the output directories for each media
     store, which are generated when initializing the ingester class.
     """
+    args = args or []
     # Initialize the ProviderDataIngester class, which will initialize the
     # media stores and DelayedRequester.
     logger.info(f"Initializing ProviderIngester {ingester_class.__name__}")
