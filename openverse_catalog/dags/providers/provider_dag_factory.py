@@ -129,6 +129,7 @@ def create_ingestion_workflow(
         if conf.dated:
             ingestion_kwargs["args"] = [
                 DATE_RANGE_ARG_TEMPLATE.format(day_shift),
+                str(day_shift),  # Pass day_shift in as the tsv_suffix
             ]
 
         pull_data = PythonOperator(
