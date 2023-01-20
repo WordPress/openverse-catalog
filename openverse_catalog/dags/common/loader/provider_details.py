@@ -117,12 +117,20 @@ SMITHSONIAN_SUB_PROVIDERS = {
 CONTACT_EMAIL = os.getenv("CONTACT_EMAIL")
 UA_STRING = f"Openverse/0.1 (https://wordpress.org/openverse; {CONTACT_EMAIL})"
 
-
-class ImageCategory(Enum):
+# Available Image Categories for API
+class ImageCategory():
     PHOTOGRAPH = "photograph"
     DIGITIZED_ARTWORK = "digitized_artwork"
     ILLUSTRATION = "illustration"
 
+# Available Audio Categories for API
+class AudioCategory():
+    AUDIOBOOK = "audiobook"
+    MUSIC = "music"
+    NEWS = "news"
+    PODCAST = "podcast"
+    PRONUNCIATION = "pronunciation"
+    SOUND_EFFECT = "sound_effect"
 
 # Default image category by source
 DEFAULT_IMAGE_CATEGORY = {
