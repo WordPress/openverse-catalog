@@ -337,7 +337,7 @@ def on_failure_callback(context: dict) -> None:
     # Get relevant info
     dag = context["dag"]
     ti = context["task_instance"]
-    logical_date = context["logical_date"]
+    execution_date = context["execution_date"]
     exception: Exception | None = context.get("exception")
     exception_message = ""
 
@@ -357,7 +357,7 @@ def on_failure_callback(context: dict) -> None:
     message = f"""
 *DAG*: `{ti.dag_id}`
 *Task*: `{ti.task_id}`
-*Logical Date*: {logical_date.strftime('%Y-%m-%dT%H:%M:%SZ')}
+*Execution Date*: {execution_date.strftime('%Y-%m-%dT%H:%M:%SZ')}
 *Log*: {ti.log_url}
 {exception_message}
 """
