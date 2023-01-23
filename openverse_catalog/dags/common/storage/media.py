@@ -172,16 +172,14 @@ class MediaStore(metaclass=abc.ABCMeta):
             output_dir = "/tmp"
         version = f"v{version or CURRENT_VERSION[self.media_type]}"
 
-        datetime_string = datetime.now().strftime("%Y%m%d%H%M%S")
-        output_file = ("_").join(
-            [
-                provider or "",
-                self.media_type,
-                version,
-                datetime_string,
-                tsv_suffix or "",
-            ]
-        ) + ".tsv"
+        path_components = [
+            provider,
+            self.media_type,
+            version,
+            datetime.now().strftime("%Y%m%d%H%M%S"),
+            tsv_suffix,
+        ]
+        output_file = ("_").join(filter(None, path_components)) + ".tsv"
 
         output_path = os.path.join(output_dir, output_file)
         logger.info(f"Output path: {output_path}")

@@ -102,7 +102,7 @@ class ProviderDataIngester(ABC):
         conf: dict = None,
         dag_id: str = None,
         date: str = None,
-        day_shift: str = None,
+        day_shift: int = None,
     ):
         """
         Initialize the provider configuration.
@@ -161,13 +161,14 @@ class ProviderDataIngester(ABC):
             # Create a generator to facilitate fetching the next set of query_params.
             self.override_query_params = (qp for qp in query_params_list)
 
-    def _init_media_stores(self, day_shift: str = None) -> dict[str, MediaStore]:
+    def _init_media_stores(self, day_shift: int = None) -> dict[str, MediaStore]:
         """Initialize a media store for each media type supported by this provider."""
+
         media_stores = {}
 
         for media_type, provider in self.providers.items():
             StoreClass = get_media_store_class(media_type)
-            media_stores[media_type] = StoreClass(provider, tsv_suffix=day_shift)
+            media_stores[media_type] = StoreClass(provider, tsv_suffix=str(day_shift))
 
         return media_stores
 
