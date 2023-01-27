@@ -207,6 +207,15 @@ class FinnishMuseumsDataIngester(ProviderDataIngester):
                     f'building:"{building}"',
                     f'last_indexed:"[{start_ts} TO {end_ts}]"',
                 ],
+                "field[]": [
+                    "authors",
+                    "buildings",
+                    "id",
+                    "imageRights",
+                    "images",
+                    "subjects",
+                    "title",
+                ],
                 "limit": self.batch_limit,
                 "page": 1,
             }
@@ -279,6 +288,7 @@ class FinnishMuseumsDataIngester(ProviderDataIngester):
                     "image_url": image_url,
                     "title": title,
                     "source": source,
+                    "creator": self.get_creator(data),
                     "raw_tags": raw_tags,
                 }
             )
@@ -300,6 +310,18 @@ class FinnishMuseumsDataIngester(ProviderDataIngester):
         if img is None:
             return None
         return image_url + img
+
+    @staticmethod
+    def get_creator(obj):
+        authors = []
+        for author_type in ["primary", "secondary", "corporate"]:
+            author = obj.get("authors", {}).get(author_type)
+            if author is None or type(author) != dict:
+                continue
+            author = "; ".join(list(author.keys()))
+            authors.append(author)
+
+        return "; ".join(authors)
 
 
 def main():
