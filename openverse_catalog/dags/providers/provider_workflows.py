@@ -3,6 +3,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 
+from airflow.models import Variable
 from providers.provider_api_scripts.brooklyn_museum import BrooklynMuseumDataIngester
 from providers.provider_api_scripts.cleveland_museum import ClevelandDataIngester
 from providers.provider_api_scripts.europeana import EuropeanaDataIngester
@@ -26,6 +27,24 @@ from providers.provider_api_scripts.wikimedia_commons import (
     WikimediaCommonsDataIngester,
 )
 from providers.provider_api_scripts.wordpress import WordPressDataIngester
+from typing_extensions import NotRequired, TypedDict
+
+
+class ConfigurationOverride(TypedDict):
+    """
+    Describes available options for overriding a Provider DAG's default
+    configuration temporarily.
+
+    Optional Arguments:
+
+    pull_timeout:   str in "%d:%H:%M:%S" format giving the amount of time the
+                    pull_data task may take
+    upsert_timeout: str in "%d:%H:%M:%S" format giving the amount of time the
+                    upsert_data task may take
+    """
+
+    pull_timeout: NotRequired[str | None]
+    upsert_timeout: NotRequired[str | None]
 
 
 @dataclass
@@ -105,6 +124,32 @@ class ProviderWorkflow:
 
         if not self.doc_md:
             self.doc_md = provider_script.__doc__
+
+        # Check for custom configuration
+        overrides: ConfigurationOverride = Variable.get(
+            "CONFIGURATION_OVERRIDES", default_var={}, deserialize_json=True
+        ).get(self.dag_id, {})
+
+        # Apply overrides
+        if pull_override := overrides.get("pull_timeout"):
+            self.pull_timeout = self._get_timedelta(pull_override)
+        if upsert_override := overrides.get("upsert_timeout"):
+            self.upsert_timeout = self._get_timedelta(upsert_override)
+
+    @staticmethod
+    def _get_timedelta(time_str: str) -> timedelta:
+        """
+        Converts a string in the format "%d:%H:%M:%S" to a timedelta.
+
+        Example: "5:10:20:30" represents 5 days, 10 hours, 20 minutes, and
+        30 seconds.
+        """
+        ts = time_str.split(":")
+        if len(ts) != 4 or not all(t.isdigit() for t in ts):
+            raise ValueError(f"Incorrectly formatted time string: '{time_str}'.")
+
+        [days, hours, minutes, seconds] = [int(t) for t in ts]
+        return timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
 
 
 PROVIDER_WORKFLOWS = [
