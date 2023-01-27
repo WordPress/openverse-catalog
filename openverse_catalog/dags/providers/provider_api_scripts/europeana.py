@@ -156,7 +156,7 @@ class EuropeanaRecordBuilder:
 class EuropeanaDataIngester(ProviderDataIngester):
     providers = {"image": prov.EUROPEANA_DEFAULT_PROVIDER}
     sub_providers = prov.EUROPEANA_SUB_PROVIDERS
-    endpoint = "https://www.europeana.eu/api/v2/search.json?"
+    endpoint = "https://api.europeana.eu/record/v2/search.json?"
     delay = 30
 
     def __init__(self, *args, **kwargs):
