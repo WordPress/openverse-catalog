@@ -175,8 +175,6 @@ class FreesoundDataIngester(ProviderDataIngester):
         Both of these seem transient and may be the result of some odd behavior on the
         Freesound API end. We have an API key that's supposed to be maxed out, so
         I can't imagine it's throttling (aetherunbound).
-
-        TODO(obulat): move filesize detection to the polite crawler
         """
         response = self.delayed_requester.head(url)
 
