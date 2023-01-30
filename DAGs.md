@@ -18,6 +18,7 @@ The following are DAGs grouped by their primary tag:
 1.  [Database](#database)
 1.  [Maintenance](#maintenance)
 1.  [Oauth](#oauth)
+1.  [Other](#other)
 1.  [Provider](#provider)
 1.  [Provider Reingestion](#provider-reingestion)
 
@@ -52,6 +53,12 @@ The following are DAGs grouped by their primary tag:
 | ----------------------------------------------- | ----------------- |
 | [`oauth2_authorization`](#oauth2_authorization) | `None`            |
 | [`oauth2_token_refresh`](#oauth2_token_refresh) | `0 */12 * * *`    |
+
+## Other
+
+| DAG ID                                  | Schedule Interval |
+| --------------------------------------- | ----------------- |
+| [`a_pg_fail_tester`](#a_pg_fail_tester) | `None`            |
 
 ## Provider
 
@@ -92,6 +99,7 @@ The following are DAGs grouped by their primary tag:
 
 The following is documentation associated with each DAG (where available):
 
+1.  [`a_pg_fail_tester`](#a_pg_fail_tester)
 1.  [`airflow_log_cleanup`](#airflow_log_cleanup)
 1.  [`audio_data_refresh`](#audio_data_refresh)
 1.  [`check_silenced_dags`](#check_silenced_dags)
@@ -124,6 +132,10 @@ The following is documentation associated with each DAG (where available):
 1.  [`wikimedia_commons_workflow`](#wikimedia_commons_workflow)
 1.  [`wikimedia_reingestion_workflow`](#wikimedia_reingestion_workflow)
 1.  [`wordpress_workflow`](#wordpress_workflow)
+
+## `a_pg_fail_tester`
+
+DAG to test query timeouts in postgres
 
 ## `airflow_log_cleanup`
 
