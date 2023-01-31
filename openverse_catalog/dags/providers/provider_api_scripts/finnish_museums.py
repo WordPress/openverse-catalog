@@ -323,7 +323,7 @@ class FinnishMuseumsDataIngester(ProviderDataIngester):
             author = "; ".join(list(author.keys()))
             authors.append(author)
 
-        return "; ".join(authors)
+        return "; ".join(authors) or None
 
 
 def main():

@@ -340,3 +340,48 @@ def test_get_image_url():
 )
 def test_get_license_url(image_rights_obj, expected_license_url):
     assert fm.get_license_url(image_rights_obj) == expected_license_url
+
+
+@pytest.mark.parametrize(
+    "authors_raw, expected_creator",
+    [
+        (
+            {"primary": [], "secondary": [], "corporate": []},  # Case with no author
+            None,
+        ),
+        (
+            {  # Case with only a primary author
+                "primary": {"Name": {"role": ["-"]}},
+                "secondary": [],
+                "corporate": [],
+            },
+            "Name",
+        ),
+        (
+            {  # Case with only a secondary author
+                "primary": [],
+                "secondary": {"Name2": {"role": ["-"]}},
+                "corporate": [],
+            },
+            "Name2",
+        ),
+        (
+            {  # Case with primary and secondary authors
+                "primary": {"Lastname, Name": {"role": ["-"]}},
+                "secondary": {"Name2": {"role": ["-"]}},
+                "corporate": [],
+            },
+            "Lastname, Name; Name2",
+        ),
+        (
+            {  # Case with all the authors
+                "primary": {"Name": {"role": ["-"]}},
+                "secondary": {"Name2": {"role": ["-"]}},
+                "corporate": {"Name3": {"role": ["-"]}},
+            },
+            "Name; Name2; Name3",
+        ),
+    ],
+)
+def test_get_creator(authors_raw, expected_creator):
+    assert fm.get_creator(authors_raw) == expected_creator
