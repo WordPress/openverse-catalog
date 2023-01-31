@@ -119,7 +119,6 @@ UA_STRING = f"Openverse/0.1 (https://wordpress.org/openverse; {CONTACT_EMAIL})"
 
 # Available Image Categories for API
 class ImageCategory:
-
     PHOTOGRAPH = "photograph"
     DIGITIZED_ARTWORK = "digitized_artwork"
     ILLUSTRATION = "illustration"
