@@ -265,12 +265,14 @@ class FinnishMuseumsDataIngester(ProviderDataIngester):
         foreign_identifier = data.get("id")
         if foreign_identifier is None:
             return None
+        foreign_landing_url = LANDING_URL + foreign_identifier
+
         title = data.get("title")
+        creator = self.get_creator(data.get("authors")) if data.get("authors") else None
         building = data.get("buildings")[0].get("value")
         source = next(
             (s for s in SUB_PROVIDERS if building in SUB_PROVIDERS[s]), PROVIDER
         )
-        foreign_landing_url = LANDING_URL + foreign_identifier
 
         raw_tags = None
         tag_lists = data.get("subjects")
@@ -288,7 +290,7 @@ class FinnishMuseumsDataIngester(ProviderDataIngester):
                     "image_url": image_url,
                     "title": title,
                     "source": source,
-                    "creator": self.get_creator(data),
+                    "creator": creator,
                     "raw_tags": raw_tags,
                 }
             )
@@ -312,10 +314,10 @@ class FinnishMuseumsDataIngester(ProviderDataIngester):
         return image_url + img
 
     @staticmethod
-    def get_creator(obj):
+    def get_creator(authors_raw):
         authors = []
         for author_type in ["primary", "secondary", "corporate"]:
-            author = obj.get("authors", {}).get(author_type)
+            author = authors_raw.get(author_type)
             if author is None or type(author) != dict:
                 continue
             author = "; ".join(list(author.keys()))
