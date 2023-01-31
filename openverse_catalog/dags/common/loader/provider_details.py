@@ -126,7 +126,6 @@ class ImageCategory:
 
 # Available Audio Categories for API
 class AudioCategory:
-
     AUDIOBOOK = "audiobook"
     MUSIC = "music"
     NEWS = "news"
