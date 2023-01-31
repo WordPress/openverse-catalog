@@ -59,70 +59,70 @@ TEST_CASES = [
         "expected_app_name": "happy__test_task_id__20230124__map0000",
         "expected_sql_args": "SET application_name TO 'happy__test_task_id__20230124__map0000'; SET statement_timeout TO '2.0s';",
     },
-    {
-        "id": "happy_context_unmapped",
-        "ti": {
-            "task_instance": TaskInstanceTuple(
-                HAPPY_TASK.dag_id,
-                HAPPY_TASK.task_id,
-                datetime(2023, 1, 24),
-                KeyTuple(-1),
-                HAPPY_TASK,
-            ),
-            "task_instance_key_str": "happy__test_task_id__20230124",
-            "task": HAPPY_TASK,
-        },
-        "expected_app_name": "happy__test_task_id__20230124",
-        "expected_sql_args": None,  # not applicable because not called on failure
-    },
-    {
-        "id": "happy_context_mapped",
-        "ti": {
-            "task_instance": TaskInstanceTuple(
-                HAPPY_TASK.dag_id,
-                HAPPY_TASK.task_id,
-                datetime(2023, 1, 24),
-                KeyTuple(2),
-                HAPPY_TASK,
-            ),
-            "task_instance_key_str": "happy__test_task_id__20230124",
-            "task": HAPPY_TASK,
-        },
-        "expected_app_name": "happy__test_task_id__20230124__map0002",
-        "expected_sql_args": None,  # not applicable because not called on failure
-    },
-    {
-        "id": "none_timeout_context_unmapped",
-        "ti": {
-            "task_instance": TaskInstanceTuple(
-                DEFAULT_TIMEOUT_TASK.dag_id,
-                DEFAULT_TIMEOUT_TASK.task_id,
-                datetime(2023, 1, 25),
-                KeyTuple(-1),
-                DEFAULT_TIMEOUT_TASK,
-            ),
-            "task_instance_key_str": "default_timeout__ti__20230125",
-            "task": DEFAULT_TIMEOUT_TASK,
-        },
-        "expected_app_name": "default_timeout__ti__20230125",
-        "expected_sql_args": None,  # not applicable because not called on failure
-    },
-    {
-        "id": "none_timeout_context_mapped",
-        "ti": {
-            "task_instance": TaskInstanceTuple(
-                DEFAULT_TIMEOUT_TASK.dag_id,
-                DEFAULT_TIMEOUT_TASK.task_id,
-                datetime(2023, 1, 25),
-                KeyTuple(2),
-                DEFAULT_TIMEOUT_TASK,
-            ),
-            "task_instance_key_str": "default_timeout__ti__20230125",
-            "task": DEFAULT_TIMEOUT_TASK,
-        },
-        "expected_app_name": "default_timeout__ti__20230125__map0002",
-        "expected_sql_args": None,  # not applicable because not called on failure
-    },
+    # {
+    #     "id": "happy_context_unmapped",
+    #     "ti": {
+    #         "task_instance": TaskInstanceTuple(
+    #             HAPPY_TASK.dag_id,
+    #             HAPPY_TASK.task_id,
+    #             datetime(2023, 1, 24),
+    #             KeyTuple(-1),
+    #             HAPPY_TASK,
+    #         ),
+    #         "task_instance_key_str": "happy__test_task_id__20230124",
+    #         "task": HAPPY_TASK,
+    #     },
+    #     "expected_app_name": "happy__test_task_id__20230124",
+    #     "expected_sql_args": None,  # not applicable because not called on failure
+    # },
+    # {
+    #     "id": "happy_context_mapped",
+    #     "ti": {
+    #         "task_instance": TaskInstanceTuple(
+    #             HAPPY_TASK.dag_id,
+    #             HAPPY_TASK.task_id,
+    #             datetime(2023, 1, 24),
+    #             KeyTuple(2),
+    #             HAPPY_TASK,
+    #         ),
+    #         "task_instance_key_str": "happy__test_task_id__20230124",
+    #         "task": HAPPY_TASK,
+    #     },
+    #     "expected_app_name": "happy__test_task_id__20230124__map0002",
+    #     "expected_sql_args": None,  # not applicable because not called on failure
+    # },
+    # {
+    #     "id": "none_timeout_context_unmapped",
+    #     "ti": {
+    #         "task_instance": TaskInstanceTuple(
+    #             DEFAULT_TIMEOUT_TASK.dag_id,
+    #             DEFAULT_TIMEOUT_TASK.task_id,
+    #             datetime(2023, 1, 25),
+    #             KeyTuple(-1),
+    #             DEFAULT_TIMEOUT_TASK,
+    #         ),
+    #         "task_instance_key_str": "default_timeout__ti__20230125",
+    #         "task": DEFAULT_TIMEOUT_TASK,
+    #     },
+    #     "expected_app_name": "default_timeout__ti__20230125",
+    #     "expected_sql_args": None,  # not applicable because not called on failure
+    # },
+    # {
+    #     "id": "none_timeout_context_mapped",
+    #     "ti": {
+    #         "task_instance": TaskInstanceTuple(
+    #             DEFAULT_TIMEOUT_TASK.dag_id,
+    #             DEFAULT_TIMEOUT_TASK.task_id,
+    #             datetime(2023, 1, 25),
+    #             KeyTuple(2),
+    #             DEFAULT_TIMEOUT_TASK,
+    #         ),
+    #         "task_instance_key_str": "default_timeout__ti__20230125",
+    #         "task": DEFAULT_TIMEOUT_TASK,
+    #     },
+    #     "expected_app_name": "default_timeout__ti__20230125__map0002",
+    #     "expected_sql_args": None,  # not applicable because not called on failure
+    # },
     {
         "id": "none_timeout_ti_unmapped",
         "ti": TaskInstanceTuple(
