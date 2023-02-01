@@ -182,10 +182,10 @@ class FinnishMuseumsDataIngester(ProviderDataIngester):
 
             # Get the timestamp pairs. If there are no records for this building,
             # it will be an empty list.
-            self.timestamp_pairs = self._get_timestamp_pairs(building)
+            timestamp_pairs = self._get_timestamp_pairs(building)
 
             # Run ingestion for each timestamp pair
-            for start_ts, end_ts in self.timestamp_pairs:
+            for start_ts, end_ts in timestamp_pairs:
                 # Reset counts before we start
                 self.new_iteration = True
                 self.fetched_count = 0

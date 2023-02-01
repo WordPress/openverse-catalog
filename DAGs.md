@@ -67,6 +67,7 @@ The following are DAGs grouped by their primary tag:
 | [`jamendo_workflow`](#jamendo_workflow)                         | `@monthly`        | `False` | audio         |
 | [`metropolitan_museum_workflow`](#metropolitan_museum_workflow) | `@daily`          | `True`  | image         |
 | `museum_victoria_workflow`                                      | `@monthly`        | `False` | image         |
+| [`nappy_workflow`](#nappy_workflow)                             | `@monthly`        | `False` | image         |
 | `nypl_workflow`                                                 | `@monthly`        | `False` | image         |
 | [`phylopic_workflow`](#phylopic_workflow)                       | `@daily`          | `True`  | image         |
 | [`rawpixel_workflow`](#rawpixel_workflow)                       | `@monthly`        | `False` | image         |
@@ -105,6 +106,7 @@ The following is documentation associated with each DAG (where available):
 1.  [`jamendo_workflow`](#jamendo_workflow)
 1.  [`metropolitan_museum_reingestion_workflow`](#metropolitan_museum_reingestion_workflow)
 1.  [`metropolitan_museum_workflow`](#metropolitan_museum_workflow)
+1.  [`nappy_workflow`](#nappy_workflow)
 1.  [`oauth2_authorization`](#oauth2_authorization)
 1.  [`oauth2_token_refresh`](#oauth2_token_refresh)
 1.  [`phylopic_reingestion_workflow`](#phylopic_reingestion_workflow)
@@ -261,8 +263,8 @@ ETL Process: Use the API to identify all CC-licensed images.
 
 Output: TSV file containing the image, the respective meta-data.
 
-Notes: https://freesound.org/apiv2/search/text' No rate limit specified. This
-script can be run either to ingest the full dataset or as a dated DAG.
+Notes: https://freesound.org/docs/api/ Rate limit: No limit for our API key.
+This script can be run either to ingest the full dataset or as a dated DAG.
 
 ## `image_data_refresh`
 
@@ -301,22 +303,19 @@ and related PRs:
 
 Provider: iNaturalist
 
-Output: TSV file containing the media metadata.
+Output: Records loaded to the image catalog table.
 
-Notes: [The iNaturalist API is not intended for data scraping.]
-(https://api.inaturalist.org/v1/docs/)
-
-            [But there is a full dump intended for sharing on S3.]
-            (https://github.com/inaturalist/inaturalist-open-data/tree/documentation/Metadata)
-
-            Because these are very large normalized tables, as opposed to more document
-            oriented API responses, we found that bringing the data into postgres first
-            was the most effective approach. [More detail in slack here.]
-            (https://wordpress.slack.com/archives/C02012JB00N/p1653145643080479?thread_ts=1653082292.714469&cid=C02012JB00N)
-
-            We use the table structure defined [here,]
-            (https://github.com/inaturalist/inaturalist-open-data/blob/main/Metadata/structure.sql)
-            except for adding ancestry tags to the taxa table.
+Notes: The iNaturalist API is not intended for data scraping.
+https://api.inaturalist.org/v1/docs/ But there is a full dump intended for
+sharing on S3.
+https://github.com/inaturalist/inaturalist-open-data/tree/documentation/Metadata
+Because these are very large normalized tables, as opposed to more document
+oriented API responses, we found that bringing the data into postgres first was
+the most effective approach. More detail in slack here:
+https://wordpress.slack.com/archives/C02012JB00N/p1653145643080479?thread_ts=1653082292.714469&cid=C02012JB00N
+We use the table structure defined here,
+https://github.com/inaturalist/inaturalist-open-data/blob/main/Metadata/structure.sql
+except for adding ancestry tags to the taxa table.
 
 ## `jamendo_workflow`
 
@@ -378,6 +377,17 @@ blocking during local development testing.
                         in addition to date and public domain. It seems like it won't
                         connect with just date and license.
                         https://collectionapi.metmuseum.org/public/collection/v1/search?isPublicDomain=true&metadataDate=2022-08-07
+
+## `nappy_workflow`
+
+Content Provider: Nappy
+
+ETL Process: Use the API to identify all CC0-licensed images.
+
+Output: TSV file containing the image meta-data.
+
+Notes: This api was written specially for Openverse. There are no known limits
+or restrictions. https://nappy.co/
 
 ## `oauth2_authorization`
 
