@@ -1,9 +1,9 @@
 from collections import namedtuple
 from textwrap import dedent
 
-from airflow.providers.postgres.hooks.postgres import PostgresHook
 from common.constants import AUDIO, IMAGE
 from common.loader.sql import TABLE_NAMES
+from common.sql_helpers import PostgresHook
 from common.storage import columns as col
 
 

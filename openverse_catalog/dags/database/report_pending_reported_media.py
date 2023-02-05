@@ -18,7 +18,6 @@ from airflow import DAG
 from airflow.exceptions import AirflowException
 from airflow.models import TaskInstance
 from airflow.operators.python import PythonOperator
-from airflow.providers.postgres.hooks.postgres import PostgresHook
 from common import slack
 from common.constants import (
     DAG_DEFAULT_ARGS,
@@ -26,6 +25,7 @@ from common.constants import (
     OPENLEDGER_API_CONN_ID,
     XCOM_PULL_TEMPLATE,
 )
+from common.sql_helpers import PostgresHook
 
 
 logger = logging.getLogger(__name__)
