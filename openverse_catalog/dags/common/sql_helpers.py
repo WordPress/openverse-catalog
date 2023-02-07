@@ -11,6 +11,11 @@ from common.constants import POSTGRES_CONN_ID
 logger = logging.getLogger(__name__)
 
 
+# Some functions, like inaturalist, use "copy_expert" to bulk load data to a table.
+# Right now, that is not using the timeout automagically.
+# https://airflow.apache.org/docs/apache-airflow-providers-postgres/stable/_api/airflow/providers/postgres/hooks/postgres/index.html#airflow.providers.postgres.hooks.postgres.PostgresHook.copy_expert # noqa
+
+
 class PostgresHook(UpstreamPostgresHook):
     """
     PostgresHook that sets the database timeout on any query to match the airflow task
@@ -57,11 +62,15 @@ class PostgresHook(UpstreamPostgresHook):
     @staticmethod
     def get_execution_timeout(task) -> float:
         """
-        Pull execution timeout from an airflow task instance and format it for the hook.
+        Pull execution timeout from airflow task and format it for the hook, i.e.
+        number of seconds. Use the task execution timeout, if available. If not, take
+        the DAG execution timeout, if that's not available, return 0 for no timeout.
         """
         zero = timedelta(seconds=0)
-        task_init_kwargs = task._BaseOperator__init_kwargs
-        return task_init_kwargs.get("execution_timeout", zero).total_seconds()
+        timeout = task._BaseOperator__init_kwargs.get(
+            "execution_timeout", getattr(task.dag, "execution_timeout", zero)
+        ).total_seconds()
+        return timeout
 
     @staticmethod
     def get_pg_timeout_sql(statement_timeout: float) -> str:
