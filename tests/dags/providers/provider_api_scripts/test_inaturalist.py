@@ -167,6 +167,8 @@ def test_consolidate_load_statistics(all_results, expected):
     ],
 )
 def test_get_batches(batch_length, max_id, expected):
-    with mock.patch.object(PostgresHook, "get_records", return_value=max_id):
-        actual = INAT.get_batches(batch_length)
-        assert actual == expected
+    task = "doesn't matter, but we have to pass something"
+    with mock.patch.object(PostgresHook, "get_execution_timeout", return_value=60):
+        with mock.patch.object(PostgresHook, "get_records", return_value=max_id):
+            actual = INAT.get_batches(batch_length, task)
+            assert actual == expected

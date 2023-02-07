@@ -31,7 +31,7 @@ from airflow.operators.python import PythonOperator, ShortCircuitOperator
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
-from common.constants import IMAGE, XCOM_PULL_TEMPLATE
+from common.constants import IMAGE, POSTGRES_CONN_ID, XCOM_PULL_TEMPLATE
 from common.loader import provider_details, reporting, sql
 from common.sql_helpers import PGExecuteQueryOperator, PostgresHook
 from providers.provider_api_scripts.provider_data_ingester import ProviderDataIngester
@@ -43,6 +43,7 @@ AWS_CONN_ID = os.getenv("AWS_CONN_ID", "test_conn_id")
 SCRIPT_DIR = Path(__file__).parents[1] / "provider_csv_load_scripts/inaturalist"
 SOURCE_FILE_NAMES = ["photos", "observations", "taxa", "observers"]
 LOADER_ARGS = {
+    "postgres_conn_id": POSTGRES_CONN_ID,
     "identifier": "{{ ts_nodash }}",
     "media_type": IMAGE,
 }
@@ -79,8 +80,11 @@ class INaturalistDataIngester(ProviderDataIngester):
     @staticmethod
     def get_batches(
         batch_length: int,  # must be a positive, non-zero integer
+        task,
     ):
-        pg = PostgresHook(default_statement_timeout=60)
+        pg = PostgresHook(
+            default_statement_timeout=PostgresHook.get_execution_timeout(task)
+        )
         max_id = pg.get_records("SELECT max(photo_id) FROM inaturalist.photos")[0][0]
         if max_id is None:
             # This would only happen if there were no data loaded to inaturalist.photos
@@ -106,8 +110,14 @@ class INaturalistDataIngester(ProviderDataIngester):
         """
         start_time = time.perf_counter()
         (batch_start, batch_end) = batch
+        # Considered using PostgresHook.get_execution_timeout(task), but not sure how
+        # that will work for mapped tasks. Is it total across all mappings or for each?
+        # This we know is for each iteration.
+        # In testing this locally, the longest full iteration took 39 minutes,
+        # median was 18 minutes. We should probably adjust the timeouts with
+        # more info from production runs.
         pg = PostgresHook(
-            default_statement_timeout=timedelta(minutes=40).total_seconds()
+            default_statement_timeout=timedelta(minutes=45).total_seconds()
         )
         sql_template = (SCRIPT_DIR / sql_template_file_name).read_text()
         batch_number = int(batch_start / (batch_end - batch_start + 1)) + 1
@@ -126,12 +136,14 @@ class INaturalistDataIngester(ProviderDataIngester):
         )
         # Run standard cleaning
         (missing_columns, foreign_id_dup) = sql.clean_intermediate_table_data(
+            postgres_conn_id=POSTGRES_CONN_ID,
             identifier=identifier,
         )
         # Add transformed records to the target catalog image table.
         # TO DO: Would it be better to use loader.upsert_records here? Would need to
         # trace back the parameters that need to be passed in for different stats.
         upserted_records = sql.upsert_records_to_db_table(
+            postgres_conn_id=POSTGRES_CONN_ID,
             identifier=identifier,
         )
         logger.info(f"Upserted {upserted_records} records, from batch {batch_number}.")
@@ -197,7 +209,7 @@ class INaturalistDataIngester(ProviderDataIngester):
         raise AirflowSkipException("Nothing new to ingest")
 
     @staticmethod
-    def load_catalog_of_life_names(remove_api_files: bool):
+    def load_catalog_of_life_names(task: PythonOperator, remove_api_files: bool):
         COL_URL = "https://api.checklistbank.org/dataset/9840/export.zip?format=ColDP"
         local_zip_file = "COL_archive.zip"
         name_usage_file = "NameUsage.tsv"
@@ -233,13 +245,18 @@ class INaturalistDataIngester(ProviderDataIngester):
                     f.write(z.read(vernacular_file))
                 logger.info(f"Extracted raw file: {OUTPUT_DIR}/{vernacular_file}")
         # set up for loading data
-        pg = PostgresHook()
+        pg = PostgresHook(
+            default_statement_timeout=PostgresHook.get_execution_timeout(task)
+        )
         COPY_SQL = (
             "COPY inaturalist.{} FROM STDIN "
             "DELIMITER E'\t' CSV HEADER QUOTE E'\b' NULL AS ''"
         )
         COUNT_SQL = "SELECT count(*) FROM inaturalist.{};"
         # upload vernacular names file to postgres
+        pg.run(
+            ""
+        )  # just to set the timeout, because it's not automatic for copy_expert
         pg.copy_expert(COPY_SQL.format("col_vernacular"), OUTPUT_DIR / vernacular_file)
         vernacular_records = pg.get_records(COUNT_SQL.format("col_vernacular"))
         if vernacular_records[0][0] == 0:
@@ -288,6 +305,7 @@ class INaturalistDataIngester(ProviderDataIngester):
                 task_id="create_inaturalist_schema",
                 sql=(SCRIPT_DIR / "create_schema.sql").read_text(),
                 doc_md="Create temporary schema and license table",
+                execution_timeout=timedelta(minutes=1),
             )
 
             load_catalog_of_life_names = PythonOperator(
@@ -297,6 +315,7 @@ class INaturalistDataIngester(ProviderDataIngester):
                 op_kwargs={
                     "remove_api_files": "{{params.sql_rm_source_data_after_ingesting}}"
                 },
+                execution_timeout=timedelta(minutes=15),
             )
 
             (
@@ -323,12 +342,14 @@ class INaturalistDataIngester(ProviderDataIngester):
                 task_id="drop_inaturalist_schema",
                 sql="DROP SCHEMA IF EXISTS inaturalist CASCADE",
                 doc_md="Drop iNaturalist source tables and their schema",
+                execution_timeout=timedelta(minutes=10),
             )
             drop_loading_table = PythonOperator(
                 task_id="drop_loading_table",
                 python_callable=sql.drop_load_table,
                 op_kwargs=LOADER_ARGS,
                 doc_md="Drop the temporary (transformed) loading table",
+                execution_timeout=timedelta(minutes=10),
             )
             (check_drop_parameter >> [drop_inaturalist_schema, drop_loading_table])
         return postingestion_tasks
@@ -346,6 +367,7 @@ class INaturalistDataIngester(ProviderDataIngester):
                         task_id=f"load_{source_name}",
                         sql=(SCRIPT_DIR / f"{source_name}.sql").read_text(),
                         doc_md=f"Load iNaturalist {source_name} from s3 to postgres",
+                        execution_timeout=timedelta(minutes=10),
                     ),
 
             with TaskGroup(group_id="load_image_data") as loader_tasks:
@@ -360,6 +382,7 @@ class INaturalistDataIngester(ProviderDataIngester):
                         "Create a temp table for ingesting data from inaturalist "
                         "source tables."
                     ),
+                    execution_timeout=timedelta(minutes=1),
                 )
 
                 get_batches = PythonOperator(
@@ -368,15 +391,12 @@ class INaturalistDataIngester(ProviderDataIngester):
                     op_kwargs={
                         "batch_length": 2_000_000,
                     },
+                    execution_timeout=timedelta(minutes=1),
                 )
 
                 load_transformed_data = PythonOperator.partial(
                     task_id="load_transformed_data",
                     python_callable=INaturalistDataIngester.load_transformed_data,
-                    # In testing this locally, the longest iteration took 39 minutes,
-                    # median was 18 minutes. We should probably adjust the timeouts with
-                    # more info from production runs.
-                    execution_timeout=timedelta(hours=1),
                     retries=0,
                     max_active_tis_per_dag=1,
                     op_kwargs={
