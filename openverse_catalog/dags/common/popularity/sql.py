@@ -1,4 +1,5 @@
 from collections import namedtuple
+from datetime import timedelta
 from textwrap import dedent
 
 from common.constants import AUDIO, IMAGE
@@ -68,6 +69,7 @@ def drop_media_popularity_relations(
     db_view=IMAGE_VIEW_NAME,
     constants=IMAGE_POPULARITY_CONSTANTS_VIEW,
     metrics=IMAGE_POPULARITY_METRICS_TABLE_NAME,
+    pg_timeout: float = timedelta(minutes=10).total_seconds(),
 ):
 
     if media_type == AUDIO:
@@ -75,7 +77,9 @@ def drop_media_popularity_relations(
         constants = AUDIO_POPULARITY_CONSTANTS_VIEW
         metrics = AUDIO_POPULARITY_METRICS_TABLE_NAME
 
-    postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
+    postgres = PostgresHook(
+        postgres_conn_id=postgres_conn_id, default_statement_timeout=pg_timeout
+    )
     drop_media_view = f"DROP MATERIALIZED VIEW IF EXISTS public.{db_view} CASCADE;"
     drop_popularity_constants = (
         f"DROP MATERIALIZED VIEW IF EXISTS public.{constants} CASCADE;"
@@ -95,7 +99,9 @@ def drop_media_popularity_functions(
     if media_type == AUDIO:
         popularity_percentile = AUDIO_POPULARITY_PERCENTILE_FUNCTION
         standardized_popularity = STANDARDIZED_AUDIO_POPULARITY_FUNCTION
-    postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
+    postgres = PostgresHook(
+        postgres_conn_id=postgres_conn_id, default_statement_timeout=10.0
+    )
     drop_standardized_popularity = (
         f"DROP FUNCTION IF EXISTS public.{standardized_popularity} CASCADE;"
     )
@@ -113,7 +119,9 @@ def create_media_popularity_metrics(
 ):
     if media_type == AUDIO:
         popularity_metrics_table = AUDIO_POPULARITY_METRICS_TABLE_NAME
-    postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
+    postgres = PostgresHook(
+        postgres_conn_id=postgres_conn_id, default_statement_timeout=10.0
+    )
     popularity_metrics_columns_string = ",\n            ".join(
         f"{c.name} {c.definition}" for c in POPULARITY_METRICS_TABLE_COLUMNS
     )
@@ -132,6 +140,7 @@ def update_media_popularity_metrics(
     media_type=IMAGE,
     popularity_metrics=None,
     popularity_metrics_table=IMAGE_POPULARITY_METRICS_TABLE_NAME,
+    pg_timeout: float = timedelta(hours=1).total_seconds(),
 ):
     if popularity_metrics is None:
         if media_type == AUDIO:
@@ -140,7 +149,9 @@ def update_media_popularity_metrics(
             popularity_metrics = IMAGE_POPULARITY_METRICS
     if media_type == AUDIO:
         popularity_metrics_table = AUDIO_POPULARITY_METRICS_TABLE_NAME
-    postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
+    postgres = PostgresHook(
+        postgres_conn_id=postgres_conn_id, default_statement_timeout=pg_timeout
+    )
     column_names = [c.name for c in POPULARITY_METRICS_TABLE_COLUMNS]
     updates_string = ",\n          ".join(
         f"{c}=EXCLUDED.{c}" for c in column_names if c != PARTITION
@@ -192,7 +203,9 @@ def create_media_popularity_percentile_function(
     popularity_percentile=IMAGE_POPULARITY_PERCENTILE_FUNCTION,
     media_table=TABLE_NAMES[IMAGE],
 ):
-    postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
+    postgres = PostgresHook(
+        postgres_conn_id=postgres_conn_id, default_statement_timeout=10.0
+    )
     if media_type == AUDIO:
         popularity_percentile = AUDIO_POPULARITY_PERCENTILE_FUNCTION
         media_table = TABLE_NAMES[AUDIO]
@@ -221,13 +234,21 @@ def create_media_popularity_constants_view(
     popularity_constants_idx=IMAGE_POP_CONSTANTS_IDX,
     popularity_metrics=IMAGE_POPULARITY_METRICS_TABLE_NAME,
     popularity_percentile=IMAGE_POPULARITY_PERCENTILE_FUNCTION,
+    pg_timeout: float = timedelta(hours=6).total_seconds(),
 ):
-    postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
+    postgres = PostgresHook(
+        postgres_conn_id=postgres_conn_id, default_statement_timeout=pg_timeout
+    )
     if media_type == AUDIO:
         popularity_constants = AUDIO_POPULARITY_CONSTANTS_VIEW
         popularity_constants_idx = AUDIO_POP_CONSTANTS_IDX
         popularity_metrics = AUDIO_POPULARITY_METRICS_TABLE_NAME
         popularity_percentile = AUDIO_POPULARITY_PERCENTILE_FUNCTION
+    # TO DO: How long does this usually take and how often is it usually run? Is the
+    # intention here to create the materialized view syntax without populating it? If
+    # so, maybe a much shorter timeout would be appropriate, but then I would expect to
+    # see the phrase "WITH NO DATA" here.
+    # See https://www.postgresql.org/docs/current/sql-creatematerializedview.html
     create_view_query = dedent(
         f"""
         CREATE MATERIALIZED VIEW public.{popularity_constants} AS
@@ -269,10 +290,16 @@ def update_media_popularity_constants(
     postgres_conn_id,
     media_type=IMAGE,
     popularity_constants_view=IMAGE_POPULARITY_CONSTANTS_VIEW,
+    pg_timeout: float = timedelta(hours=6).total_seconds(),
 ):
     if media_type == AUDIO:
         popularity_constants_view = AUDIO_POPULARITY_CONSTANTS_VIEW
-    postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
+    # TO DO see note above about when the materialized view gets populated. Not sure how
+    # often it is refreshed verses instantiated from scratch. And whether / how we might
+    # improve performance by integrating index updates/builds with that schedule.
+    postgres = PostgresHook(
+        postgres_conn_id=postgres_conn_id, default_statement_timeout=pg_timeout
+    )
     postgres.run(f"REFRESH MATERIALIZED VIEW CONCURRENTLY {popularity_constants_view};")
 
 
@@ -285,7 +312,9 @@ def create_standardized_media_popularity_function(
     if media_type == AUDIO:
         popularity_constants = AUDIO_POPULARITY_CONSTANTS_VIEW
         function_name = STANDARDIZED_AUDIO_POPULARITY_FUNCTION
-    postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
+    postgres = PostgresHook(
+        postgres_conn_id=postgres_conn_id, default_statement_timeout=10.0
+    )
     query = dedent(
         f"""
         CREATE OR REPLACE FUNCTION public.{function_name}(
@@ -343,6 +372,7 @@ def create_media_view(
     db_view_name=IMAGE_VIEW_NAME,
     db_view_id_idx=IMAGE_VIEW_ID_IDX,
     db_view_provider_fid_idx=IMAGE_VIEW_PROVIDER_FID_IDX,
+    pg_timeout: float = timedelta(hours=6).total_seconds(),
 ):
     if media_type == AUDIO:
         table_name = TABLE_NAMES[AUDIO]
@@ -350,10 +380,14 @@ def create_media_view(
         db_view_id_idx = AUDIO_VIEW_ID_IDX
         db_view_provider_fid_idx = AUDIO_VIEW_PROVIDER_FID_IDX
         standardized_popularity_func = STANDARDIZED_AUDIO_POPULARITY_FUNCTION
-    postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
+    postgres = PostgresHook(
+        postgres_conn_id=postgres_conn_id, default_statement_timeout=pg_timeout
+    )
     audio_set_id_str = (
         "\naudio_set ->> 'foreign_identifier' AS audio_set_foreign_identifier,"
     )
+    # TO DO: Is this meant to be WITH NO DATA? See notes above, and let's figure out
+    # implications for statement_timeout.
     create_view_query = dedent(
         f"""
         CREATE MATERIALIZED VIEW public.{db_view_name} AS
@@ -385,8 +419,11 @@ def update_db_view(
     postgres_conn_id,
     media_type=IMAGE,
     db_view_name=IMAGE_VIEW_NAME,
+    pg_timeout: float = timedelta(hours=6).total_seconds(),
 ):
     if media_type == AUDIO:
         db_view_name = AUDIO_VIEW_NAME
-    postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
+    postgres = PostgresHook(
+        postgres_conn_id=postgres_conn_id, default_statement_timeout=pg_timeout
+    )
     postgres.run(f"REFRESH MATERIALIZED VIEW CONCURRENTLY {db_view_name};")
