@@ -1,4 +1,5 @@
 import logging
+from datetime import timedelta
 from textwrap import dedent
 
 from common.constants import AUDIO, IMAGE, MediaType
@@ -68,7 +69,10 @@ def create_loading_table(
 ):
     """Create intermediary table and indices if they do not exist."""
     load_table = _get_load_table_name(identifier, media_type=media_type)
-    postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
+    postgres = PostgresHook(
+        postgres_conn_id=postgres_conn_id,
+        default_statement_timeout=30.0,
+    )
     loading_table_columns = TSV_COLUMNS[media_type]
     columns_definition = f"{create_column_definitions(loading_table_columns)}"
     table_creation_query = dedent(
@@ -102,13 +106,20 @@ def create_loading_table(
 
 
 def load_local_data_to_intermediate_table(
-    postgres_conn_id, tsv_file_name, identifier, max_rows_to_skip=10
+    postgres_conn_id,
+    tsv_file_name,
+    identifier,
+    max_rows_to_skip=10,
+    pg_timeout: float = timedelta(hours=1).total_seconds(),
 ):
     media_type = _extract_media_type(tsv_file_name)
     load_table = _get_load_table_name(identifier, media_type=media_type)
     logger.info(f"Loading {tsv_file_name} into {load_table}")
 
-    postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
+    postgres = PostgresHook(
+        postgres_conn_id=postgres_conn_id,
+        default_statement_timeout=pg_timeout,
+    )
     load_successful = False
 
     while not load_successful and max_rows_to_skip >= 0:
@@ -150,11 +161,15 @@ def load_s3_data_to_intermediate_table(
     s3_key,
     identifier,
     media_type=IMAGE,
+    pg_timeout: float = timedelta(hours=1).total_seconds(),
 ) -> int:
     load_table = _get_load_table_name(identifier, media_type=media_type)
     logger.info(f"Loading {s3_key} from S3 Bucket {bucket} into {load_table}")
 
-    postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
+    postgres = PostgresHook(
+        postgres_conn_id=postgres_conn_id,
+        default_statement_timeout=pg_timeout,
+    )
     loaded = postgres.run(
         dedent(
             f"""
@@ -178,6 +193,7 @@ def clean_intermediate_table_data(
     postgres_conn_id: str,
     identifier: str,
     media_type: MediaType = IMAGE,
+    pg_timeout: float = timedelta(hours=1).total_seconds(),
 ) -> tuple[int, int]:
     """
     Clean the data in the intermediate table.
@@ -189,7 +205,10 @@ def clean_intermediate_table_data(
     and `foreign_id`.
     """
     load_table = _get_load_table_name(identifier, media_type=media_type)
-    postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
+    postgres = PostgresHook(
+        postgres_conn_id=postgres_conn_id,
+        default_statement_timeout=pg_timeout,
+    )
 
     missing_columns = 0
     for column in required_columns:
@@ -247,6 +266,7 @@ def upsert_records_to_db_table(
     db_table: str = None,
     media_type: str = IMAGE,
     tsv_version: str = CURRENT_TSV_VERSION,
+    pg_timeout: float = timedelta(hours=1).total_seconds(),
 ):
     """
     Upsert newly ingested records from loading table into the main db table.
@@ -260,6 +280,8 @@ def upsert_records_to_db_table(
     :param media_type
     :param tsv_version:      The version of TSV being processed. This
     determines which columns are used in the upsert query.
+    :param pg_timeout:       Number of seconds after which postgres will cancel
+    any job executed by this function.
     :return:
     """
     if db_table is None:
@@ -267,7 +289,10 @@ def upsert_records_to_db_table(
 
     load_table = _get_load_table_name(identifier, media_type=media_type)
     logger.info(f"Upserting new records into {db_table}.")
-    postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
+    postgres = PostgresHook(
+        postgres_conn_id=postgres_conn_id,
+        default_statement_timeout=pg_timeout,
+    )
 
     # Remove identifier column
     db_columns: list[Column] = DB_COLUMNS[media_type][1:]
@@ -313,7 +338,9 @@ def drop_load_table(
     media_type: str = IMAGE,
 ):
     load_table = _get_load_table_name(identifier, media_type=media_type)
-    postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
+    postgres = PostgresHook(
+        postgres_conn_id=postgres_conn_id, default_statement_timeout=60
+    )
     postgres.run(f"DROP TABLE IF EXISTS {load_table};")
 
 
@@ -345,8 +372,16 @@ def _delete_malformed_row_in_file(tsv_file_name, line_number):
                 write_obj.write(line)
 
 
-def expire_old_images(postgres_conn_id, provider, image_table=TABLE_NAMES[IMAGE]):
-    postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
+def expire_old_images(
+    postgres_conn_id,
+    provider,
+    image_table=TABLE_NAMES[IMAGE],
+    pg_timeout: float = timedelta(hours=1).total_seconds(),
+):
+    postgres = PostgresHook(
+        postgres_conn_id=postgres_conn_id,
+        default_statement_timeout=pg_timeout,
+    )
 
     if provider not in OLDEST_PER_PROVIDER:
         raise Exception(
