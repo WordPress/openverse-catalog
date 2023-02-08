@@ -16,7 +16,7 @@ from urllib.parse import urljoin
 
 from airflow import DAG
 from airflow.exceptions import AirflowException
-from airflow.models import TaskInstance
+from airflow.models import BaseOperator, TaskInstance
 from airflow.operators.python import PythonOperator
 from common import slack
 from common.constants import (
@@ -48,7 +48,7 @@ MediaTypeReportCounts = dict[str, ReportCountsByReason]
 
 
 def get_pending_report_counts(
-    db_conn_id: str, media_type: str, ti: TaskInstance
+    db_conn_id: str, media_type: str, ti: TaskInstance, task: BaseOperator
 ) -> ReportCountsByReason:
     """
     Build a dict of pending report counts grouped by report reason for a media type.
@@ -59,7 +59,10 @@ def get_pending_report_counts(
     media_type: Media type for which to look up reports
     ti:         Running task instance
     """
-    postgres = PostgresHook(postgres_conn_id=db_conn_id)
+    postgres = PostgresHook(
+        postgres_conn_id=db_conn_id,
+        default_statement_timeout=PostgresHook.get_execution_timeout(task),
+    )
     report_counts_by_reason = {}
 
     if media_type not in REPORTS_TABLES:
@@ -152,6 +155,10 @@ def create_dag():
                     "db_conn_id": OPENLEDGER_API_CONN_ID,
                     "media_type": media_type,
                 },
+                # TO DO: add a more specific timeout here?
+                # Seems like images and audio could have very different timeouts just
+                # based on data volumes. I was going to guess 2 hours, but the dag uses
+                # the default timeout of 1 hour, so I'm going to leave it at that.
             )
 
             report_counts_by_media_type[media_type] = XCOM_PULL_TEMPLATE.format(
