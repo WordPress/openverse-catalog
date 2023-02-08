@@ -6,7 +6,7 @@ ETL Process:            Use the API to identify all CC licensed images.
 Output:                 TSV file containing the images and the
                         respective meta-data.
 
-Notes:                  https://www.europeana.eu/api/v2/search.json
+Notes:                  https://pro.europeana.eu/page/search
 """
 import argparse
 import functools
@@ -31,9 +31,11 @@ class EmptyRequiredFieldException(Exception):
 
 def raise_if_empty(fn):
     """
-    Used to decorate RecordBuilder methods for "required" fields
-    to shortcut record building in the case where a record would
-    be missing some required fields and be thrown out anyway.
+    Raise an exception if the value returned by the wrapped function is empty.
+
+    Used to decorate RecordBuilder methods for "required" fields to shortcut record
+    building in the case where a record would be missing some required fields and be
+    thrown out anyway.
     """
 
     @functools.wraps(fn)
@@ -50,8 +52,9 @@ def raise_if_empty(fn):
 
 class EuropeanaRecordBuilder:
     """
-    A small class to contain the record building functionality
-    and simplify testing a bit.
+    Build records for Europeana.
+
+    This small class contains the record building functionality and simplifies testing.
     """
 
     def get_record_data(self, data: dict) -> dict:
@@ -156,7 +159,7 @@ class EuropeanaRecordBuilder:
 class EuropeanaDataIngester(ProviderDataIngester):
     providers = {"image": prov.EUROPEANA_DEFAULT_PROVIDER}
     sub_providers = prov.EUROPEANA_SUB_PROVIDERS
-    endpoint = "https://www.europeana.eu/api/v2/search.json?"
+    endpoint = "https://api.europeana.eu/record/v2/search.json?"
     delay = 30
 
     def __init__(self, *args, **kwargs):

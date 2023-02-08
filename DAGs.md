@@ -139,6 +139,8 @@ DAG to test query timeouts in postgres
 
 ## `airflow_log_cleanup`
 
+### Clean up airflow logs
+
 A maintenance workflow that you can deploy into Airflow to periodically clean
 out the task logs to avoid those getting too big. By default, this will also
 clean child process logs from the 'scheduler' directory.
@@ -195,7 +197,9 @@ and related PRs:
 
 ## `check_silenced_dags`
 
-Checks for DAGs that have silenced Slack alerts which may need to be turned back
+### Silenced DAGs check
+
+Check for DAGs that have silenced Slack alerts which may need to be turned back
 on.
 
 When a DAG has known failures, it can be ommitted from Slack error reporting by
@@ -221,7 +225,7 @@ ETL Process: Use the API to identify all CC licensed images.
 
 Output: TSV file containing the images and the respective meta-data.
 
-Notes: https://www.europeana.eu/api/v2/search.json
+Notes: https://pro.europeana.eu/page/search
 
 ## `europeana_workflow`
 
@@ -231,7 +235,7 @@ ETL Process: Use the API to identify all CC licensed images.
 
 Output: TSV file containing the images and the respective meta-data.
 
-Notes: https://www.europeana.eu/api/v2/search.json
+Notes: https://pro.europeana.eu/page/search
 
 ## `finnish_museums_workflow`
 
@@ -405,10 +409,6 @@ or restrictions. https://nappy.co/
 
 ### OAuth Provider Authorization
 
-**Author**: Madison Swain-Bowden
-
-**Created**: 2021-10-13
-
 Iterates through all the OAuth2 providers and attempts to authorize them using
 tokens found in the in the `OAUTH2_AUTH_KEYS` Variable. Once authorization has
 been completed successfully, the auth token is removed from that Variable. The
@@ -422,10 +422,6 @@ authorization will create an access/refresh token pair in the
 ## `oauth2_token_refresh`
 
 ### OAuth Provider Token Refresh
-
-**Author**: Madison Swain-Bowden
-
-**Created**: 2021-10-13
 
 Iterates through all OAuth2 providers and attempts to refresh the access token
 using the refresh token stored in the `OAUTH2_ACCESS_TOKENS` Variable. This DAG
@@ -456,6 +452,8 @@ Output: TSV file containing the image, their respective meta-data.
 Notes: http://phylopic.org/api/ No rate limit specified.
 
 ## `pr_review_reminders`
+
+### PR Review Reminders
 
 Iterates through open PRs in our repositories and pings assigned reviewers who
 have not yet approved the PR or explicitly requested changes.
@@ -527,8 +525,10 @@ so is only counted once in the reporting by this DAG.
 
 ## `rotate_db_snapshots`
 
-Manages weekly database snapshots. RDS does not support weekly snapshots
-schedules on its own, so we need a DAG to manage this for us.
+Manages weekly database snapshots.
+
+RDS does not support weekly snapshots schedules on its own, so we need a DAG to
+manage this for us.
 
 It runs on Saturdays at 00:00 UTC in order to happen before the data refresh.
 

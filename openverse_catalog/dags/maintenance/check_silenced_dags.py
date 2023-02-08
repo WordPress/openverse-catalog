@@ -1,6 +1,7 @@
 """
-Checks for DAGs that have silenced Slack alerts which may need to be turned back
-on.
+# Silenced DAGs check
+
+Check for DAGs that have silenced Slack alerts which may need to be turned back on.
 
 When a DAG has known failures, it can be ommitted from Slack error reporting by adding
 an entry to the `SILENCED_SLACK_NOTIFICATIONS` Airflow variable. This is a dictionary
@@ -34,13 +35,10 @@ logger = logging.getLogger(__name__)
 
 DAG_ID = "check_silenced_dags"
 MAX_ACTIVE = 1
-GITHUB_PAT = Variable.get("GITHUB_API_KEY", default_var="not_set")
 
 
 def get_issue_info(issue_url: str) -> tuple[str, str, str]:
-    """
-    Parses out the owner, repo, and issue_number from a GitHub issue url.
-    """
+    """Parse out the owner, repo, and issue_number from a GitHub issue url."""
     url_split = issue_url.split("/")
     if len(url_split) < 4:
         raise AirflowException(f"Issue url {issue_url} could not be parsed.")
@@ -49,7 +47,7 @@ def get_issue_info(issue_url: str) -> tuple[str, str, str]:
 
 def get_dags_with_closed_issues(
     github_pat: str, silenced_dags: dict[str, list[SilencedSlackNotification]]
-):
+) -> list[tuple[str, str, str, str | None]]:
     gh = GitHubAPI(github_pat)
 
     dags_to_reenable = []
@@ -62,7 +60,14 @@ def get_dags_with_closed_issues(
             if github_issue.get("state") == "closed":
                 # If the associated issue has been closed, this DAG can have
                 # alerting reenabled for this predicate.
-                dags_to_reenable.append((dag_id, issue_url, notification["predicate"]))
+                dags_to_reenable.append(
+                    (
+                        dag_id,
+                        issue_url,
+                        notification["predicate"],
+                        notification.get("task_id_pattern"),
+                    )
+                )
     return dags_to_reenable
 
 
@@ -83,8 +88,9 @@ def check_configuration(github_pat: str):
         " closed. Please remove them from the silenced_slack_notifications Airflow"
         " variable or assign a new issue."
     )
-    for (dag, issue, predicate) in dags_to_reenable:
-        message += f"\n  - <{issue}|{dag}: '{predicate}'>"
+    for (dag, issue, predicate, task_id_pattern) in dags_to_reenable:
+        dag_name = f"{dag} ({task_id_pattern})" if task_id_pattern else dag
+        message += f"\n  - <{issue}|{dag_name}: '{predicate}'>"
     send_alert(
         message, dag_id=DAG_ID, username="Silenced DAG Check", unfurl_links=False
     )
@@ -111,6 +117,6 @@ with dag:
         task_id="check_silenced_dags_configuration",
         python_callable=check_configuration,
         op_kwargs={
-            "github_pat": GITHUB_PAT,
+            "github_pat": "{{ var.value.get('GITHUB_API_KEY', 'not_set') }}",
         },
     )

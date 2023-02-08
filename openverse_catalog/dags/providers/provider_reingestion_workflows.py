@@ -14,6 +14,8 @@ from providers.provider_workflows import ProviderWorkflow
 @dataclass
 class ProviderReingestionWorkflow(ProviderWorkflow):
     """
+    Provider reingestion workflow configurations.
+
     Extends the ProviderWorkflow with configuration options used to set up
     a day-partitioned ingestion workflow DAG.
 
@@ -61,7 +63,7 @@ PROVIDER_REINGESTION_WORKFLOWS = [
         # 60 total reingestion days
         ingester_class=EuropeanaDataIngester,
         max_active_tasks=3,
-        pull_timeout=timedelta(hours=12),
+        pull_timeout=timedelta(hours=16),
         daily_list_length=7,
         one_month_list_length=12,
         three_month_list_length=40,
