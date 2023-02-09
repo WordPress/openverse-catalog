@@ -165,10 +165,11 @@ class ProviderDataIngester(ABC):
         """Initialize a media store for each media type supported by this provider."""
 
         media_stores = {}
+        tsv_suffix = str(day_shift) if day_shift else None
 
         for media_type, provider in self.providers.items():
             StoreClass = get_media_store_class(media_type)
-            media_stores[media_type] = StoreClass(provider, tsv_suffix=str(day_shift))
+            media_stores[media_type] = StoreClass(provider, tsv_suffix=tsv_suffix)
 
         return media_stores
 
