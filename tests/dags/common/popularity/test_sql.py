@@ -1,18 +1,27 @@
 import os
 import re
 from collections import namedtuple
+from datetime import timedelta
 from pathlib import Path
 from textwrap import dedent
+from time import sleep
 from typing import NamedTuple
 
 import psycopg2
 import pytest
+from airflow.operators.python import PythonOperator
 from common.popularity import sql
 
 
 DDL_DEFINITIONS_PATH = Path(__file__).parents[4] / "docker" / "local_postgres"
 POSTGRES_CONN_ID = os.getenv("TEST_CONN_ID")
 POSTGRES_TEST_URI = os.getenv("AIRFLOW_CONN_POSTGRES_OPENLEDGER_TESTING")
+MOCK_TASK = PythonOperator(
+    task_id="mock_task",
+    python_callable=sleep,
+    execution_timeout=timedelta(seconds=2),
+    op_args=1,
+)
 
 
 class TableInfo(NamedTuple):
@@ -181,6 +190,7 @@ def _set_up_image_view(
     _set_up_std_popularity_func(pg, data_query, metrics_dict, table_info)
     sql.create_media_view(
         conn_id,
+        MOCK_TASK,
         standardized_popularity_func=table_info.standardized_popularity,
         table_name=table_info.image,
         db_view_name=table_info.image_view,

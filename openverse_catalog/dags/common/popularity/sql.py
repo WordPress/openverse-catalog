@@ -366,13 +366,13 @@ def create_audioset_view_query():
 
 def create_media_view(
     postgres_conn_id,
+    task,
     media_type=IMAGE,
     standardized_popularity_func=STANDARDIZED_IMAGE_POPULARITY_FUNCTION,
     table_name=TABLE_NAMES[IMAGE],
     db_view_name=IMAGE_VIEW_NAME,
     db_view_id_idx=IMAGE_VIEW_ID_IDX,
     db_view_provider_fid_idx=IMAGE_VIEW_PROVIDER_FID_IDX,
-    pg_timeout: float = timedelta(hours=6).total_seconds(),
 ):
     if media_type == AUDIO:
         table_name = TABLE_NAMES[AUDIO]
@@ -381,13 +381,12 @@ def create_media_view(
         db_view_provider_fid_idx = AUDIO_VIEW_PROVIDER_FID_IDX
         standardized_popularity_func = STANDARDIZED_AUDIO_POPULARITY_FUNCTION
     postgres = PostgresHook(
-        postgres_conn_id=postgres_conn_id, default_statement_timeout=pg_timeout
+        postgres_conn_id=postgres_conn_id,
+        default_statement_timeout=PostgresHook.get_execution_timeout(task),
     )
     audio_set_id_str = (
         "\naudio_set ->> 'foreign_identifier' AS audio_set_foreign_identifier,"
     )
-    # TO DO: Is this meant to be WITH NO DATA? See notes above, and let's figure out
-    # implications for statement_timeout.
     create_view_query = dedent(
         f"""
         CREATE MATERIALIZED VIEW public.{db_view_name} AS
@@ -417,13 +416,14 @@ def create_media_view(
 
 def update_db_view(
     postgres_conn_id,
+    task,
     media_type=IMAGE,
     db_view_name=IMAGE_VIEW_NAME,
-    pg_timeout: float = timedelta(hours=6).total_seconds(),
 ):
     if media_type == AUDIO:
         db_view_name = AUDIO_VIEW_NAME
     postgres = PostgresHook(
-        postgres_conn_id=postgres_conn_id, default_statement_timeout=pg_timeout
+        postgres_conn_id=postgres_conn_id,
+        default_statement_timeout=PostgresHook.get_execution_timeout(task),
     )
     postgres.run(f"REFRESH MATERIALIZED VIEW CONCURRENTLY {db_view_name};")
