@@ -49,7 +49,7 @@ def _get_resource_json(json_name):
 def test_get_record_count(response_json, expected_count):
     with patch.object(fm, "get_response_json", return_value=response_json):
         actual_count = fm._get_record_count(
-            datetime(2022, 4, 1), datetime(2022, 4, 2), "test_building"
+            datetime(2022, 4, 1), datetime(2022, 4, 2), building="test_building"
         )
         assert actual_count == expected_count
 
@@ -99,7 +99,7 @@ def test_get_timestamp_query_params_list(num_divisions, expected_pairs):
 def test_get_timestamp_pairs_returns_empty_list_when_no_records_found():
     # mock _get_record_count to return 0 records
     with patch.object(fm, "_get_record_count", return_value=0):
-        actual_pairs_list = fm._get_timestamp_pairs("test_building")
+        actual_pairs_list = fm._get_timestamp_pairs(building="test_building")
 
         assert len(actual_pairs_list) == 0
 
@@ -115,7 +115,7 @@ def test_get_timestamp_pairs_returns_full_day_when_few_records_found():
     ]
 
     with patch.object(fm, "_get_record_count", return_value=9999):
-        actual_pairs_list = fm._get_timestamp_pairs("test_building")
+        actual_pairs_list = fm._get_timestamp_pairs(building="test_building")
         assert actual_pairs_list == expected_pairs_list
 
 
@@ -174,7 +174,7 @@ def test_get_timestamp_pairs_with_large_record_counts():
             ("2020-04-01T03:55:00Z", "2020-04-01T04:00:00Z"),
         ]
 
-        actual_pairs_list = fm._get_timestamp_pairs("test_building")
+        actual_pairs_list = fm._get_timestamp_pairs(building="test_building")
         # Formatting the timestamps so the test will be more readable
         formatted_actual_pairs_list = [
             (fm.format_ts(x), fm.format_ts(y)) for x, y in actual_pairs_list
