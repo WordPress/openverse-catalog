@@ -5,8 +5,18 @@ from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 from airflow.providers.postgres.hooks.postgres import (
     PostgresHook as UpstreamPostgresHook,
 )
-from common.constants import POSTGRES_CONN_ID
+from common.constants import DAG_DEFAULT_ARGS, POSTGRES_CONN_ID
 
+
+# More on how Airflow timeouts work is in the docs here:
+# https://airflow.apache.org/docs/apache-airflow/2.5.1/core-concepts/tasks.html#timeouts
+# We set default task execution timeouts in common.constants.DAG_DEFAULT_ARGS
+# https://airflow.apache.org/docs/apache-airflow/2.5.1/core-concepts/dags.html#default-arguments
+# and for provider scripts, we set some timeouts in
+# dags.providers.provider_workflows.PROVIDER_WORKFLOWS
+
+# TO DO: add raising an airflow fail exception when the db timesout, and/or test
+# retries, seems like we should not do this, because we want retries after a db_timeout?
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +48,12 @@ class PostgresHook(UpstreamPostgresHook):
         **kwargs,
     ) -> None:
         self.default_statement_timeout = default_statement_timeout
+        # TO DO: Is this really what we want? I think so, either explicitly override it,
+        # or you'll get the default task execution timeout, which is an hour currently.
+        if default_statement_timeout is None:
+            self.default_statement_timeout = DAG_DEFAULT_ARGS[
+                "execution_timeout"
+            ].total_seconds()
         self.postgres_conn_id = postgres_conn_id
         if postgres_conn_id is None:
             self.postgres_conn_id = POSTGRES_CONN_ID
@@ -66,11 +82,25 @@ class PostgresHook(UpstreamPostgresHook):
         number of seconds. Use the task execution timeout, if available. If not, take
         the DAG execution timeout, if that's not available, return 0 for no timeout.
         """
-        zero = timedelta(seconds=0)
-        timeout = task._BaseOperator__init_kwargs.get(
-            "execution_timeout", getattr(task.dag, "execution_timeout", zero)
-        ).total_seconds()
-        return timeout
+        # DAG-level default task execution timeout, which may come from
+        # common.constants.DAG_DEFAULT_ARGS["execution_timeout"]
+        # or by over-ridden for a specific DAG as in image expiration.
+        # https://github.com/WordPress/openverse-catalog/blob/main/openverse_catalog/dags/database/image_expiration_workflow.py#L24
+        dag_default_timeout = getattr(task.dag, "default_args", {}).get(
+            "execution_timeout"
+        )
+
+        # explicitly specified with the task
+        task_timeout = task._BaseOperator__init_kwargs.get("execution_timeout")
+
+        # Prefer the most immediately specified. Here "None" means not specified, while
+        # timedelta(seconds=0) which is also falsey means "Set no timeout at all."
+        if task_timeout is not None:
+            return task_timeout.total_seconds()
+        elif dag_default_timeout is not None:
+            return dag_default_timeout.total_seconds()
+        else:
+            return DAG_DEFAULT_ARGS["execution_timeout"].total_seconds()
 
     @staticmethod
     def get_pg_timeout_sql(statement_timeout: float) -> str:

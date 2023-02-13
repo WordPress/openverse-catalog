@@ -1,7 +1,7 @@
 import logging
-from datetime import timedelta
 from textwrap import dedent
 
+from airflow.models import BaseOperator
 from common.constants import AUDIO, IMAGE, MediaType
 from common.loader import provider_details as prov
 from common.loader.paths import _extract_media_type
@@ -71,7 +71,7 @@ def create_loading_table(
     load_table = _get_load_table_name(identifier, media_type=media_type)
     postgres = PostgresHook(
         postgres_conn_id=postgres_conn_id,
-        default_statement_timeout=30.0,
+        default_statement_timeout=10.0,
     )
     loading_table_columns = TSV_COLUMNS[media_type]
     columns_definition = f"{create_column_definitions(loading_table_columns)}"
@@ -107,10 +107,10 @@ def create_loading_table(
 
 def load_local_data_to_intermediate_table(
     postgres_conn_id,
+    task,
     tsv_file_name,
     identifier,
     max_rows_to_skip=10,
-    pg_timeout: float = timedelta(hours=1).total_seconds(),
 ):
     media_type = _extract_media_type(tsv_file_name)
     load_table = _get_load_table_name(identifier, media_type=media_type)
@@ -118,7 +118,7 @@ def load_local_data_to_intermediate_table(
 
     postgres = PostgresHook(
         postgres_conn_id=postgres_conn_id,
-        default_statement_timeout=pg_timeout,
+        default_statement_timeout=PostgresHook.get_execution_timeout(task),
     )
     load_successful = False
 
@@ -157,18 +157,18 @@ def _handle_s3_load_result(cursor) -> int:
 
 def load_s3_data_to_intermediate_table(
     postgres_conn_id,
+    task,
     bucket,
     s3_key,
     identifier,
     media_type=IMAGE,
-    pg_timeout: float = timedelta(hours=1).total_seconds(),
 ) -> int:
     load_table = _get_load_table_name(identifier, media_type=media_type)
     logger.info(f"Loading {s3_key} from S3 Bucket {bucket} into {load_table}")
 
     postgres = PostgresHook(
         postgres_conn_id=postgres_conn_id,
-        default_statement_timeout=pg_timeout,
+        default_statement_timeout=PostgresHook.get_execution_timeout(task),
     )
     loaded = postgres.run(
         dedent(
@@ -191,9 +191,9 @@ def load_s3_data_to_intermediate_table(
 
 def clean_intermediate_table_data(
     postgres_conn_id: str,
+    task: BaseOperator,
     identifier: str,
     media_type: MediaType = IMAGE,
-    pg_timeout: float = timedelta(hours=1).total_seconds(),
 ) -> tuple[int, int]:
     """
     Clean the data in the intermediate table.
@@ -207,7 +207,7 @@ def clean_intermediate_table_data(
     load_table = _get_load_table_name(identifier, media_type=media_type)
     postgres = PostgresHook(
         postgres_conn_id=postgres_conn_id,
-        default_statement_timeout=pg_timeout,
+        default_statement_timeout=PostgresHook.get_execution_timeout(task),
     )
 
     missing_columns = 0
@@ -262,11 +262,11 @@ def _is_tsv_column_from_different_version(
 
 def upsert_records_to_db_table(
     postgres_conn_id: str,
+    task,
     identifier: str,
     db_table: str = None,
     media_type: str = IMAGE,
     tsv_version: str = CURRENT_TSV_VERSION,
-    pg_timeout: float = timedelta(hours=1).total_seconds(),
 ):
     """
     Upsert newly ingested records from loading table into the main db table.
@@ -291,7 +291,7 @@ def upsert_records_to_db_table(
     logger.info(f"Upserting new records into {db_table}.")
     postgres = PostgresHook(
         postgres_conn_id=postgres_conn_id,
-        default_statement_timeout=pg_timeout,
+        default_statement_timeout=PostgresHook.get_execution_timeout(task),
     )
 
     # Remove identifier column
@@ -374,13 +374,13 @@ def _delete_malformed_row_in_file(tsv_file_name, line_number):
 
 def expire_old_images(
     postgres_conn_id,
+    task,
     provider,
     image_table=TABLE_NAMES[IMAGE],
-    pg_timeout: float = timedelta(hours=1).total_seconds(),
 ):
     postgres = PostgresHook(
         postgres_conn_id=postgres_conn_id,
-        default_statement_timeout=pg_timeout,
+        default_statement_timeout=PostgresHook.get_execution_timeout(task),
     )
 
     if provider not in OLDEST_PER_PROVIDER:

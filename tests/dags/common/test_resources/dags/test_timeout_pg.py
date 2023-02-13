@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime, timedelta
+from time import sleep
 
 from airflow import DAG
 from airflow.operators.python import PythonOperator
@@ -54,7 +55,13 @@ def create_pg_timeout_tester_dag():
             python_callable=timed_pg_hook_sleeper,
             doc_md="Custom PG hook, with no execution timeout",
         )
-        [pg_operator_happy, pg_hook_happy, pg_hook_no_timeout]
+        mock_task = PythonOperator(
+            task_id="mock_task",
+            python_callable=sleep,
+            execution_timeout=timedelta(seconds=2),
+            op_args=1,
+        )
+        [pg_operator_happy, pg_hook_happy, pg_hook_no_timeout, mock_task]
     return dag
 
 

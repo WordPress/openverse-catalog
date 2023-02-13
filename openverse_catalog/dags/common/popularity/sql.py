@@ -137,10 +137,10 @@ def create_media_popularity_metrics(
 
 def update_media_popularity_metrics(
     postgres_conn_id,
+    task,
     media_type=IMAGE,
     popularity_metrics=None,
     popularity_metrics_table=IMAGE_POPULARITY_METRICS_TABLE_NAME,
-    pg_timeout: float = timedelta(hours=1).total_seconds(),
 ):
     if popularity_metrics is None:
         if media_type == AUDIO:
@@ -150,7 +150,8 @@ def update_media_popularity_metrics(
     if media_type == AUDIO:
         popularity_metrics_table = AUDIO_POPULARITY_METRICS_TABLE_NAME
     postgres = PostgresHook(
-        postgres_conn_id=postgres_conn_id, default_statement_timeout=pg_timeout
+        postgres_conn_id=postgres_conn_id,
+        default_statement_timeout=PostgresHook.get_execution_timeout(task),
     )
     column_names = [c.name for c in POPULARITY_METRICS_TABLE_COLUMNS]
     updates_string = ",\n          ".join(
@@ -288,9 +289,9 @@ def create_media_popularity_constants_view(
 
 def update_media_popularity_constants(
     postgres_conn_id,
+    task,
     media_type=IMAGE,
     popularity_constants_view=IMAGE_POPULARITY_CONSTANTS_VIEW,
-    pg_timeout: float = timedelta(hours=6).total_seconds(),
 ):
     if media_type == AUDIO:
         popularity_constants_view = AUDIO_POPULARITY_CONSTANTS_VIEW
@@ -298,7 +299,8 @@ def update_media_popularity_constants(
     # often it is refreshed verses instantiated from scratch. And whether / how we might
     # improve performance by integrating index updates/builds with that schedule.
     postgres = PostgresHook(
-        postgres_conn_id=postgres_conn_id, default_statement_timeout=pg_timeout
+        postgres_conn_id=postgres_conn_id,
+        default_statement_timeout=PostgresHook.get_execution_timeout(task),
     )
     postgres.run(f"REFRESH MATERIALIZED VIEW CONCURRENTLY {popularity_constants_view};")
 

@@ -27,6 +27,7 @@ import pendulum
 import requests
 from airflow import XComArg
 from airflow.exceptions import AirflowNotFoundException, AirflowSkipException
+from airflow.models import BaseOperator
 from airflow.operators.python import PythonOperator, ShortCircuitOperator
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 from airflow.utils.task_group import TaskGroup
@@ -80,10 +81,11 @@ class INaturalistDataIngester(ProviderDataIngester):
     @staticmethod
     def get_batches(
         batch_length: int,  # must be a positive, non-zero integer
-        task,
+        task: BaseOperator,
     ):
         pg = PostgresHook(
-            default_statement_timeout=PostgresHook.get_execution_timeout(task)
+            postgres_conn_id=POSTGRES_CONN_ID,
+            default_statement_timeout=PostgresHook.get_execution_timeout(task),
         )
         max_id = pg.get_records("SELECT max(photo_id) FROM inaturalist.photos")[0][0]
         if max_id is None:
@@ -101,6 +103,7 @@ class INaturalistDataIngester(ProviderDataIngester):
         batch: tuple[int, int],
         intermediate_table: str,
         identifier: str,
+        task: BaseOperator,
         sql_template_file_name="transformed_table.template.sql",
     ):
         """
@@ -117,7 +120,8 @@ class INaturalistDataIngester(ProviderDataIngester):
         # median was 18 minutes. We should probably adjust the timeouts with
         # more info from production runs.
         pg = PostgresHook(
-            default_statement_timeout=timedelta(minutes=45).total_seconds()
+            postgres_conn_id=POSTGRES_CONN_ID,
+            default_statement_timeout=PostgresHook.get_execution_timeout(task),
         )
         sql_template = (SCRIPT_DIR / sql_template_file_name).read_text()
         batch_number = int(batch_start / (batch_end - batch_start + 1)) + 1
@@ -137,6 +141,7 @@ class INaturalistDataIngester(ProviderDataIngester):
         # Run standard cleaning
         (missing_columns, foreign_id_dup) = sql.clean_intermediate_table_data(
             postgres_conn_id=POSTGRES_CONN_ID,
+            task=task,
             identifier=identifier,
         )
         # Add transformed records to the target catalog image table.
@@ -144,6 +149,7 @@ class INaturalistDataIngester(ProviderDataIngester):
         # trace back the parameters that need to be passed in for different stats.
         upserted_records = sql.upsert_records_to_db_table(
             postgres_conn_id=POSTGRES_CONN_ID,
+            task=task,
             identifier=identifier,
         )
         logger.info(f"Upserted {upserted_records} records, from batch {batch_number}.")
@@ -409,7 +415,7 @@ class INaturalistDataIngester(ProviderDataIngester):
                         "Load one batch of data from source tables to target table."
                     ),
                 ).expand(
-                    op_args=XComArg(get_batches),
+                    op_args=XComArg(get_batches, "return_value"),
                 )
 
                 consolidate_load_statistics = PythonOperator(

@@ -1,27 +1,33 @@
 import os
 import re
 from collections import namedtuple
-from datetime import timedelta
 from pathlib import Path
 from textwrap import dedent
-from time import sleep
 from typing import NamedTuple
 
 import psycopg2
 import pytest
-from airflow.operators.python import PythonOperator
+from airflow.models import DAG, BaseOperator
 from common.popularity import sql
+
+from tests.dags.common.test_resources.dags.test_timeout_pg import (
+    create_pg_timeout_tester_dag,
+)
 
 
 DDL_DEFINITIONS_PATH = Path(__file__).parents[4] / "docker" / "local_postgres"
 POSTGRES_CONN_ID = os.getenv("TEST_CONN_ID")
 POSTGRES_TEST_URI = os.getenv("AIRFLOW_CONN_POSTGRES_OPENLEDGER_TESTING")
-MOCK_TASK = PythonOperator(
-    task_id="mock_task",
-    python_callable=sleep,
-    execution_timeout=timedelta(seconds=2),
-    op_args=1,
-)
+
+
+@pytest.fixture
+def mock_dag() -> DAG:
+    return create_pg_timeout_tester_dag()
+
+
+@pytest.fixture
+def mock_task(mock_dag) -> BaseOperator:
+    return mock_dag.get_task("mock_task")
 
 
 class TableInfo(NamedTuple):
@@ -118,14 +124,15 @@ USING btree (provider, md5(foreign_identifier));
     conn.close()
 
 
-def _set_up_popularity_metrics(metrics_dict, table_info):
+def _set_up_popularity_metrics(metrics_dict, table_info, mock_task):
     conn_id = POSTGRES_CONN_ID
     sql.create_media_popularity_metrics(
-        conn_id,
+        postgres_conn_id=conn_id,
         popularity_metrics_table=table_info.metrics,
     )
     sql.update_media_popularity_metrics(
-        conn_id,
+        postgres_conn_id=conn_id,
+        task=mock_task,
         popularity_metrics=metrics_dict,
         popularity_metrics_table=table_info.metrics,
     )
@@ -145,10 +152,11 @@ def _set_up_popularity_constants(
     data_query,
     metrics_dict,
     table_info,
+    mock_task,
 ):
     conn_id = POSTGRES_CONN_ID
     _set_up_popularity_percentile_function(table_info)
-    _set_up_popularity_metrics(metrics_dict, table_info)
+    _set_up_popularity_metrics(metrics_dict, table_info, mock_task)
     pg.cursor.execute(data_query)
     pg.connection.commit()
     sql.create_media_popularity_constants_view(
@@ -165,6 +173,7 @@ def _set_up_std_popularity_func(
     data_query,
     metrics_dict,
     table_info,
+    mock_task,
 ):
     conn_id = POSTGRES_CONN_ID
     _set_up_popularity_constants(
@@ -172,9 +181,11 @@ def _set_up_std_popularity_func(
         data_query,
         metrics_dict,
         table_info,
+        mock_task,
     )
     sql.create_standardized_media_popularity_function(
         conn_id,
+        mock_task,
         function_name=table_info.standardized_popularity,
         popularity_constants=table_info.constants,
     )
@@ -185,12 +196,13 @@ def _set_up_image_view(
     data_query,
     metrics_dict,
     table_info,
+    mock_task,
 ):
     conn_id = POSTGRES_CONN_ID
-    _set_up_std_popularity_func(pg, data_query, metrics_dict, table_info)
+    _set_up_std_popularity_func(pg, data_query, metrics_dict, table_info, mock_task)
     sql.create_media_view(
         conn_id,
-        MOCK_TASK,
+        mock_task,
         standardized_popularity_func=table_info.standardized_popularity,
         table_name=table_info.image,
         db_view_name=table_info.image_view,
@@ -294,7 +306,7 @@ def test_popularity_percentile_function_nones_when_missing_type(
 
 
 def test_constants_view_adds_values_and_constants(
-    postgres_with_image_table, table_info
+    postgres_with_image_table, table_info, mock_task
 ):
     data_query = dedent(
         f"""
@@ -335,7 +347,7 @@ def test_constants_view_adds_values_and_constants(
         "diff_provider": {"metric": "comments", "percentile": 0.8},
     }
     _set_up_popularity_constants(
-        postgres_with_image_table, data_query, metrics, table_info
+        postgres_with_image_table, data_query, metrics, table_info, mock_task
     )
 
     check_query = f"SELECT * FROM {table_info.constants};"
@@ -350,7 +362,7 @@ def test_constants_view_adds_values_and_constants(
 
 
 def test_constants_view_handles_zeros_and_missing(
-    postgres_with_image_table, table_info
+    postgres_with_image_table, table_info, mock_task
 ):
     data_query = dedent(
         f"""
@@ -391,7 +403,7 @@ def test_constants_view_handles_zeros_and_missing(
         "diff_provider": {"metric": "comments", "percentile": 0.8},
     }
     _set_up_popularity_constants(
-        postgres_with_image_table, data_query, metrics, table_info
+        postgres_with_image_table, data_query, metrics, table_info, mock_task
     )
 
     check_query = f"SELECT * FROM {table_info.constants};"
@@ -406,7 +418,7 @@ def test_constants_view_handles_zeros_and_missing(
 
 
 def test_standardized_popularity_function_calculates(
-    postgres_with_image_table, table_info
+    postgres_with_image_table, table_info, mock_task
 ):
     data_query = dedent(
         f"""
@@ -436,7 +448,7 @@ def test_standardized_popularity_function_calculates(
         "other_provider": {"metric": "likes", "percentile": 0.5},
     }
     _set_up_std_popularity_func(
-        postgres_with_image_table, data_query, metrics, table_info
+        postgres_with_image_table, data_query, metrics, table_info, mock_task
     )
     check_query = f"SELECT * FROM {table_info.constants};"
     postgres_with_image_table.cursor.execute(check_query)
@@ -469,7 +481,9 @@ def test_standardized_popularity_function_calculates(
         assert actual_std_pop_val == expect_std_pop_val
 
 
-def test_image_view_calculates_std_pop(postgres_with_image_table, table_info):
+def test_image_view_calculates_std_pop(
+    postgres_with_image_table, table_info, mock_task
+):
     data_query = dedent(
         f"""
         INSERT INTO {table_info.image} (
@@ -496,7 +510,9 @@ def test_image_view_calculates_std_pop(postgres_with_image_table, table_info):
         """
     )
     metrics = {"my_provider": {"metric": "views", "percentile": 0.5}}
-    _set_up_image_view(postgres_with_image_table, data_query, metrics, table_info)
+    _set_up_image_view(
+        postgres_with_image_table, data_query, metrics, table_info, mock_task
+    )
     check_query = dedent(
         f"""
         SELECT foreign_identifier, standardized_popularity

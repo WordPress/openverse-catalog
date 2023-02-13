@@ -1,3 +1,4 @@
+from airflow.models import BaseOperator
 from common.loader import paths, s3, sql
 from common.loader.paths import _extract_media_type
 from common.loader.reporting import RecordMetrics
@@ -17,6 +18,7 @@ def load_s3_data(
     postgres_conn_id,
     identifier,
     ti,
+    task,
 ):
     media_type = ti.xcom_pull(task_ids="stage_oldest_tsv_file", key="media_type")
     tsv_version = ti.xcom_pull(task_ids="stage_oldest_tsv_file", key="tsv_version")
@@ -27,15 +29,20 @@ def load_s3_data(
         identifier, bucket, aws_conn_id, media_prefix=media_type
     )
     sql.load_s3_data_to_intermediate_table(
-        postgres_conn_id, bucket, tsv_key, identifier, media_type
+        postgres_conn_id, task, bucket, tsv_key, identifier, media_type
     )
     sql.upsert_records_to_db_table(
-        postgres_conn_id, identifier, media_type=media_type, tsv_version=tsv_version
+        postgres_conn_id,
+        task,
+        identifier,
+        media_type=media_type,
+        tsv_version=tsv_version,
     )
 
 
 def upsert_data(
     postgres_conn_id: str,
+    task: BaseOperator,
     media_type: str,
     tsv_version: str,
     identifier: str,
@@ -48,7 +55,11 @@ def upsert_data(
     """
     missing_columns, foreign_id_dup = duplicates_count
     upserted = sql.upsert_records_to_db_table(
-        postgres_conn_id, identifier, media_type=media_type, tsv_version=tsv_version
+        postgres_conn_id,
+        task,
+        identifier,
+        media_type=media_type,
+        tsv_version=tsv_version,
     )
 
     url_dup = loaded_count - missing_columns - foreign_id_dup - upserted

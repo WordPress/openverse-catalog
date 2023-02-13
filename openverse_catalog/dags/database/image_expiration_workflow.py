@@ -21,7 +21,7 @@ dag = DAG(
     default_args={
         **DAG_DEFAULT_ARGS,
         "retry_delay": timedelta(seconds=15),
-        "execution_timeout": None,
+        "execution_timeout": timedelta(seconds=0),  # Just let these tasks run
     },
     max_active_tasks=MAX_ACTIVE_TASKS,
     max_active_runs=MAX_ACTIVE_TASKS,
