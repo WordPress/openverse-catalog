@@ -121,7 +121,7 @@ class INaturalistDataIngester(ProviderDataIngester):
         # more info from production runs.
         pg = PostgresHook(
             postgres_conn_id=POSTGRES_CONN_ID,
-            default_statement_timeout=PostgresHook.get_execution_timeout(task),
+            default_statement_timeout=timedelta(hours=1).total_seconds(),
         )
         sql_template = (SCRIPT_DIR / sql_template_file_name).read_text()
         batch_number = int(batch_start / (batch_end - batch_start + 1)) + 1
