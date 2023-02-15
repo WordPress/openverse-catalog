@@ -7,7 +7,7 @@ from unittest import mock
 
 import psycopg2
 import pytest
-from airflow.models import DAG, BaseOperator, TaskInstance
+from airflow.models import TaskInstance
 from common.constants import IMAGE
 from common.loader import sql
 from common.loader.sql import TSV_COLUMNS, create_column_definitions
@@ -15,10 +15,6 @@ from common.storage import columns as col
 from common.storage.db_columns import IMAGE_TABLE_COLUMNS
 from flaky import flaky
 from psycopg2.errors import InvalidTextRepresentation
-
-from tests.dags.common.test_resources.dags.test_timeout_pg import (
-    create_pg_timeout_tester_dag,
-)
 
 
 POSTGRES_CONN_ID = os.getenv("TEST_CONN_ID")
@@ -101,16 +97,6 @@ def create_query_values(
             val = f"'{str(val)}'"
         result.append(val)
     return ",".join(result)
-
-
-@pytest.fixture
-def mock_dag() -> DAG:
-    return create_pg_timeout_tester_dag()
-
-
-@pytest.fixture
-def mock_task(mock_dag) -> BaseOperator:
-    return mock_dag.get_task("mock_task")
 
 
 @pytest.fixture
