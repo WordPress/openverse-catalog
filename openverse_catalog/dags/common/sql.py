@@ -1,6 +1,7 @@
 import logging
 from datetime import timedelta
 
+from airflow.providers.common.sql.hooks.sql import fetch_one_handler
 from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 from airflow.providers.postgres.hooks.postgres import (
     PostgresHook as UpstreamPostgresHook,
@@ -45,8 +46,6 @@ class PostgresHook(UpstreamPostgresHook):
         **kwargs,
     ) -> None:
         self.default_statement_timeout = default_statement_timeout
-        # TO DO: Is this really what we want? I think so, either explicitly override it,
-        # or you'll get the default task execution timeout, which is an hour currently.
         if default_statement_timeout is None:
             self.default_statement_timeout = DAG_DEFAULT_ARGS[
                 "execution_timeout"
@@ -62,14 +61,18 @@ class PostgresHook(UpstreamPostgresHook):
         statement_timeout: float = None,
         autocommit=False,
         parameters=None,
-        handler=None,
+        handler: callable = fetch_one_handler,
         *args,
         **kwargs,
     ):
         statement_timeout = statement_timeout or self.default_statement_timeout
 
         if statement_timeout:
-            sql = f"{self.get_pg_timeout_sql(statement_timeout)} {sql}"
+            timeout_sql = self.get_pg_timeout_sql(statement_timeout)
+            if isinstance(sql, list):
+                sql = [timeout_sql, *sql]
+            else:
+                sql = f"{timeout_sql} {sql}"
         return super().run(sql, autocommit, parameters, handler)
 
     @staticmethod

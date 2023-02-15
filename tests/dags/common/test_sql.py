@@ -1,4 +1,5 @@
 import logging
+import os
 from datetime import datetime, timedelta
 
 import pytest
@@ -10,6 +11,7 @@ from psycopg2.errors import QueryCanceled
 logger = logging.getLogger(__name__)
 
 
+POSTGRES_TEST_CONN_ID = os.getenv("TEST_CONN_ID")
 DEFAULT_TIMEOUT = timedelta(hours=1).total_seconds()
 default_timeout_msg = (
     f"DAG_DEFAULT_ARGS sets the default task execution timeout to "
@@ -24,17 +26,41 @@ HAPPY_TIMEOUT_PARAMETERS = [
 
 # PostgresHook works with or without explicit connection id, and with override conn id
 # Testing mainly for documentation purposes
-# Not using pg.run("select 1;") to test the actual connection, because we don't spin up
-# the databases for testing.
-def test_PostgresHook_init_defaults():
+@pytest.mark.parametrize(
+    "sql, timeout, expected_result",
+    [
+        pytest.param("select 1;", None, (1,), id="select_1_no_timeout"),
+        pytest.param(
+            ["select 1;", "select 2;"],
+            None,
+            [None, (1,), (2,)],
+            id="select_list_none_timeout",
+        ),
+        pytest.param(
+            ["select 1;", "select 2;"],
+            0,
+            [None, (1,), (2,)],
+            id="select_list_zero_timeout",
+        ),
+        pytest.param("select 1;", 10, (1,), id="select_1_with_timeout"),
+        pytest.param(
+            ["select 1;", "select 2;"],
+            10,
+            [None, (1,), (2,)],
+            id="select_list_with_timeout",
+        ),
+    ],
+)
+def test_PostgresHook_init_defaults(sql, timeout, expected_result):
     pg = PostgresHook()
     assert pg.postgres_conn_id == POSTGRES_CONN_ID
     assert pg.default_statement_timeout == DEFAULT_TIMEOUT, default_timeout_msg
+    assert pg.run(sql=sql, statement_timeout=timeout) == expected_result
 
 
 def test_PostgresHook_conn_id_only_defaults():
-    pg = PostgresHook("gibberish_connection")
-    assert pg.postgres_conn_id == "gibberish_connection"
+    pg = PostgresHook("gibberish")
+    assert pg.postgres_conn_id == "gibberish"
     assert pg.default_statement_timeout == DEFAULT_TIMEOUT, default_timeout_msg
 
 
