@@ -7,27 +7,12 @@ from typing import NamedTuple
 
 import psycopg2
 import pytest
-from airflow.models import DAG, BaseOperator
 from common.popularity import sql
-
-from tests.dags.common.test_resources.dags.test_timeout_pg import (
-    create_pg_timeout_tester_dag,
-)
 
 
 DDL_DEFINITIONS_PATH = Path(__file__).parents[4] / "docker" / "local_postgres"
 POSTGRES_CONN_ID = os.getenv("TEST_CONN_ID")
 POSTGRES_TEST_URI = os.getenv("AIRFLOW_CONN_POSTGRES_OPENLEDGER_TESTING")
-
-
-@pytest.fixture
-def mock_dag() -> DAG:
-    return create_pg_timeout_tester_dag()
-
-
-@pytest.fixture
-def mock_task(mock_dag) -> BaseOperator:
-    return mock_dag.get_task("mock_task")
 
 
 class TableInfo(NamedTuple):

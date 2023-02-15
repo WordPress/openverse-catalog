@@ -4,27 +4,13 @@ import pytest
 from common.loader import loader
 from common.loader.reporting import RecordMetrics
 
-from tests.dags.common.test_resources.dags.test_timeout_pg import (
-    create_pg_timeout_tester_dag,
-)
-
-
-@pytest.fixture()
-def mock_dag():
-    return create_pg_timeout_tester_dag()
-
-
-@pytest.fixture()
-def mock_task(mock_dag):
-    return mock_dag.get_task("mock_task")
-
 
 @pytest.mark.parametrize(
-    "load_value, clean_data_value, upsert_value, expected, mock_task",
+    "load_value, clean_data_value, upsert_value, expected",
     [
-        (100, (10, 15), 75, RecordMetrics(75, 10, 15, 0), mock_task),
-        (100, (0, 15), 75, RecordMetrics(75, 0, 15, 10), mock_task),
-        (100, (10, 0), 75, RecordMetrics(75, 10, 0, 15), mock_task),
+        (100, (10, 15), 75, RecordMetrics(75, 10, 15, 0)),
+        (100, (0, 15), 75, RecordMetrics(75, 0, 15, 10)),
+        (100, (10, 0), 75, RecordMetrics(75, 10, 0, 15)),
     ],
 )
 def test_upsert_data_calculations(
