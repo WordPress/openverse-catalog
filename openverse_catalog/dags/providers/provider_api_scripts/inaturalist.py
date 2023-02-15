@@ -34,7 +34,7 @@ from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
 from common.constants import IMAGE, POSTGRES_CONN_ID, XCOM_PULL_TEMPLATE
 from common.loader import provider_details, reporting, sql
-from common.sql_helpers import PGExecuteQueryOperator, PostgresHook
+from common.sql import PGExecuteQueryOperator, PostgresHook
 from providers.provider_api_scripts.provider_data_ingester import ProviderDataIngester
 
 

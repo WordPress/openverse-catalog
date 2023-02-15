@@ -5,7 +5,7 @@ from time import sleep
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from common.constants import POSTGRES_CONN_ID
-from common.sql_helpers import PGExecuteQueryOperator, PostgresHook
+from common.sql import PGExecuteQueryOperator, PostgresHook
 
 
 logger = logging.getLogger(__name__)

@@ -45,7 +45,7 @@ from common.constants import (
     OPENLEDGER_API_CONN_ID,
     XCOM_PULL_TEMPLATE,
 )
-from common.sql_helpers import PGExecuteQueryOperator
+from common.sql import PGExecuteQueryOperator
 from data_refresh.data_refresh_task_factory import create_data_refresh_task_group
 from data_refresh.data_refresh_types import DATA_REFRESH_CONFIGS, DataRefresh
 from data_refresh.refresh_popularity_metrics_task_factory import (

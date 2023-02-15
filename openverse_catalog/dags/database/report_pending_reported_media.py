@@ -25,7 +25,7 @@ from common.constants import (
     OPENLEDGER_API_CONN_ID,
     XCOM_PULL_TEMPLATE,
 )
-from common.sql_helpers import PostgresHook
+from common.sql import PostgresHook
 
 
 logger = logging.getLogger(__name__)

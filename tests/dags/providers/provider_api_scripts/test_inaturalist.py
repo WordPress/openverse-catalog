@@ -6,7 +6,7 @@ import pytest
 from airflow.models import TaskInstance
 from common.constants import IMAGE
 from common.loader.reporting import RecordMetrics
-from common.sql_helpers import PostgresHook
+from common.sql import PostgresHook
 from providers.provider_api_scripts import inaturalist
 
 

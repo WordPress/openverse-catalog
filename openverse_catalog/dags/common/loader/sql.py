@@ -5,7 +5,7 @@ from airflow.models import BaseOperator
 from common.constants import AUDIO, IMAGE, MediaType
 from common.loader import provider_details as prov
 from common.loader.paths import _extract_media_type
-from common.sql_helpers import PostgresHook
+from common.sql import PostgresHook
 from common.storage import columns as col
 from common.storage.columns import NULL, Column, UpsertStrategy
 from common.storage.db_columns import AUDIO_TABLE_COLUMNS, IMAGE_TABLE_COLUMNS

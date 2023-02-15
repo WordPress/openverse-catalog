@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 import pytest
 from common.constants import DAG_DEFAULT_ARGS, POSTGRES_CONN_ID
-from common.sql_helpers import PGExecuteQueryOperator, PostgresHook
+from common.sql import PGExecuteQueryOperator, PostgresHook
 from psycopg2.errors import QueryCanceled
 
 from tests.dags.common.test_resources.dags.test_timeout_pg import (
