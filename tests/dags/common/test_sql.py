@@ -52,10 +52,8 @@ def test_PostgresHook_conn_id_only_defaults():
 def test_PostgresHook_init_connection(conn_id, timeout, expected_results):
     (expected_conn_id, expected_timeout) = expected_results
     pg = PostgresHook(conn_id, timeout)
-    actual_conn_id = pg.postgres_conn_id
-    actual_timeout = pg.default_statement_timeout
-    assert actual_conn_id == expected_conn_id
-    assert actual_timeout == expected_timeout
+    assert pg.postgres_conn_id == expected_conn_id
+    assert pg.default_statement_timeout == expected_timeout
 
 
 # PostgresHook gets the database to stop the query and raise an error if the query runs

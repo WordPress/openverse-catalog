@@ -155,10 +155,6 @@ def create_dag():
                     "db_conn_id": OPENLEDGER_API_CONN_ID,
                     "media_type": media_type,
                 },
-                # TO DO: add a more specific timeout here?
-                # Seems like images and audio could have very different timeouts just
-                # based on data volumes. I was going to guess 2 hours, but the dag uses
-                # the default timeout of 1 hour, so I'm going to leave it at that.
             )
 
             report_counts_by_media_type[media_type] = XCOM_PULL_TEMPLATE.format(

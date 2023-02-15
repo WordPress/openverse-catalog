@@ -15,9 +15,6 @@ from common.constants import DAG_DEFAULT_ARGS, POSTGRES_CONN_ID
 # and for provider scripts, we set some timeouts in
 # dags.providers.provider_workflows.PROVIDER_WORKFLOWS
 
-# TO DO: add raising an airflow fail exception when the db timesout, and/or test
-# retries, seems like we should not do this, because we want retries after a db_timeout?
-
 logger = logging.getLogger(__name__)
 
 
