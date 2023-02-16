@@ -12,11 +12,9 @@ logger = logging.getLogger(__name__)
 class TimeDelineatedProviderDataIngester(ProviderDataIngester):
     """
     A subclass of ProviderDataIngester which breaks the ingestion interval into
-    smaller intervals, and iteratively ingests for each of them.
+    smaller intervals, and runs ingestion separately for each interval.
 
     Must be used on a dated DAG.
-
-    TODO: expand on the docstring, clarify phrasing of the variable docs
 
     Class variables of note:
     max_records:        integer giving the maximum number of records to be expected in
@@ -27,8 +25,8 @@ class TimeDelineatedProviderDataIngester(ProviderDataIngester):
                         the division_threshold is not exceeded
     max_divisions:      integer giving the number of divisions to break an hour into if
                         the division_threshold is exceeded
-    should_raise_error: whether to raise an exception when more records are ingested
-                        than the API reports (TODO explain better)
+    should_raise_error: whether to raise an exception when more records are retrieved
+                        from the API than the API reports to expect
     """
 
     min_divisions = 4  # 15-minute default intervals
@@ -38,6 +36,11 @@ class TimeDelineatedProviderDataIngester(ProviderDataIngester):
     @property
     @abstractmethod
     def max_records(self) -> int:
+        pass
+
+    @property
+    @abstractmethod
+    def division_threshold(self) -> int:
         pass
 
     def __init__(self, *args, **kwargs):
@@ -195,15 +198,20 @@ class TimeDelineatedProviderDataIngester(ProviderDataIngester):
             super().ingest_records(start_ts=start_ts, end_ts=end_ts, **kwargs)
 
     def get_should_continue(self, response_json) -> bool:
-        # Adds some default error checking. TODO expand comment
+        """
+        Update the `fetched_count` and `new_iteration` variables. Also adds
+        some default error detection for a common bug where the ingester
+        retrieves more records from the API than the reported total count.
+        """
 
-        # Get the count the API claims is the total count
+        # Get the total expected count for this time interval from the API.
         total_count = self.get_record_count_from_response(response_json)
 
         # Update the number of records we have pulled for this iteration.
-        # Note that this tracks the number of records pulled from the API, not
-        # the number actually written to TSV (which may be larger or smaller
-        # as some records are discarded or have additional related images.)
+        # Note that this tracks the number of records fetched from the API, not
+        # the number "ingested", ie actually written to TSV (which may be larger
+        # or smaller as some records are discarded or have additional related
+        # images.)
         batch = self.get_batch_data(response_json)
         if batch:
             self.fetched_count += len(batch)
@@ -225,5 +233,6 @@ class TimeDelineatedProviderDataIngester(ProviderDataIngester):
             else:
                 logger.error(error_message)
 
-        # We should raise if there was an error. Otherwise just return True
+        # If `should_raise_error` was enabled, the error is raised and ingestion
+        # halted. If not, we want to log but continue ingesting.
         return True
