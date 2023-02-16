@@ -103,7 +103,7 @@ class TimeDelineatedProviderDataIngester(ProviderDataIngester):
         )
         response_json = self.get_response_json(query_params)
 
-        return self.get_record_count_from_response(response_json)
+        return int(self.get_record_count_from_response(response_json))
 
     def _get_timestamp_pairs(self, **kwargs):
         """
