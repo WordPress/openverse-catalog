@@ -1,6 +1,6 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from itertools import repeat
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 import pytest
 from airflow.exceptions import AirflowException
@@ -13,6 +13,15 @@ from tests.dags.providers.provider_api_scripts.resources.provider_data_ingester.
 
 FROZEN_DATE = "2020-04-01"
 ingester = MockTimeDelineatedProviderDataIngester(date=FROZEN_DATE)
+
+
+def test_raises_error_when_date_is_undefined():
+    expected_error = (
+        "TimeDelineatedProviderDataIngester should only be used for dated DAGs."
+    )
+    with pytest.raises(AssertionError, match=expected_error):
+        # Attempt to initialize without a date
+        MockTimeDelineatedProviderDataIngester()
 
 
 @pytest.mark.parametrize(
@@ -144,7 +153,55 @@ def test_get_timestamp_pairs_with_large_record_counts():
 
 
 def test_ingest_records_calls_super_for_each_ts_pair():
-    pass
+    with (
+        patch(
+            "providers.provider_api_scripts.provider_data_ingester.ProviderDataIngester.ingest_records"
+        ) as super_mock,
+        patch.object(ingester, "_get_timestamp_pairs") as ts_mock,
+    ):
+        # Make some mock timestamp pairs
+        start = datetime(2020, 4, 1, 11, 0, tzinfo=timezone.utc)
+        ts_0 = (start, start + timedelta(hours=1))
+        ts_1 = (start + timedelta(hours=1), start + timedelta(hours=2))
+        ts_2 = (start + timedelta(hours=2), start + timedelta(hours=3))
+        ts_mock.return_value = [ts_0, ts_1, ts_2]
+
+        ingester.ingest_records(test_kwarg="test")
+
+        # There should be a call to the super `ingest_records` for each set of pairs,
+        # with the timestamps passed through as kwargs along with any other kwargs
+        assert super_mock.call_count == 3
+        super_mock.assert_has_calls(
+            [
+                call(start_ts=ts_0[0], end_ts=ts_0[1], test_kwarg="test"),
+                call(start_ts=ts_1[0], end_ts=ts_1[1], test_kwarg="test"),
+                call(start_ts=ts_2[0], end_ts=ts_2[1], test_kwarg="test"),
+            ]
+        )
+
+
+def test_ts_pairs_and_kwargs_are_available_in_get_next_query_params():
+    with (
+        patch.object(ingester, "_get_timestamp_pairs") as ts_mock,
+        patch.object(ingester, "get_batch", return_value=([], False)),
+    ):
+        mock_start = datetime(2020, 4, 1, 11, 0, tzinfo=timezone.utc)
+        mock_end = mock_start + timedelta(hours=1)
+        ts_mock.return_value = [(mock_start, mock_end)]
+
+        # Spy on get_next_query_params
+        ingester.get_next_query_params = MagicMock(
+            side_effect=ingester.get_next_query_params
+        )
+
+        ingester.ingest_records(foo="foo", bar="bar")
+
+        # When get_next_query_params is called, the start and end timestamps
+        # are passed in as kwargs *in addition to any other kwargs passed to
+        # ingest_records*
+        assert ingester.get_next_query_params.called_with(
+            start_ts=mock_start, end_ts=mock_end, foo="foo", bar="bar"
+        )
 
 
 def test_ingest_records_raises_error_if_the_total_count_has_been_exceeded():

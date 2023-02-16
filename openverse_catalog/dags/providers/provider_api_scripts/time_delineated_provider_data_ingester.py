@@ -43,9 +43,11 @@ class TimeDelineatedProviderDataIngester(ProviderDataIngester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # This should only be used for a dated DAG.
-        # TODO add a better error message
-        assert self.date is not None
+        # This class is used to generate timestamp intervals over a 24-hour period,
+        # so it should only be used for a dated DAG.
+        assert (
+            self.date is not None
+        ), f"{self.__class__.__name__} should only be used for dated DAGs."
 
         # A flag that is True only when we are processing the first batch of data in
         # a new iteration.
