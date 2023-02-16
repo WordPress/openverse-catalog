@@ -113,6 +113,9 @@ class PostgresHook(UpstreamPostgresHook):
     def get_pg_timeout_sql(statement_timeout: float) -> str:
         return f"SET statement_timeout TO '{statement_timeout}s';"
 
+    def run_statement_timeout(self):
+        self.run("")
+
 
 class PGExecuteQueryOperator(SQLExecuteQueryOperator):
     """

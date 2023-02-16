@@ -254,9 +254,7 @@ class INaturalistDataIngester(ProviderDataIngester):
         )
         COUNT_SQL = "SELECT count(*) FROM inaturalist.{};"
         # upload vernacular names file to postgres
-        pg.run(
-            ""
-        )  # just to set the timeout, because it's not automatic for copy_expert
+        pg.run_statement_timeout()
         pg.copy_expert(COPY_SQL.format("col_vernacular"), OUTPUT_DIR / vernacular_file)
         vernacular_records = pg.get_records(COUNT_SQL.format("col_vernacular"))
         if vernacular_records[0][0] == 0:

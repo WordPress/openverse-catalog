@@ -164,3 +164,10 @@ def test_use_task_not_task_instance(task_id, expected_timeout, happy_dag_run):
         happy_dag_run.get_dag().get_task(task_id)
     )
     assert execution_timeout == expected_timeout
+
+
+def test_run_statement_timeout():
+    pg = PostgresHook(default_statement_timeout=10)
+    pg.run_statement_timeout()
+    actual = pg.run(sql="show statement_timeout;", statement_timeout=0)
+    assert actual == ("10s",)
