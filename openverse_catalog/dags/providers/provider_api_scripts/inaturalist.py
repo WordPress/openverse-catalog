@@ -400,7 +400,6 @@ class INaturalistDataIngester(ProviderDataIngester):
                     python_callable=INaturalistDataIngester.load_transformed_data,
                     retries=0,
                     max_active_tis_per_dag=1,
-                    execution_timeout=timedelta(minutes=45),
                     op_kwargs={
                         "intermediate_table": XCOM_PULL_TEMPLATE.format(
                             create_loading_table.task_id, "return_value"
