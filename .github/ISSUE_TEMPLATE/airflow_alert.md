@@ -11,12 +11,12 @@ title: "<Replace this with actual title>"
 
 > **Note**: _Airflow is currently only accessible to maintainers & those given
 > access. If you would like access to Airflow, please reach out to a
-> maintainer_.
+> member of @WordPress/openverse-maintainers_.
 
 ## Description
 
-<!-- Example: We are trying to access property foo of ImportantClass but the instance is null. -->
 <!-- Include any additional information you may have, including potential remedies if any come to mind, and the general context of the code (what causes it to run in the app).  -->
+<!-- Example: We are trying to access property foo of ImportantClass but the instance is null. -->
 
 <!-- Mention whether this is a known regression, i.e., the feature used to work and now does not.  -->
 
