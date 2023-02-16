@@ -245,11 +245,6 @@ def create_media_popularity_constants_view(
         popularity_constants_idx = AUDIO_POP_CONSTANTS_IDX
         popularity_metrics = AUDIO_POPULARITY_METRICS_TABLE_NAME
         popularity_percentile = AUDIO_POPULARITY_PERCENTILE_FUNCTION
-    # TO DO: How long does this usually take and how often is it usually run? Is the
-    # intention here to create the materialized view syntax without populating it? If
-    # so, maybe a much shorter timeout would be appropriate, but then I would expect to
-    # see the phrase "WITH NO DATA" here.
-    # See https://www.postgresql.org/docs/current/sql-creatematerializedview.html
     create_view_query = dedent(
         f"""
         CREATE MATERIALIZED VIEW public.{popularity_constants} AS
@@ -295,9 +290,6 @@ def update_media_popularity_constants(
 ):
     if media_type == AUDIO:
         popularity_constants_view = AUDIO_POPULARITY_CONSTANTS_VIEW
-    # TO DO see note above about when the materialized view gets populated. Not sure how
-    # often it is refreshed verses instantiated from scratch. And whether / how we might
-    # improve performance by integrating index updates/builds with that schedule.
     postgres = PostgresHook(
         postgres_conn_id=postgres_conn_id,
         default_statement_timeout=PostgresHook.get_execution_timeout(task),
