@@ -113,15 +113,9 @@ class INaturalistDataIngester(ProviderDataIngester):
         """
         start_time = time.perf_counter()
         (batch_start, batch_end) = batch
-        # Considered using PostgresHook.get_execution_timeout(task), but not sure how
-        # that will work for mapped tasks. Is it total across all mappings or for each?
-        # This we know is for each iteration.
-        # In testing this locally, the longest full iteration took 39 minutes,
-        # median was 18 minutes. We should probably adjust the timeouts with
-        # more info from production runs.
         pg = PostgresHook(
             postgres_conn_id=POSTGRES_CONN_ID,
-            default_statement_timeout=timedelta(hours=1).total_seconds(),
+            default_statement_timeout=PostgresHook.get_execution_timeout(task),
         )
         sql_template = (SCRIPT_DIR / sql_template_file_name).read_text()
         batch_number = int(batch_start / (batch_end - batch_start + 1)) + 1
@@ -400,11 +394,15 @@ class INaturalistDataIngester(ProviderDataIngester):
                     execution_timeout=timedelta(minutes=1),
                 )
 
+                # In testing this locally, the longest full iteration took 39 minutes,
+                # median was 18 minutes. We should probably adjust the timeouts with
+                # more info from production runs.
                 load_transformed_data = PythonOperator.partial(
                     task_id="load_transformed_data",
                     python_callable=INaturalistDataIngester.load_transformed_data,
                     retries=0,
                     max_active_tis_per_dag=1,
+                    execution_timeout=timedelta(minutes=45),
                     op_kwargs={
                         "intermediate_table": XCOM_PULL_TEMPLATE.format(
                             create_loading_table.task_id, "return_value"

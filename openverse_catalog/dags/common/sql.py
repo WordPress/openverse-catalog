@@ -1,6 +1,8 @@
 import logging
 from datetime import timedelta
 
+from airflow.models import BaseOperator
+from airflow.models.mappedoperator import MappedOperator
 from airflow.providers.common.sql.hooks.sql import fetch_one_handler
 from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 from airflow.providers.postgres.hooks.postgres import (
@@ -91,7 +93,12 @@ class PostgresHook(UpstreamPostgresHook):
         )
 
         # explicitly specified with the task
-        task_timeout = task._BaseOperator__init_kwargs.get("execution_timeout")
+        if isinstance(task, BaseOperator):
+            task_timeout = task._BaseOperator__init_kwargs.get("execution_timeout")
+        elif isinstance(task, MappedOperator):
+            task_timeout = task.partial_kwargs.get("execution_timeout")
+        else:
+            task_timeout = None
 
         # Prefer the most immediately specified. Here "None" means not specified, while
         # timedelta(seconds=0) which is also falsey means "Set no timeout at all."

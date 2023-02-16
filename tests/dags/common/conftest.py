@@ -76,6 +76,17 @@ def timed_pg_hook_sleeper(
     pg.run(sql=TEST_SQL, statement_timeout=statement_timeout)
 
 
+def mapped_select_pg_hook(
+    select_val: int,
+    task: BaseOperator,
+):
+    pg = PostgresHook(
+        default_statement_timeout=PostgresHook.get_execution_timeout(task),
+        conn_id=POSTGRES_CONN_ID,
+    )
+    return pg.run(f"select {select_val};")
+
+
 def create_pg_timeout_tester_dag():
     with DAG(
         dag_id="a_pg_timeout_tester",
@@ -104,7 +115,14 @@ def create_pg_timeout_tester_dag():
             python_callable=timed_pg_hook_sleeper,
             doc_md="Custom PG hook, with no execution timeout",
         )
-        [pg_operator_happy, pg_hook_happy, pg_hook_no_timeout]
+        pg_operator_mapped = PythonOperator.partial(
+            task_id="pg_operator_mapped",
+            retries=0,
+            execution_timeout=timedelta(minutes=1),
+            doc_md="Custom PG operator, mapped to list",
+            python_callable=mapped_select_pg_hook,
+        ).expand(op_args=[(1,), (2,)])
+        [pg_operator_happy, pg_hook_happy, pg_hook_no_timeout, pg_operator_mapped]
     return dag
 
 

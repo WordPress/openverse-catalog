@@ -21,6 +21,7 @@ HAPPY_TIMEOUT_PARAMETERS = [
     pytest.param("pg_operator_happy", 2.0, id="pg_operator_happy"),
     pytest.param("pg_hook_happy", 7_200.0, id="pg_hook_happy"),
     pytest.param("pg_hook_no_timeout", DEFAULT_TIMEOUT, id="pg_hook_no_timeout"),
+    pytest.param("pg_operator_mapped", 60.0, id="pg_operator_mapped"),
 ]
 
 
