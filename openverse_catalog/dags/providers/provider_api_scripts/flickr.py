@@ -15,6 +15,7 @@ import logging
 from datetime import datetime, timedelta
 
 import lxml.html as html
+from airflow.exceptions import AirflowException
 from airflow.models import Variable
 from common import constants
 from common.licenses import get_license_info
@@ -254,24 +255,15 @@ class FlickrDataIngester(TimeDelineatedProviderDataIngester):
         # Call the parent method in order to update the fetched_count
         should_continue = super().get_should_continue(response_json)
 
-        # Add a check if we have more than the max number of records
-        # TODO clean up this comment
-        # For Flickr this can happen for several reasons, when either the
-        # interval was genuinely too large or when the API keeps giving
-        # back results in excess of the reported count. The latter is
-        # covered by the check in the parent method, but we  still want
-        # to detect if the interval was too large
+        # Return early if more than the max_records have been ingested.
+        # This could happen if we did not break the ingestion down into
+        # small enough divisions.
         if self.fetched_count > self.max_records:
-            logger.error(
+            raise AirflowException(
                 f"{self.fetched_count} records retrieved, but there is a"
-                f" limit of {self.max_records}. Halting ingestion for this"
-                " interval."
+                f" limit of {self.max_records}. Consider increasing the"
+                " number of divisions."
             )
-            # The Flickr API will just return duplicates past 4000 records,
-            # so we can stop processing here.
-            # TODO should we turn this off? That behavior is documented but
-            # not verified.
-            return False
 
         return should_continue
 
