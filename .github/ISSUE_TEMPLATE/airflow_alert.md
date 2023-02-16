@@ -10,8 +10,8 @@ title: "<Replace this with actual title>"
 <!-- The link that gets posted in the "Log:" section of the Slack alert -->
 
 > **Note**: _Airflow is currently only accessible to maintainers & those given
-> access. If you would like access to Airflow, please reach out to a
-> member of @WordPress/openverse-maintainers_.
+> access. If you would like access to Airflow, please reach out to a member of
+> @WordPress/openverse-maintainers_.
 
 ## Description
 
