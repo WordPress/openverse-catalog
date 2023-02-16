@@ -100,12 +100,12 @@ def test__get_images_legacy():
 
 
 def test__get_images_partial():
+    # Left in as a regression test for
+    # https://github.com/WordPress/openverse-catalog/issues/875
     item = _get_resource_json("image_data_partial.json")
-    expected_images_data = _get_resource_json("expected_image_data_partial.json")
-
     actual_images_data = smk._get_images(item)
 
-    assert actual_images_data == expected_images_data
+    assert actual_images_data == []
 
 
 def test__get_metadata():
@@ -125,10 +125,3 @@ def test_get_record_data_returns_main_image():
     images = smk.get_record_data(item)
 
     assert len(images) == 1
-
-
-def test_get_record_data_returns_alternative_images():
-    item = _get_resource_json("item_with_alternative_images.json")
-    images = smk.get_record_data(item)
-
-    assert len(images) == 3

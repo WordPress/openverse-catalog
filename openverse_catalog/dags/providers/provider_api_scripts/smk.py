@@ -113,31 +113,11 @@ class SmkDataIngester(ProviderDataIngester):
                 }
             )
 
-        alternative_images = item.get("alternative_images")
-        if type(alternative_images) == list:
-            for alt_img in alternative_images:
-                if type(alt_img) == dict:
-                    iiif_id = alt_img.get("iiif_id")
-                    if iiif_id is None:
-                        # The API for alternative images does not include the
-                        # 'id', so we must skip if `iiif_id` is not present.
-                        continue
-                    image_url = SmkDataIngester._get_image_url(iiif_id)
-                    thumbnail_url = alt_img.get("thumbnail")
-                    height = alt_img.get("height")
-                    width = alt_img.get("width")
-                    filesize = alt_img.get("image_size") or alt_img.get("size")
+        # We used to get additional images from the `alternative_images` field,
+        # but we found these to be either redundant, duplicates, or lower quality
+        # versions. See https://github.com/WordPress/openverse-catalog/issues/875
+        # for the full investigation & discussion
 
-                    images.append(
-                        {
-                            "id": iiif_id,
-                            "image_url": image_url,
-                            "thumbnail_url": thumbnail_url,
-                            "height": height,
-                            "width": width,
-                            "filesize": filesize,
-                        }
-                    )
         return images
 
     @staticmethod
