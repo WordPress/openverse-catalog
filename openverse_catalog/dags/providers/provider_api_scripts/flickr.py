@@ -54,8 +54,10 @@ class FlickrDataIngester(TimeDelineatedProviderDataIngester):
     division_threshold = 20_000
     min_divisions = 12
     max_divisions = 60
-    # TODO expand on comment: We don't want to halt ingestion for Flickr when we
-    # get strange results with duplicates, just log it.
+    # When we pull more records than the API reports, we don't want to raise an error
+    # and halt ingestion. Instead, this DAG adds its own separate handling to cut off
+    # ingestion when max_records is reached, and continue to the next time interval. See
+    # https://github.com/WordPress/openverse-catalog/pull/995
     should_raise_error = False
 
     def __init__(self, *args, **kwargs):
@@ -125,9 +127,10 @@ class FlickrDataIngester(TimeDelineatedProviderDataIngester):
             return None
         return response_json.get("photos", {}).get("photo")
 
-    def get_record_count_from_response(self, response_json):
+    def get_record_count_from_response(self, response_json) -> int:
         if response_json:
-            return response_json.get("photos", {}).get("total", 0)
+            count = response_json.get("photos", {}).get("total", 0)
+            return int(count)
         return 0
 
     def get_record_data(self, data):

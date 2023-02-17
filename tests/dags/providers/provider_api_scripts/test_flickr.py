@@ -66,7 +66,7 @@ def test_get_record_count_from_response():
     response_json = _get_resource_json("flickr_example_pretty.json")
     count = flickr.get_record_count_from_response(response_json)
 
-    assert count == "30"
+    assert count == 30
 
 
 @pytest.mark.parametrize(

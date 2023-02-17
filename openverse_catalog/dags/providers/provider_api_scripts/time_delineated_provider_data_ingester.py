@@ -48,9 +48,10 @@ class TimeDelineatedProviderDataIngester(ProviderDataIngester):
 
         # This class is used to generate timestamp intervals over a 24-hour period,
         # so it should only be used for a dated DAG.
-        assert (
-            self.date is not None
-        ), f"{self.__class__.__name__} should only be used for dated DAGs."
+        if self.date is None:
+            raise ValueError(
+                f"{self.__class__.__name__} should only be used for dated DAGs."
+            )
 
         # A flag that is True only when we are processing the first batch of data in
         # a new iteration.
@@ -96,7 +97,7 @@ class TimeDelineatedProviderDataIngester(ProviderDataIngester):
         ]
 
     @abstractmethod
-    def get_record_count_from_response(self, response_json):
+    def get_record_count_from_response(self, response_json) -> int:
         # Given a response_json, return the response_count. This should not be the
         # number of records in the response, but the reported count.
         pass
@@ -108,7 +109,7 @@ class TimeDelineatedProviderDataIngester(ProviderDataIngester):
         )
         response_json = self.get_response_json(query_params)
 
-        return int(self.get_record_count_from_response(response_json))
+        return self.get_record_count_from_response(response_json)
 
     def _get_timestamp_pairs(self, **kwargs):
         """

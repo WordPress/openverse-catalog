@@ -19,7 +19,7 @@ def test_raises_error_when_date_is_undefined():
     expected_error = (
         "TimeDelineatedProviderDataIngester should only be used for dated DAGs."
     )
-    with pytest.raises(AssertionError, match=expected_error):
+    with pytest.raises(ValueError, match=expected_error):
         # Attempt to initialize without a date
         MockTimeDelineatedProviderDataIngester()
 
