@@ -290,6 +290,32 @@ def test_MediaStore_clean_media_metadata_adds_license_urls_to_meta_data(monkeypa
     assert cleaned_data["meta_data"]["raw_license_url"] == raw_license_url
 
 
+@pytest.mark.parametrize(
+    "input_url, remove_slashes, expected",
+    [
+        ("https://www.example.com/", True, "https://www.example.com"),
+        ("https://www.example.com", True, "https://www.example.com"),
+        ("https://www.example.com/", False, "https://www.example.com/"),
+        ("https://www.example.com", False, "https://www.example.com"),
+    ],
+)
+def test_MediaStore_clean_media_strips_url_trailing_slashes(
+    input_url, remove_slashes, expected
+):
+    image_store = image.ImageStore(strip_url_trailing_slashes=remove_slashes)
+    test_data = {
+        "foreign_landing_url": input_url,
+        "image_url": input_url,
+        "thumbnail_url": input_url,
+        "creator_url": input_url,
+    }
+    image_data = TEST_IMAGE_DICT | test_data | {"license_info": BY_LICENSE_INFO}
+    cleaned_data = image_store.clean_media_metadata(**image_data)
+
+    for key in test_data:
+        assert cleaned_data[key] == expected
+
+
 def test_MediaStore_get_image_gets_source(monkeypatch):
     image_store = image.ImageStore()
 
