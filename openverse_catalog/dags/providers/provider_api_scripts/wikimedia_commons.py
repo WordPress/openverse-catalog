@@ -120,7 +120,8 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
             return image_pages.values()
         return None
 
-    def get_media_pages(self, response_json):
+    @staticmethod
+    def get_media_pages(response_json):
         if response_json is not None:
             image_pages = response_json.get("query", {}).get("pages")
             if image_pages is not None:
@@ -176,7 +177,8 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
         }
         return funcs[valid_media_type](record_data, media_info)
 
-    def get_image_record_data(self, record_data, media_info):
+    @staticmethod
+    def get_image_record_data(record_data, media_info):
         """Extend record_data with image-specific fields."""
         record_data["image_url"] = record_data.pop("media_url")
         if record_data["filetype"] == "svg":
@@ -271,7 +273,7 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
             return AUDIO
 
         logger.info(
-            f"Incorrect mediatype: {media_type} not in "
+            f"Ignoring mediatype: {media_type} not in "
             f"valid mediatypes ({IMAGE_MEDIATYPES}, {AUDIO_MEDIATYPES})"
         )
         return None
@@ -430,7 +432,8 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
 
         return merged_json
 
-    def merge_media_pages(self, left_page, right_page):
+    @staticmethod
+    def merge_media_pages(left_page, right_page):
         merged_page = deepcopy(left_page)
         merged_globalusage = left_page.get("globalusage", []) + right_page.get(
             "globalusage", []
@@ -440,7 +443,8 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
 
         return merged_page
 
-    def derive_timestamp_pair(self, date):
+    @staticmethod
+    def derive_timestamp_pair(date):
         date_obj = datetime.strptime(date, "%Y-%m-%d")
         utc_date = date_obj.replace(tzinfo=timezone.utc)
         start_timestamp = str(int(utc_date.timestamp()))
