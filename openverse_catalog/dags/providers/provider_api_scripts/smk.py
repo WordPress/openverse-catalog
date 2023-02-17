@@ -8,6 +8,7 @@ Output:                 TSV file containing the media metadata.
 Notes:                  https://www.smk.dk/en/article/smk-api/
 """
 import logging
+import urllib.parse
 
 from common import constants
 from common.licenses import get_license_info
@@ -56,7 +57,9 @@ class SmkDataIngester(ProviderDataIngester):
                 "foreign_landing_url."
             )
             return
-        return f"https://open.smk.dk/en/artwork/image/{object_num}"
+        # Occasionally, the object number will have a space in it. for these cases we
+        # need to urlencode it.
+        return f"https://open.smk.dk/en/artwork/image/{urllib.parse.quote(object_num)}"
 
     @staticmethod
     def _get_image_url(image_iiif_id: str, image_size=2048):
