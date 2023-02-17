@@ -50,7 +50,8 @@ class MediaStore(metaclass=abc.ABCMeta):
     tsv_suffix:     Optional string to append to the tsv filename.
     buffer_length:  Integer giving the maximum number of media information rows
                     to store in memory before writing them to disk.
-
+    strip_url_trailing_slashes: Boolean to strip trailing slashes from URLs during
+                                validation
     """
 
     def __init__(
