@@ -1,10 +1,14 @@
 """
-# DAG to add license_url to NULL meta_data fields
-A maintenance one-off workflow that adds meta_data.license_url to all images.
+# Add license URL
+
+Add license_url to all rows that have NULL in their meta_data fields.
+The license_url is constructed from the license and license_version fields.
+
+This is a maintenance DAG that should run once.
 """
 import logging
 import os
-from datetime import datetime, timedelta
+from datetime import datetime
 from textwrap import dedent
 from typing import Literal
 
@@ -133,8 +137,8 @@ DAG_DEFAULT_ARGS = {
     "start_date": datetime(2020, 6, 15),
     "template_undefined": jinja2.Undefined,
     "email_on_retry": False,
+    "schedule_interval": None,
     "retries": 0,
-    "retry_delay": timedelta(minutes=1),
     "on_failure_callback": slack.on_failure_callback,
 }
 
@@ -142,6 +146,7 @@ DAG_DEFAULT_ARGS = {
 dag = DAG(
     dag_id=DAG_ID,
     default_args=DAG_DEFAULT_ARGS,
+    schedule_interval=None,
     catchup=False,
     # Use the docstring at the top of the file as md docs in the UI
     doc_md=__doc__,
