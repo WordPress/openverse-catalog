@@ -30,8 +30,6 @@ logger = logging.getLogger(__name__)
 # fail without a continuation token.  The largest example seen so far
 # had a little over 1000 uses
 MEAN_GLOBAL_USAGE_LIMIT = 10000
-HOST = "commons.wikimedia.org"
-PAGES_PATH = ["query", "pages"]
 
 IMAGE_MEDIATYPES = {"BITMAP", "DRAWING"}
 AUDIO_MEDIATYPES = {"AUDIO"}
@@ -43,7 +41,7 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
         "image": prov.WIKIMEDIA_DEFAULT_PROVIDER,
         "audio": prov.WIKIMEDIA_AUDIO_PROVIDER,
     }
-    endpoint = f"https://{HOST}/w/api.php"
+    endpoint = "https://commons.wikimedia.org/w/api.php"
     headers = {"User-Agent": prov.UA_STRING}
 
     # The batch_limit applies to the number of pages received by the API, rather
