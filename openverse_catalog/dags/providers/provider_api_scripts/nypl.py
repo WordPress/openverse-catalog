@@ -17,9 +17,9 @@ def get_value_from_dict_or_list(
     dict_or_list: dict | list, keys: list[str]
 ) -> dict | list | str | None:
     """
-    Returns the nested value.
-    If dict_or_list is a list, returns the value from the first
-    dictionary in the list.
+    Return the nested value.
+
+    If dict_or_list is a list, returns the value from the first dictionary in the list.
     If it is a dict, returns the value from the dict.
     """
     if not keys or not dict_or_list:
@@ -104,9 +104,7 @@ class NyplDataIngester(ProviderDataIngester):
 
         metadata = self._get_metadata(mods)
         category = (
-            ImageCategory.PHOTOGRAPH.value
-            if metadata.get("genre") == "Photographs"
-            else None
+            ImageCategory.PHOTOGRAPH if metadata.get("genre") == "Photographs" else None
         )
 
         captures = item_details.get("sibling_captures", {}).get("capture")
@@ -147,7 +145,9 @@ class NyplDataIngester(ProviderDataIngester):
     @staticmethod
     def _get_filetype(description: str):
         """
-        Extracts the filetype from a description string like:
+        Extract the filetype from a description string.
+
+        Example:
         "Cropped .jpeg (1600 pixels on the long side)"
         This is required because the filetype is not present/extractable from the
         url via the MediaStore class.
@@ -161,6 +161,8 @@ class NyplDataIngester(ProviderDataIngester):
     @staticmethod
     def _get_image_data(images) -> tuple[None, None] | tuple[str, str]:
         """
+        Get the image data from the list of images.
+
         Receives a list of dictionaries of the following shape:
         {
           "$": "http://images.nypl.org/index.php?id=56738467&t=q&download=1
