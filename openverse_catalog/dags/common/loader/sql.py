@@ -262,7 +262,7 @@ def _is_tsv_column_from_different_version(
 
 def upsert_records_to_db_table(
     postgres_conn_id: str,
-    task,
+    task: BaseOperator,
     identifier: str,
     db_table: str = None,
     media_type: str = IMAGE,
@@ -275,13 +275,12 @@ def upsert_records_to_db_table(
     NULL value is used.
 
     :param postgres_conn_id
+    :param task              To be automagically passed by airflow.
     :param identifier
     :param db_table
     :param media_type
     :param tsv_version:      The version of TSV being processed. This
     determines which columns are used in the upsert query.
-    :param pg_timeout:       Number of seconds after which postgres will cancel
-    any job executed by this function.
     :return:
     """
     if db_table is None:
