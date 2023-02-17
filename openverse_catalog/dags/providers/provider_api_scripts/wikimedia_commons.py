@@ -662,7 +662,7 @@ if __name__ == "__main__":
         add_help=True,
     )
     parser.add_argument(
-        "--date", help="Identify images uploaded on a date (format: YYYY-MM-DD)."
+        "--date", help="Identify media uploaded on a date (format: YYYY-MM-DD)."
     )
     args = parser.parse_args()
     if args.date:
