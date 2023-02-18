@@ -131,22 +131,32 @@ class ProviderWorkflow:
         ).get(self.dag_id, {})
 
         # Apply overrides
-        if pull_override := overrides.get("pull_timeout"):
-            self.pull_timeout = self._get_timedelta(pull_override)
-        if upsert_override := overrides.get("upsert_timeout"):
-            self.upsert_timeout = self._get_timedelta(upsert_override)
+        if overrides:
+            pull_override_str = overrides.get("pull_timeout")
+            if pull_override := self._get_timedelta(pull_override_str):
+                self.pull_timeout = pull_override
+
+            upsert_override_str = overrides.get("upsert_timeout")
+            if upsert_override := self._get_timedelta(upsert_override_str):
+                self.upsert_timeout = upsert_override
 
     @staticmethod
-    def _get_timedelta(time_str: str) -> timedelta:
+    def _get_timedelta(time_str: str | None) -> timedelta | None:
         """
-        Converts a string in the format "%d:%H:%M:%S" to a timedelta.
+        Converts a string in the format "%d:%H:%M:%S" to a timedelta. Returns
+        None if the string is improperly formatted.
 
         Example: "5:10:20:30" represents 5 days, 10 hours, 20 minutes, and
         30 seconds.
         """
+        if time_str is None:
+            return None
+
         ts = time_str.split(":")
         if len(ts) != 4 or not all(t.isdigit() for t in ts):
-            raise ValueError(f"Incorrectly formatted time string: '{time_str}'.")
+            # Incorrectly formatted time string. Do not apply. We don't raise
+            # an error in order to avoid breaking DAGs.
+            return None
 
         [days, hours, minutes, seconds] = [int(t) for t in ts]
         return timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)

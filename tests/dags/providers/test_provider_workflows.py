@@ -116,12 +116,11 @@ def test_overrides(configuration_overrides, expected_pull, expected_upsert):
         ("30:10:57:45", timedelta(days=30, hours=10, minutes=57, seconds=45)),
         ("0:6:0:0", timedelta(hours=6)),
         ("0:36:0:0", timedelta(days=1, hours=12)),
-        pytest.param(
-            "0:1:2",
-            None,
-            marks=pytest.mark.raises(exception=ValueError),
-        ),
-        pytest.param("one:2:3:4", None, marks=pytest.mark.raises(exception=ValueError)),
+        # Incorrectly formatted strings returns None
+        ("0:1:2", None),
+        ("one:2:3:4", None),
+        ("foo", None),
+        (None, None),
     ],
 )
 def test_get_timedelta(time_str, expected_timedelta):
