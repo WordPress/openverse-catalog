@@ -14,7 +14,7 @@ from common.loader.reporting import RecordMetrics
     ],
 )
 def test_upsert_data_calculations(
-    load_value, clean_data_value, upsert_value, expected, mock_task
+    load_value, clean_data_value, upsert_value, expected, mock_pg_hook_task
 ):
     with mock.patch("common.loader.loader.sql") as sql_mock:
         sql_mock.clean_intermediate_table_data.return_value = clean_data_value
@@ -22,7 +22,7 @@ def test_upsert_data_calculations(
 
         actual = loader.upsert_data(
             postgres_conn_id=mock.Mock(),
-            task=mock_task,
+            task=mock_pg_hook_task,
             tsv_version="fake",
             identifier="fake",
             media_type="fake",

@@ -127,10 +127,10 @@ def create_pg_timeout_tester_dag():
 
 
 @pytest.fixture(scope="session")
-def mock_dag():
+def mock_timeout_dag():
     return create_pg_timeout_tester_dag()
 
 
 @pytest.fixture(scope="session")
-def mock_task(mock_dag) -> BaseOperator:
-    return mock_dag.get_task("pg_hook_happy")
+def mock_pg_hook_task(mock_timeout_dag) -> BaseOperator:
+    return mock_timeout_dag.get_task("pg_hook_happy")

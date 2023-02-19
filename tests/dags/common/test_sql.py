@@ -109,9 +109,9 @@ def test_pgdb_raises_cancel_error(statement_timeout, default_timeout):
 # Accessing from the dag object itself independent of any run status.
 @pytest.mark.parametrize("task_id, expected_result", HAPPY_TIMEOUT_PARAMETERS)
 def test_PostgresHook_get_execution_timeout_happy_tasks(
-    mock_dag, task_id, expected_result
+    mock_timeout_dag, task_id, expected_result
 ):
-    task = mock_dag.get_task(task_id)
+    task = mock_timeout_dag.get_task(task_id)
     actual_result = PostgresHook.get_execution_timeout(task)
     assert actual_result == expected_result
 
@@ -138,15 +138,15 @@ def test_operator_passes_correct_timeout(execution_timeout, expected_result):
 # Happy path DAG runs without error (Each task is a test case)
 # This generates a warning about running a dag without an explicit data interval being
 # deprecated, but I haven't found a way to get it through with this function.
-def test_happy_paths_dag(mock_dag):
-    mock_dag.test()
+def test_happy_paths_dag(mock_timeout_dag):
+    mock_timeout_dag.test()
 
 
 @pytest.fixture(scope="session")
-def happy_dag_run(mock_dag):
+def happy_dag_run(mock_timeout_dag):
     exec_dt = datetime.now()
     interval = timedelta(hours=1)
-    return mock_dag.create_dagrun(
+    return mock_timeout_dag.create_dagrun(
         run_id=f"happy_dag_testing_{exec_dt.strftime('%y%m%d%H%M%S')}",
         state="queued",
         execution_date=exec_dt,
