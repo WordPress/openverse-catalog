@@ -114,6 +114,10 @@ class PostgresHook(UpstreamPostgresHook):
         return f"SET statement_timeout TO '{statement_timeout}s';"
 
     def run_statement_timeout(self):
+        """
+        Pass an empty SQL statement to the regular run command so that only the
+        timeout setting gets run.
+        """
         self.run("")
 
 
