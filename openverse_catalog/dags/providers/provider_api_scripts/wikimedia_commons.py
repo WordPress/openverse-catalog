@@ -472,7 +472,8 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
 
 def main(date):
     logger.info(f"Begin: Wikimedia Commons data ingestion for {date}")
-    ingester = WikimediaCommonsDataIngester(date)
+    logging.getLogger(__name__).setLevel(logging.DEBUG)
+    ingester = WikimediaCommonsDataIngester({"date": date})
     ingester.ingest_records()
 
 
