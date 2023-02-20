@@ -105,7 +105,7 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
         everything?
         """
         batch_json = None
-        gucontinue = None
+        gaicontinue = None
         iteration_count = 0
 
         for _ in range(MEAN_GLOBAL_USAGE_LIMIT):
@@ -123,12 +123,19 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
                 query_params.update(self.continue_token)
                 logger.info(f"New continue token: {self.continue_token}")
 
-                current_gucontinue = self.continue_token.get("gucontinue", None)
-                if current_gucontinue is not None and current_gucontinue == gucontinue:
+                current_gaicontinue = self.continue_token.get("gaicontinue", None)
+                logger.debug(f"{current_gaicontinue=}")
+                if (
+                    current_gaicontinue is not None
+                    and current_gaicontinue == gaicontinue
+                ):
                     iteration_count += 1
+                gaicontinue = current_gaicontinue
 
                 if iteration_count > 10:
-                    logger.warning("Hit iteration count limit, skipping batch")
+                    logger.warning(
+                        f"Hit iteration count limit for '{gaicontinue}', skipping batch"
+                    )
                     break
 
                 # Merge this response into the batch
