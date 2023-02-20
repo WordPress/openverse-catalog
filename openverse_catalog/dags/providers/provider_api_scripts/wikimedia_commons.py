@@ -33,6 +33,7 @@ logging.basicConfig(
 # fail without a continuation token.  The largest example seen so far
 # had a little over 1000 uses
 MEAN_GLOBAL_USAGE_LIMIT = 10000
+MAX_PAGE_ITERATION_BEFORE_GIVE_UP = 10
 HOST = "commons.wikimedia.org"
 PAGES_PATH = ["query", "pages"]
 
@@ -66,6 +67,7 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
             "gaicontinue": "20230210172031|On_Alexander's_track_to_the_Indus_1929_(148643346).jpg",
             "continue": "gaicontinue||",
         }
+        self.popularity_cache: dict[str, int] = {}
         self.prop = PROP_ALL
 
     def get_next_query_params(self, prev_query_params, **kwargs):
@@ -130,7 +132,7 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
                 # Update continue token for the next request
                 self.continue_token = response_json.pop("continue", {})
                 query_params.update(self.continue_token)
-                logger.info(f"New continue token: {self.continue_token}")
+                logger.info(f"Continue token for next iteration: {self.continue_token}")
 
                 current_gaicontinue = self.continue_token.get("gaicontinue", None)
                 logger.debug(f"{current_gaicontinue=}")
@@ -139,15 +141,18 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
                     and current_gaicontinue == gaicontinue
                 ):
                     iteration_count += 1
-                gaicontinue = current_gaicontinue
+                else:
+                    gaicontinue = current_gaicontinue
 
-                if iteration_count > 5:
+                if iteration_count > MAX_PAGE_ITERATION_BEFORE_GIVE_UP:
                     logger.warning(
                         f"Hit iteration count limit for '{gaicontinue}', "
                         "re-attempting with a bare token"
                     )
-                    self.continue_token.pop("gucontinue", None)
-                    self.continue_token["continue"] = "gaicontinue||"
+                    self.continue_token = {
+                        "gaicontinue": gaicontinue,
+                        "continue": "gaicontinue||",
+                    }
                     self.prop = PROP_IMAGE_ONLY
                     break
 
@@ -430,8 +435,17 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
                 geo_data[key] = key_value
         return geo_data
 
+    def extract_global_usage(self, media_data) -> int:
+        global_usage_count = len(media_data.get("globalusage", []))
+        foreign_id = media_data["pageid"]
+        cached_usage_count = self.popularity_cache.get(foreign_id, 0)
+        max_usage_count = max(global_usage_count, cached_usage_count)
+        # Only cache if it's greater than zero, otherwise it'll just take up space
+        if max_usage_count > 0:
+            self.popularity_cache[foreign_id] = max_usage_count
+        return max_usage_count
+
     def create_meta_data_dict(self, media_data):
-        global_usage_length = len(media_data.get("globalusage", []))
         media_info = self.extract_media_info_dict(media_data)
         date_originally_created, last_modified_at_source = self.extract_date_info(
             media_info
@@ -439,7 +453,7 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
         categories_list = self.extract_category_info(media_info)
         description = self.extract_ext_value(media_info, "ImageDescription")
         meta_data = {
-            "global_usage_count": global_usage_length,
+            "global_usage_count": self.extract_global_usage(media_data),
             "date_originally_created": date_originally_created,
             "last_modified_at_source": last_modified_at_source,
             "categories": categories_list,
