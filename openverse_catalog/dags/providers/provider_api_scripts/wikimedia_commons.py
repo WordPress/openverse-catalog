@@ -81,7 +81,7 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
         """Get the media_type of a parsed Record"""
         return record["media_type"]
 
-    def get_response_json(self, query_params):
+    def get_response_json(self, query_params, **kwargs):
         """
         Get the response data from the API.
 
@@ -89,8 +89,18 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
         we see "batchcomplete", rather than a single request to the
         endpoint. This ensures that global usage data used for calculating
         popularity is tabulated correctly.
+
+        TODO: Catch the title value or image or whatever and then check that value
+        on every iteration. If the iterations exceed 10 or so, skip the batch altogether
+        Common theme: repeated requests have `continue` as `gaicontinue||imageinfo`,
+        whereas the final request has `gaicontinue||`. Maybe we can just set this if we
+        hit the limit?
+        If nothing else, just pretend we've hit batchcomplete and accept we won't catch
+        everything?
         """
         batch_json = None
+        gucontinue = None
+        iteration_count = 0
 
         for _ in range(MEAN_GLOBAL_USAGE_LIMIT):
             response_json = super().get_response_json(
@@ -105,6 +115,14 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
                 self.continue_token = response_json.pop("continue", {})
                 query_params.update(self.continue_token)
                 logger.info(f"New continue token: {self.continue_token}")
+
+                current_gucontinue = self.continue_token.get("gucontinue", None)
+                if current_gucontinue is not None and current_gucontinue == gucontinue:
+                    iteration_count += 1
+
+                if iteration_count > 10:
+                    logger.warning("Hit iteration count limit, skipping batch")
+                    break
 
                 # Merge this response into the batch
                 batch_json = self.merge_response_jsons(batch_json, response_json)
