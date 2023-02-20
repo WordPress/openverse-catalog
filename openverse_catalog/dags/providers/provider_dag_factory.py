@@ -305,7 +305,7 @@ def create_provider_api_workflow_dag(conf: ProviderWorkflow):
         max_active_runs=conf.max_active_runs,
         start_date=conf.start_date,
         schedule=conf.schedule_string,
-        catchup=conf.dated,  # catchup is turned on for dated DAGs to allow backfilling
+        catchup=False,  # conf.dated,  # catchup is turned on for dated DAGs to allow backfilling
         doc_md=conf.doc_md,
         tags=[
             "provider",

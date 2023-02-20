@@ -202,7 +202,7 @@ PROVIDER_WORKFLOWS = [
     ),
     ProviderWorkflow(
         ingester_class=WikimediaCommonsDataIngester,
-        start_date=datetime(2023, 11, 1),
+        start_date=datetime(2023, 2, 1),
         schedule_string="@daily",
         dated=True,
         pull_timeout=timedelta(hours=12),
