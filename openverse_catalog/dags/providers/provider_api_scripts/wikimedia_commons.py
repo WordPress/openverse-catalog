@@ -38,6 +38,8 @@ PAGES_PATH = ["query", "pages"]
 
 IMAGE_MEDIATYPES = {"BITMAP", "DRAWING"}
 AUDIO_MEDIATYPES = {"AUDIO"}
+PROP_ALL = "imageinfo|globalusage"
+PROP_IMAGE_ONLY = "imageinfo"
 # Other types available in the API are OFFICE for pdfs and VIDEO
 
 
@@ -64,6 +66,7 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
             "gaicontinue": "20230210172031|On_Alexander's_track_to_the_Indus_1929_(148643346).jpg",
             "continue": "gaicontinue||",
         }
+        self.prop = PROP_ALL
 
     def get_next_query_params(self, prev_query_params, **kwargs):
         qp = {
@@ -77,7 +80,7 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
             # proxy based on total page count
             # TODO: What if we dynamically altered this - skip it for values that hit
             # the limit, but include it otherwise?
-            "prop": "imageinfo|globalusage",
+            "prop": self.prop,
             "iiprop": "url|user|dimensions|extmetadata|mediatype|size|metadata",
             "gulimit": self.batch_limit,
             "gunamespace": 0,
@@ -140,17 +143,22 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
 
                 if iteration_count > 5:
                     logger.warning(
-                        f"Hit iteration count limit for '{gaicontinue}', skipping batch"
+                        f"Hit iteration count limit for '{gaicontinue}', "
+                        "re-attempting with a bare token"
                     )
-                    import pprint
-                    pprint.pprint(response_json)
-                    raise ValueError()
+                    self.continue_token.pop("gucontinue", None)
+                    self.continue_token["continue"] = "gaicontinue||"
+                    self.prop = PROP_IMAGE_ONLY
+                    break
 
                 # Merge this response into the batch
                 batch_json = self.merge_response_jsons(batch_json, response_json)
 
             if "batchcomplete" in response_json:
                 logger.info("Found batchcomplete")
+                if self.prop == PROP_IMAGE_ONLY:
+                    logger.info("Resetting property to include pop data")
+                    self.prop = PROP_ALL
                 break
         return batch_json
 
