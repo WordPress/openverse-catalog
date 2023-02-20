@@ -6,6 +6,7 @@ ETL Process:            Use the API to identify all CC-licensed images.
 Output:                 TSV file containing the image, the respective
                         meta-data.
 
+                        # TODO: Update this v
 Notes:                  https://commons.wikimedia.org/wiki/API:Main_page
                         No rate limit specified.
 """
@@ -71,6 +72,11 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
             "gaisort": "timestamp",
             "gaidir": "newer",
             "gailimit": self.batch_limit,
+            # NOTE: Removing globalusage removes all the acquisition of all the various
+            # subpages, but doing so also removes our ability to calculate a popularity
+            # proxy based on total page count
+            # TODO: What if we dynamically altered this - skip it for values that hit
+            # the limit, but include it otherwise?
             "prop": "imageinfo|globalusage",
             "iiprop": "url|user|dimensions|extmetadata|mediatype|size|metadata",
             "gulimit": self.batch_limit,
@@ -132,11 +138,13 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
                     iteration_count += 1
                 gaicontinue = current_gaicontinue
 
-                if iteration_count > 10:
+                if iteration_count > 5:
                     logger.warning(
                         f"Hit iteration count limit for '{gaicontinue}', skipping batch"
                     )
-                    break
+                    import pprint
+                    pprint.pprint(response_json)
+                    raise ValueError()
 
                 # Merge this response into the batch
                 batch_json = self.merge_response_jsons(batch_json, response_json)
