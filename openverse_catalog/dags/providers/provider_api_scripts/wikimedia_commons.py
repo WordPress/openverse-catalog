@@ -24,7 +24,7 @@ from providers.provider_api_scripts.provider_data_ingester import ProviderDataIn
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s", level=logging.INFO
+    format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s", level=logging.DEBUG
 )
 
 # The 10000 is a bit arbitrary, but needs to be larger than the mean
@@ -58,10 +58,14 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
         super().__init__(*args, **kwargs)
 
         self.start_timestamp, self.end_timestamp = self.derive_timestamp_pair(self.date)
-        self.continue_token = {}
+        logger.info(f"{self.start_timestamp=}, {self.end_timestamp=}")
+        self.continue_token = {
+            "gaicontinue": "20230210172031|On_Alexander's_track_to_the_Indus_1929_(148643346).jpg",
+            "continue": "gaicontinue||",
+        }
 
     def get_next_query_params(self, prev_query_params, **kwargs):
-        return {
+        qp = {
             "action": "query",
             "generator": "allimages",
             "gaisort": "timestamp",
@@ -76,6 +80,8 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
             "gaiend": self.end_timestamp,
             **self.continue_token,
         }
+        logger.debug(f"{qp=}")
+        return qp
 
     def get_media_type(self, record):
         """Get the media_type of a parsed Record"""
@@ -109,6 +115,7 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
             )
 
             if response_json is None:
+                logger.warning("Response JSON is None")
                 break
             else:
                 # Update continue token for the next request
@@ -154,7 +161,7 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
 
     def get_record_data(self, record):
         foreign_id = record.get("pageid")
-        logger.debug(f"Processing page ID: {foreign_id}")
+        # logger.debug(f"Processing page ID: {foreign_id}")
 
         media_info = self.extract_media_info_dict(record)
 
