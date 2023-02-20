@@ -24,9 +24,7 @@ from providers.provider_api_scripts.provider_data_ingester import ProviderDataIn
 
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s", level=logging.DEBUG
-)
+
 
 # The 10000 is a bit arbitrary, but needs to be larger than the mean
 # number of uses per file (globally) in the response_json, or we will
