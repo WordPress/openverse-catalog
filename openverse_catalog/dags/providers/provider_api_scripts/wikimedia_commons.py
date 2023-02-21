@@ -434,6 +434,16 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
         return geo_data
 
     def extract_global_usage(self, media_data) -> int:
+        """
+        Extract the global usage count from the media data.
+        The global usage count serves as a proxy for popularity data, since it
+        represents how many pages across all available wikis a media item is used on.
+        This uses a cache to record previous values for a given foreign ID, because
+        it is possible that we might encounter a media item several times based on the
+        querying method used (see "props" above). Not all results will have the same
+        (if any) usage data, so we want to record and cache the highest value. Most
+        items have no global usage data, so we only cache items that have a value.
+        """
         global_usage_count = len(media_data.get("globalusage", []))
         foreign_id = media_data["pageid"]
         cached_usage_count = self.popularity_cache.get(foreign_id, 0)
