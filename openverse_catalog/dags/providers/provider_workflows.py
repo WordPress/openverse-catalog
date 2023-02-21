@@ -143,7 +143,7 @@ class ProviderWorkflow:
     @staticmethod
     def _get_timedelta(time_str: str | None) -> timedelta | None:
         """
-        Converts a string in the format "%d:%H:%M:%S" to a timedelta. Returns
+        Convert a string in the format "%d:%H:%M:%S" to a timedelta. Return
         None if the string is improperly formatted.
 
         Example: "5:10:20:30" represents 5 days, 10 hours, 20 minutes, and
