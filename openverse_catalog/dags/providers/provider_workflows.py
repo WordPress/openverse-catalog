@@ -111,10 +111,16 @@ class ProviderWorkflow:
     create_postingestion_tasks: Callable | None = None
     tags: list[str] = field(default_factory=list)
 
-    def __post_init__(self):
+    def _get_module_info(self):
         # Get the module the ProviderDataIngester was defined in
         provider_script = inspect.getmodule(self.ingester_class)
-        self.provider_name = provider_script.__name__.split(".")[-1]
+        # Parse out the provider name
+        provider_name = provider_script.__name__.split(".")[-1]
+
+        return provider_script, provider_name
+
+    def __post_init__(self):
+        provider_script, self.provider_name = self._get_module_info()
 
         if not self.dag_id:
             self.dag_id = f"{self.provider_name}_workflow"
