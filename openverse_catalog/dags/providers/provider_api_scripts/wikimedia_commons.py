@@ -43,7 +43,7 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
     # These can be very large, so we need to limit the number of attempts otherwise
     # the DAG will hit the timeout when it comes across these items.
     # See: https://github.com/WordPress/openverse-catalog/issues/725
-    max_page_iteration_before_give_up = 10
+    max_page_iteration_before_give_up = 100
 
     image_mediatypes = {"BITMAP", "DRAWING"}
     audio_mediatypes = {"AUDIO"}
