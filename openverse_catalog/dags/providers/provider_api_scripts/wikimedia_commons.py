@@ -6,7 +6,6 @@ ETL Process:            Use the API to identify all CC-licensed images.
 Output:                 TSV file containing the image, the respective
                         meta-data.
 
-                        # TODO: Update this v
 Notes:                  https://commons.wikimedia.org/wiki/API:Main_page
                         No rate limit specified.
 """
@@ -26,29 +25,29 @@ from providers.provider_api_scripts.provider_data_ingester import ProviderDataIn
 logger = logging.getLogger(__name__)
 
 
-# The 10000 is a bit arbitrary, but needs to be larger than the mean
-# number of uses per file (globally) in the response_json, or we will
-# fail without a continuation token.  The largest example seen so far
-# had a little over 1000 uses
-MEAN_GLOBAL_USAGE_LIMIT = 10000
-MAX_PAGE_ITERATION_BEFORE_GIVE_UP = 10
-HOST = "commons.wikimedia.org"
-PAGES_PATH = ["query", "pages"]
-
-IMAGE_MEDIATYPES = {"BITMAP", "DRAWING"}
-AUDIO_MEDIATYPES = {"AUDIO"}
-PROP_ALL = "imageinfo|globalusage"
-PROP_IMAGE_ONLY = "imageinfo"
-# Other types available in the API are OFFICE for pdfs and VIDEO
-
-
 class WikimediaCommonsDataIngester(ProviderDataIngester):
     providers = {
         "image": prov.WIKIMEDIA_DEFAULT_PROVIDER,
         "audio": prov.WIKIMEDIA_AUDIO_PROVIDER,
     }
-    endpoint = f"https://{HOST}/w/api.php"
+    host = "commons.wikimedia.org"
+    endpoint = f"https://{host}/w/api.php"
     headers = {"User-Agent": prov.UA_STRING}
+
+    # The 10000 is a bit arbitrary, but needs to be larger than the mean
+    # number of uses per file (globally) in the response_json, or we will
+    # fail without a continuation token.  The largest example seen so far
+    # had a little over 1000 uses
+    mean_global_usage_limit = 10000
+    # Total number of attempts to retrieve global usage pages for a given batch.
+    # These can be very large, so we need to limit the number of attempts otherwise
+    # the DAG will hit the timeout when it comes across these items.
+    # See: https://github.com/WordPress/openverse-catalog/issues/725
+    max_page_iteration_before_give_up = 10
+
+    image_mediatypes = {"BITMAP", "DRAWING"}
+    audio_mediatypes = {"AUDIO"}
+    # Other types available in the API are OFFICE for pdfs and VIDEO
 
     # The batch_limit applies to the number of pages received by the API, rather
     # than the number of individual records. This means that for Wikimedia Commons
@@ -56,30 +55,29 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
     # the exact limit may not be respected.
     batch_limit = 250
 
+    class ReturnProps:
+        """Different sets of properties to return from the API."""
+
+        # All normal media info, plus popularity info by global usage
+        all = "imageinfo|globalusage"
+        # Just media info, used where there's too much global usage data to parse
+        image_only = "imageinfo"
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.start_timestamp, self.end_timestamp = self.derive_timestamp_pair(self.date)
-        logger.info(f"{self.start_timestamp=}, {self.end_timestamp=}")
-        self.continue_token = {
-            "gaicontinue": "20230210172031|On_Alexander's_track_to_the_Indus_1929_(148643346).jpg",
-            "continue": "gaicontinue||",
-        }
+        self.continue_token = {}
         self.popularity_cache: dict[str, int] = {}
-        self.prop = PROP_ALL
+        self.prop = self.ReturnProps.all
 
     def get_next_query_params(self, prev_query_params, **kwargs):
-        qp = {
+        return {
             "action": "query",
             "generator": "allimages",
             "gaisort": "timestamp",
             "gaidir": "newer",
             "gailimit": self.batch_limit,
-            # NOTE: Removing globalusage removes all the acquisition of all the various
-            # subpages, but doing so also removes our ability to calculate a popularity
-            # proxy based on total page count
-            # TODO: What if we dynamically altered this - skip it for values that hit
-            # the limit, but include it otherwise?
             "prop": self.prop,
             "iiprop": "url|user|dimensions|extmetadata|mediatype|size|metadata",
             "gulimit": self.batch_limit,
@@ -89,8 +87,6 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
             "gaiend": self.end_timestamp,
             **self.continue_token,
         }
-        logger.debug(f"{qp=}")
-        return qp
 
     def get_media_type(self, record):
         """Get the media_type of a parsed Record"""
@@ -105,19 +101,24 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
         endpoint. This ensures that global usage data used for calculating
         popularity is tabulated correctly.
 
-        TODO: Catch the title value or image or whatever and then check that value
-        on every iteration. If the iterations exceed 10 or so, skip the batch altogether
-        Common theme: repeated requests have `continue` as `gaicontinue||imageinfo`,
-        whereas the final request has `gaicontinue||`. Maybe we can just set this if we
-        hit the limit?
-        If nothing else, just pretend we've hit batchcomplete and accept we won't catch
-        everything?
+        Occasionally, the ingester will come across a piece of media that is on many
+        pages (and has lots of values for global usage). Due to the way Wikimedia's API
+        handles batches, we have to iterate over each of the global usage responses in
+        order to continue with the rest of the data. This frequently causes the DAG to
+        timeout. To avoid this, we limit the number of iterations we make for parsing
+        through a batch's global usage data. If we hit the limit, we re-issue the
+        original query *without* requesting global usage data. This means that we will
+        not have popularity data for these items the second time around. Especially
+        since the problem with these images is that they're so popular, we want to
+        preserve that information where possible! So we cache the popularity data from
+        previous iterations and use it in subsequent ones if we come across the same
+        item again.
         """
         batch_json = None
         gaicontinue = None
         iteration_count = 0
 
-        for _ in range(MEAN_GLOBAL_USAGE_LIMIT):
+        for _ in range(self.mean_global_usage_limit):
             response_json = super().get_response_json(
                 query_params,
                 timeout=60,
@@ -142,7 +143,7 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
                 else:
                     gaicontinue = current_gaicontinue
 
-                if iteration_count > MAX_PAGE_ITERATION_BEFORE_GIVE_UP:
+                if iteration_count > self.max_page_iteration_before_give_up:
                     logger.warning(
                         f"Hit iteration count limit for '{gaicontinue}', "
                         "re-attempting with a bare token"
@@ -151,7 +152,7 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
                         "gaicontinue": gaicontinue,
                         "continue": "gaicontinue||",
                     }
-                    self.prop = PROP_IMAGE_ONLY
+                    self.prop = self.ReturnProps.image_only
                     break
 
                 # Merge this response into the batch
@@ -159,9 +160,8 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
 
             if "batchcomplete" in response_json:
                 logger.info("Found batchcomplete")
-                if self.prop == PROP_IMAGE_ONLY:
-                    logger.info("Resetting property to include pop data")
-                    self.prop = PROP_ALL
+                # Reset the search props to include popularity data for the next iter
+                self.prop = self.ReturnProps.all
                 break
         return batch_json
 
@@ -319,15 +319,17 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
     @staticmethod
     def extract_media_type(media_info):
         media_type = media_info.get("mediatype")
+        image_mediatypes = WikimediaCommonsDataIngester.image_mediatypes
+        audio_mediatypes = WikimediaCommonsDataIngester.audio_mediatypes
 
-        if media_type in IMAGE_MEDIATYPES:
+        if media_type in image_mediatypes:
             return IMAGE
-        elif media_type in AUDIO_MEDIATYPES:
+        elif media_type in audio_mediatypes:
             return AUDIO
 
         logger.info(
             f"Incorrect mediatype: {media_type} not in "
-            f"valid mediatypes ({IMAGE_MEDIATYPES}, {AUDIO_MEDIATYPES})"
+            f"valid mediatypes ({image_mediatypes}, {audio_mediatypes})"
         )
         return None
 
@@ -519,12 +521,14 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
         utc_date = date_obj.replace(tzinfo=timezone.utc)
         start_timestamp = str(int(utc_date.timestamp()))
         end_timestamp = str(int((utc_date + timedelta(days=1)).timestamp()))
+        logger.info(
+            f"Start timestamp: {start_timestamp}, end timestamp: {end_timestamp}"
+        )
         return start_timestamp, end_timestamp
 
 
 def main(date):
     logger.info(f"Begin: Wikimedia Commons data ingestion for {date}")
-    logging.getLogger(__name__).setLevel(logging.DEBUG)
     ingester = WikimediaCommonsDataIngester({"date": date})
     ingester.ingest_records()
 
