@@ -14,6 +14,7 @@ import argparse
 import logging
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
+from types import MappingProxyType
 
 import lxml.html as html
 from common.constants import AUDIO, IMAGE
@@ -59,17 +60,33 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
         """Different sets of properties to return from the API."""
 
         # All normal media info, plus popularity info by global usage
-        all = "imageinfo|globalusage"
+        query_all = "imageinfo|globalusage"
         # Just media info, used where there's too much global usage data to parse
-        image_only = "imageinfo"
+        query_image_only = "imageinfo"
+
+        # All media info we care about
+        media_all = "url|user|dimensions|extmetadata|mediatype|size|metadata"
+        # Everything minus the metadata, which is only necessary for audio and can
+        # balloon for PDFs which are considered images by Wikimedia
+        media_no_metadata = "url|user|dimensions|extmetadata|mediatype|size"
+
+    # MappingProxy effectively provides a frozen dictionary, since this is defined
+    # at the class level and technically mutable.
+    default_props = MappingProxyType(
+        {
+            "prop": ReturnProps.query_all,
+            "iiprop": ReturnProps.media_all,
+        }
+    )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.start_timestamp, self.end_timestamp = self.derive_timestamp_pair(self.date)
         self.continue_token = {}
+        self.current_props = self.default_props.copy()
         self.popularity_cache: dict[str, int] = {}
-        self.prop = self.ReturnProps.all
+        self.prop = self.ReturnProps.query_all
 
     def get_next_query_params(self, prev_query_params, **kwargs):
         return {
@@ -78,13 +95,12 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
             "gaisort": "timestamp",
             "gaidir": "newer",
             "gailimit": self.batch_limit,
-            "prop": self.prop,
-            "iiprop": "url|user|dimensions|extmetadata|mediatype|size|metadata",
             "gulimit": self.batch_limit,
             "gunamespace": 0,
             "format": "json",
             "gaistart": self.start_timestamp,
             "gaiend": self.end_timestamp,
+            **self.current_props,
             **self.continue_token,
         }
 
@@ -101,18 +117,8 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
         endpoint. This ensures that global usage data used for calculating
         popularity is tabulated correctly.
 
-        Occasionally, the ingester will come across a piece of media that is on many
-        pages (and has lots of values for global usage). Due to the way Wikimedia's API
-        handles batches, we have to iterate over each of the global usage responses in
-        order to continue with the rest of the data. This frequently causes the DAG to
-        timeout. To avoid this, we limit the number of iterations we make for parsing
-        through a batch's global usage data. If we hit the limit, we re-issue the
-        original query *without* requesting global usage data. This means that we will
-        not have popularity data for these items the second time around. Especially
-        since the problem with these images is that they're so popular, we want to
-        preserve that information where possible! So we cache the popularity data from
-        previous iterations and use it in subsequent ones if we come across the same
-        item again.
+        This also dynamically adjust the query parameters based on the response sizes
+        for a given continue token. For more information see the DAG description.
         """
         batch_json = None
         gaicontinue = None
@@ -148,11 +154,7 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
                         f"Hit iteration count limit for '{gaicontinue}', "
                         "re-attempting with a bare token"
                     )
-                    self.continue_token = {
-                        "gaicontinue": gaicontinue,
-                        "continue": "gaicontinue||",
-                    }
-                    self.prop = self.ReturnProps.image_only
+                    self.adjust_parameters_for_next_iteration(gaicontinue)
                     break
 
                 # Merge this response into the batch
@@ -160,8 +162,8 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
 
             if "batchcomplete" in response_json:
                 logger.info("Found batchcomplete")
-                # Reset the search props to include popularity data for the next iter
-                self.prop = self.ReturnProps.all
+                # Reset the search props for the next iteration
+                self.current_props = self.default_props.copy()
                 break
         return batch_json
 
@@ -283,6 +285,18 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
             return file_data or streams_data
 
         return []
+
+    def adjust_parameters_for_next_iteration(self, gaicontinue: str) -> None:
+        if "gucontinue" in self.continue_token:
+            # Exclude global usage info (i.e. popularity) from the query
+            self.current_props["prop"] = self.ReturnProps.query_image_only
+        if "iicontinue" in self.continue_token:
+            self.current_props["iiprop"] = self.ReturnProps.media_no_metadata
+
+        self.continue_token = {
+            "gaicontinue": gaicontinue,
+            "continue": "gaicontinue||",
+        }
 
     @staticmethod
     def extract_media_info_dict(media_data):
