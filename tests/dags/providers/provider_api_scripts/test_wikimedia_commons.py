@@ -368,6 +368,8 @@ def test_create_meta_data_scrapes_text_from_html_description():
 def test_create_meta_data_tallies_global_usage_count():
     with open(RESOURCES / "continuation/page_44672185_left.json") as f:
         media_data = json.load(f)
+    # Reset popularity cache
+    wmc.popularity_cache = {}
     actual_gu = wmc.create_meta_data_dict(media_data)["global_usage_count"]
     expect_gu = 3
     assert actual_gu == expect_gu
@@ -376,6 +378,8 @@ def test_create_meta_data_tallies_global_usage_count():
 def test_create_meta_data_tallies_zero_global_usage_count():
     with open(RESOURCES / "continuation/page_44672185_right.json") as f:
         media_data = json.load(f)
+    # Reset popularity cache
+    wmc.popularity_cache = {}
     actual_gu = wmc.create_meta_data_dict(media_data)["global_usage_count"]
     expect_gu = 0
     assert actual_gu == expect_gu
