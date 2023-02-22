@@ -1,7 +1,7 @@
 import json
 import logging
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pytest
 from common.constants import IMAGE
@@ -149,6 +149,30 @@ def test_get_response_json_returns_correctly_without_continue(monkeypatch, wmc):
     mock_response_json.assert_called_once()
     assert wmc.continue_token == expect_continue
     assert actual_result == expect_result
+
+
+def test_get_response_json_breaks_on_max_iterations(monkeypatch, wmc):
+    with open(RESOURCES / "continuation/wmc_continue_max_iter.json") as f:
+        response = json.load(f)
+    wmc.max_page_iteration_before_give_up = 10
+    wmc.delayed_requester._DELAY = 0.01
+
+    def mock_get_response_json(endpoint, retries, query_params, **kwargs):
+        return response.copy()
+
+    get_response_mock = Mock(side_effect=mock_get_response_json)
+
+    monkeypatch.setattr(wmc.delayed_requester, "get_response_json", get_response_mock)
+    wmc.continue_token = {}
+    print("Attempting!")
+    actual = wmc.get_response_json(wmc.get_next_query_params({}))
+    expected = response.copy()
+    expected.pop("continue")
+    assert actual == expected
+    # Exact number might be a bit fuzzy but shouldn't exceed double the max
+    assert get_response_mock.call_count < (2 * wmc.max_page_iteration_before_give_up)
+    # The props should NOT be the default at this point
+    assert wmc.current_props != wmc.default_props
 
 
 def test_merge_response_jsons(wmc):
