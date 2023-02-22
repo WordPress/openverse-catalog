@@ -68,6 +68,7 @@ import re
 from string import Template
 
 from airflow import DAG
+from airflow.models.mappedoperator import MappedOperator
 from airflow.models.param import Param
 from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import PythonOperator
@@ -117,7 +118,12 @@ def _apply_configuration_overrides(dag: DAG, overrides: list[TaskOverride]):
         # Format timeout override and apply
         timeout_override = get_time_override(task_overrides.get("timeout"))
         if timeout_override:
-            task.execution_timeout = timeout_override
+            # If the task is a MappedOperator, apply the timeout to partial
+            # kwargs to ensure it is set on each mapped task.
+            if isinstance(task, MappedOperator):
+                task.partial_kwargs["execution_timeout"] = timeout_override
+            else:
+                task.execution_timeout = timeout_override
 
 
 def _get_overrides_for_task(

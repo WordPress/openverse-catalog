@@ -6,7 +6,7 @@ from airflow import DAG
 from airflow.exceptions import AirflowSkipException, BackfillUnfinished
 from airflow.executors.debug_executor import DebugExecutor
 from airflow.models import DagRun, TaskInstance
-from airflow.operators.dummy import DummyOperator
+from airflow.operators.empty import EmptyOperator
 from airflow.utils.session import create_session
 from pendulum import now
 from providers import provider_dag_factory
@@ -139,23 +139,26 @@ def test_apply_configuration_overrides():
         default_args={"execution_timeout": timedelta(hours=1)},
     )
     with dag:
-        task_with_no_overrides_and_default = DummyOperator(
+        task_with_no_overrides_and_default = EmptyOperator(
             task_id="task_with_no_overrides_and_default"
         )
-        task_with_no_overrides = DummyOperator(
+        task_with_no_overrides = EmptyOperator(
             task_id="task_with_no_overrides", execution_timeout=timedelta(hours=2)
         )
-        task_with_override_but_no_timeout = DummyOperator(
+        task_with_override_but_no_timeout = EmptyOperator(
             task_id="task_with_override_but_no_timeout",
             execution_timeout=timedelta(hours=2),
         )
-        task_with_override_but_improper_timeout = DummyOperator(
+        task_with_override_but_improper_timeout = EmptyOperator(
             task_id="task_with_override_but_improper_timeout",
             execution_timeout=timedelta(hours=2),
         )
-        task_with_override = DummyOperator(
-            task_id="task_with_override", execution_timeout=timedelta(hours=2)
+        task_with_override = EmptyOperator(
+            task_id="task_with_proper_override", execution_timeout=timedelta(hours=2)
         )
+        mapped_task_with_override = EmptyOperator.partial(
+            task_id="mapped_task_with_override",
+        ).expand_kwargs([{"foo": 1}, {"foo": 2}])
 
     overrides = [
         {"task_id_pattern": "task_with_override_but_no_timeout", "timeout": None},
@@ -163,7 +166,8 @@ def test_apply_configuration_overrides():
             "task_id_pattern": "task_with_override_but_improper_timeout",
             "timeout": "foo",  # Improperly formatted timeout should not be applied
         },
-        {"task_id_pattern": "task_with_override", "timeout": "1:0:0:0"},
+        {"task_id_pattern": "task_with_proper_override", "timeout": "1:0:0:0"},
+        {"task_id_pattern": "mapped_task_with_override", "timeout": "0:0:4:0"},
         {"task_id_pattern": "some_task_that_does_not_exist", "timeout": "1:2:3:4"},
     ]
 
@@ -178,6 +182,7 @@ def test_apply_configuration_overrides():
         hours=2
     )
     assert task_with_override.execution_timeout == timedelta(days=1)
+    assert mapped_task_with_override.execution_timeout == timedelta(minutes=4)
 
 
 @pytest.mark.parametrize(
