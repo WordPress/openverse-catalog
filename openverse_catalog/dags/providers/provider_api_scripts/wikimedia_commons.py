@@ -164,7 +164,7 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
                 else:
                     gaicontinue = current_gaicontinue
 
-                if iteration_count > self.max_page_iteration_before_give_up:
+                if iteration_count >= self.max_page_iteration_before_give_up:
                     logger.warning(
                         f"Hit iteration count limit for '{gaicontinue}', "
                         "re-attempting with a bare token"

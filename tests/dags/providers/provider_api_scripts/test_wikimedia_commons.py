@@ -169,8 +169,8 @@ def test_get_response_json_breaks_on_max_iterations(monkeypatch, wmc):
     expected = response.copy()
     expected.pop("continue")
     assert actual == expected
-    # Exact number might be a bit fuzzy but shouldn't exceed double the max
-    assert get_response_mock.call_count < (2 * wmc.max_page_iteration_before_give_up)
+    # This should call exactly (max iterations + 1) times
+    assert get_response_mock.call_count == wmc.max_page_iteration_before_give_up + 1
     # The props should NOT be the default at this point
     assert wmc.current_props != wmc.default_props
 
