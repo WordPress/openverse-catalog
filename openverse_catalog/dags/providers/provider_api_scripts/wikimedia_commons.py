@@ -8,6 +8,22 @@ Output:                 TSV file containing the image, the respective
 
 Notes:                  https://commons.wikimedia.org/wiki/API:Main_page
                         No rate limit specified.
+
+Occasionally, the ingester will come across a piece of media that has many pages
+for the data in its response. Example of this can include an item being on many
+pages and has lots of values for global usage
+
+, or has an absurd amount of ). Due to the way Wikimedia's API
+handles batches, we have to iterate over each of the global usage responses in
+order to continue with the rest of the data. This frequently causes the DAG to
+timeout. To avoid this, we limit the number of iterations we make for parsing
+through a batch's global usage data. If we hit the limit, we re-issue the
+original query *without* requesting global usage data. This means that we will
+not have popularity data for these items the second time around. Especially
+since the problem with these images is that they're so popular, we want to
+preserve that information where possible! So we cache the popularity data from
+previous iterations and use it in subsequent ones if we come across the same
+item again.
 """
 
 import argparse
