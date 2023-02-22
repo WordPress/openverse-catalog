@@ -51,8 +51,8 @@ class TaskOverride(TypedDict):
 
 def get_time_override(time_str: str | None) -> timedelta | None:
     """
-    Utility method for converting a string in the format "%d:%H:%M:%S" to a
-    timedelta. Return None if the string is improperly formatted.
+    Convert a string in the format "%d:%H:%M:%S" to a timedelta.
+    Return None if the string is improperly formatted.
 
     Example: "5:10:20:30" represents 5 days, 10 hours, 20 minutes, and
     30 seconds.
