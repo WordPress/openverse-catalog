@@ -62,7 +62,7 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
         # All normal media info, plus popularity info by global usage
         query_all = "imageinfo|globalusage"
         # Just media info, used where there's too much global usage data to parse
-        query_image_only = "imageinfo"
+        query_no_popularity = "imageinfo"
 
         # All media info we care about
         media_all = "url|user|dimensions|extmetadata|mediatype|size|metadata"
@@ -86,7 +86,6 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
         self.continue_token = {}
         self.current_props = self.default_props.copy()
         self.popularity_cache: dict[str, int] = {}
-        self.prop = self.ReturnProps.query_all
 
     def get_next_query_params(self, prev_query_params, **kwargs):
         return {
@@ -286,11 +285,12 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
 
         return []
 
-    def adjust_parameters_for_next_iteration(self, gaicontinue: str) -> None:
+    def adjust_parameters_for_next_iteration(self, gaicontinue: str | None) -> None:
         if "gucontinue" in self.continue_token:
             # Exclude global usage info (i.e. popularity) from the query
-            self.current_props["prop"] = self.ReturnProps.query_image_only
+            self.current_props["prop"] = self.ReturnProps.query_no_popularity
         if "iicontinue" in self.continue_token:
+            # Exclude metadata from the query
             self.current_props["iiprop"] = self.ReturnProps.media_no_metadata
 
         self.continue_token = {

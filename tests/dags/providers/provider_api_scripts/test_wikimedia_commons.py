@@ -24,6 +24,9 @@ def wmc() -> WikimediaCommonsDataIngester:
     return WikimediaCommonsDataIngester(date="2018-01-15")
 
 
+RP = WikimediaCommonsDataIngester.ReturnProps
+
+
 def test_derive_timestamp_pair(wmc):
     # Note that the timestamps are derived as if input was in UTC.
     actual_start_ts, actual_end_ts = wmc.derive_timestamp_pair("2018-01-15")
@@ -76,6 +79,24 @@ def test_get_next_query_params_adds_continue(wmc):
     )
     assert actual_qp["gaicontinue"] == "200|next.jpg"
     assert actual_qp["continue"] == "gaicontinue||"
+
+
+@pytest.mark.parametrize(
+    "query_prop",
+    [RP.query_all, RP.query_no_popularity],
+)
+@pytest.mark.parametrize(
+    "media_prop",
+    [RP.media_all, RP.media_no_metadata],
+)
+def test_get_next_query_params_adds_props(query_prop, media_prop, wmc):
+    wmc.current_props = {
+        "prop": query_prop,
+        "iiprop": media_prop,
+    }
+    actual_qp = wmc.get_next_query_params(prev_query_params={})
+    assert actual_qp["prop"] == query_prop
+    assert actual_qp["iiprop"] == media_prop
 
 
 def test_get_response_json(monkeypatch, wmc):
@@ -372,8 +393,6 @@ def test_create_meta_data_scrapes_text_from_html_description(wmc):
 def test_create_meta_data_tallies_global_usage_count(wmc):
     with open(RESOURCES / "continuation/page_44672185_left.json") as f:
         media_data = json.load(f)
-    # Reset popularity cache
-    wmc.popularity_cache = {}
     actual_gu = wmc.create_meta_data_dict(media_data)["global_usage_count"]
     expect_gu = 3
     assert actual_gu == expect_gu
@@ -382,8 +401,6 @@ def test_create_meta_data_tallies_global_usage_count(wmc):
 def test_create_meta_data_tallies_zero_global_usage_count(wmc):
     with open(RESOURCES / "continuation/page_44672185_right.json") as f:
         media_data = json.load(f)
-    # Reset popularity cache
-    wmc.popularity_cache = {}
     actual_gu = wmc.create_meta_data_dict(media_data)["global_usage_count"]
     expect_gu = 0
     assert actual_gu == expect_gu
@@ -452,3 +469,48 @@ def test_get_audio_record_data_parses_wav_invalid_bit_rate(wmc):
     }
     actual_parsed_data = wmc.get_audio_record_data(original_data, file_metadata)
     assert actual_parsed_data.items() >= expected_parsed_data.items()
+
+
+@pytest.mark.parametrize(
+    "continue_token, expected",
+    [
+        ({}, WikimediaCommonsDataIngester.default_props.copy()),
+        # iicontinue
+        (
+            {
+                "iicontinue": "The_Railway_Chronicle_1844.pdf|20221209222801",
+                "gaicontinue": "20221209222614|NTUL-0527100_英國產業革命史略.pdf",
+                "continue": "gaicontinue||globalusage",
+            },
+            {"prop": RP.query_all, "iiprop": RP.media_no_metadata},
+        ),
+        # gucontinue
+        (
+            {
+                "gucontinue": "Samuel_van_Hoogstraten.jpg|wikidatawiki|28903920",
+                "gaicontinue": "Portland_Street_night_December_2022_Px3_03.jpg",
+                "continue": "gaicontinue||imageinfo",
+            },
+            {"prop": RP.query_no_popularity, "iiprop": RP.media_all},
+        ),
+        # both
+        (
+            {
+                "iicontinue": "The_Railway_Chronicle_1844.pdf|20221209222801",
+                "gucontinue": "Lahore_Satellite_view.jpg|enwiki|125315",
+                "gaicontinue": "20221209222614|NTUL-0527100_英國產業革命史略.pdf",
+                "continue": "gaicontinue||",
+            },
+            {"prop": RP.query_no_popularity, "iiprop": RP.media_no_metadata},
+        ),
+    ],
+)
+def test_adjust_parameters_for_next_iteration(continue_token, expected, wmc):
+    wmc.continue_token = continue_token
+    gaicontinue = "example||gaicontinue"
+    wmc.adjust_parameters_for_next_iteration(gaicontinue)
+    assert wmc.continue_token == {
+        "continue": "gaicontinue||",
+        "gaicontinue": gaicontinue,
+    }
+    assert wmc.current_props == expected
