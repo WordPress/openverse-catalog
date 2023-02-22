@@ -422,6 +422,16 @@ def test_create_meta_data_tallies_global_usage_count(wmc):
     assert actual_gu == expect_gu
 
 
+def test_create_meta_data_tallies_global_usage_count_keeps_higher_value(wmc):
+    with open(RESOURCES / "continuation/page_44672185_left.json") as f:
+        media_data = json.load(f)
+    expect_gu = 10
+    # Prep the cache with a higher value
+    wmc.popularity_cache = {44672185: expect_gu}
+    actual_gu = wmc.create_meta_data_dict(media_data)["global_usage_count"]
+    assert actual_gu == expect_gu
+
+
 def test_create_meta_data_tallies_zero_global_usage_count(wmc):
     with open(RESOURCES / "continuation/page_44672185_right.json") as f:
         media_data = json.load(f)
