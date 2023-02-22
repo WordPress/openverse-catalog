@@ -30,21 +30,44 @@ from providers.provider_api_scripts.wordpress import WordPressDataIngester
 from typing_extensions import NotRequired, TypedDict
 
 
-class ConfigurationOverride(TypedDict):
+class TaskOverride(TypedDict):
     """
-    Describes available options for overriding a Provider DAG's default
-    configuration temporarily.
+    Describes available options for overriding a task's properties.
+
+    Required Arguments:
+
+    task_id: A regex pattern that matches the task_id of the task
+             to be modified.
 
     Optional Arguments:
 
-    pull_timeout:   str in "%d:%H:%M:%S" format giving the amount of time the
-                    pull_data task may take
-    upsert_timeout: str in "%d:%H:%M:%S" format giving the amount of time the
-                    upsert_data task may take
+    timeout: str in "%d:%H:%M:%S" format giving the amount of time the
+             task may take
     """
 
-    pull_timeout: NotRequired[str | None]
-    upsert_timeout: NotRequired[str | None]
+    task_id_pattern: str
+    timeout: NotRequired[str | None]
+
+
+def get_time_override(time_str: str | None) -> timedelta | None:
+    """
+    Utility method for converting a string in the format "%d:%H:%M:%S" to a
+    timedelta. Return None if the string is improperly formatted.
+
+    Example: "5:10:20:30" represents 5 days, 10 hours, 20 minutes, and
+    30 seconds.
+    """
+    if time_str is None:
+        return None
+
+    ts = time_str.split(":")
+    if len(ts) != 4 or not all(t.isdigit() for t in ts):
+        # Incorrectly formatted time string. Do not apply. We don't raise
+        # an error in order to avoid breaking DAGs.
+        return None
+
+    [days, hours, minutes, seconds] = [int(t) for t in ts]
+    return timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
 
 
 @dataclass
@@ -93,6 +116,7 @@ class ProviderWorkflow:
                         to run any necessary post-ingestion tasks, such as dropping data
                         loaded during pre-ingestion
     tags:               list of any additional tags to apply to the generated DAG
+    overrides:          list of TaskOverrides to apply to the generated DAG
     """
 
     ingester_class: type[ProviderDataIngester]
@@ -110,6 +134,7 @@ class ProviderWorkflow:
     create_preingestion_tasks: Callable | None = None
     create_postingestion_tasks: Callable | None = None
     tags: list[str] = field(default_factory=list)
+    overrides: list[TaskOverride] = field(default_factory=list)
 
     def _get_module_info(self):
         # Get the module the ProviderDataIngester was defined in
@@ -131,41 +156,11 @@ class ProviderWorkflow:
         if not self.doc_md:
             self.doc_md = provider_script.__doc__
 
-        # Check for custom configuration
-        overrides: ConfigurationOverride = Variable.get(
+        # Check for custom configuration overrides, which will be applied when
+        # the DAG is generated.
+        self.overrides = Variable.get(
             "CONFIGURATION_OVERRIDES", default_var={}, deserialize_json=True
-        ).get(self.dag_id, {})
-
-        # Apply overrides
-        if overrides:
-            pull_override_str = overrides.get("pull_timeout")
-            if pull_override := self._get_timedelta(pull_override_str):
-                self.pull_timeout = pull_override
-
-            upsert_override_str = overrides.get("upsert_timeout")
-            if upsert_override := self._get_timedelta(upsert_override_str):
-                self.upsert_timeout = upsert_override
-
-    @staticmethod
-    def _get_timedelta(time_str: str | None) -> timedelta | None:
-        """
-        Convert a string in the format "%d:%H:%M:%S" to a timedelta. Return
-        None if the string is improperly formatted.
-
-        Example: "5:10:20:30" represents 5 days, 10 hours, 20 minutes, and
-        30 seconds.
-        """
-        if time_str is None:
-            return None
-
-        ts = time_str.split(":")
-        if len(ts) != 4 or not all(t.isdigit() for t in ts):
-            # Incorrectly formatted time string. Do not apply. We don't raise
-            # an error in order to avoid breaking DAGs.
-            return None
-
-        [days, hours, minutes, seconds] = [int(t) for t in ts]
-        return timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
+        ).get(self.dag_id, [])
 
 
 PROVIDER_WORKFLOWS = [

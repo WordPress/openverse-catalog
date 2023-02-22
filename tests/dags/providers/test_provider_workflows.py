@@ -2,7 +2,7 @@ from datetime import timedelta
 from unittest import mock
 
 import pytest
-from providers.provider_workflows import ProviderWorkflow
+from providers.provider_workflows import ProviderWorkflow, get_time_override
 
 from tests.dags.providers.provider_api_scripts.resources.provider_data_ingester.mock_provider_data_ingester import (
     MockAudioOnlyProviderDataIngester,
@@ -58,42 +58,36 @@ def test_sets_media_types(ingester_class, expected_media_types):
 
 
 @pytest.mark.parametrize(
-    "configuration_overrides, expected_pull, expected_upsert",
+    "configuration_overrides, expected_overrides",
     [
         # No overrides configured
-        ({}, timedelta(days=1), timedelta(hours=1)),
+        ({}, []),
         # Overrides configured, but not for this dag_id
         (
-            {"some_other_dag_id": {"pull_timeout": "00:05:00:00"}},
-            timedelta(days=1),
-            timedelta(hours=1),
+            {
+                "some_other_dag_id": [
+                    {"task_id_pattern": "some_task_id", "timeout": "1:0:0:0"}
+                ]
+            },
+            [],
         ),
-        # Configured override for pull_timeout only
-        (
-            {"my_dag_id": {"pull_timeout": "01:12:30:30"}},
-            timedelta(days=1, hours=12, minutes=30, seconds=30),
-            timedelta(hours=1),
-        ),
-        # Override for upsert_timeout only
-        (
-            {"my_dag_id": {"upsert_timeout": "02:6:10:15"}},
-            timedelta(days=1),
-            timedelta(days=2, hours=6, minutes=10, seconds=15),
-        ),
-        # Both timeouts overridden
+        # Configured overrides
         (
             {
-                "my_dag_id": {
-                    "pull_timeout": "01:12:30:30",
-                    "upsert_timeout": "02:6:10:15",
-                }
+                "some_other_dag_id": [
+                    {"task_id_pattern": "some_task_id", "timeout": "1:0:0:0"},
+                ],
+                "my_dag_id": [
+                    {"task_id_pattern": "my_dag_id", "timeout": "1:2:3:4"},
+                ],
             },
-            timedelta(days=1, hours=12, minutes=30, seconds=30),
-            timedelta(days=2, hours=6, minutes=10, seconds=15),
+            [
+                {"task_id_pattern": "my_dag_id", "timeout": "1:2:3:4"},
+            ],
         ),
     ],
 )
-def test_overrides(configuration_overrides, expected_pull, expected_upsert):
+def test_overrides(configuration_overrides, expected_overrides):
     with mock.patch("providers.provider_workflows.Variable") as MockVariable:
         MockVariable.get.side_effect = [
             configuration_overrides,
@@ -105,8 +99,7 @@ def test_overrides(configuration_overrides, expected_pull, expected_upsert):
             upsert_timeout=timedelta(hours=1),
         )
 
-        assert test_workflow.pull_timeout == expected_pull
-        assert test_workflow.upsert_timeout == expected_upsert
+        assert test_workflow.overrides == expected_overrides
 
 
 @pytest.mark.parametrize(
@@ -124,5 +117,5 @@ def test_overrides(configuration_overrides, expected_pull, expected_upsert):
     ],
 )
 def test_get_timedelta(time_str, expected_timedelta):
-    actual_timedelta = ProviderWorkflow._get_timedelta(time_str)
+    actual_timedelta = get_time_override(time_str)
     assert actual_timedelta == expected_timedelta
