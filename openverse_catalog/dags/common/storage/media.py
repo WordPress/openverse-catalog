@@ -104,7 +104,7 @@ class MediaStore(metaclass=abc.ABCMeta):
         - validate `license_info`
         - validate `filetype`
         - validate `url`, `foreign_landing_url`, `thumbnail_url`, and `creator_url`
-          (striping trailing slashes if requested)
+          (stripping trailing slashes if requested)
         - enrich `metadata`,
         - replace `raw_tags` with enriched `tags`,
         - validate `source`,
