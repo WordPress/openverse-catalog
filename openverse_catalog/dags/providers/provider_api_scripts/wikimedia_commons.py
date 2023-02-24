@@ -233,35 +233,30 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
                 timeout=60,
             )
 
-            if response_json is None:
-                logger.warning("Response JSON is None")
-                break
+            # Update continue token for the next request
+            self.continue_token = response_json.pop("continue", {})
+            query_params.update(self.continue_token)
+            logger.info(f"Continue token for next iteration: {self.continue_token}")
+
+            current_gaicontinue = self.continue_token.get("gaicontinue", None)
+            logger.debug(f"{current_gaicontinue=}")
+            if current_gaicontinue is not None and current_gaicontinue == gaicontinue:
+                iteration_count += 1
             else:
-                # Update continue token for the next request
-                self.continue_token = response_json.pop("continue", {})
-                query_params.update(self.continue_token)
-                logger.info(f"Continue token for next iteration: {self.continue_token}")
+                # Reset the iteration count if the continue token has changed
+                iteration_count = 0
+                gaicontinue = current_gaicontinue
 
-                current_gaicontinue = self.continue_token.get("gaicontinue", None)
-                logger.debug(f"{current_gaicontinue=}")
-                if (
-                    current_gaicontinue is not None
-                    and current_gaicontinue == gaicontinue
-                ):
-                    iteration_count += 1
-                else:
-                    gaicontinue = current_gaicontinue
+            if iteration_count >= self.max_page_iteration_before_give_up:
+                logger.warning(
+                    f"Hit iteration count limit for '{gaicontinue}', "
+                    "re-attempting with a bare token"
+                )
+                self.adjust_parameters_for_next_iteration(gaicontinue)
+                break
 
-                if iteration_count >= self.max_page_iteration_before_give_up:
-                    logger.warning(
-                        f"Hit iteration count limit for '{gaicontinue}', "
-                        "re-attempting with a bare token"
-                    )
-                    self.adjust_parameters_for_next_iteration(gaicontinue)
-                    break
-
-                # Merge this response into the batch
-                batch_json = self.merge_response_jsons(batch_json, response_json)
+            # Merge this response into the batch
+            batch_json = self.merge_response_jsons(batch_json, response_json)
 
             if "batchcomplete" in response_json:
                 logger.info("Found batchcomplete")
