@@ -747,7 +747,7 @@ In this case, we're iterating over the "global all images" generator
 as the secondary continue iterator. The "globalusage" property would be the next
 property to iterate over. It's also possible for multiple sub-properties to be
 iterated over simultaneously, in which case the "continue" token would not have
-a secondary value (e.g. `gaicontinue||`). ` Occasionally, the ingester will come
+a secondary value (e.g. `gaicontinue||`). Occasionally, the ingester will come
 across a piece of media that has many results for the property it's iterating
 over. An example of this can include an item being on many pages, this it would
 have many "global usage" results. In order to process the entire batch, we have

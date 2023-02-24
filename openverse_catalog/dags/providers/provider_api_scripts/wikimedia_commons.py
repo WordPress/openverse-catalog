@@ -177,9 +177,9 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
 
     def get_next_query_params(self, prev_query_params, **kwargs):
         # NOTE: If more sub-properties are added here, an additional contingency for
-        # NOTE: iterating over that property's "continue" token will need to be added
-        # NOTE: to the `adjust_parameters_for_next_iteration` function, otherwise the
-        # NOTE: ingestion could get stuck in an infinite loop.
+        # iterating over that property's "continue" token will need to be added
+        # to the `adjust_parameters_for_next_iteration` function, otherwise the
+        # ingestion could get stuck in an infinite loop.
         return {
             # The type of action being taken for the API request
             "action": "query",
@@ -265,7 +265,7 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
 
             if "batchcomplete" in response_json:
                 logger.info("Found batchcomplete")
-                # Reset the search props for the next iteration
+                # Reset the search props for the next batch
                 self.current_props = self.default_props.copy()
                 break
         return batch_json
@@ -293,7 +293,6 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
 
     def get_record_data(self, record):
         foreign_id = record.get("pageid")
-        # logger.debug(f"Processing page ID: {foreign_id}")
 
         media_info = self.extract_media_info_dict(record)
 
