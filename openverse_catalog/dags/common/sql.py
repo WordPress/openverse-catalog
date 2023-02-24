@@ -78,12 +78,21 @@ class PostgresHook(UpstreamPostgresHook):
         return super().run(sql, autocommit, parameters, handler)
 
     @staticmethod
-    def get_execution_timeout(task) -> float:
+    def get_execution_timeout(task: BaseOperator | MappedOperator = None) -> float:
         """
         Pull execution timeout from airflow task and format it for the hook, i.e.
         number of seconds. Use the task execution timeout, if available. If not, take
         the DAG execution timeout, if that's not available, return 0 for no timeout.
+
+        If the task falls through the cracks between functions and 'None' is passed
+        instead, return the common.constants dag default task timeout, and note the
+        decision in the log.
         """
+        universal_default = DAG_DEFAULT_ARGS["execution_timeout"].total_seconds()
+        if task is None:
+            logger.warning(f"Received None, not a task. Returning {universal_default=}")
+            return universal_default
+
         # DAG-level default task execution timeout, which may come from
         # common.constants.DAG_DEFAULT_ARGS["execution_timeout"]
         # or by over-ridden for a specific DAG as in image expiration.
@@ -100,14 +109,15 @@ class PostgresHook(UpstreamPostgresHook):
         else:
             task_timeout = None
 
-        # Prefer the most immediately specified. Here "None" means not specified, while
-        # timedelta(seconds=0) which is also falsey means "Set no timeout at all."
+        # Prefer the most immediately specified. Here "None" means not specified and
+        # results in the universal default timeout, while timedelta(seconds=0) which is
+        # not None but also falsey means "Set no timeout at all."
         if task_timeout is not None:
             return task_timeout.total_seconds()
         elif dag_default_timeout is not None:
             return dag_default_timeout.total_seconds()
         else:
-            return DAG_DEFAULT_ARGS["execution_timeout"].total_seconds()
+            return universal_default
 
     @staticmethod
     def get_pg_timeout_sql(statement_timeout: float) -> str:
