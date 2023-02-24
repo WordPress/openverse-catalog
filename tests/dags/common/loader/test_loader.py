@@ -22,11 +22,11 @@ def test_upsert_data_calculations(
 
         actual = loader.upsert_data(
             postgres_conn_id=mock.Mock(),
-            task=mock_pg_hook_task,
+            media_type="fake",
             tsv_version="fake",
             identifier="fake",
-            media_type="fake",
             loaded_count=load_value,
             duplicates_count=clean_data_value,
+            task=mock_pg_hook_task,
         )
         assert actual == expected

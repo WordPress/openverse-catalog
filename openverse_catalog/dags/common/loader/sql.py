@@ -107,10 +107,10 @@ def create_loading_table(
 
 def load_local_data_to_intermediate_table(
     postgres_conn_id,
-    task,
     tsv_file_name,
     identifier,
     max_rows_to_skip=10,
+    task: BaseOperator = None,
 ):
     media_type = _extract_media_type(tsv_file_name)
     load_table = _get_load_table_name(identifier, media_type=media_type)
@@ -157,11 +157,11 @@ def _handle_s3_load_result(cursor) -> int:
 
 def load_s3_data_to_intermediate_table(
     postgres_conn_id,
-    task,
     bucket,
     s3_key,
     identifier,
     media_type=IMAGE,
+    task: BaseOperator = None,
 ) -> int:
     load_table = _get_load_table_name(identifier, media_type=media_type)
     logger.info(f"Loading {s3_key} from S3 Bucket {bucket} into {load_table}")
@@ -191,9 +191,9 @@ def load_s3_data_to_intermediate_table(
 
 def clean_intermediate_table_data(
     postgres_conn_id: str,
-    task: BaseOperator,
     identifier: str,
     media_type: MediaType = IMAGE,
+    task: BaseOperator = None,
 ) -> tuple[int, int]:
     """
     Clean the data in the intermediate table.
@@ -262,11 +262,11 @@ def _is_tsv_column_from_different_version(
 
 def upsert_records_to_db_table(
     postgres_conn_id: str,
-    task: BaseOperator,
     identifier: str,
     db_table: str = None,
     media_type: str = IMAGE,
     tsv_version: str = CURRENT_TSV_VERSION,
+    task: BaseOperator = None,
 ):
     """
     Upsert newly ingested records from loading table into the main db table.
@@ -275,12 +275,12 @@ def upsert_records_to_db_table(
     NULL value is used.
 
     :param postgres_conn_id
-    :param task              To be automagically passed by airflow.
     :param identifier
     :param db_table
     :param media_type
     :param tsv_version:      The version of TSV being processed. This
     determines which columns are used in the upsert query.
+    :param task              To be automagically passed by airflow.
     :return:
     """
     if db_table is None:
@@ -373,9 +373,9 @@ def _delete_malformed_row_in_file(tsv_file_name, line_number):
 
 def expire_old_images(
     postgres_conn_id,
-    task,
     provider,
     image_table=TABLE_NAMES[IMAGE],
+    task: BaseOperator = None,
 ):
     postgres = PostgresHook(
         postgres_conn_id=postgres_conn_id,

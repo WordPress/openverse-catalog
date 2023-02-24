@@ -29,25 +29,25 @@ def load_s3_data(
         identifier, bucket, aws_conn_id, media_prefix=media_type
     )
     sql.load_s3_data_to_intermediate_table(
-        postgres_conn_id, task, bucket, tsv_key, identifier, media_type
+        postgres_conn_id, bucket, tsv_key, identifier, media_type, task
     )
     sql.upsert_records_to_db_table(
         postgres_conn_id,
-        task,
         identifier,
         media_type=media_type,
         tsv_version=tsv_version,
+        task=task,
     )
 
 
 def upsert_data(
     postgres_conn_id: str,
-    task: BaseOperator,
     media_type: str,
     tsv_version: str,
     identifier: str,
     loaded_count: int,
     duplicates_count: tuple[int, int],
+    task: BaseOperator = None,
 ) -> RecordMetrics:
     """
     Upsert data into the catalog DB from the loading table, and calculate
@@ -56,10 +56,10 @@ def upsert_data(
     missing_columns, foreign_id_dup = duplicates_count
     upserted = sql.upsert_records_to_db_table(
         postgres_conn_id,
-        task,
         identifier,
         media_type=media_type,
         tsv_version=tsv_version,
+        task=task,
     )
 
     url_dup = loaded_count - missing_columns - foreign_id_dup - upserted

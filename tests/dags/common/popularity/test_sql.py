@@ -117,9 +117,9 @@ def _set_up_popularity_metrics(metrics_dict, table_info, mock_pg_hook_task):
     )
     sql.update_media_popularity_metrics(
         postgres_conn_id=conn_id,
-        task=mock_pg_hook_task,
         popularity_metrics=metrics_dict,
         popularity_metrics_table=table_info.metrics,
+        task=mock_pg_hook_task,
     )
 
 
@@ -189,12 +189,12 @@ def _set_up_image_view(
     )
     sql.create_media_view(
         conn_id,
-        mock_pg_hook_task,
         standardized_popularity_func=table_info.standardized_popularity,
         table_name=table_info.image,
         db_view_name=table_info.image_view,
         db_view_id_idx=table_info.image_view_idx,
         db_view_provider_fid_idx=table_info.provider_fid_idx,
+        task=mock_pg_hook_task,
     )
 
 

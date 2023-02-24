@@ -134,17 +134,13 @@ class INaturalistDataIngester(ProviderDataIngester):
         )
         # Run standard cleaning
         (missing_columns, foreign_id_dup) = sql.clean_intermediate_table_data(
-            postgres_conn_id=POSTGRES_CONN_ID,
-            task=task,
-            identifier=identifier,
+            postgres_conn_id=POSTGRES_CONN_ID, identifier=identifier, task=task
         )
         # Add transformed records to the target catalog image table.
         # TO DO: Would it be better to use loader.upsert_records here? Would need to
         # trace back the parameters that need to be passed in for different stats.
         upserted_records = sql.upsert_records_to_db_table(
-            postgres_conn_id=POSTGRES_CONN_ID,
-            task=task,
-            identifier=identifier,
+            postgres_conn_id=POSTGRES_CONN_ID, identifier=identifier, task=task
         )
         logger.info(f"Upserted {upserted_records} records, from batch {batch_number}.")
         # Truncate the temp table

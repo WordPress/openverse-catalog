@@ -2,6 +2,7 @@ from collections import namedtuple
 from datetime import timedelta
 from textwrap import dedent
 
+from airflow.models import BaseOperator
 from common.constants import AUDIO, IMAGE
 from common.loader.sql import TABLE_NAMES
 from common.sql import PostgresHook
@@ -137,10 +138,10 @@ def create_media_popularity_metrics(
 
 def update_media_popularity_metrics(
     postgres_conn_id,
-    task,
     media_type=IMAGE,
     popularity_metrics=None,
     popularity_metrics_table=IMAGE_POPULARITY_METRICS_TABLE_NAME,
+    task: BaseOperator = None,
 ):
     if popularity_metrics is None:
         if media_type == AUDIO:
@@ -284,9 +285,9 @@ def create_media_popularity_constants_view(
 
 def update_media_popularity_constants(
     postgres_conn_id,
-    task,
     media_type=IMAGE,
     popularity_constants_view=IMAGE_POPULARITY_CONSTANTS_VIEW,
+    task: BaseOperator = None,
 ):
     if media_type == AUDIO:
         popularity_constants_view = AUDIO_POPULARITY_CONSTANTS_VIEW
@@ -360,13 +361,13 @@ def create_audioset_view_query():
 
 def create_media_view(
     postgres_conn_id,
-    task,
     media_type=IMAGE,
     standardized_popularity_func=STANDARDIZED_IMAGE_POPULARITY_FUNCTION,
     table_name=TABLE_NAMES[IMAGE],
     db_view_name=IMAGE_VIEW_NAME,
     db_view_id_idx=IMAGE_VIEW_ID_IDX,
     db_view_provider_fid_idx=IMAGE_VIEW_PROVIDER_FID_IDX,
+    task: BaseOperator = None,
 ):
     if media_type == AUDIO:
         table_name = TABLE_NAMES[AUDIO]
@@ -409,10 +410,7 @@ def create_media_view(
 
 
 def update_db_view(
-    postgres_conn_id,
-    task,
-    media_type=IMAGE,
-    db_view_name=IMAGE_VIEW_NAME,
+    postgres_conn_id, media_type=IMAGE, db_view_name=IMAGE_VIEW_NAME, task=None
 ):
     if media_type == AUDIO:
         db_view_name = AUDIO_VIEW_NAME
