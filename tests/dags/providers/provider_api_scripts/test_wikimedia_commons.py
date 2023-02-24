@@ -164,7 +164,6 @@ def test_get_response_json_breaks_on_max_iterations(monkeypatch, wmc):
 
     monkeypatch.setattr(wmc.delayed_requester, "get_response_json", get_response_mock)
     wmc.continue_token = {}
-    print("Attempting!")
     actual = wmc.get_response_json(wmc.get_next_query_params({}))
     expected = response.copy()
     expected.pop("continue")
@@ -173,6 +172,29 @@ def test_get_response_json_breaks_on_max_iterations(monkeypatch, wmc):
     assert get_response_mock.call_count == wmc.max_page_iteration_before_give_up + 1
     # The props should NOT be the default at this point
     assert wmc.current_props != wmc.default_props
+
+
+def test_get_response_json_props_reset_on_batchcomplete(monkeypatch, wmc):
+    with open(RESOURCES / "continuation/wmc_pretty_nocontinue.json") as f:
+        response = json.load(f)
+    wmc.max_page_iteration_before_give_up = 10
+    wmc.delayed_requester._DELAY = 0.01
+
+    def mock_get_response_json(endpoint, retries, query_params, **kwargs):
+        return response.copy()
+
+    get_response_mock = Mock(side_effect=mock_get_response_json)
+
+    monkeypatch.setattr(wmc.delayed_requester, "get_response_json", get_response_mock)
+    wmc.continue_token = {}
+    # Force a change to the props
+    wmc.current_props["prop"] = "foo"
+
+    actual = wmc.get_response_json(wmc.get_next_query_params({}))
+    expected = response.copy()
+    assert actual == expected
+    # The props should be reset to the default
+    assert wmc.current_props == wmc.default_props
 
 
 def test_merge_response_jsons(wmc):
@@ -506,9 +528,9 @@ def test_get_audio_record_data_parses_wav_invalid_bit_rate(wmc):
 
 
 @pytest.mark.parametrize(
-    "continue_token, expected",
+    "continue_token, expected_props, expected_continue",
     [
-        ({}, WikimediaCommonsDataIngester.default_props.copy()),
+        ({}, WikimediaCommonsDataIngester.default_props.copy(), "||"),
         # iicontinue
         (
             {
@@ -517,6 +539,7 @@ def test_get_audio_record_data_parses_wav_invalid_bit_rate(wmc):
                 "continue": "gaicontinue||globalusage",
             },
             {"prop": RP.query_all, "iiprop": RP.media_no_metadata},
+            "gaicontinue||",
         ),
         # gucontinue
         (
@@ -526,6 +549,7 @@ def test_get_audio_record_data_parses_wav_invalid_bit_rate(wmc):
                 "continue": "gaicontinue||imageinfo",
             },
             {"prop": RP.query_no_popularity, "iiprop": RP.media_all},
+            "gaicontinue||",
         ),
         # both
         (
@@ -536,15 +560,18 @@ def test_get_audio_record_data_parses_wav_invalid_bit_rate(wmc):
                 "continue": "gaicontinue||",
             },
             {"prop": RP.query_no_popularity, "iiprop": RP.media_no_metadata},
+            "gaicontinue||",
         ),
     ],
 )
-def test_adjust_parameters_for_next_iteration(continue_token, expected, wmc):
+def test_adjust_parameters_for_next_iteration(
+    continue_token, expected_props, expected_continue, wmc
+):
     wmc.continue_token = continue_token
     gaicontinue = "example||gaicontinue"
     wmc.adjust_parameters_for_next_iteration(gaicontinue)
     assert wmc.continue_token == {
-        "continue": "gaicontinue||",
+        "continue": expected_continue,
         "gaicontinue": gaicontinue,
     }
-    assert wmc.current_props == expected
+    assert wmc.current_props == expected_props

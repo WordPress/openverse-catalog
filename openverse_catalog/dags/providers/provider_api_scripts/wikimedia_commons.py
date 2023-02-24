@@ -410,7 +410,7 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
 
         # In order to appropriately adjust the continue token, we need to preserve the
         # primary iterator (if there is one) and reset the secondary iterator.
-        current_continue = self.continue_token["continue"]
+        current_continue = self.continue_token.get("continue", "||")
         reset_continue = current_continue.split("||")[0]
 
         self.continue_token = {
