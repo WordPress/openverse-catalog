@@ -59,23 +59,23 @@ The following are DAGs grouped by their primary tag:
 | --------------------------------------------------------------- | ----------------- | ------- | ------------- |
 | `brooklyn_museum_workflow`                                      | `@monthly`        | `False` | image         |
 | `cleveland_museum_workflow`                                     | `@monthly`        | `False` | image         |
-| [`europeana_workflow`](#europeana_workflow)                     | `@daily`          | `False` | image         |
-| [`finnish_museums_workflow`](#finnish_museums_workflow)         | `@daily`          | `False` | image         |
-| [`flickr_workflow`](#flickr_workflow)                           | `@daily`          | `False` | image         |
+| [`europeana_workflow`](#europeana_workflow)                     | `@daily`          | `True`  | image         |
+| [`finnish_museums_workflow`](#finnish_museums_workflow)         | `@daily`          | `True`  | image         |
+| [`flickr_workflow`](#flickr_workflow)                           | `@daily`          | `True`  | image         |
 | [`freesound_workflow`](#freesound_workflow)                     | `@monthly`        | `False` | audio         |
 | [`inaturalist_workflow`](#inaturalist_workflow)                 | `@monthly`        | `False` | image         |
 | [`jamendo_workflow`](#jamendo_workflow)                         | `@monthly`        | `False` | audio         |
-| [`metropolitan_museum_workflow`](#metropolitan_museum_workflow) | `@daily`          | `False` | image         |
+| [`metropolitan_museum_workflow`](#metropolitan_museum_workflow) | `@daily`          | `True`  | image         |
 | `museum_victoria_workflow`                                      | `@monthly`        | `False` | image         |
 | [`nappy_workflow`](#nappy_workflow)                             | `@monthly`        | `False` | image         |
 | `nypl_workflow`                                                 | `@monthly`        | `False` | image         |
-| [`phylopic_workflow`](#phylopic_workflow)                       | `@daily`          | `False` | image         |
+| [`phylopic_workflow`](#phylopic_workflow)                       | `@daily`          | `True`  | image         |
 | [`rawpixel_workflow`](#rawpixel_workflow)                       | `@monthly`        | `False` | image         |
 | [`science_museum_workflow`](#science_museum_workflow)           | `@monthly`        | `False` | image         |
 | [`smithsonian_workflow`](#smithsonian_workflow)                 | `@weekly`         | `False` | image         |
 | [`smk_workflow`](#smk_workflow)                                 | `@monthly`        | `False` | image         |
 | [`stocksnap_workflow`](#stocksnap_workflow)                     | `@monthly`        | `False` | image         |
-| [`wikimedia_commons_workflow`](#wikimedia_commons_workflow)     | `@daily`          | `False` | image, audio  |
+| [`wikimedia_commons_workflow`](#wikimedia_commons_workflow)     | `@daily`          | `True`  | image, audio  |
 | [`wordpress_workflow`](#wordpress_workflow)                     | `@monthly`        | `False` | image         |
 
 ## Provider Reingestion
