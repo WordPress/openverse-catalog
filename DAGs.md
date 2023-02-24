@@ -639,22 +639,33 @@ In this case, we're iterating over the "global all images" generator
 as the secondary continue iterator. The "globalusage" property would be the next
 property to iterate over. It's also possible for multiple sub-properties to be
 iterated over simultaneously, in which case the "continue" token would not have
-a secondary value (e.g. `gaicontinue||`). ` Occasionally, the ingester will come
-across a piece of media that has many results for the property it's iterating
-over. An example of this can include an item being on many pages, this it would
-have many "global usage" results. In order to process the entire batch, we have
-to iterate over _all_ of the returned results; Wikimedia does not provide a
-mechanism to "skip to the end" of a batch. On numerous occasions, this iteration
-has been so extensive that the pull media task has hit the task's timeout. To
-avoid this, we limit the number of iterations we make for parsing through a
-sub-property's data.If we hit the limit, we re-issue the original query
-_without_ requesting properties that returned large amounts of data.
-Unfortunately, this means that we will **not** have that property's data for
-these items the second time around (e.g. popularity data if we needed to skip
-global usage). In the case of popularity, especially since the problem with
-these images is that they're so popular, we want to preserve that information
-where possible! So we cache the popularity data from previous iterations and use
-it in subsequent ones if we come across the same item again.
+a secondary value (e.g. `gaicontinue||`).
+
+In most runs, the "continue" key will be `gaicontinue||` after the first
+request, which means that we have more than one batch to iterate over for the
+primary iterator. Some days will have fewer images than the batch limit but
+still have multiple batches of content on the secondary iterator, which means
+the "continue" key may not have a primary iteration component (e.g.
+`||globalusage`). This token can also be seen when the first request has more
+data in the secondary iterator, before we've processed any data on the primary
+iterator.
+
+Occasionally, the ingester will come across a piece of media that has many
+results for the property it's iterating over. An example of this can include an
+item being on many pages, this it would have many "global usage" results. In
+order to process the entire batch, we have to iterate over _all_ of the returned
+results; Wikimedia does not provide a mechanism to "skip to the end" of a batch.
+On numerous occasions, this iteration has been so extensive that the pull media
+task has hit the task's timeout. To avoid this, we limit the number of
+iterations we make for parsing through a sub-property's data.If we hit the
+limit, we re-issue the original query _without_ requesting properties that
+returned large amounts of data. Unfortunately, this means that we will **not**
+have that property's data for these items the second time around (e.g.
+popularity data if we needed to skip global usage). In the case of popularity,
+especially since the problem with these images is that they're so popular, we
+want to preserve that information where possible! So we cache the popularity
+data from previous iterations and use it in subsequent ones if we come across
+the same item again.
 
 Below are some specific references to various properties, with examples for
 cases where they might exceed the limit. Technically, it's feasible for almost
@@ -747,22 +758,33 @@ In this case, we're iterating over the "global all images" generator
 as the secondary continue iterator. The "globalusage" property would be the next
 property to iterate over. It's also possible for multiple sub-properties to be
 iterated over simultaneously, in which case the "continue" token would not have
-a secondary value (e.g. `gaicontinue||`). ` Occasionally, the ingester will come
-across a piece of media that has many results for the property it's iterating
-over. An example of this can include an item being on many pages, this it would
-have many "global usage" results. In order to process the entire batch, we have
-to iterate over _all_ of the returned results; Wikimedia does not provide a
-mechanism to "skip to the end" of a batch. On numerous occasions, this iteration
-has been so extensive that the pull media task has hit the task's timeout. To
-avoid this, we limit the number of iterations we make for parsing through a
-sub-property's data.If we hit the limit, we re-issue the original query
-_without_ requesting properties that returned large amounts of data.
-Unfortunately, this means that we will **not** have that property's data for
-these items the second time around (e.g. popularity data if we needed to skip
-global usage). In the case of popularity, especially since the problem with
-these images is that they're so popular, we want to preserve that information
-where possible! So we cache the popularity data from previous iterations and use
-it in subsequent ones if we come across the same item again.
+a secondary value (e.g. `gaicontinue||`).
+
+In most runs, the "continue" key will be `gaicontinue||` after the first
+request, which means that we have more than one batch to iterate over for the
+primary iterator. Some days will have fewer images than the batch limit but
+still have multiple batches of content on the secondary iterator, which means
+the "continue" key may not have a primary iteration component (e.g.
+`||globalusage`). This token can also be seen when the first request has more
+data in the secondary iterator, before we've processed any data on the primary
+iterator.
+
+Occasionally, the ingester will come across a piece of media that has many
+results for the property it's iterating over. An example of this can include an
+item being on many pages, this it would have many "global usage" results. In
+order to process the entire batch, we have to iterate over _all_ of the returned
+results; Wikimedia does not provide a mechanism to "skip to the end" of a batch.
+On numerous occasions, this iteration has been so extensive that the pull media
+task has hit the task's timeout. To avoid this, we limit the number of
+iterations we make for parsing through a sub-property's data.If we hit the
+limit, we re-issue the original query _without_ requesting properties that
+returned large amounts of data. Unfortunately, this means that we will **not**
+have that property's data for these items the second time around (e.g.
+popularity data if we needed to skip global usage). In the case of popularity,
+especially since the problem with these images is that they're so popular, we
+want to preserve that information where possible! So we cache the popularity
+data from previous iterations and use it in subsequent ones if we come across
+the same item again.
 
 Below are some specific references to various properties, with examples for
 cases where they might exceed the limit. Technically, it's feasible for almost

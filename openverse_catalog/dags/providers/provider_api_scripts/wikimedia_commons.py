@@ -59,7 +59,15 @@ our primary iterator, with the "image properties" (iicontinue) as the secondary 
 iterator. The "globalusage" property would be the next property to iterate over. It's
 also possible for multiple sub-properties to be iterated over simultaneously, in which
 case the "continue" token would not have a secondary value (e.g. `gaicontinue||`).
-`
+
+In most runs, the "continue" key will be `gaicontinue||` after the first request, which
+means that we have more than one batch to iterate over for the primary iterator. Some
+days will have fewer images than the batch limit but still have multiple batches of
+content on the secondary iterator, which means the "continue" key may not have a primary
+iteration component (e.g. `||globalusage`). This token can also be seen when the first
+request has more data in the secondary iterator, before we've processed any data on
+the primary iterator.
+
 Occasionally, the ingester will come across a piece of media that has many results for
 the property it's iterating over. An example of this can include an item being on many
 pages, this it would have many "global usage" results. In order to process the entire
@@ -132,7 +140,7 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
     # These can be very large, so we need to limit the number of attempts otherwise
     # the DAG will hit the timeout when it comes across these items.
     # See: https://github.com/WordPress/openverse-catalog/issues/725
-    max_page_iteration_before_give_up = 100
+    max_page_iteration_before_give_up = 10
 
     image_mediatypes = {"BITMAP", "DRAWING"}
     audio_mediatypes = {"AUDIO"}
@@ -238,9 +246,11 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
             query_params.update(self.continue_token)
             logger.info(f"Continue token for next iteration: {self.continue_token}")
 
-            current_gaicontinue = self.continue_token.get("gaicontinue", None)
+            current_gaicontinue = self.continue_token.get("gaicontinue")
             logger.debug(f"{current_gaicontinue=}")
-            if current_gaicontinue is not None and current_gaicontinue == gaicontinue:
+            if current_gaicontinue == gaicontinue:
+                # gaicontinue token can be None if all available results fit within
+                # the batch limit, so we don't need to make an exception if it's None
                 iteration_count += 1
             else:
                 # Reset the iteration count if the continue token has changed
@@ -398,9 +408,14 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
             # Exclude metadata from the query
             self.current_props["iiprop"] = self.ReturnProps.media_no_metadata
 
+        # In order to appropriately adjust the continue token, we need to preserve the
+        # primary iterator (if there is one) and reset the secondary iterator.
+        current_continue = self.continue_token["continue"]
+        reset_continue = current_continue.split("||")[0]
+
         self.continue_token = {
             "gaicontinue": gaicontinue,
-            "continue": "gaicontinue||",
+            "continue": f"{reset_continue}||",
         }
 
     @staticmethod
