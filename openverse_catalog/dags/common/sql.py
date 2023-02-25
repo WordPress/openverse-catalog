@@ -32,10 +32,10 @@ class PostgresHook(UpstreamPostgresHook):
     execution timeout or a specific timeout for a particular run.
 
     default_statement_timeout: number of seconds postgres should wait before canceling
-        the query (note: can override this by passing statement_timeout to a the `run`
-        method, but other methods like `get_records` which rely on `run` are not
-        are not set up to pass an override timeout through to `run`. Not clear that it
-        always works to have a `statement_timeout` that is longer than the airflow task
+        the query (note: can override this by passing statement_timeout to the `run`
+        method, but other methods like `get_records` which rely on `run` are not set up
+        to pass an override timeout through to `run`. Not clear that it always works to
+        have a `statement_timeout` that is longer than the airflow task
         `execution_timeout`.)
     see airflow.providers.postgres.hooks.postgres.PostgresHook for more on other params
     """
@@ -90,7 +90,9 @@ class PostgresHook(UpstreamPostgresHook):
         """
         universal_default = DAG_DEFAULT_ARGS["execution_timeout"].total_seconds()
         if task is None:
-            logger.warning(f"Received None, not a task. Returning {universal_default=}")
+            logger.warning(
+                f"No task supplied, using default timeout of {universal_default}s"
+            )
             return universal_default
 
         # DAG-level default task execution timeout, which may come from
