@@ -120,9 +120,7 @@ def test_PostgresHook_get_execution_timeout_no_task(caplog):
     actual_result = PostgresHook.get_execution_timeout(None)
     assert len(caplog.records) == 1
     assert caplog.records[0].levelname == "WARNING"
-    assert (
-        "Received None, not a task. Returning universal_default=3600.0" in caplog.text
-    )
+    assert "No task supplied, using default timeout of 3600.0s" in caplog.text
     assert actual_result == DEFAULT_TIMEOUT
 
 
