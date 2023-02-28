@@ -7,16 +7,13 @@ The `license_url` is constructed from the `license` and `license_version` fields
 This is a maintenance DAG that should be run once.
 """
 import logging
-from datetime import datetime
 from textwrap import dedent
 from typing import Literal
 
-import jinja2
 from airflow.models import DAG
 from airflow.operators.python import BranchPythonOperator, PythonOperator
 from airflow.providers.postgres.hooks.postgres import PostgresHook
-from common import slack
-from common.constants import POSTGRES_CONN_ID, XCOM_PULL_TEMPLATE
+from common.constants import DAG_DEFAULT_ARGS, POSTGRES_CONN_ID, XCOM_PULL_TEMPLATE
 from common.licenses.constants import get_reverse_license_path_map
 from common.loader.sql import RETURN_ROW_COUNT
 from common.slack import send_message
@@ -130,21 +127,13 @@ Now, there are {null_meta_data_records} records with NULL meta_data.
     logger.info(message)
 
 
-DAG_DEFAULT_ARGS = {
-    "owner": "data-eng-admin",
-    "depends_on_past": False,
-    "start_date": datetime(2020, 6, 15),
-    "template_undefined": jinja2.Undefined,
-    "email_on_retry": False,
-    "schedule_interval": None,
-    "retries": 0,
-    "on_failure_callback": slack.on_failure_callback,
-}
-
-
 dag = DAG(
     dag_id=DAG_ID,
-    default_args=DAG_DEFAULT_ARGS,
+    default_args={
+        **DAG_DEFAULT_ARGS,
+        "schedule_interval": None,
+        "retries": 0,
+    },
     schedule_interval=None,
     catchup=False,
     # Use the docstring at the top of the file as md docs in the UI
