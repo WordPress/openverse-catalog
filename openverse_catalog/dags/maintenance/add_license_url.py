@@ -24,6 +24,8 @@ from psycopg2._json import Json
 
 
 DAG_ID = "add_license_url"
+UPDATE_LICENSE_URL = "update_license_url"
+FINAL_REPORT = "final_report"
 
 ALERT_EMAIL_ADDRESSES = ""
 
@@ -31,12 +33,10 @@ logger = logging.getLogger(__name__)
 
 base_url = "https://creativecommons.org/"
 
-license_map = get_reverse_license_path_map()
-
 
 def get_statistics(
     postgres_conn_id: str,
-) -> Literal["update_license_url", "final_report"]:
+) -> Literal[UPDATE_LICENSE_URL, FINAL_REPORT]:
     logger.info("Getting image records without license_url in meta_data.")
     postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
     null_meta_data_count = postgres.get_first(
@@ -50,9 +50,9 @@ def get_statistics(
 
     logger.info(f"There are {null_meta_data_count} records with NULL in meta_data.")
     if null_meta_data_count > 0:
-        return "update_license_url"
+        return UPDATE_LICENSE_URL
     else:
-        return "final_report"
+        return FINAL_REPORT
 
 
 def update_license_url(postgres_conn_id: str) -> dict[str, int]:
@@ -62,6 +62,7 @@ def update_license_url(postgres_conn_id: str) -> dict[str, int]:
 
     logger.info("Getting image records without license_url.")
     postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
+    license_map = get_reverse_license_path_map()
 
     total_count = 0
     total_counts = {}
@@ -158,12 +159,12 @@ with dag:
         op_kwargs={"postgres_conn_id": POSTGRES_CONN_ID},
     )
     update_license_url = PythonOperator(
-        task_id="update_license_url",
+        task_id=UPDATE_LICENSE_URL,
         python_callable=update_license_url,
         op_kwargs={"postgres_conn_id": POSTGRES_CONN_ID},
     )
     final_report = PythonOperator(
-        task_id="final_report",
+        task_id=FINAL_REPORT,
         python_callable=final_report,
         op_kwargs={
             "postgres_conn_id": POSTGRES_CONN_ID,
