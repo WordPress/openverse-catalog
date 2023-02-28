@@ -31,25 +31,26 @@ logger = logging.getLogger(__name__)
 base_url = "https://creativecommons.org/"
 
 
+def get_null_counts(postgres_conn_id: str) -> int:
+    postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
+    null_meta_data_count = postgres.get_first(
+        dedent("SELECT COUNT(*) from image WHERE meta_data IS NULL;")
+    )[0]
+    return null_meta_data_count
+
+
 def get_statistics(
     postgres_conn_id: str,
 ) -> Literal[UPDATE_LICENSE_URL, FINAL_REPORT]:
-    logger.info("Getting image records without license_url in meta_data.")
-    postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
-    null_meta_data_count = postgres.get_first(
-        dedent(
-            """
-        SELECT COUNT(*) from image
-        WHERE meta_data IS NULL;
-        """
-        )
-    )[0]
+    null_meta_data_count = get_null_counts(postgres_conn_id)
 
-    logger.info(f"There are {null_meta_data_count} records with NULL in meta_data.")
-    if null_meta_data_count > 0:
-        return UPDATE_LICENSE_URL
-    else:
-        return FINAL_REPORT
+    next_task = UPDATE_LICENSE_URL if null_meta_data_count > 0 else FINAL_REPORT
+    logger.info(
+        f"There are {null_meta_data_count} records with NULL in meta_data. \n"
+        f"Next step: {next_task}"
+    )
+
+    return next_task
 
 
 def update_license_url(postgres_conn_id: str) -> dict[str, int]:
@@ -98,25 +99,19 @@ def update_license_url(postgres_conn_id: str) -> dict[str, int]:
         total_counts[license_url] = updated_count
         total_count += updated_count
 
-    logger.info(f"{total_count} image records with missing license_url updated.")
-    logger.info(f"Total updated counts: {total_counts}")
+    logger.info(
+        f"{total_count} image records with missing license_url updated.\n"
+        f"Total updated counts: {total_counts}"
+    )
     return total_counts
 
 
 def final_report(postgres_conn_id: str, item_count):
-    logger.info(
-        "Added license_url to all items. Checking for any records "
-        "that still have NULL metadata."
-    )
-    postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
-    null_meta_data_records = postgres.get_first(
-        dedent("SELECT COUNT(*) from image WHERE meta_data IS NULL;")
-    )[0]
-    logger.info(f"There are {null_meta_data_records} records with NULL meta_data.")
+    null_meta_data_count = get_null_counts(postgres_conn_id)
 
     message = f"""
 Added license_url to *{item_count}* items`
-Now, there are {null_meta_data_records} records with NULL meta_data.
+Now, there are {null_meta_data_count} records with NULL meta_data left.
 """
     send_message(
         message,
