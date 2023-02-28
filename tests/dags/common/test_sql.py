@@ -7,6 +7,8 @@ from common.constants import DAG_DEFAULT_ARGS, POSTGRES_CONN_ID
 from common.sql import PGExecuteQueryOperator, PostgresHook
 from psycopg2.errors import QueryCanceled
 
+from tests.conftest import mark_extended
+
 
 logger = logging.getLogger(__name__)
 
@@ -146,6 +148,7 @@ def test_operator_passes_correct_timeout(execution_timeout, expected_result):
 # Happy path DAG runs without error (Each task is a test case)
 # This generates a warning about running a dag without an explicit data interval being
 # deprecated, but I haven't found a way to get it through with this function.
+@mark_extended
 def test_happy_paths_dag(mock_timeout_dag):
     mock_timeout_dag.test()
 
