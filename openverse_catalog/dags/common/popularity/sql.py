@@ -2,7 +2,7 @@ from collections import namedtuple
 from datetime import timedelta
 from textwrap import dedent
 
-from airflow.models import BaseOperator
+from airflow.models.abstractoperator import AbstractOperator
 from common.constants import AUDIO, IMAGE
 from common.loader.sql import TABLE_NAMES
 from common.sql import PostgresHook
@@ -141,7 +141,7 @@ def update_media_popularity_metrics(
     media_type=IMAGE,
     popularity_metrics=None,
     popularity_metrics_table=IMAGE_POPULARITY_METRICS_TABLE_NAME,
-    task: BaseOperator = None,
+    task: AbstractOperator = None,
 ):
     if popularity_metrics is None:
         if media_type == AUDIO:
@@ -287,7 +287,7 @@ def update_media_popularity_constants(
     postgres_conn_id,
     media_type=IMAGE,
     popularity_constants_view=IMAGE_POPULARITY_CONSTANTS_VIEW,
-    task: BaseOperator = None,
+    task: AbstractOperator = None,
 ):
     if media_type == AUDIO:
         popularity_constants_view = AUDIO_POPULARITY_CONSTANTS_VIEW
@@ -367,7 +367,7 @@ def create_media_view(
     db_view_name=IMAGE_VIEW_NAME,
     db_view_id_idx=IMAGE_VIEW_ID_IDX,
     db_view_provider_fid_idx=IMAGE_VIEW_PROVIDER_FID_IDX,
-    task: BaseOperator = None,
+    task: AbstractOperator = None,
 ):
     if media_type == AUDIO:
         table_name = TABLE_NAMES[AUDIO]

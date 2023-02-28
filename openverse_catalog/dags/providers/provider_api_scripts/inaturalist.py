@@ -27,7 +27,7 @@ import pendulum
 import requests
 from airflow import XComArg
 from airflow.exceptions import AirflowNotFoundException, AirflowSkipException
-from airflow.models import BaseOperator
+from airflow.models.abstractoperator import AbstractOperator
 from airflow.operators.python import PythonOperator, ShortCircuitOperator
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 from airflow.utils.task_group import TaskGroup
@@ -81,7 +81,7 @@ class INaturalistDataIngester(ProviderDataIngester):
     @staticmethod
     def get_batches(
         batch_length: int,  # must be a positive, non-zero integer
-        task: BaseOperator,
+        task: AbstractOperator,
     ):
         pg = PostgresHook(
             postgres_conn_id=POSTGRES_CONN_ID,
@@ -103,7 +103,7 @@ class INaturalistDataIngester(ProviderDataIngester):
         batch: tuple[int, int],
         intermediate_table: str,
         identifier: str,
-        task: BaseOperator,
+        task: AbstractOperator,
         sql_template_file_name="transformed_table.template.sql",
     ):
         """

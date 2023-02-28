@@ -5,7 +5,7 @@ from urllib.parse import urlparse
 import boto3
 import pytest
 from airflow import DAG
-from airflow.models import BaseOperator
+from airflow.models.abstractoperator import AbstractOperator
 from airflow.operators.python import PythonOperator
 from common.constants import POSTGRES_CONN_ID
 from common.sql import PGExecuteQueryOperator, PostgresHook
@@ -78,7 +78,7 @@ def timed_pg_hook_sleeper(
 
 def mapped_select_pg_hook(
     select_val: int,
-    task: BaseOperator,
+    task: AbstractOperator,
 ):
     pg = PostgresHook(
         default_statement_timeout=PostgresHook.get_execution_timeout(task),
@@ -132,5 +132,5 @@ def mock_timeout_dag():
 
 
 @pytest.fixture(scope="session")
-def mock_pg_hook_task(mock_timeout_dag) -> BaseOperator:
+def mock_pg_hook_task(mock_timeout_dag) -> PythonOperator:
     return mock_timeout_dag.get_task("pg_hook_happy")

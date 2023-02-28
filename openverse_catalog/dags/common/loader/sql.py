@@ -1,7 +1,7 @@
 import logging
 from textwrap import dedent
 
-from airflow.models import BaseOperator
+from airflow.models.abstractoperator import AbstractOperator
 from common.constants import AUDIO, IMAGE, MediaType
 from common.loader import provider_details as prov
 from common.loader.paths import _extract_media_type
@@ -110,7 +110,7 @@ def load_local_data_to_intermediate_table(
     tsv_file_name,
     identifier,
     max_rows_to_skip=10,
-    task: BaseOperator = None,
+    task: AbstractOperator = None,
 ):
     media_type = _extract_media_type(tsv_file_name)
     load_table = _get_load_table_name(identifier, media_type=media_type)
@@ -161,7 +161,7 @@ def load_s3_data_to_intermediate_table(
     s3_key,
     identifier,
     media_type=IMAGE,
-    task: BaseOperator = None,
+    task: AbstractOperator = None,
 ) -> int:
     load_table = _get_load_table_name(identifier, media_type=media_type)
     logger.info(f"Loading {s3_key} from S3 Bucket {bucket} into {load_table}")
@@ -193,7 +193,7 @@ def clean_intermediate_table_data(
     postgres_conn_id: str,
     identifier: str,
     media_type: MediaType = IMAGE,
-    task: BaseOperator = None,
+    task: AbstractOperator = None,
 ) -> tuple[int, int]:
     """
     Clean the data in the intermediate table.
@@ -266,7 +266,7 @@ def upsert_records_to_db_table(
     db_table: str = None,
     media_type: str = IMAGE,
     tsv_version: str = CURRENT_TSV_VERSION,
-    task: BaseOperator = None,
+    task: AbstractOperator = None,
 ):
     """
     Upsert newly ingested records from loading table into the main db table.
@@ -375,7 +375,7 @@ def expire_old_images(
     postgres_conn_id,
     provider,
     image_table=TABLE_NAMES[IMAGE],
-    task: BaseOperator = None,
+    task: AbstractOperator = None,
 ):
     postgres = PostgresHook(
         postgres_conn_id=postgres_conn_id,

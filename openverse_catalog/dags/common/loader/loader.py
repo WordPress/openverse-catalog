@@ -1,4 +1,4 @@
-from airflow.models import BaseOperator
+from airflow.models.abstractoperator import AbstractOperator
 from common.loader import paths, s3, sql
 from common.loader.paths import _extract_media_type
 from common.loader.reporting import RecordMetrics
@@ -47,7 +47,7 @@ def upsert_data(
     identifier: str,
     loaded_count: int,
     duplicates_count: tuple[int, int],
-    task: BaseOperator = None,
+    task: AbstractOperator = None,
 ) -> RecordMetrics:
     """
     Upsert data into the catalog DB from the loading table, and calculate
