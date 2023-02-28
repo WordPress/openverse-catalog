@@ -137,10 +137,10 @@ The following is documentation associated with each DAG (where available):
 
 ### Add license URL
 
-Add license_url to all rows that have NULL in their meta_data fields. The
-license_url is constructed from the license and license_version fields.
+Add `license_url` to all rows that have `NULL` in their `meta_data` fields. The
+`license_url` is constructed from the `license` and `license_version` fields.
 
-This is a maintenance DAG that should run once.
+This is a maintenance DAG that should be run once.
 
 ## `airflow_log_cleanup`
 
