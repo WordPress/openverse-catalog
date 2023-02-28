@@ -7,7 +7,6 @@ The `license_url` is constructed from the `license` and `license_version` fields
 This is a maintenance DAG that should be run once.
 """
 import logging
-import os
 from datetime import datetime
 from textwrap import dedent
 from typing import Literal
@@ -17,17 +16,16 @@ from airflow.models import DAG
 from airflow.operators.python import BranchPythonOperator, PythonOperator
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from common import slack
-from common.constants import XCOM_PULL_TEMPLATE
+from common.constants import POSTGRES_CONN_ID, XCOM_PULL_TEMPLATE
 from common.licenses.constants import get_reverse_license_path_map
+from common.loader.sql import RETURN_ROW_COUNT
 from common.slack import send_message
 from psycopg2._json import Json
 
 
 DAG_ID = "add_license_url"
-DB_CONN_ID = os.getenv("OPENLEDGER_CONN_ID", "postgres_openledger_testing")
 
 ALERT_EMAIL_ADDRESSES = ""
-RETURN_ROW_COUNT = lambda c: c.rowcount  # noqa: E731
 
 logger = logging.getLogger(__name__)
 
@@ -157,18 +155,18 @@ with dag:
     get_statistics = BranchPythonOperator(
         task_id="get_stats",
         python_callable=get_statistics,
-        op_kwargs={"postgres_conn_id": DB_CONN_ID},
+        op_kwargs={"postgres_conn_id": POSTGRES_CONN_ID},
     )
     update_license_url = PythonOperator(
         task_id="update_license_url",
         python_callable=update_license_url,
-        op_kwargs={"postgres_conn_id": DB_CONN_ID},
+        op_kwargs={"postgres_conn_id": POSTGRES_CONN_ID},
     )
     final_report = PythonOperator(
         task_id="final_report",
         python_callable=final_report,
         op_kwargs={
-            "postgres_conn_id": DB_CONN_ID,
+            "postgres_conn_id": POSTGRES_CONN_ID,
             "item_count": XCOM_PULL_TEMPLATE.format(
                 update_license_url.task_id, "return_value"
             ),
