@@ -108,7 +108,7 @@ def create_ingestion_workflow(
 
     Optional Arguments:
 
-    day_shift: integer giving the number of days before the current execution date
+    day_shift: integer giving the number of days before the current logical date
                for which ingestion should run (if `conf.dated==True`).
     is_reingestion: is this workflow a reingestion workflow
     """
@@ -120,7 +120,11 @@ def create_ingestion_workflow(
     with TaskGroup(group_id=append_day_shift("ingest_data")) as ingest_data:
         media_type_name = "mixed" if len(conf.media_types) > 1 else conf.media_types[0]
         provider_name = conf.dag_id.replace("_workflow", "")
-        identifier = f"{provider_name}_{{{{ ts_nodash }}}}_{day_shift}"
+
+        # Unique identifier used to generate the load_table name
+        identifier = f"{{{{ ts_nodash }}}}_{provider_name}"
+        if is_reingestion:
+            identifier = f"{day_shift}_{identifier}"
 
         ingestion_kwargs = {
             "ingester_class": conf.ingester_class,
@@ -369,7 +373,7 @@ def _build_partitioned_ingest_workflows(
         ]
     It's not necessary for the inner lists to be the same length. The
     task groups instantiated by this factory method will first run
-    ingestion for the current execution_date, then for the current
+    ingestion for the current logical_date, then for the current
     date minus the number of days given by integers in the first list
     (in an arbitrary order, and possibly in parallel if so configured),
     then for the dates calculated from the second list, and so on.  For
@@ -379,7 +383,7 @@ def _build_partitioned_ingest_workflows(
             [8, 13, 18],
             [28, 38, 48]
         ],
-    and assuming the current execution date is 2020-01-01, the
+    and assuming the current logical date is 2020-01-01, the
     instantiated dag will run the `main_function` with the parameters
         [
             ['2020-01-01'],

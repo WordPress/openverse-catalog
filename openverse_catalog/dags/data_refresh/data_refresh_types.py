@@ -23,12 +23,14 @@ class DataRefresh:
     default_args:                      dictionary which is passed to the
                                        airflow.dag.DAG __init__ method.
     start_date:                        datetime.datetime giving the
-                                       first valid execution_date of the DAG.
+                                       first valid logical date of the DAG.
     schedule:                          string giving the schedule on which the DAG
                                        should be run.  Passed to the
                                        airflow.dag.DAG __init__ method.
     data_refresh_timeout:              int giving the amount of time in seconds a
-                                       given data pull may take.
+                                       given data pull may take. int rather than
+                                       than timedelta because it is used by HttpSensor
+                                       for scheduling, rather than PG for running tasks.
     refresh_metrics_timeout:           timedelta expressing amount of time the
                                        refresh popularity metrics tasks may take.
     refresh_matview_timeout:           timedelta expressing amount of time the
