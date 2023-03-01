@@ -99,10 +99,9 @@ def update_license_url(postgres_conn_id: str) -> dict[str, int]:
         total_counts[license_url] = updated_count
         total_count += updated_count
 
-    logger.info(
-        f"{total_count} image records with missing license_url updated.\n"
-        f"Total updated counts: {total_counts}"
-    )
+    logger.info(f"{total_count} image records with missing license_url updated.")
+    for license_url, count in total_counts.items():
+        logger.info(f"{count} records with {license_url}.")
     return total_counts
 
 
