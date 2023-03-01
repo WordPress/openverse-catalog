@@ -15,7 +15,8 @@ logger = logging.getLogger(__name__)
 
 LICENSE_PATH_MAP = constants.get_license_path_map()
 REVERSE_LICENSE_PATH_MAP = constants.get_reverse_license_path_map()
-LICENSE_URLS = set(LICENSE_PATH_MAP.keys())
+CC_BASE_URL = "https://creativecommons.org/"
+LICENSE_URLS = {f"{CC_BASE_URL}{l}/" for l in LICENSE_PATH_MAP.keys()}  # noqa: E741
 
 
 class InvalidLicenseURLException(Exception):
