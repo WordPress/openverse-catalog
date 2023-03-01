@@ -126,7 +126,6 @@ dag = DAG(
     dag_id=DAG_ID,
     default_args={
         **DAG_DEFAULT_ARGS,
-        "schedule_interval": None,
         "retries": 0,
     },
     schedule_interval=None,
