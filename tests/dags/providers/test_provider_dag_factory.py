@@ -166,9 +166,9 @@ def test_apply_configuration_overrides():
             "task_id_pattern": "task_with_override_but_improper_timeout",
             "timeout": "foo",  # Improperly formatted timeout should not be applied
         },
-        {"task_id_pattern": "task_with_proper_override", "timeout": "1:0:0:0"},
-        {"task_id_pattern": "mapped_task_with_override", "timeout": "0:0:4:0"},
-        {"task_id_pattern": "some_task_that_does_not_exist", "timeout": "1:2:3:4"},
+        {"task_id_pattern": "task_with_proper_override", "timeout": "1d:0h:0m:0s"},
+        {"task_id_pattern": "mapped_task_with_override", "timeout": "4m:0s"},
+        {"task_id_pattern": "some_task_that_does_not_exist", "timeout": "1d:2h:3m:4s"},
     ]
 
     # Apply the overrides to the DAG

@@ -105,13 +105,21 @@ def test_overrides(configuration_overrides, expected_overrides):
 @pytest.mark.parametrize(
     "time_str, expected_timedelta",
     [
-        ("0:0:0:10", timedelta(seconds=10)),
-        ("30:10:57:45", timedelta(days=30, hours=10, minutes=57, seconds=45)),
-        ("0:6:0:0", timedelta(hours=6)),
-        ("0:36:0:0", timedelta(days=1, hours=12)),
+        ("0d:0h:0m:10s", timedelta(seconds=10)),
+        ("30d:10h:57m:45s", timedelta(days=30, hours=10, minutes=57, seconds=45)),
+        ("0d:6h:0m:0s", timedelta(hours=6)),
+        ("0d:36h:0m:0s", timedelta(days=1, hours=12)),
+        # Strings that do not provide all four parts
+        ("0d:1h:2m", timedelta(hours=1, minutes=2)),
+        ("2h", timedelta(hours=2)),
+        ("10s", timedelta(seconds=10)),
+        ("1d:1s", timedelta(days=1, seconds=1)),
+        ("36h", timedelta(days=1, hours=12)),
+        ("4s:3m:2h:1d", timedelta(days=1, hours=2, minutes=3, seconds=4)),
         # Incorrectly formatted strings returns None
-        ("0:1:2", None),
-        ("one:2:3:4", None),
+        ("1d:2h:3m:4ss", None),
+        ("10b", None),
+        ("oned:2h:3m:4s", None),
         ("foo", None),
         (None, None),
     ],

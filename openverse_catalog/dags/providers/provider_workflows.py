@@ -1,4 +1,6 @@
 import inspect
+import logging
+import re
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
@@ -30,6 +32,9 @@ from providers.provider_api_scripts.wordpress import WordPressDataIngester
 from typing_extensions import NotRequired, TypedDict
 
 
+logger = logging.getLogger(__name__)
+
+
 class TaskOverride(TypedDict):
     """
     Describes available options for overriding a task's properties.
@@ -51,22 +56,41 @@ class TaskOverride(TypedDict):
 
 def get_time_override(time_str: str | None) -> timedelta | None:
     """
-    Convert a string in the format "%d:%H:%M:%S" to a timedelta.
+    Convert a string in the format:
+    "{days}d:{hours}h:{minutes}m:{seconds}s" to a timedelta. Each
+    component is optional.
     Return None if the string is improperly formatted.
 
-    Example: "5:10:20:30" represents 5 days, 10 hours, 20 minutes, and
-    30 seconds.
+    Examples:
+    * "5d:10h:20m:30s" -> 5 days, 10 hours, 20 minutes, 30 seconds
+    * "10d" -> 10 days
+    * "90s" -> 90 seconds
+    * "1h:30m" -> 1 hour, 30 minutes
     """
     if time_str is None:
         return None
 
-    ts = time_str.split(":")
-    if len(ts) != 4 or not all(t.isdigit() for t in ts):
-        # Incorrectly formatted time string. Do not apply. We don't raise
-        # an error in order to avoid breaking DAGs.
-        return None
+    days = hours = minutes = seconds = 0
 
-    [days, hours, minutes, seconds] = [int(t) for t in ts]
+    ts = time_str.split(":")
+    for t in ts:
+        if not (match := re.match(r"(\d+)([d,h,m,s])$", t)):
+            # Incorrectly formatted time string. Do not apply. We don't raise
+            # an error in order to avoid breaking DAGs.
+            logger.error(f"{t} could not be parsed.")
+            return None
+
+        count, unit = match.groups()
+        match unit:
+            case "d":
+                days = int(count)
+            case "h":
+                hours = int(count)
+            case "m":
+                minutes = int(count)
+            case "s":
+                seconds = int(count)
+
     return timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
 
 
