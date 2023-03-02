@@ -3,13 +3,13 @@ import logging
 import traceback
 from abc import ABC, abstractmethod
 from datetime import datetime
+from typing import TypedDict
 
 from airflow.exceptions import AirflowException
 from airflow.models import Variable
 from common.requester import DelayedRequester
 from common.storage.media import MediaStore
 from common.storage.util import get_media_store_class
-from typing_extensions import TypedDict
 
 
 logger = logging.getLogger(__name__)
@@ -277,11 +277,9 @@ class ProviderDataIngester(ABC):
         if self.skip_all_ingestion_errors:
             return True
 
-        # Look for predicates that match either the error message or class
-        error_str = f"{error.__class__.__name__} {error}"
         for skipped_error in self.skipped_ingestion_errors:
             # Check if the predicate matches
-            if skipped_error["predicate"].lower() in error_str.lower():
+            if skipped_error["predicate"].lower() in repr(error).lower():
                 return True
 
         return False

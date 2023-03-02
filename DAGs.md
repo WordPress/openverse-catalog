@@ -200,7 +200,7 @@ mapping an error `predicate` to be skipped/silenced to an open GitHub issue.
 
 The `check_silenced_dags` DAG iterates over the entries in the
 `SILENCED_SLACK_NOTIFICATIONS` and `SKIPPED_INGESTION_ERRORS` configurations and
-verifiesthat the associated GitHub issues are still open. If an issue has been
+verifies that the associated GitHub issues are still open. If an issue has been
 closed, it is assumed that the entry should be removed, and an alert is sent to
 prompt manual update of the configuration. This prevents developers from
 forgetting to reenable Slack reporting or turnoff error skipping after the issue

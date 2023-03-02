@@ -14,7 +14,7 @@ open GitHub issue.
 
 The `check_silenced_dags` DAG iterates over the entries in the
 `SILENCED_SLACK_NOTIFICATIONS` and `SKIPPED_INGESTION_ERRORS` configurations and
-verifiesthat the associated GitHub issues are still open. If an issue has been closed,
+verifies that the associated GitHub issues are still open. If an issue has been closed,
 it is assumed that the entry should be removed, and an alert is sent to prompt manual
 update of the configuration. This prevents developers from forgetting to reenable Slack
 reporting or turnoff error skipping after the issue has been resolved.
@@ -39,6 +39,7 @@ logger = logging.getLogger(__name__)
 
 DAG_ID = "check_silenced_dags"
 MAX_ACTIVE = 1
+CONFIGURATIONS = ["SILENCED_SLACK_NOTIFICATIONS", "SKIPPED_INGESTION_ERRORS"]
 
 
 def get_issue_info(issue_url: str) -> tuple[str, str, str]:
@@ -119,21 +120,14 @@ dag = DAG(
     tags=["maintenance"],
 )
 
-with dag:
-    PythonOperator(
-        task_id="check_silenced_notifications_configuration",
-        python_callable=check_configuration,
-        op_kwargs={
-            "github_pat": "{{ var.value.get('GITHUB_API_KEY', 'not_set') }}",
-            "airflow_variable": "SILENCED_SLACK_NOTIFICATIONS",
-        },
-    )
 
-    PythonOperator(
-        task_id="check_skipped_errors_configuration",
-        python_callable=check_configuration,
-        op_kwargs={
-            "github_pat": "{{ var.value.get('GITHUB_API_KEY', 'not_set') }}",
-            "airflow_variable": "SKIPPED_INGESTION_ERRORS",
-        },
-    )
+with dag:
+    for airflow_variable in CONFIGURATIONS:
+        PythonOperator(
+            task_id=f"check_{airflow_variable.lower()}",
+            python_callable=check_configuration,
+            op_kwargs={
+                "github_pat": "{{ var.value.get('GITHUB_API_KEY', 'not_set') }}",
+                "airflow_variable": airflow_variable,
+            },
+        )
