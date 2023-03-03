@@ -4,8 +4,8 @@ from unittest import mock
 
 import pendulum
 import pytest
+from airflow.exceptions import AirflowSkipException
 from airflow.models import TaskInstance
-from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 from common.constants import IMAGE
 from common.loader.reporting import RecordMetrics
 from common.sql import PostgresHook
@@ -202,6 +202,7 @@ NEW = pendulum.datetime(2023, 2, 27, tz="UTC")
                 "Nothing new to ingest since last successful dag run on 2023-02-15 00:00:00.",  # noqa
             ],
             id="old_files",
+            marks=pytest.mark.raises(exception=AirflowSkipException),
         ),
         pytest.param(
             LAST_SUCCESS,
@@ -216,13 +217,9 @@ NEW = pendulum.datetime(2023, 2, 27, tz="UTC")
 )
 def test_compare_update_dates(last_success, file_date, expected_msgs, caplog):
     s3_keys = ["photos.csv.gz", "observations.csv.gz"]
-    # TO DO: figure out how to get the s3hook patching to work, right now it's pulling
-    # from the test S3 instance which will always have dates as of test time.
-    with mock.patch.object(
-        S3Hook().get_client_type(),
-        "head_object",
-        return_value={"LastModified": file_date},
-    ):
+    with mock.patch("providers.provider_api_scripts.inaturalist.S3Hook") as s3_hook:
+        s3_client = s3_hook.return_value.get_client_type.return_value
+        s3_client.head_object.return_value = {"LastModified": file_date}
         actual = INAT.compare_update_dates(last_success, s3_keys)
         assert actual is None
         for msg in expected_msgs:
