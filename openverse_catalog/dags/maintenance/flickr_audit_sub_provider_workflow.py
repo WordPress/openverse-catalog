@@ -62,7 +62,7 @@ class FlickrSubProviderAuditor:
     def get_cc_image_count(self, name, nsid):
         """Return the number of cc licensed images for this institution."""
 
-        # The Flickr API is constitently returning a count of '0' when querying for
+        # The Flickr API is consistently returning a count of '0' when querying for
         # images matching multiple license types from a particular user. It gives more
         # accurate results when you query for one license at a time, however, so we have
         # to make separate requests for each license type.
