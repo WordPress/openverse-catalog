@@ -44,36 +44,35 @@ def test_check_for_licensed_images(response_json, expected_total_count):
 
 
 def test_get_new_institutions():
-    mock_already_configured_institutions = {
-        "nasa": {
-            "24662369@N07",  # NASA Goddard Photo and Video
-            "35067687@N04",  # NASA HQ PHOTO
-        },
-        "bio_diversity": {"61021753@N02"},  # BioDivLibrary
-    }
+    mock_already_configured_institutions = [
+        "24662369@N07",  # NASA Goddard Photo and Video
+        "35067687@N04",  # NASA HQ PHOTO
+    ]
 
     mock_institutions_from_api = [
         # No name
         {"nsid": "150408343@N02"},
         {"name": {}, "nsid": "150408343@N02"},
         # No nsid
-        {
-            "name": {"_content": "The Library of Virginia"},
-        },
+        {"name": {"_content": "The Library of Virginia"}},
         # Already configured in sub-providers
         {"name": {"_content": "nasa"}, "nsid": "24662369@N07"},
         # This one is mocked to return no CC-licensed images
         {"name": {"_content": "East Riding Archives"}, "nsid": "138361426@N08"},
         # This one is mocked to return CC-licensed_images
         {"name": {"_content": "NavyMedicine"}, "nsid": "61270229@N05"},
+        # This one is mocked to return only a small number of CC-licensed images
+        {"name": {"_content": "Liberas"}, "nsid": "142575440@N02"},
     ]
 
     def mock_get_cc_image_count(name, nsid):
-        # Return cc-images for all but one of the mocked institutions, to test
-        # that an otherwise valid institution will be skipped if it has 0 cc-licensed
-        # images
+        # Mock counts for a few institutions such that they are skipped
         if name == "East Riding Archives":
-            return 0
+            return 0  # No cc-licensed images
+        if name == "Liberas":
+            return 1  # Less than the minimum required number of images
+
+        # All others have enough cc-licensed images
         return 1000
 
     with (

@@ -30,6 +30,10 @@ class FlickrSubProviderAuditor:
     endpoint = "https://www.flickr.com/services/rest"
     retries = 2
 
+    # Institutions with fewer than this number of cc-licensed images will not be
+    # recommended as a new sub provider.
+    minimum_image_count = 300
+
     def __init__(self):
         self.api_key = Variable.get("API_KEY_FLICKR")
         self.requester = DelayedRequester(headers={"Accept": "application/json"})
@@ -104,11 +108,11 @@ class FlickrSubProviderAuditor:
             if nsid in self.current_institutions:
                 continue
 
-            # Skip institutions that do not have any cc-licensed images. Many
+            # Skip institutions that do not have enough cc-licensed images. Many
             # institutions have "no known copyright restrictions", but no cc
             # license. See https://www.flickr.com/commons/usage
             cc_count = self.get_cc_image_count(name, nsid)
-            if not cc_count:
+            if cc_count < self.minimum_image_count:
                 continue
 
             # Otherwise, consider this institution for addition as a
