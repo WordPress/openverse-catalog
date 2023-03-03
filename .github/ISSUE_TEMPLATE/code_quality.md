@@ -2,6 +2,7 @@
 name: Code Quality Improvement Suggestion
 about: Suggest a change that does not add a feature
 labels: "🚦 status: awaiting triage"
+title: "<Replace this with the actual title>"
 ---
 
 ## Current Situation
@@ -19,4 +20,3 @@ labels: "🚦 status: awaiting triage"
 ## Additional context
 
 <!-- Add any other context suggestion here. -->
-

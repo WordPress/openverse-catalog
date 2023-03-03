@@ -2,6 +2,7 @@
 name: Infrastructure Improvement Suggestion
 about: Suggest a way to improve our infrastructure
 labels: "🚦 status: awaiting triage, ✨ goal: improvement"
+title: "<Replace this with the actual title>"
 ---
 
 ## Current Situation
@@ -23,4 +24,3 @@ labels: "🚦 status: awaiting triage, ✨ goal: improvement"
 ## Additional context
 
 <!-- Add any other context about the feature request. -->
-
