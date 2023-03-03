@@ -2,12 +2,17 @@ from ast import literal_eval
 from pathlib import Path
 from unittest import mock
 
+import pendulum
 import pytest
 from airflow.models import TaskInstance
+from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 from common.constants import IMAGE
 from common.loader.reporting import RecordMetrics
 from common.sql import PostgresHook
 from providers.provider_api_scripts import inaturalist
+
+
+# from unittest.mock import MagicMock, call, patch
 
 
 # TO DO #898: Most of the transformations for inaturalist are in SQL, and testing them
@@ -172,3 +177,53 @@ def test_get_batches(batch_length, max_id, expected):
         with mock.patch.object(PostgresHook, "get_records", return_value=max_id):
             actual = INAT.get_batches(batch_length, task)
             assert actual == expected
+
+
+LAST_SUCCESS = pendulum.datetime(2023, 2, 15, tz="UTC")
+OLD = pendulum.datetime(2023, 1, 27, tz="UTC")
+NEW = pendulum.datetime(2023, 2, 27, tz="UTC")
+
+
+@pytest.mark.parametrize(
+    "last_success, file_date, expected_msgs",
+    [
+        pytest.param(
+            None,
+            OLD,
+            ["No last success date, assuming iNaturalist data is new."],
+            id="no_prior_run",
+        ),
+        pytest.param(
+            LAST_SUCCESS,
+            OLD,
+            [
+                "photos.csv.gz was last modified on s3 on 2023-01-27 00:00:00.",
+                "observations.csv.gz was last modified on s3 on 2023-01-27 00:00:00.",
+                "Nothing new to ingest since last successful dag run on 2023-02-15 00:00:00.",  # noqa
+            ],
+            id="old_files",
+        ),
+        pytest.param(
+            LAST_SUCCESS,
+            NEW,
+            [
+                "photos.csv.gz was last modified on s3 on 2023-02-27 00:00:00.",
+                "photos.csv.gz was updated on s3 since the last dag run on 2023-02-15 00:00:00.",  # noqa
+            ],
+            id="new_files",
+        ),
+    ],
+)
+def test_compare_update_dates(last_success, file_date, expected_msgs, caplog):
+    s3_keys = ["photos.csv.gz", "observations.csv.gz"]
+    # TO DO: figure out how to get the s3hook patching to work, right now it's pulling
+    # from the test S3 instance which will always have dates as of test time.
+    with mock.patch.object(
+        S3Hook().get_client_type(),
+        "head_object",
+        return_value={"LastModified": file_date},
+    ):
+        actual = INAT.compare_update_dates(last_success, s3_keys)
+        assert actual is None
+        for msg in expected_msgs:
+            assert msg in caplog.text
