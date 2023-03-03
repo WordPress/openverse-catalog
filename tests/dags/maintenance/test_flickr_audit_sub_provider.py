@@ -60,7 +60,7 @@ def test_get_new_institutions():
         # This one is mocked to return no CC-licensed images
         {"name": {"_content": "East Riding Archives"}, "nsid": "138361426@N08"},
         # This one is mocked to return CC-licensed_images
-        {"name": {"_content": "NavyMedicine"}, "nsid": "61270229@N05"},
+        {"name": {"_content": "LSE Library"}, "nsid": "35128489@N07"},
         # This one is mocked to return only a small number of CC-licensed images
         {"name": {"_content": "Liberas"}, "nsid": "142575440@N02"},
     ]
@@ -84,7 +84,7 @@ def test_get_new_institutions():
         auditor.current_institutions = mock_already_configured_institutions
 
         actual_institutions = auditor.get_new_institutions_with_cc_licensed_images()
-        assert actual_institutions == [("NavyMedicine", "61270229@N05", 1000)]
+        assert actual_institutions == [("LSE Library", "35128489@N07", 1000)]
 
 
 @pytest.mark.parametrize(
