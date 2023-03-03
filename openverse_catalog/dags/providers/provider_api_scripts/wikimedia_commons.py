@@ -74,7 +74,7 @@ pages, this it would have many "global usage" results. In order to process the e
 batch, we have to iterate over *all* of the returned results; Wikimedia does not provide
 a mechanism to "skip to the end" of a batch. On numerous occasions, this iteration has
 been so extensive that the pull media task has hit the task's timeout. To avoid this,
-we limit the number of iterations we make for parsing through a sub-property's data.If
+we limit the number of iterations we make for parsing through a sub-property's data. If
 we hit the limit, we re-issue the original query *without* requesting properties that
 returned large amounts of data. Unfortunately, this means that we will
 **not** have that property's data for these items the second time around (e.g.
