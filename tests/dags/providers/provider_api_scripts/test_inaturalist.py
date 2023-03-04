@@ -185,20 +185,20 @@ NEW = pendulum.datetime(2023, 2, 27, tz="UTC")
 
 
 @pytest.mark.parametrize(
-    "last_success, file_date, expected_msgs",
+    "last_success, s3_dir, expected_msgs",
     [
         pytest.param(
             None,
-            OLD,
+            {"file1": OLD},
             ["No last success date, assuming iNaturalist data is new."],
             id="no_prior_run",
         ),
         pytest.param(
             LAST_SUCCESS,
-            OLD,
+            {"file1": OLD, "file2": OLD},
             [
-                "photos.csv.gz was last modified on s3 on 2023-01-27 00:00:00.",
-                "observations.csv.gz was last modified on s3 on 2023-01-27 00:00:00.",
+                "file1 was last modified on s3 on 2023-01-27 00:00:00.",
+                "file2 was last modified on s3 on 2023-01-27 00:00:00.",
                 "Nothing new to ingest since last successful dag run on 2023-02-15 00:00:00.",  # noqa
             ],
             id="old_files",
@@ -206,21 +206,30 @@ NEW = pendulum.datetime(2023, 2, 27, tz="UTC")
         ),
         pytest.param(
             LAST_SUCCESS,
-            NEW,
+            {"file1": NEW, "file2": NEW},
             [
-                "photos.csv.gz was last modified on s3 on 2023-02-27 00:00:00.",
-                "photos.csv.gz was updated on s3 since the last dag run on 2023-02-15 00:00:00.",  # noqa
+                "file1 was last modified on s3 on 2023-02-27 00:00:00.",
+                "file1 was updated on s3 since the last dag run on 2023-02-15 00:00:00.",  # noqa
             ],
             id="new_files",
         ),
+        pytest.param(
+            LAST_SUCCESS,
+            {"file1": OLD, "file2": NEW, "file3": OLD, "file4": NEW},
+            [
+                "file1 was last modified on s3 on 2023-01-27 00:00:00.",
+                "file2 was last modified on s3 on 2023-02-27 00:00:00.",
+                "file2 was updated on s3 since the last dag run on 2023-02-15 00:00:00.",  # noqa
+            ],
+            id="mixed_files",
+        ),
     ],
 )
-def test_compare_update_dates(last_success, file_date, expected_msgs, caplog):
-    s3_keys = ["photos.csv.gz", "observations.csv.gz"]
+def test_compare_update_dates(last_success, s3_dir, expected_msgs, caplog):
     with mock.patch("providers.provider_api_scripts.inaturalist.S3Hook") as s3_hook:
         s3_client = s3_hook.return_value.get_client_type.return_value
-        s3_client.head_object.return_value = {"LastModified": file_date}
-        actual = INAT.compare_update_dates(last_success, s3_keys)
+        s3_client.head_object = lambda Bucket, Key: {"LastModified": s3_dir[Key]}
+        actual = INAT.compare_update_dates(last_success, s3_dir.keys())
         assert actual is None
         for msg in expected_msgs:
             assert msg in caplog.text
