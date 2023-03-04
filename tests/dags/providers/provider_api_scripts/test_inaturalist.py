@@ -12,9 +12,6 @@ from common.sql import PostgresHook
 from providers.provider_api_scripts import inaturalist
 
 
-# from unittest.mock import MagicMock, call, patch
-
-
 # TO DO #898: Most of the transformations for inaturalist are in SQL, and testing them
 # effectively could mean looking more closely at the production data itself.
 # For now, sample data included in the tests below covers the following weird cases:
