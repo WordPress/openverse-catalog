@@ -34,6 +34,14 @@ class FlickrSubProviderAuditor:
     # recommended as a new sub provider.
     minimum_image_count = 300
 
+    # NSIDs in this list should not be reported for consideration for
+    # becoming a sub-provider.
+    nsids_to_skip = [
+        # TODO: Currently contains graphic medical imagery. Reconsider once
+        # content safety progress is made.
+        "61270229@N05",
+    ]
+
     def __init__(self):
         self.api_key = Variable.get("API_KEY_FLICKR")
         self.requester = DelayedRequester(headers={"Accept": "application/json"})
@@ -107,6 +115,10 @@ class FlickrSubProviderAuditor:
 
             # Skip institutions that are already configured as sub-providers
             if nsid in self.current_institutions:
+                continue
+
+            # Skip institutions that have been added to the nsids_to_skip list
+            if nsid in self.nsids_to_skip:
                 continue
 
             # Skip institutions that do not have enough cc-licensed images. Many
