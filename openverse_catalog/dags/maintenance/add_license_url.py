@@ -2,21 +2,26 @@
 # Add license URL
 
 Add `license_url` to all rows that have `NULL` in their `meta_data` fields.
-The `license_url` is constructed from the `license` and `license_version` fields.
+This PR sets the meta_data value to  "{license_url: https://... }", where the
+url is constructed from the `license` and `license_version` columns.
 
-This is a maintenance DAG that should be run once.
+This is a maintenance DAG that should be run once. If all the null values in
+the `meta_data` column are updated, the DAG will only run the first and the
+last step, logging the statistics.
 """
 import logging
+from datetime import timedelta
 from textwrap import dedent
 from typing import Literal
 
 from airflow.models import DAG
+from airflow.models.abstractoperator import AbstractOperator
 from airflow.operators.python import BranchPythonOperator, PythonOperator
-from airflow.providers.postgres.hooks.postgres import PostgresHook
 from common.constants import DAG_DEFAULT_ARGS, POSTGRES_CONN_ID, XCOM_PULL_TEMPLATE
 from common.licenses.constants import get_reverse_license_path_map
 from common.loader.sql import RETURN_ROW_COUNT
 from common.slack import send_message
+from common.sql import PostgresHook
 from psycopg2._json import Json
 
 
@@ -31,8 +36,14 @@ logger = logging.getLogger(__name__)
 base_url = "https://creativecommons.org/"
 
 
-def get_null_counts(postgres_conn_id: str) -> int:
-    postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
+def get_null_counts(
+    postgres_conn_id: str,
+    task: AbstractOperator,
+) -> int:
+    postgres = PostgresHook(
+        postgres_conn_id=postgres_conn_id,
+        default_statement_timeout=PostgresHook.get_execution_timeout(task),
+    )
     null_meta_data_count = postgres.get_first(
         dedent("SELECT COUNT(*) from image WHERE meta_data IS NULL;")
     )[0]
@@ -41,8 +52,9 @@ def get_null_counts(postgres_conn_id: str) -> int:
 
 def get_statistics(
     postgres_conn_id: str,
+    task: AbstractOperator,
 ) -> Literal[UPDATE_LICENSE_URL, FINAL_REPORT]:
-    null_meta_data_count = get_null_counts(postgres_conn_id)
+    null_meta_data_count = get_null_counts(postgres_conn_id, task)
 
     next_task = UPDATE_LICENSE_URL if null_meta_data_count > 0 else FINAL_REPORT
     logger.info(
@@ -53,13 +65,17 @@ def get_statistics(
     return next_task
 
 
-def update_license_url(postgres_conn_id: str) -> dict[str, int]:
+def update_license_url(postgres_conn_id: str, task: AbstractOperator) -> dict[str, int]:
     """Add license_url to meta_data batching all records with the same license.
+    :param task: automatically passed by Airflow, used to set the execution timeout
     :param postgres_conn_id: Postgres connection id
     """
 
     logger.info("Getting image records without license_url.")
-    postgres = PostgresHook(postgres_conn_id=postgres_conn_id)
+    postgres = PostgresHook(
+        postgres_conn_id=postgres_conn_id,
+        default_statement_timeout=PostgresHook.get_execution_timeout(task),
+    )
     license_map = get_reverse_license_path_map()
 
     total_count = 0
@@ -105,8 +121,12 @@ def update_license_url(postgres_conn_id: str) -> dict[str, int]:
     return total_counts
 
 
-def final_report(postgres_conn_id: str, item_count):
-    null_meta_data_count = get_null_counts(postgres_conn_id)
+def final_report(
+    postgres_conn_id: str,
+    item_count: int,
+    task: AbstractOperator,
+):
+    null_meta_data_count = get_null_counts(postgres_conn_id, task)
 
     message = f"""
 Added license_url to *{item_count}* items`
@@ -126,6 +146,7 @@ dag = DAG(
     default_args={
         **DAG_DEFAULT_ARGS,
         "retries": 0,
+        "execution_timeout": timedelta(hours=5),
     },
     schedule_interval=None,
     catchup=False,
@@ -156,5 +177,7 @@ with dag:
         },
     )
 
+    # If there are no records with NULL meta_data, skip the update step
+    # and go straight to the final report
     get_statistics >> [update_license_url, final_report]
     update_license_url >> final_report
