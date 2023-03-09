@@ -83,8 +83,6 @@ class JamendoDataIngester(ProviderDataIngester):
         which breaks this rule.
         This function removes the ``trackid`` query parameter from the URL to make
         all thumbnail values identical for an audio set.
-        Due to the way photon processes thumbnails, we also need to add a trailing slash
-        to the url prior to the query params if it does not have one.
         >>> base_url = "https://usercontent.jamendo.com"
         >>> url = f"{base_url}?type=album&id=119&width=200&trackid=732"
         >>> _remove_trackid(url)
@@ -92,9 +90,24 @@ class JamendoDataIngester(ProviderDataIngester):
         """
         if thumbnail_url is None:
             return None
-        if "/?" not in thumbnail_url:
-            thumbnail_url = thumbnail_url.replace("?", "/?")
-        return self._remove_param_from_url(thumbnail_url, "trackid")
+        return self._remove_param_from_url(
+            self._add_trailing_slash(thumbnail_url), "trackid"
+        )
+
+    @staticmethod
+    def _add_trailing_slash(url: str | None) -> str | None:
+        """
+        Jamendo image URLs are missing a trailing slash, which when viewed normally in
+        the browser get redirected to the correct URL. Example:
+        - https://usercontent.jamendo.com?type=album&id=100007&width=300 (before)
+        - https://usercontent.jamendo.com/?type=album&id=100007&width=300 (after)
+
+        Due to the way photon processes thumbnails, we need to add this trailing slash
+        to the url prior to the query params if it does not have one.
+        """
+        if url and "/?" not in url:
+            url = url.replace("?", "/?")
+        return url
 
     def _get_audio_url(self, data):
         """
@@ -182,7 +195,7 @@ class JamendoDataIngester(ProviderDataIngester):
         if duration:
             duration = int(duration) * 1000
         title = data.get("name")
-        thumbnail = data.get("image")
+        thumbnail = self._add_trailing_slash(data.get("image"))
         genres = data.get("musicinfo", {}).get("tags", {}).get("genres")
         creator, creator_url = self._get_creator_data(data)
         metadata = self._get_metadata(data)
