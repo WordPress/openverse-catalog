@@ -83,6 +83,8 @@ class JamendoDataIngester(ProviderDataIngester):
         which breaks this rule.
         This function removes the ``trackid`` query parameter from the URL to make
         all thumbnail values identical for an audio set.
+        Due to the way photon processes thumbnails, we also need to add a trailing slash
+        to the url prior to the query params if it does not have one.
         >>> base_url = "https://usercontent.jamendo.com"
         >>> url = f"{base_url}?type=album&id=119&width=200&trackid=732"
         >>> _remove_trackid(url)
@@ -90,6 +92,8 @@ class JamendoDataIngester(ProviderDataIngester):
         """
         if thumbnail_url is None:
             return None
+        if "/?" not in thumbnail_url:
+            thumbnail_url = thumbnail_url.replace("?", "/?")
         return self._remove_param_from_url(thumbnail_url, "trackid")
 
     def _get_audio_url(self, data):

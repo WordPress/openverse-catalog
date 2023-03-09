@@ -92,7 +92,7 @@ def test_get_record_data():
         "raw_tags": ["instrumental", "speed_medium"],
         "set_foreign_id": "119",
         "set_position": 6,
-        "set_thumbnail": "https://usercontent.jamendo.com?type=album&id=119&width=200",
+        "set_thumbnail": "https://usercontent.jamendo.com/?type=album&id=119&width=200",
         "set_url": "https://www.jamendo.com/album/119/opera-i",
         "thumbnail_url": "https://usercontent.jamendo.com?type=album&id=119&width=200&trackid=732",
         "title": "Thoughtful",
