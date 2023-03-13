@@ -9,6 +9,7 @@ This is a maintenance DAG that should be run once. If all the null values in
 the `meta_data` column are updated, the DAG will only run the first and the
 last step, logging the statistics.
 """
+import json
 import logging
 from collections import defaultdict
 from datetime import timedelta
@@ -67,7 +68,7 @@ def get_statistics(
     return next_task
 
 
-def update_license_url(postgres_conn_id: str, task: AbstractOperator) -> dict[str, int]:
+def update_license_url(postgres_conn_id: str, task: AbstractOperator) -> str | None:
     """Add license_url to meta_data batching all records with the same license.
     :param task: automatically passed by Airflow, used to set the execution timeout
     :param postgres_conn_id: Postgres connection id
