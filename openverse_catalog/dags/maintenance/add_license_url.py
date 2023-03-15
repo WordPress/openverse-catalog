@@ -9,8 +9,8 @@ This is a maintenance DAG that should be run once. If all the null values in
 the `meta_data` column are updated, the DAG will only run the first and the
 last step, logging the statistics.
 """
-import json
 import logging
+from collections import defaultdict
 from datetime import timedelta
 from textwrap import dedent
 from typing import Literal
@@ -67,7 +67,7 @@ def get_statistics(
     return next_task
 
 
-def update_license_url(postgres_conn_id: str, task: AbstractOperator) -> str | None:
+def update_license_url(postgres_conn_id: str, task: AbstractOperator) -> dict[str, int]:
     """Add license_url to meta_data batching all records with the same license.
     :param task: automatically passed by Airflow, used to set the execution timeout
     :param postgres_conn_id: Postgres connection id
@@ -91,19 +91,15 @@ def update_license_url(postgres_conn_id: str, task: AbstractOperator) -> str | N
 
     for result in records_with_null_in_metadata:
         identifier, license_, version = result
-        license_pair = f"{license_},{version}"
-        records_to_update[license_pair].append(identifier)
+        records_to_update[(license_, version)].append(identifier)
 
     total_updated = 0
     updated_by_license = {}
 
-    for license_pair, identifiers in records_to_update.items():
-        license_, license_version = license_pair.split(",")
-        *_, license_url = get_license_info_from_license_pair(license_, license_version)
+    for (license_, version), identifiers in records_to_update.items():
+        *_, license_url = get_license_info_from_license_pair(license_, version)
         if license_url is None:
-            logger.info(
-                f"No license pair {license_pair} in the license reverse path map."
-            )
+            logger.info(f"No license pair ({license_}, {version}) in the license map.")
             continue
         logger.info(f"{len(identifiers):4} items will be updated with {license_url}")
         license_url_dict = {"license_url": license_url}
@@ -122,12 +118,12 @@ def update_license_url(postgres_conn_id: str, task: AbstractOperator) -> str | N
             updated_by_license[license_url] = updated_count
         total_updated += updated_count
     logger.info(f"Updated {total_updated} rows")
-    return json.dumps(updated_by_license)
+    return updated_by_license
 
 
 def final_report(
     postgres_conn_id: str,
-    updated_by_license: str,
+    updated_by_license: dict[str, int] | None,
     task: AbstractOperator = None,
 ):
     """Check for null in `meta_data` and send a message to Slack
@@ -140,10 +136,9 @@ def final_report(
     """
     null_meta_data_count = get_null_counts(postgres_conn_id, task)
 
-    if updated_by_license == "None":
+    if not updated_by_license:
         updated_message = "No records were updated."
     else:
-        updated_by_license = json.loads(updated_by_license)
         formatted_item_count = "".join(
             [
                 f"{license_url}: {count} rows\n"
@@ -174,9 +169,9 @@ dag = DAG(
     },
     schedule_interval=None,
     catchup=False,
-    # Use the docstring at the top of the file as md docs in the UI
     doc_md=__doc__,
     tags=["data_normalization"],
+    render_template_as_native_obj=True,
 )
 
 with dag:
