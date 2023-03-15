@@ -99,7 +99,7 @@ def update_license_url(postgres_conn_id: str, task: AbstractOperator) -> str | N
 
     for license_pair, identifiers in records_to_update.items():
         license_, license_version = license_pair.split(",")
-        license_url = get_license_info_from_license_pair(license_, license_version)[-1]
+        *_, license_url = get_license_info_from_license_pair(license_, license_version)
         if license_url is None:
             logger.info(
                 f"No license pair {license_pair} in the license reverse path map."
