@@ -87,15 +87,12 @@ def update_license_url(postgres_conn_id: str, task: AbstractOperator) -> str | N
     records_with_null_in_metadata = postgres.get_records(select_query)
 
     # Dictionary with license pair as key and list of identifiers as value
-    records_to_update = {}
+    records_to_update = defaultdict(list)
 
     for result in records_with_null_in_metadata:
         identifier, license_, version = result
         license_pair = f"{license_},{version}"
-        if license_pair not in records_to_update:
-            records_to_update[license_pair] = [identifier]
-        else:
-            records_to_update[license_pair].append(identifier)
+        records_to_update[license_pair].append(identifier)
 
     total_updated = 0
     updated_by_license = {}
