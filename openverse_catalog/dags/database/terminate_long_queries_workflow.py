@@ -1,8 +1,8 @@
 """
 # Terminate long-running queries
 
-This file configures the Apache Airflow DAG to terminate long-running
-queries of a specific query string. It runs every fifteen minutes.
+This DAG runs every fifteen minutes and terminates long-running
+queries of a specific query string in the API DB.
 """
 
 import logging
