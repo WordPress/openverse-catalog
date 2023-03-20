@@ -63,7 +63,7 @@ def clean_duration(duration: float | list[float]):
         duration = sum(x for x in duration if x)
 
     # Truncate the duration value if it's provided
-    if isinstance(duration, float) or isinstance(duration, int):
+    if isinstance(duration, (float, int)):
         duration = humanize_time_duration(duration)
 
     return duration
