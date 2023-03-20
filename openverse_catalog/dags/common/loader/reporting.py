@@ -60,7 +60,7 @@ def humanize_time_duration(seconds: float | int) -> str:
 def clean_duration(duration: float | list[float]):
     # If a list of duration values is provided, get the sum of all non-None values
     if isinstance(duration, list):
-        duration = sum([x for x in duration if x])
+        duration = sum(x for x in duration if x)
 
     # Truncate the duration value if it's provided
     if isinstance(duration, float) or isinstance(duration, int):
@@ -77,7 +77,7 @@ def clean_record_counts(
     if isinstance(record_counts_by_media_type, list):
         return {
             media_type: sum(
-                [x[media_type] for x in record_counts_by_media_type],
+                (x[media_type] for x in record_counts_by_media_type),
                 RecordMetrics(0, 0, 0, 0),
             )
             for media_type in media_types
@@ -130,7 +130,7 @@ def report_completion(
         else:
             upserted_human_readable = f"{counts.upserted:,}"
         media_type_reports += f"  - `{media_type}`: {upserted_human_readable}"
-        if counts is None or any([count is None for count in counts]):
+        if counts is None or any(count is None for count in counts):
             # Can't make calculation without data
             continue
         extras = []
