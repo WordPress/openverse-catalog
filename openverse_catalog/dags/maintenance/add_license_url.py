@@ -13,7 +13,7 @@ import csv
 import logging
 from collections import defaultdict
 from datetime import timedelta
-from pathlib import Path
+from tempfile import NamedTemporaryFile
 from textwrap import dedent
 
 from airflow.models import DAG
@@ -142,19 +142,20 @@ def save_to_s3(aws_conn_id, invalid_items, s3_bucket):
         return
 
     s3_key = "invalid_items.tsv"
-    tmp_path = Path("/tmp") / s3_key
 
-    with open(tmp_path, "w+") as f:
+    with NamedTemporaryFile(mode="w+", encoding="utf-8") as f:
         tsv_writer = csv.DictWriter(
             f, delimiter="\t", fieldnames=["license", "license_version", "identifier"]
         )
         tsv_writer.writeheader()
         for item in invalid_items:
             tsv_writer.writerow(item)
-    logger.info(f"Uploading the invalid items to {s3_bucket}:{s3_key}")
-    s3 = S3Hook(aws_conn_id=aws_conn_id)
-    s3.load_file(tmp_path, s3_key, bucket_name=s3_bucket)
-    tmp_path.unlink()
+        f.seek(0)
+        logger.info(f"Uploading the invalid items to {s3_bucket}:{s3_key}")
+        with open(f.name) as fp:
+            logger.info(fp.read())
+        s3 = S3Hook(aws_conn_id=aws_conn_id)
+        s3.load_file(f.name, s3_key, bucket_name=s3_bucket, replace=True)
 
 
 def final_report(
