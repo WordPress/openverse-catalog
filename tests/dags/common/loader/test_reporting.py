@@ -7,6 +7,7 @@ from common.loader.reporting import (
     clean_duration,
     clean_record_counts,
     report_completion,
+    skip_report_completion,
 )
 
 
@@ -234,6 +235,7 @@ def test_report_completion_contents_with_lists(
     "seconds, expected",
     [
         (0.1, "less than 1 sec"),
+        (None, None),
         (1, "1 sec"),
         (10, "10 secs"),
         (100, "1 min, 40 secs"),
@@ -257,8 +259,48 @@ def test_clean_time_duration(seconds, expected):
 
 
 @pytest.mark.parametrize(
+    "duration, record_counts_by_media_type, expected",
+    [
+        (
+            None,
+            {"image": RecordMetrics(1, 2, 3, 4), "audio": RecordMetrics(1, 2, 0, 0)},
+            False,
+        ),
+        (None, {}, True),
+        (
+            0,
+            {"image": RecordMetrics(1, 2, 3, 4), "audio": RecordMetrics(1, 2, 0, 0)},
+            False,
+        ),
+        (0, {}, True),
+        (
+            10,
+            {"image": RecordMetrics(1, 2, 3, 4), "audio": RecordMetrics(1, 2, 0, 0)},
+            False,
+        ),
+        (10, {}, False),
+        (
+            1.0,
+            {"image": RecordMetrics(1, 2, 3, 4), "audio": RecordMetrics(1, 2, 0, 0)},
+            False,
+        ),
+        (1.0, {}, False),
+    ],
+)
+def test_skip_report_completion(
+    duration, record_counts_by_media_type, expected
+) -> None:
+    actual = skip_report_completion(duration, record_counts_by_media_type)
+    assert actual == expected
+
+
+@pytest.mark.parametrize(
     "record_counts_by_media_type, media_types, expected",
     [
+        # Empty values
+        ({}, [], {}),
+        # Null values
+        (None, None, None),
         # Single, one media type
         (
             {"image": RecordMetrics(1, 2, 3, 4)},

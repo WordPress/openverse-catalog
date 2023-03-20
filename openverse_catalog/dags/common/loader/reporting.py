@@ -4,6 +4,7 @@ import logging
 from collections.abc import Sequence
 from typing import NamedTuple
 
+from airflow.exceptions import AirflowSkipException
 from common.slack import send_message
 
 
@@ -57,7 +58,7 @@ def humanize_time_duration(seconds: float | int) -> str:
     return ", ".join(parts)
 
 
-def clean_duration(duration: float | list[float]):
+def clean_duration(duration: float | list[float] | None) -> float | list[float] | None:
     # If a list of duration values is provided, get the sum of all non-None values
     if isinstance(duration, list):
         duration = sum(x for x in duration if x)
@@ -72,7 +73,7 @@ def clean_duration(duration: float | list[float]):
 def clean_record_counts(
     record_counts_by_media_type: MediaTypeRecordMetrics | list[MediaTypeRecordMetrics],
     media_types: Sequence[str],
-):
+) -> dict[str, RecordMetrics]:
     # If a list of record_counts dicts is provided, sum all of the individual values
     if isinstance(record_counts_by_media_type, list):
         return {
@@ -83,6 +84,13 @@ def clean_record_counts(
             for media_type in media_types
         }
     return record_counts_by_media_type
+
+
+def skip_report_completion(
+    duration: float | list[float] | None,
+    record_counts_by_media_type: dict[str, RecordMetrics],
+) -> bool:
+    return (duration is None or duration <= 0) and not record_counts_by_media_type
 
 
 def report_completion(
@@ -121,6 +129,10 @@ def report_completion(
     record_counts_by_media_type = clean_record_counts(
         record_counts_by_media_type, media_types
     )
+    if skip_report_completion(duration, record_counts_by_media_type):
+        raise AirflowSkipException(
+            "An upstream failure occured and no rows were loaded"
+        )
 
     # List record count per media type
     media_type_reports = ""
