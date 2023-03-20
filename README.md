@@ -268,7 +268,7 @@ the project with the engineers and community members on #openverse.
 
 ## Additional Resources
 
-- 2022-01-12: **[cc-archive/cccatalog](https://github.com/cc-archive/cccatalog): The old repository for this catalog contains a treasure trove of information for the original motivations and architecture of the Catalog.**
+- 2022-01-12: **[cc-archive/cccatalog](https://github.com/cc-archive/cccatalog): The old repository for this catalog contains useful information for the original motivations and architecture of the Catalog.**
 
 For additional context see:
 - 2020-12-07: [Upcoming Changes to the CC Open Source Community — Creative Commons Open Source](https://opensource.creativecommons.org/blog/entries/2020-12-07-upcoming-changes-to-community/)
