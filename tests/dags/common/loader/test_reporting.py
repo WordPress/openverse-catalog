@@ -268,23 +268,29 @@ def test_clean_time_duration(seconds, expected):
         ),
         (None, {}, True),
         (
-            0,
+            "less than 1 sec",
             {"image": RecordMetrics(1, 2, 3, 4), "audio": RecordMetrics(1, 2, 0, 0)},
             False,
         ),
-        (0, {}, True),
+        ("less than 1 sec", {}, True),
         (
-            10,
+            "inf",
             {"image": RecordMetrics(1, 2, 3, 4), "audio": RecordMetrics(1, 2, 0, 0)},
             False,
         ),
-        (10, {}, False),
+        ("inf", {}, True),
         (
-            1.0,
+            "10 secs",
             {"image": RecordMetrics(1, 2, 3, 4), "audio": RecordMetrics(1, 2, 0, 0)},
             False,
         ),
-        (1.0, {}, False),
+        ("10 secs", {}, False),
+        (
+            "16 weeks, 3 days, 17 hours, 46 mins, 40 secs",
+            {"image": RecordMetrics(1, 2, 3, 4), "audio": RecordMetrics(1, 2, 0, 0)},
+            False,
+        ),
+        ("16 weeks, 3 days, 17 hours, 46 mins, 40 secs", {}, False),
     ],
 )
 def test_skip_report_completion(
