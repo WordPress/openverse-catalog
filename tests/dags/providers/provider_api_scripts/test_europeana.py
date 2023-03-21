@@ -1,6 +1,3 @@
-import json
-import os
-
 import pytest
 from common.licenses import LicenseInfo, get_license_info
 from providers.provider_api_scripts.europeana import (
@@ -8,17 +5,13 @@ from providers.provider_api_scripts.europeana import (
     EuropeanaRecordBuilder,
 )
 
-
-RESOURCES = os.path.join(
-    os.path.abspath(os.path.dirname(__file__)), "resources/europeana"
+from tests.dags.providers.provider_api_scripts.resources.JsonLoad import (
+    get_resource_json,
 )
 
 
 def _get_resource_json(json_name):
-    with open(os.path.join(RESOURCES, json_name)) as f:
-        resource_json = json.load(f)
-
-    return resource_json
+    return get_resource_json("europeana", json_name)
 
 
 FROZEN_DATE = "2018-01-15"

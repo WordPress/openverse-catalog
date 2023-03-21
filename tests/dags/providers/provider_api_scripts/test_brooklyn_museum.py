@@ -1,5 +1,3 @@
-import json
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -8,15 +6,18 @@ from common.loader import provider_details as prov
 from common.storage.image import ImageStore
 from providers.provider_api_scripts.brooklyn_museum import BrooklynMuseumDataIngester
 
+from tests.dags.providers.provider_api_scripts.resources.JsonLoad import (
+    get_resource_json,
+)
 
-RESOURCES = Path(__file__).parent / "resources/brooklynmuseum"
+
 bkm = BrooklynMuseumDataIngester()
 image_store = ImageStore(provider=prov.BROOKLYN_DEFAULT_PROVIDER)
 bkm.media_stores = {"image": image_store}
 
 
 def _get_resource_json(json_name):
-    return json.loads((RESOURCES / json_name).read_text())
+    return get_resource_json("brooklynmuseum", json_name)
 
 
 def test_build_query_param_default():

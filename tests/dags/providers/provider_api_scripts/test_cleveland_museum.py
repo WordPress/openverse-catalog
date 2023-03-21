@@ -1,6 +1,4 @@
-import json
 import logging
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -9,6 +7,10 @@ from common.licenses import LicenseInfo
 from common.loader import provider_details as prov
 from common.storage.image import ImageStore
 from providers.provider_api_scripts.cleveland_museum import ClevelandDataIngester
+
+from tests.dags.providers.provider_api_scripts.resources.JsonLoad import (
+    get_resource_json,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -27,8 +29,6 @@ _license_info = (
 CC0_LICENSE = LicenseInfo(*_license_info)
 license_info = LicenseInfo(*_license_info)
 
-RESOURCES = Path(__file__).parent / "resources/clevelandmuseum"
-
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s", level=logging.DEBUG
 )
@@ -39,9 +39,7 @@ clm.media_stores = {"image": image_store}
 
 
 def _get_resource_json(json_name):
-    with open(RESOURCES / json_name) as f:
-        resource_json = json.load(f)
-        return resource_json
+    return get_resource_json("clevelandmuseum", json_name)
 
 
 def test_build_query_param_default():
