@@ -1,12 +1,11 @@
-import json
-from pathlib import Path
-
 import pytest
 from common.licenses import LicenseInfo
 from providers.provider_api_scripts.smk import SmkDataIngester
 
+from tests.dags.providers.provider_api_scripts.resources.JsonLoad import (
+    get_resource_json,
+)
 
-RESOURCES = Path(__file__).parent.resolve() / "resources/smk"
 
 smk = SmkDataIngester()
 
@@ -19,9 +18,7 @@ CC0 = LicenseInfo(
 
 
 def _get_resource_json(json_name):
-    with open(RESOURCES / json_name) as f:
-        resource_json = json.load(f)
-    return resource_json
+    return get_resource_json("smk", json_name)
 
 
 def test_get_next_query_params_first_call():

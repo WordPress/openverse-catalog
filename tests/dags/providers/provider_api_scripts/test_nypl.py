@@ -1,5 +1,3 @@
-import json
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -9,8 +7,11 @@ from providers.provider_api_scripts.nypl import (
     get_value_from_dict_or_list,
 )
 
+from tests.dags.providers.provider_api_scripts.resources.JsonLoad import (
+    get_resource_json,
+)
 
-RESOURCES = Path(__file__).parent / "resources/nypl"
+
 CC0 = LicenseInfo(
     license="cc0",
     version="1.0",
@@ -31,9 +32,7 @@ image_store = nypl.media_stores["image"]
 
 
 def _get_resource_json(json_name):
-    with open(RESOURCES / json_name) as f:
-        resource_json = json.load(f)
-        return resource_json
+    return get_resource_json("nypl", json_name)
 
 
 def test_get_next_query_params_default():

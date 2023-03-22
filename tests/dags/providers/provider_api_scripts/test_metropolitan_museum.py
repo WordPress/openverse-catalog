@@ -1,6 +1,5 @@
 import json
 import logging
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -20,26 +19,20 @@ logger = logging.getLogger(__name__)
 
 mma = MetMuseumDataIngester()
 
-RESOURCES = Path(__file__).parent / "resources/metropolitan_museum_of_art"
-
 
 def _get_resource_json(json_name):
-    return get_resource_json(json_name)
+    return get_resource_json("metropolitan_museum_of_art", json_name)
 
 
 # abbreviated response without other images 45733
-single_object_response = json.loads(
-    (RESOURCES / "sample_response_without_additional.json").read_text()
-)
+single_object_response = _get_resource_json("sample_response_without_additional.json")
 # single expected record if 45733 with no additional images
-single_expected_data = json.loads((RESOURCES / "sample_image_data.json").read_text())
+single_expected_data = _get_resource_json("sample_image_data.json")
 
 # response for objectid 45734 with 2 additional image urls
-full_object_response = json.loads((RESOURCES / "sample_response.json").read_text())
+full_object_response = _get_resource_json("sample_response.json")
 # 3 expected image records for objectid 45734
-full_expected_data = json.loads(
-    (RESOURCES / "sample_additional_image_data.json").read_text()
-)
+full_expected_data = _get_resource_json("sample_additional_image_data.json")
 
 
 CC0 = LicenseInfo(

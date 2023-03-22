@@ -1,10 +1,11 @@
-import json
-from pathlib import Path
-
 import pytest
 from common.licenses import LicenseInfo
 from common.loader.provider_details import ImageCategory
 from providers.provider_api_scripts.rawpixel import RawpixelDataIngester
+
+from tests.dags.providers.provider_api_scripts.resources.JsonLoad import (
+    get_resource_json,
+)
 
 
 _license_info = (
@@ -17,13 +18,9 @@ license_info = LicenseInfo(*_license_info)
 rwp = RawpixelDataIngester()
 rwp.api_key = "PREDICTABLE-KEY"
 
-RESOURCES = Path(__file__).parent.resolve() / "resources/rawpixel"
-
 
 def _get_resource_json(json_name):
-    with (RESOURCES / json_name).open() as f:
-        resource_json = json.load(f)
-    return resource_json
+    return get_resource_json("rawpixel", json_name)
 
 
 @pytest.mark.parametrize(

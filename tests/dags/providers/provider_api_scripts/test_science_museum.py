@@ -1,7 +1,4 @@
-import json
 import logging
-import os
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -9,6 +6,10 @@ from common.licenses import LicenseInfo
 from common.loader import provider_details as prov
 from common.storage.image import ImageStore
 from providers.provider_api_scripts.science_museum import ScienceMuseumDataIngester
+
+from tests.dags.providers.provider_api_scripts.resources.JsonLoad import (
+    get_resource_json,
+)
 
 
 BY_NC_SA = LicenseInfo(
@@ -26,8 +27,6 @@ BY_SA = LicenseInfo(
 sm = ScienceMuseumDataIngester()
 image_store = ImageStore(provider=prov.SCIENCE_DEFAULT_PROVIDER)
 sm.media_stores = {"image": image_store}
-RESOURCES = Path(__file__).parent / "resources/sciencemuseum"
-
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s", level=logging.DEBUG
@@ -41,9 +40,7 @@ def after_test():
 
 
 def _get_resource_json(json_name):
-    with open(os.path.join(RESOURCES, json_name)) as f:
-        resource_json = json.load(f)
-        return resource_json
+    return get_resource_json("sciencemuseum", json_name)
 
 
 @pytest.fixture

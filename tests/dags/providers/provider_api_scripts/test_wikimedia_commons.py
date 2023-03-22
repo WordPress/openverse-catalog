@@ -10,6 +10,10 @@ from providers.provider_api_scripts.wikimedia_commons import (
     WikimediaCommonsDataIngester,
 )
 
+from tests.dags.providers.provider_api_scripts.resources.JsonLoad import (
+    get_resource_json,
+)
+
 
 RESOURCES = Path(__file__).parent.resolve() / "resources/wikimedia"
 
@@ -17,6 +21,10 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s",
     level=logging.DEBUG,
 )
+
+
+def _get_resource_json(json_name):
+    return get_resource_json("wikimedia", json_name)
 
 
 @pytest.fixture
@@ -35,18 +43,14 @@ def test_derive_timestamp_pair(wmc):
 
 
 def test_get_media_pages_returns_correctly_with_continue(wmc):
-    with open(RESOURCES / "response_small_with_continue.json") as f:
-        resp_dict = json.load(f)
-
+    resp_dict = _get_resource_json("response_small_with_continue.json")
     expect_result = {"84798633": {"pageid": 84798633, "title": "File:Ambassade1.jpg"}}
     actual_result = wmc.get_media_pages(resp_dict)
     assert actual_result == expect_result
 
 
 def test_get_batch_data_returns_correctly_with_pages(wmc):
-    with open(RESOURCES / "response_small_with_continue.json") as f:
-        resp_dict = json.load(f)
-
+    resp_dict = _get_resource_json("response_small_with_continue.json")
     expect_result = [
         {"pageid": 84798633, "title": "File:Ambassade1.jpg"},
     ]
@@ -100,12 +104,10 @@ def test_get_next_query_params_adds_props(query_prop, media_prop, wmc):
 
 
 def test_get_response_json(monkeypatch, wmc):
-    with open(RESOURCES / "continuation/wmc_pretty1.json") as f:
-        first_response = json.load(f)
-    with open(RESOURCES / "continuation/wmc_pretty2.json") as f:
-        second_response = json.load(f)
-    with open(RESOURCES / "continuation/wmc_pretty3.json") as f:
-        third_response = json.load(f)
+
+    first_response = _get_resource_json("continuation/wmc_pretty1.json")
+    second_response = _get_resource_json("continuation/wmc_pretty2.json")
+    third_response = _get_resource_json("continuation/wmc_pretty3.json")
 
     def mock_get_response_json(endpoint, retries, query_params, **kwargs):
         continue_one = "Edvard_Munch_-_Night_in_Nice_(1891).jpg|nowiki|1281339"
@@ -120,8 +122,7 @@ def test_get_response_json(monkeypatch, wmc):
         else:
             return None
 
-    with open(RESOURCES / "continuation/wmc_pretty123.json") as f:
-        expect_image_batch = json.load(f)
+    expect_image_batch = _get_resource_json("continuation/wmc_pretty123.json")
     expect_continue_token = expect_image_batch.pop("continue")
 
     monkeypatch.setattr(
@@ -134,8 +135,7 @@ def test_get_response_json(monkeypatch, wmc):
 
 
 def test_get_response_json_returns_correctly_without_continue(monkeypatch, wmc):
-    with open(RESOURCES / "response_small_missing_continue.json") as f:
-        resp_dict = json.load(f)
+    resp_dict = _get_resource_json("response_small_missing_continue.json")
 
     wmc.continue_token = {}
     with patch.object(
@@ -152,8 +152,7 @@ def test_get_response_json_returns_correctly_without_continue(monkeypatch, wmc):
 
 
 def test_get_response_json_breaks_on_max_iterations(monkeypatch, wmc):
-    with open(RESOURCES / "continuation/wmc_continue_max_iter.json") as f:
-        response = json.load(f)
+    response = _get_resource_json("continuation/wmc_continue_max_iter.json")
     wmc.max_page_iteration_before_give_up = 10
     wmc.delayed_requester._DELAY = 0.01
 
@@ -175,8 +174,7 @@ def test_get_response_json_breaks_on_max_iterations(monkeypatch, wmc):
 
 
 def test_get_response_json_props_reset_on_batchcomplete(monkeypatch, wmc):
-    with open(RESOURCES / "continuation/wmc_pretty_nocontinue.json") as f:
-        response = json.load(f)
+    response = _get_resource_json("continuation/wmc_pretty_nocontinue.json")
     wmc.max_page_iteration_before_give_up = 10
     wmc.delayed_requester._DELAY = 0.01
 

@@ -1,17 +1,20 @@
-import json
-from ast import literal_eval
-from pathlib import Path
-
 import pytest
 from common.constants import IMAGE
 from common.licenses import get_license_info
 from providers.provider_api_scripts.nappy import NappyDataIngester
 
+from tests.dags.providers.provider_api_scripts.resources.JsonLoad import (
+    get_resource_json,
+)
+
+
+def _get_resource_json(json_name):
+    return get_resource_json("nappy", json_name)
+
 
 # resource files
-RESOURCES = Path(__file__).parent / "resources/nappy"
-FULL_BATCH_RESPONSE = json.loads((RESOURCES / "images.json").read_text())
-SINGLE_ITEM = literal_eval((RESOURCES / "single_item.json").read_text())
+FULL_BATCH_RESPONSE = _get_resource_json("images.json")
+SINGLE_ITEM = _get_resource_json("single_item.json")
 
 # Set up test class
 ingester = NappyDataIngester()

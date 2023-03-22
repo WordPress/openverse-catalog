@@ -1,6 +1,4 @@
-import json
 import logging
-import os
 from unittest.mock import patch
 
 import pytest
@@ -9,10 +7,10 @@ from common.loader import provider_details as prov
 from common.storage.image import ImageStore
 from providers.provider_api_scripts.stocksnap import StockSnapDataIngester
 
-
-RESOURCES = os.path.join(
-    os.path.abspath(os.path.dirname(__file__)), "resources/stocksnap"
+from tests.dags.providers.provider_api_scripts.resources.JsonLoad import (
+    get_resource_json,
 )
+
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s",
@@ -26,9 +24,7 @@ stocksnap.media_stores = {"image": image_store}
 
 
 def _get_resource_json(json_name):
-    with open(os.path.join(RESOURCES, json_name)) as f:
-        resource_json = json.load(f)
-        return resource_json
+    return get_resource_json("stocksnap", json_name)
 
 
 @pytest.fixture(autouse=True)
