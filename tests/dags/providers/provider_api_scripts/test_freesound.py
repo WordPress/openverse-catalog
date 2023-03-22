@@ -1,15 +1,20 @@
-import json
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 from common.licenses.licenses import LicenseInfo
 from providers.provider_api_scripts.freesound import FreesoundDataIngester
 
+from tests.dags.providers.provider_api_scripts.resources.JsonLoad import (
+    get_resource_json,
+)
 
-RESOURCES = Path(__file__).parent.resolve() / "resources/freesound"
+
 fsd = FreesoundDataIngester()
 AUDIO_FILE_SIZE = 16359
+
+
+def _get_resource_json(json_name):
+    return get_resource_json("freesound", json_name)
 
 
 @pytest.fixture(autouse=True)
@@ -29,9 +34,7 @@ def file_size_patch():
 
 @pytest.fixture
 def audio_data():
-    audio_data_example = RESOURCES / "audio_data_example.json"
-    with open(audio_data_example) as f:
-        yield json.load(f)
+    yield _get_resource_json("audio_data_example.json")
 
 
 def test_get_audio_pages_returns_correctly_with_no_data():
@@ -86,8 +89,7 @@ def test_get_query_params_increments_page_number():
 
 
 def test_get_items(file_size_patch):
-    with open(RESOURCES / "page.json") as f:
-        first_response = json.load(f)
+    first_response = _get_resource_json("page.json")
     expected_audio_count = 6
     actual_audio_count = fsd.process_batch(first_response)
     assert actual_audio_count == expected_audio_count
