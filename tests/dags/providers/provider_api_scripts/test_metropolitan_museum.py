@@ -8,6 +8,10 @@ import requests
 from common.licenses import LicenseInfo
 from providers.provider_api_scripts.metropolitan_museum import MetMuseumDataIngester
 
+from tests.dags.providers.provider_api_scripts.resources.JsonLoad import (
+    get_resource_json,
+)
+
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s", level=logging.INFO
@@ -17,6 +21,11 @@ logger = logging.getLogger(__name__)
 mma = MetMuseumDataIngester()
 
 RESOURCES = Path(__file__).parent / "resources/metropolitan_museum_of_art"
+
+
+def _get_resource_json(json_name):
+    return get_resource_json(json_name)
+
 
 # abbreviated response without other images 45733
 single_object_response = json.loads(
