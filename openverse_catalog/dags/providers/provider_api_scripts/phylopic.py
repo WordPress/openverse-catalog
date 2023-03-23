@@ -10,7 +10,6 @@ Notes:                  http://api-docs.phylopic.org/v2/
                         No rate limit specified.
 """
 
-import argparse
 import logging
 
 from common import constants
@@ -148,13 +147,4 @@ def main():
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="PhyloPic API Job", add_help=True)
-    parser.add_argument(
-        "--date",
-        default=None,
-        help="Identify all images updated on a particular date (YYYY-MM-DD).",
-    )
-
-    args = parser.parse_args()
-
-    main(args.date)
+    main()
