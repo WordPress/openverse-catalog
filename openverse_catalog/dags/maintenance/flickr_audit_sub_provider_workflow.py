@@ -27,6 +27,15 @@ MAX_ACTIVE = 1
 
 
 class SuggestedSubProvider(NamedTuple):
+    """
+    A Flickr Commons institution which should be considered for addition as a
+    Flickr sub-provider.
+
+    name:     The name of the institution
+    nsid:     The unique id of the institution
+    cc_count: The number of CC-licensed images for this institution
+    """
+
     name: str
     nsid: str
     cc_count: int
