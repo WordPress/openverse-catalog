@@ -155,7 +155,15 @@ def test_oauth_requester_initializes_correctly(oauth_provider_var_mock):
 @pytest.mark.parametrize(
     "init_headers, request_kwargs, expected_request_kwargs",
     [
-        (None, None, {"headers": {}}),
+        (
+            None,
+            None,
+            {
+                "headers": {
+                    "User-Agent": "Openverse/0.1 (https://wordpress.org/openverse; openverse@wordpress.org)"
+                }
+            },
+        ),
         ({"init_header": "test"}, None, {"headers": {"init_header": "test"}}),
         (
             None,

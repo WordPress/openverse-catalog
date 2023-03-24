@@ -5,6 +5,7 @@ from collections.abc import Callable
 import oauth2
 import requests
 from airflow.exceptions import AirflowException
+from common.loader import provider_details as prov
 from requests.exceptions import JSONDecodeError
 
 
@@ -46,7 +47,7 @@ class DelayedRequester:
 
     def __init__(self, delay=0, headers=None):
         self._DELAY = delay
-        self.headers = headers or {}
+        self.headers = headers or {"User-Agent": prov.UA_STRING}
         self._last_request = 0
         self.session = requests.Session()
 
