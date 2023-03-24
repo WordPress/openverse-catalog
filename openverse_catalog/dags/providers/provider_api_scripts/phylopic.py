@@ -95,25 +95,22 @@ class PhylopicDataIngester(ProviderDataIngester):
     def _image_url(uid: str) -> str:
         return f"{PhylopicDataIngester.host}/image/{uid}"
 
-    # @staticmethod
-    # def _get_taxa_details(result: dict) -> tuple[list[str] | None, str]:
-    #     taxa = result.get("taxa", [])
-    #     taxa_list = None
-    #     title = ""
-    #     if taxa:
-    #         taxa = [
-    #             _.get("canonicalName")
-    #             for _ in taxa
-    #             if _.get("canonicalName") is not None
-    #         ]
-    #         taxa_list = [_.get("string", "") for _ in taxa]
-    #
-    #     if taxa_list:
-    #         title = taxa_list[0]
-    #
-    #     return taxa_list, title
+    @staticmethod
+    def _get_image_sizes(data: dict) -> tuple[int | None, int | None]:
+        width, height = None, None
+        sizes = data.get("sourceFile", {}).get("sizes")
+        if sizes and "x" in sizes:
+            width, height = sizes.split("x")
+            # SVG sizes include decimal points so we get an approximation.
+            width, height = int(float(width)), int(float(height))
+        return width, height
 
     def get_record_data(self, data: dict) -> dict | list[dict] | None:
+        """
+        Get the data for a single image record.
+
+        TODO: Adapt `url` and `creator_url` to avoid redirects.
+        """
         uid = data.get("uuid")
         if not uid:
             return None
@@ -121,22 +118,32 @@ class PhylopicDataIngester(ProviderDataIngester):
         data = data.get("_links", {})
         license_url = data.get("license", {}).get("href")
         img_url = data.get("sourceFile", {}).get("href")
-        if not license_url or not img_url:
+        foreign_url = data.get("self", {}).get("href")
+        if not license_url or not img_url or not foreign_url:
             return None
 
-        # TODO: Adapt URL to avoid redirects
-        foreign_url = self.host + data.get("self", {}).get("href")
+        foreign_url = self.host + foreign_url
+
+        title = data.get("self", {}).get("title")
+        creator = data.get("contributor", {}).get("title")
+        creator_url = self.host + data.get("contributor", {}).get("href")
+        width, height = self._get_image_sizes(data)
 
         return {
+            "license_info": get_license_info(license_url=license_url),
             "foreign_identifier": uid,
             "foreign_landing_url": foreign_url,
             "image_url": img_url,
-            "license_info": get_license_info(license_url=license_url),
-            # "width": width,
-            # "height": height,
-            # "creator": creator,
-            # "title": title,
-            # "meta_data": meta_data,
+            "title": title,
+            "creator": creator,
+            "creator_url": creator_url,
+            "width": width,
+            "height": height,
+            # TODO: Evaluate whether to include upstream thumbnails.
+            # Sizes available: 192x192, 128x128, 64x64.
+            # "thumbnail": thumbnail,
+            # TODO: Evaluate whether to include nodes' titles as tags.
+            # "tags": tags,
         }
 
 
