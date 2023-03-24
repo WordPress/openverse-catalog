@@ -1,0 +1,12 @@
+{
+  "name": "Openverse DevContainer",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/guiyomh/features/just:0": {}
+  },
+  "forwardPorts": [5011, 5434, 9090],
+  "postCreateCommand": "bash ./.devcontainer/on-create.sh"
+}
