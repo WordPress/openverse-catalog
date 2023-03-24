@@ -64,38 +64,6 @@ class PhylopicDataIngester(ProviderDataIngester):
         return response_json.get("_embedded", {}).get("items", [])
 
     @staticmethod
-    def _get_image_info(
-        result: dict, uid: str
-    ) -> tuple[str | None, int | None, int | None]:
-        img_url = None
-        width = None
-        height = None
-
-        image_info = result.get("pngFiles")
-        if image_info:
-            images = list(
-                filter(lambda x: (int(str(x.get("width", "0"))) >= 257), image_info)
-            )
-            if images:
-                image = sorted(images, key=lambda x: x["width"], reverse=True)[0]
-                img_url = image.get("url")
-                if not img_url:
-                    logging.warning(
-                        "Image not detected in url: "
-                        f"{PhylopicDataIngester._image_url(uid)}"
-                    )
-                else:
-                    img_url = f"{PhylopicDataIngester.host}{img_url}"
-                    width = image.get("width")
-                    height = image.get("height")
-
-        return img_url, width, height
-
-    @staticmethod
-    def _image_url(uid: str) -> str:
-        return f"{PhylopicDataIngester.host}/image/{uid}"
-
-    @staticmethod
     def _get_image_sizes(data: dict) -> tuple[int | None, int | None]:
         width, height = None, None
         sizes = data.get("sourceFile", {}).get("sizes")
