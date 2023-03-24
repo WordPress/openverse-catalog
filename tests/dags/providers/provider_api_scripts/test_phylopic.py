@@ -53,6 +53,20 @@ def test_get_next_query_params(build_param, current_page, expected_query_params)
     assert actual_query_params == expected_query_params | {"embed_items": "true"}
 
 
+@pytest.mark.parametrize(
+    "data, expected_sizes",
+    [
+        ({}, (None, None)),
+        ({"sourceFile": {}}, (None, None)),
+        ({"sourceFile": {"sizes": "123x321"}}, (123, 321)),
+        ({"sourceFile": {"sizes": "413.39108x272.68854"}}, (413, 272)),
+    ],
+)
+def test__get_image_sizes(data, expected_sizes):
+    actual_sizes = pp._get_image_sizes(data)
+    assert actual_sizes == expected_sizes
+
+
 def test_get_record_data():
     data = get_json("sample_record.json")
     image = pp.get_record_data(data)
