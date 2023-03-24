@@ -10,9 +10,7 @@ Notes:                  http://api-docs.phylopic.org/v2/
                         No rate limit specified.
 """
 
-import json
 import logging
-from pathlib import Path
 
 from common import constants
 from common.licenses import get_license_info
@@ -21,17 +19,6 @@ from providers.provider_api_scripts.provider_data_ingester import ProviderDataIn
 
 
 logger = logging.getLogger(__name__)
-
-sample_files = {
-    "initial_request": False,
-    "sample_record": False,
-}
-
-
-def save_response_content(response: dict, filename: str) -> None:
-    folder = Path(__file__).parent
-    with open(folder / f"phylopic_{filename}.json", "w") as f:
-        json.dump(response, f)
 
 
 class PhylopicDataIngester(ProviderDataIngester):
@@ -61,10 +48,6 @@ class PhylopicDataIngester(ProviderDataIngester):
             f"Total items to fetch: {resp.get('totalItems')}. "
             f"Total pages: {self.total_pages}"
         )
-
-        if not sample_files["initial_request"]:
-            save_response_content(resp, "initial_request")
-            sample_files["initial_request"] = True
 
     def get_next_query_params(self, prev_query_params: dict | None, **kwargs) -> dict:
         if prev_query_params is not None:
@@ -98,9 +81,6 @@ class PhylopicDataIngester(ProviderDataIngester):
 
         TODO: Adapt `url` and `creator_url` to avoid redirects.
         """
-        if not sample_files["sample_record"]:
-            save_response_content(data, "sample_record")
-            sample_files["sample_record"] = True
 
         uid = data.get("uuid")
         if not uid:
