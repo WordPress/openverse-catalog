@@ -31,26 +31,32 @@ def test__get_initial_query_params():
 
 
 @pytest.mark.parametrize(
-    "build_param, current_page, expected_query_params",
+    "current_page, prev_query_params, expected_query_params",
     [
-        (111, 0, {"build": 111, "page": 0}),
-        (222, 2, {"build": 222, "page": 3}),
+        (1, None, {"build": 111, "page": 0, "embed_items": "true"}),  # First call
+        (  # Second call
+            1,
+            {"build": 111, "page": 0, "embed_items": "true"},
+            {"build": 111, "page": 1, "embed_items": "true"},
+        ),
+        (  # Third call
+            2,
+            {"build": 111, "page": 1, "embed_items": "true"},
+            {"build": 111, "page": 2, "embed_items": "true"},
+        ),
+        (  # Random intermediate call
+            50,
+            {"build": 111, "page": 1, "embed_items": "true"},
+            {"build": 111, "page": 50, "embed_items": "true"},
+        ),
     ],
 )
-def test_get_next_query_params(build_param, current_page, expected_query_params):
-    pp.build_param = build_param
+def test_get_next_query_params(current_page, prev_query_params, expected_query_params):
+    pp.build_param = 111
     pp.current_page = current_page
-
-    prev_query_params = None
-    if current_page != 0:
-        prev_query_params = {
-            "build": pp.build_param,
-            "page": pp.current_page,
-            "embed_items": "true",
-        }
     actual_query_params = pp.get_next_query_params(prev_query_params)
 
-    assert actual_query_params == expected_query_params | {"embed_items": "true"}
+    assert actual_query_params == expected_query_params
 
 
 @pytest.mark.parametrize(
