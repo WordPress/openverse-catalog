@@ -7,8 +7,8 @@ from common.loader import provider_details as prov
 from common.storage.image import ImageStore
 from providers.provider_api_scripts.science_museum import ScienceMuseumDataIngester
 
-from tests.dags.providers.provider_api_scripts.resources.JsonLoad import (
-    get_resource_json,
+from tests.dags.providers.provider_api_scripts.resources.json_load import (
+    make_resource_json_func,
 )
 
 
@@ -39,8 +39,7 @@ def after_test():
     sm.RECORD_IDS = set()
 
 
-def _get_resource_json(json_name):
-    return get_resource_json("sciencemuseum", json_name)
+_get_resource_json = make_resource_json_func("sciencemuseum")
 
 
 @pytest.fixture

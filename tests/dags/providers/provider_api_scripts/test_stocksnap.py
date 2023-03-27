@@ -7,8 +7,8 @@ from common.loader import provider_details as prov
 from common.storage.image import ImageStore
 from providers.provider_api_scripts.stocksnap import StockSnapDataIngester
 
-from tests.dags.providers.provider_api_scripts.resources.JsonLoad import (
-    get_resource_json,
+from tests.dags.providers.provider_api_scripts.resources.json_load import (
+    make_resource_json_func,
 )
 
 
@@ -23,8 +23,7 @@ image_store = ImageStore(provider=prov.STOCKSNAP_DEFAULT_PROVIDER)
 stocksnap.media_stores = {"image": image_store}
 
 
-def _get_resource_json(json_name):
-    return get_resource_json("stocksnap", json_name)
+_get_resource_json = make_resource_json_func("stocksnap")
 
 
 @pytest.fixture(autouse=True)

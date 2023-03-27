@@ -5,13 +5,12 @@ from providers.provider_api_scripts.europeana import (
     EuropeanaRecordBuilder,
 )
 
-from tests.dags.providers.provider_api_scripts.resources.JsonLoad import (
-    get_resource_json,
+from tests.dags.providers.provider_api_scripts.resources.json_load import (
+    make_resource_json_func,
 )
 
 
-def _get_resource_json(json_name):
-    return get_resource_json("europeana", json_name)
+_get_resource_json = make_resource_json_func("europeana")
 
 
 FROZEN_DATE = "2018-01-15"

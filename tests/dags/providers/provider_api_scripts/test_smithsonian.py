@@ -4,17 +4,14 @@ import pytest
 from airflow.exceptions import AirflowException
 from providers.provider_api_scripts.smithsonian import SmithsonianDataIngester
 
-from tests.dags.providers.provider_api_scripts.resources.JsonLoad import (
-    get_resource_json,
+from tests.dags.providers.provider_api_scripts.resources.json_load import (
+    make_resource_json_func,
 )
 
 
 # Set up test class
 ingester = SmithsonianDataIngester()
-
-
-def _get_resource_json(json_name):
-    return get_resource_json("smithsonian", json_name)
+_get_resource_json = make_resource_json_func("smithsonian")
 
 
 def test_get_hash_prefixes_with_len_one():

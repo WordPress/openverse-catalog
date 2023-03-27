@@ -4,8 +4,8 @@ import pytest
 from common.licenses import LicenseInfo
 from providers.provider_api_scripts.phylopic import PhylopicDataIngester
 
-from tests.dags.providers.provider_api_scripts.resources.JsonLoad import (
-    get_resource_json,
+from tests.dags.providers.provider_api_scripts.resources.json_load import (
+    make_resource_json_func,
 )
 
 
@@ -17,8 +17,7 @@ def image_data():
     yield get_json("correct_meta_data_example.json")
 
 
-def get_json(json_name):
-    return get_resource_json("phylopic", json_name)
+get_json = make_resource_json_func("phylopic")
 
 
 @pytest.fixture

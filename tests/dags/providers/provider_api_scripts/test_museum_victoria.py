@@ -7,8 +7,8 @@ from common.loader import provider_details as prov
 from common.storage.image import ImageStore
 from providers.provider_api_scripts.museum_victoria import VictoriaDataIngester
 
-from tests.dags.providers.provider_api_scripts.resources.JsonLoad import (
-    get_resource_json,
+from tests.dags.providers.provider_api_scripts.resources.json_load import (
+    make_resource_json_func,
 )
 
 
@@ -26,8 +26,7 @@ def after_test():
     mv.RECORDS_IDS = set()
 
 
-def _get_resource_json(json_name):
-    return get_resource_json("museumvictoria", json_name)
+_get_resource_json = make_resource_json_func("museumvictoria")
 
 
 def test_get_query_param_default():

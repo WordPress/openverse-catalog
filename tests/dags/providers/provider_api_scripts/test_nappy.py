@@ -3,13 +3,12 @@ from common.constants import IMAGE
 from common.licenses import get_license_info
 from providers.provider_api_scripts.nappy import NappyDataIngester
 
-from tests.dags.providers.provider_api_scripts.resources.JsonLoad import (
-    get_resource_json,
+from tests.dags.providers.provider_api_scripts.resources.json_load import (
+    make_resource_json_func,
 )
 
 
-def _get_resource_json(json_name):
-    return get_resource_json("nappy", json_name)
+_get_resource_json = make_resource_json_func("nappy")
 
 
 # resource files

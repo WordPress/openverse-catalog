@@ -5,8 +5,8 @@ from airflow.exceptions import AirflowException
 from common.licenses import LicenseInfo
 from providers.provider_api_scripts.flickr import FlickrDataIngester
 
-from tests.dags.providers.provider_api_scripts.resources.JsonLoad import (
-    get_resource_json,
+from tests.dags.providers.provider_api_scripts.resources.json_load import (
+    make_resource_json_func,
 )
 
 
@@ -20,8 +20,7 @@ test_license_info = LicenseInfo(
 )
 
 
-def _get_resource_json(json_name):
-    return get_resource_json("flickr", json_name)
+_get_resource_json = make_resource_json_func("flickr")
 
 
 def test_get_next_query_params():

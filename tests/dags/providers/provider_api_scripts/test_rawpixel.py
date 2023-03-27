@@ -3,8 +3,8 @@ from common.licenses import LicenseInfo
 from common.loader.provider_details import ImageCategory
 from providers.provider_api_scripts.rawpixel import RawpixelDataIngester
 
-from tests.dags.providers.provider_api_scripts.resources.JsonLoad import (
-    get_resource_json,
+from tests.dags.providers.provider_api_scripts.resources.json_load import (
+    make_resource_json_func,
 )
 
 
@@ -19,8 +19,7 @@ rwp = RawpixelDataIngester()
 rwp.api_key = "PREDICTABLE-KEY"
 
 
-def _get_resource_json(json_name):
-    return get_resource_json("rawpixel", json_name)
+_get_resource_json = make_resource_json_func("rawpixel")
 
 
 @pytest.mark.parametrize(

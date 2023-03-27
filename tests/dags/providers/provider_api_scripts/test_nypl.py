@@ -7,8 +7,8 @@ from providers.provider_api_scripts.nypl import (
     get_value_from_dict_or_list,
 )
 
-from tests.dags.providers.provider_api_scripts.resources.JsonLoad import (
-    get_resource_json,
+from tests.dags.providers.provider_api_scripts.resources.json_load import (
+    make_resource_json_func,
 )
 
 
@@ -29,10 +29,7 @@ def validate_url_string():
 
 nypl = NyplDataIngester()
 image_store = nypl.media_stores["image"]
-
-
-def _get_resource_json(json_name):
-    return get_resource_json("nypl", json_name)
+_get_resource_json = make_resource_json_func("nypl")
 
 
 def test_get_next_query_params_default():

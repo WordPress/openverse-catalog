@@ -8,8 +8,8 @@ from common.loader import provider_details as prov
 from common.storage.image import ImageStore
 from providers.provider_api_scripts.finnish_museums import FinnishMuseumsDataIngester
 
-from tests.dags.providers.provider_api_scripts.resources.JsonLoad import (
-    get_resource_json,
+from tests.dags.providers.provider_api_scripts.resources.json_load import (
+    make_resource_json_func,
 )
 
 
@@ -26,8 +26,7 @@ image_store = ImageStore(provider=prov.FINNISH_DEFAULT_PROVIDER)
 fm.media_stores = {"image": image_store}
 
 
-def _get_resource_json(json_name):
-    return get_resource_json("finnishmuseums", json_name)
+_get_resource_json = make_resource_json_func("finnishmuseums")
 
 
 @pytest.mark.parametrize(

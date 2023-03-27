@@ -10,8 +10,8 @@ from providers.provider_api_scripts.provider_data_ingester import (
     AggregateIngestionError,
 )
 
-from tests.dags.providers.provider_api_scripts.resources.JsonLoad import (
-    get_resource_json,
+from tests.dags.providers.provider_api_scripts.resources.json_load import (
+    make_resource_json_func,
 )
 from tests.dags.providers.provider_api_scripts.resources.provider_data_ingester.mock_provider_data_ingester import (
     AUDIO_PROVIDER,
@@ -34,8 +34,7 @@ image_store = MockImageStore(IMAGE_PROVIDER)
 ingester.media_stores = {"audio": audio_store, "image": image_store}
 
 
-def _get_resource_json(json_name):
-    return get_resource_json("provider_data_ingester", json_name)
+_get_resource_json = make_resource_json_func("provider_data_ingester")
 
 
 def test_init_media_stores():

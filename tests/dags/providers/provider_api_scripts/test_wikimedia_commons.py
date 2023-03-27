@@ -8,8 +8,8 @@ from providers.provider_api_scripts.wikimedia_commons import (
     WikimediaCommonsDataIngester,
 )
 
-from tests.dags.providers.provider_api_scripts.resources.JsonLoad import (
-    get_resource_json,
+from tests.dags.providers.provider_api_scripts.resources.json_load import (
+    make_resource_json_func,
 )
 
 
@@ -19,8 +19,7 @@ logging.basicConfig(
 )
 
 
-def _get_resource_json(json_name):
-    return get_resource_json("wikimedia", json_name)
+_get_resource_json = make_resource_json_func("wikimedia")
 
 
 @pytest.fixture

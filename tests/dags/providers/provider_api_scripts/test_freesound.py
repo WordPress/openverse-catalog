@@ -4,8 +4,8 @@ import pytest
 from common.licenses.licenses import LicenseInfo
 from providers.provider_api_scripts.freesound import FreesoundDataIngester
 
-from tests.dags.providers.provider_api_scripts.resources.JsonLoad import (
-    get_resource_json,
+from tests.dags.providers.provider_api_scripts.resources.json_load import (
+    make_resource_json_func,
 )
 
 
@@ -13,8 +13,7 @@ fsd = FreesoundDataIngester()
 AUDIO_FILE_SIZE = 16359
 
 
-def _get_resource_json(json_name):
-    return get_resource_json("freesound", json_name)
+_get_resource_json = make_resource_json_func("freesound")
 
 
 @pytest.fixture(autouse=True)

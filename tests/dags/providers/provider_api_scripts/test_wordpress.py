@@ -3,13 +3,12 @@ from unittest.mock import MagicMock, patch
 import pytest
 from providers.provider_api_scripts.wordpress import WordPressDataIngester
 
-from tests.dags.providers.provider_api_scripts.resources.JsonLoad import (
-    get_resource_json,
+from tests.dags.providers.provider_api_scripts.resources.json_load import (
+    make_resource_json_func,
 )
 
 
-def _get_resource_json(json_name):
-    return get_resource_json("wordpress", json_name)
+_get_resource_json = make_resource_json_func("wordpress")
 
 
 @pytest.fixture

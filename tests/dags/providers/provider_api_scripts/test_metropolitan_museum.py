@@ -7,8 +7,8 @@ import requests
 from common.licenses import LicenseInfo
 from providers.provider_api_scripts.metropolitan_museum import MetMuseumDataIngester
 
-from tests.dags.providers.provider_api_scripts.resources.JsonLoad import (
-    get_resource_json,
+from tests.dags.providers.provider_api_scripts.resources.json_load import (
+    make_resource_json_func,
 )
 
 
@@ -20,9 +20,7 @@ logger = logging.getLogger(__name__)
 mma = MetMuseumDataIngester()
 
 
-def _get_resource_json(json_name):
-    return get_resource_json("metropolitan_museum_of_art", json_name)
-
+_get_resource_json = make_resource_json_func("metropolitan_museum_of_art")
 
 # abbreviated response without other images 45733
 single_object_response = _get_resource_json("sample_response_without_additional.json")

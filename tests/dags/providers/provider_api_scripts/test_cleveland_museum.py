@@ -8,8 +8,8 @@ from common.loader import provider_details as prov
 from common.storage.image import ImageStore
 from providers.provider_api_scripts.cleveland_museum import ClevelandDataIngester
 
-from tests.dags.providers.provider_api_scripts.resources.JsonLoad import (
-    get_resource_json,
+from tests.dags.providers.provider_api_scripts.resources.json_load import (
+    make_resource_json_func,
 )
 
 
@@ -38,8 +38,7 @@ image_store = ImageStore(provider=prov.CLEVELAND_DEFAULT_PROVIDER)
 clm.media_stores = {"image": image_store}
 
 
-def _get_resource_json(json_name):
-    return get_resource_json("clevelandmuseum", json_name)
+_get_resource_json = make_resource_json_func("clevelandmuseum")
 
 
 def test_build_query_param_default():

@@ -6,18 +6,15 @@ from common.loader import provider_details as prov
 from common.storage.image import ImageStore
 from providers.provider_api_scripts.brooklyn_museum import BrooklynMuseumDataIngester
 
-from tests.dags.providers.provider_api_scripts.resources.JsonLoad import (
-    get_resource_json,
+from tests.dags.providers.provider_api_scripts.resources.json_load import (
+    make_resource_json_func,
 )
 
 
 bkm = BrooklynMuseumDataIngester()
 image_store = ImageStore(provider=prov.BROOKLYN_DEFAULT_PROVIDER)
 bkm.media_stores = {"image": image_store}
-
-
-def _get_resource_json(json_name):
-    return get_resource_json("brooklynmuseum", json_name)
+_get_resource_json = make_resource_json_func("brooklynmuseum")
 
 
 def test_build_query_param_default():

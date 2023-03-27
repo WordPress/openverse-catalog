@@ -2,8 +2,8 @@ import pytest
 from common.licenses import LicenseInfo
 from providers.provider_api_scripts.smk import SmkDataIngester
 
-from tests.dags.providers.provider_api_scripts.resources.JsonLoad import (
-    get_resource_json,
+from tests.dags.providers.provider_api_scripts.resources.json_load import (
+    make_resource_json_func,
 )
 
 
@@ -17,8 +17,7 @@ CC0 = LicenseInfo(
 )
 
 
-def _get_resource_json(json_name):
-    return get_resource_json("smk", json_name)
+_get_resource_json = make_resource_json_func("smk")
 
 
 def test_get_next_query_params_first_call():
