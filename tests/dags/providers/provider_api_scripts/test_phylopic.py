@@ -54,6 +54,22 @@ def test_get_next_query_params(build_param, current_page, expected_query_params)
 
 
 @pytest.mark.parametrize(
+    "contributor_data, expected_creator",
+    [
+        ({}, (None, None)),
+        ({"title": "Jane Doe", "href": ""}, ("Jane Doe", None)),
+        (
+            {"title": "Jane Doe", "href": "/contributors/uuid?build=123"},
+            ("Jane Doe", "https://www.phylopic.org/contributors/uuid?build=123"),
+        ),
+    ],
+)
+def test__get_creator(contributor_data, expected_creator):
+    actual_creator = pp._get_creator(contributor_data)
+    assert actual_creator == expected_creator
+
+
+@pytest.mark.parametrize(
     "data, expected_sizes",
     [
         ({}, (None, None)),

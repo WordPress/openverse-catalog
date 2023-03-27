@@ -65,6 +65,12 @@ class PhylopicDataIngester(ProviderDataIngester):
     def get_batch_data(self, response_json):
         return response_json.get("_embedded", {}).get("items", [])
 
+    def _get_creator(self, data: dict) -> tuple[str | None, str | None]:
+        creator_name = data.get("title")
+        href = data.get("href")
+        creator_url = self.host + href if href else None
+        return creator_name, creator_url
+
     @staticmethod
     def _get_image_sizes(data: dict) -> tuple[int | None, int | None]:
         width, height = None, None
@@ -96,8 +102,7 @@ class PhylopicDataIngester(ProviderDataIngester):
         foreign_url = self.host + foreign_url
 
         title = data.get("self", {}).get("title")
-        creator = data.get("contributor", {}).get("title")
-        creator_url = self.host + data.get("contributor", {}).get("href")
+        creator, creator_url = self._get_creator(data.get("contributor", {}))
         width, height = self._get_image_sizes(data)
 
         return {
