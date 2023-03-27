@@ -221,7 +221,7 @@ PROVIDER_WORKFLOWS = [
     ProviderWorkflow(
         ingester_class=FreesoundDataIngester,
         schedule_string="@quarterly",
-        pull_timeout=timedelta(days=30),
+        pull_timeout=timedelta(days=50),
     ),
     ProviderWorkflow(
         ingester_class=INaturalistDataIngester,
