@@ -29,7 +29,7 @@ class PhylopicDataIngester(ProviderDataIngester):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.current_page = 0
+        self.current_page = 1
         self.total_pages = 0
         self.build_param = 0
 
@@ -46,7 +46,7 @@ class PhylopicDataIngester(ProviderDataIngester):
         self.total_pages = resp.get("totalPages")
         logger.info(
             f"Total items to fetch: {resp.get('totalItems')}. "
-            f"Total pages: {self.total_pages}"
+            f"Total pages: {self.total_pages}."
         )
 
     def get_next_query_params(self, prev_query_params: dict | None, **kwargs) -> dict:
@@ -55,11 +55,12 @@ class PhylopicDataIngester(ProviderDataIngester):
 
         return {
             "build": self.build_param,
-            "page": self.current_page,
+            "page": self.current_page - 1,  # PhyloPic pages are 0-indexed.
             "embed_items": "true",
         }
 
     def get_should_continue(self, response_json):
+        logger.debug(f"Processing page {self.current_page} of {self.total_pages}.")
         return self.current_page < self.total_pages
 
     def get_batch_data(self, response_json):
