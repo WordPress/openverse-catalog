@@ -3,6 +3,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+
 from common.licenses import get_license_info
 from providers.provider_api_scripts.phylopic import PhylopicDataIngester
 
