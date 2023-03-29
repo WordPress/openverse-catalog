@@ -57,7 +57,7 @@ def update_foreign_identifiers(task: AbstractOperator) -> dict[str, int]:
         # Update the foreign identifier with the UUID
         update_query = dedent(
             f"""
-            UPDATE image SET foreign_identifier = '{uuid}'
+            UPDATE image SET foreign_identifier = '{uuid}', thumbnail = NULL
             WHERE identifier = '{identifier}'
             """
         )
