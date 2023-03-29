@@ -7,6 +7,7 @@ from typing import TypedDict
 
 from airflow.exceptions import AirflowException
 from airflow.models import Variable
+
 from common.requester import DelayedRequester
 from common.storage.media import MediaStore
 from common.storage.util import get_media_store_class
@@ -37,7 +38,7 @@ class IngestionError(Exception):
     def __init__(self, error, traceback, query_params):
         self.error = error
         self.traceback = traceback
-        self.query_params = json.dumps(query_params)
+        self.query_params = json.dumps(query_params, default=str)
 
     def __str__(self):
         # Append query_param info to error message
@@ -237,8 +238,13 @@ class ProviderDataIngester(ABC):
                     should_continue = False
 
             except AirflowException as error:
-                # AirflowExceptions should not be caught, as execution should not
-                # continue when the task is being stopped by Airflow.
+                # AirflowExceptions should not be caught or reraised as IngestionErrors,
+                # as execution should not continue when the task is being stopped by
+                # Airflow. However, we should still log the last query_params to be
+                # hit before the error was raised.
+                logger.info(
+                    f"Last query_params used: {json.dumps(query_params, default=str)}"
+                )
 
                 # If errors have already been caught during processing, raise them
                 # as well.

@@ -71,8 +71,8 @@ The following are DAGs grouped by their primary tag:
 | [`europeana_workflow`](#europeana_workflow)                     | `@daily`          | `True`  | image         |
 | [`finnish_museums_workflow`](#finnish_museums_workflow)         | `@daily`          | `True`  | image         |
 | [`flickr_workflow`](#flickr_workflow)                           | `@daily`          | `True`  | image         |
-| [`freesound_workflow`](#freesound_workflow)                     | `@monthly`        | `False` | audio         |
-| [`inaturalist_workflow`](#inaturalist_workflow)                 | `@monthly`        | `False` | image         |
+| [`freesound_workflow`](#freesound_workflow)                     | `@quarterly`      | `False` | audio         |
+| [`inaturalist_workflow`](#inaturalist_workflow)                 | `0 0 2 * *`       | `False` | image         |
 | [`jamendo_workflow`](#jamendo_workflow)                         | `@monthly`        | `False` | audio         |
 | [`metropolitan_museum_workflow`](#metropolitan_museum_workflow) | `@daily`          | `True`  | image         |
 | `museum_victoria_workflow`                                      | `@monthly`        | `False` | image         |
@@ -571,8 +571,8 @@ ETL Process: Use the API to identify all CC-licensed images.
 Output: TSV file containing the image, the respective meta-data.
 
 Notes:
-https://github.com/TheScienceMuseum/collectionsonline/wiki/Collections-Online-API #
-noqa Rate limited, no specific rate given.
+https://github.com/TheScienceMuseum/collectionsonline/wiki/Collections-Online-API
+Rate limited, no specific rate given.
 
 ## `smithsonian_workflow`
 

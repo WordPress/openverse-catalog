@@ -20,6 +20,7 @@ import re
 from urllib.parse import urlencode
 
 from airflow.models import Variable
+
 from common import constants
 from common.licenses import NO_LICENSE_FOUND, get_license_info
 from common.loader import provider_details as prov
@@ -89,9 +90,9 @@ class RawpixelDataIngester(ProviderDataIngester):
 
         URL encode the ordered parameters in a way that matches Node's
         querystring.stringify as closely as possible
-        See: https://docs.python.org/3.10/library/urllib.parse.html#urllib.parse.urlencode  # noqa
-        and https://nodejs.org/api/querystring.html#querystringstringifyobj-sep-eq-options  # noqa
-        """
+        See: https://docs.python.org/3.10/library/urllib.parse.html#urllib.parse.urlencode
+        and https://nodejs.org/api/querystring.html#querystringstringifyobj-sep-eq-options
+        """  # noqa: E501
         # Params must be ordered for deterministic computation
         ordered_params = {k: v for k, v in sorted(query_params.items())}
         # Build parameters as a string, split out sequences since that's Node's behavior
