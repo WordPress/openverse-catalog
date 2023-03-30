@@ -83,7 +83,7 @@ def update_foreign_identifiers(task: AbstractOperator) -> dict[str, int]:
     return counter
 
 
-def final_report(counter: dict[str, int]) -> None:
+def final_report(counter) -> None:
     message = f"{DAG_ID} DAG run completed. Update statistics:\n{counter}."
     send_message(message, dag_id=DAG_ID)
 
