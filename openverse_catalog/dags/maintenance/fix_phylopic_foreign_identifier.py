@@ -35,6 +35,7 @@ def update_foreign_identifiers(task: AbstractOperator) -> dict[str, int]:
     uuid_pattern = (
         "[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}"
     )
+    prog = re.compile(uuid_pattern)
     counter = {
         "updated": 0,
         "skipped": 0,
@@ -49,7 +50,7 @@ def update_foreign_identifiers(task: AbstractOperator) -> dict[str, int]:
             counter["skipped"] += 1
             continue
 
-        uuid = re.search(uuid_pattern, foreign_identifier).group()
+        uuid = prog.search(foreign_identifier).group()
         if uuid is None:
             counter["failed_none"] += 1
             continue
