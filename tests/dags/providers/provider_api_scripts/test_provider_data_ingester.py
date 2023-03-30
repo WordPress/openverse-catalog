@@ -3,13 +3,13 @@ from unittest.mock import MagicMock, call, patch
 import pytest
 import requests
 from airflow.exceptions import AirflowException
+
 from common.requester import RetriesExceeded
 from common.storage.audio import AudioStore, MockAudioStore
 from common.storage.image import ImageStore, MockImageStore
 from providers.provider_api_scripts.provider_data_ingester import (
     AggregateIngestionError,
 )
-
 from tests.dags.providers.provider_api_scripts.resources.json_load import (
     make_resource_json_func,
 )

@@ -1,9 +1,9 @@
 from unittest.mock import patch
 
 import pytest
+
 from common.licenses import LicenseInfo
 from providers.provider_api_scripts.phylopic import PhylopicDataIngester
-
 from tests.dags.providers.provider_api_scripts.resources.json_load import (
     make_resource_json_func,
 )

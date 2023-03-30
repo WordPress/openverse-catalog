@@ -1,10 +1,10 @@
 import pytest
+
 from common.licenses import LicenseInfo, get_license_info
 from providers.provider_api_scripts.europeana import (
     EuropeanaDataIngester,
     EuropeanaRecordBuilder,
 )
-
 from tests.dags.providers.provider_api_scripts.resources.json_load import (
     make_resource_json_func,
 )

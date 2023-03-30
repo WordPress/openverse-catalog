@@ -1,11 +1,11 @@
 from unittest.mock import patch
 
 import pytest
+
 from common.licenses import LicenseInfo
 from common.loader import provider_details as prov
 from common.storage.image import ImageStore
 from providers.provider_api_scripts.brooklyn_museum import BrooklynMuseumDataIngester
-
 from tests.dags.providers.provider_api_scripts.resources.json_load import (
     make_resource_json_func,
 )

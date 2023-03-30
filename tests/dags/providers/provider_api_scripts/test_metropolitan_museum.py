@@ -4,9 +4,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 import requests
+
 from common.licenses import LicenseInfo
 from providers.provider_api_scripts.metropolitan_museum import MetMuseumDataIngester
-
 from tests.dags.providers.provider_api_scripts.resources.json_load import (
     make_resource_json_func,
 )

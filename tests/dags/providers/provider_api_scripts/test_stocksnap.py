@@ -2,11 +2,11 @@ import logging
 from unittest.mock import patch
 
 import pytest
+
 from common.licenses import get_license_info
 from common.loader import provider_details as prov
 from common.storage.image import ImageStore
 from providers.provider_api_scripts.stocksnap import StockSnapDataIngester
-
 from tests.dags.providers.provider_api_scripts.resources.json_load import (
     make_resource_json_func,
 )

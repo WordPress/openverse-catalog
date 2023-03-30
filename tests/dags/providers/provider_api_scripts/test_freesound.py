@@ -1,9 +1,9 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+
 from common.licenses.licenses import LicenseInfo
 from providers.provider_api_scripts.freesound import FreesoundDataIngester
-
 from tests.dags.providers.provider_api_scripts.resources.json_load import (
     make_resource_json_func,
 )

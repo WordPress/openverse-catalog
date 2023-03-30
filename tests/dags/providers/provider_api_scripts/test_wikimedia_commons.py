@@ -2,12 +2,12 @@ import logging
 from unittest.mock import Mock, patch
 
 import pytest
+
 from common.constants import IMAGE
 from common.licenses import get_license_info
 from providers.provider_api_scripts.wikimedia_commons import (
     WikimediaCommonsDataIngester,
 )
-
 from tests.dags.providers.provider_api_scripts.resources.json_load import (
     make_resource_json_func,
 )
