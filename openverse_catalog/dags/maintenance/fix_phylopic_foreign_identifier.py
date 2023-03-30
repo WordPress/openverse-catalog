@@ -4,8 +4,10 @@ One-time run DAG to fix the foreign identifier for PhyloPic images.
 In order to prevent broken links, we need to update the foreign identifier from using
 the image URL to using the foreign image UUID.
 """
+
 import logging
 import re
+from datetime import timedelta
 from textwrap import dedent
 
 from airflow.decorators import dag
@@ -91,7 +93,7 @@ def final_report(counter: dict[str, int]) -> None:
     default_args={
         **DAG_DEFAULT_ARGS,
         "retries": 0,
-        # "execution_timeout": timedelta(hours=5),
+        "execution_timeout": timedelta(hours=5),
     },
     schedule=None,
     catchup=False,
