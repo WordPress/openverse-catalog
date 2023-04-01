@@ -25,6 +25,10 @@ def make_resource_json_func(folder_name: str) -> Callable[[str], dict]:
     """
     resources = Path(__file__).parent / folder_name
 
+    # Check if the given resource path is a valid
+    if not Path.is_dir(resources):
+        raise FileNotFoundError(f"Folder not found at given path {resources}")
+
     def get_resource_json(resource_name: str) -> dict:
         return json.loads((resources / resource_name).read_text())
 
