@@ -126,7 +126,7 @@ class FlickrDataIngester(TimeDelineatedProviderDataIngester):
                 )
         logger.info("Completed large batch processing by license type.")
 
-        # Report the final number of requests made. Because the Flickr DAG recieves a
+        # Report the final number of requests made. Because the Flickr DAG receives a
         # large amount of data, we can safely assume that we used the maximum of 25
         # additional requests when generating timestamp pairs.
         logger.info(f"Made {self.requests_count + 25} requests to the Flickr API.")
