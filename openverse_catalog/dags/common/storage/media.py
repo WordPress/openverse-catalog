@@ -111,8 +111,8 @@ class MediaStore(metaclass=abc.ABCMeta):
         - add `provider`,
         - add default `category`, if available.
 
-        Returns None if license is invalid, or if missing required `foreign_identifier`,
-        `foreign_landing_url`, or `url`.
+        Returns None if license is invalid. Raises an error if missing required
+        `foreign_identifier`, `foreign_landing_url`, or `url`.
         """
         if media_data["license_info"].license is None or not is_valid_license_info(
             media_data["license_info"]
@@ -126,8 +126,7 @@ class MediaStore(metaclass=abc.ABCMeta):
             f"{self.media_type}_url",
         ]:
             if media_data.get(field) is None:
-                logger.debug(f"Discarding media due to missing {field}")
-                return None
+                raise ValueError(f"Record missing required field: `{field}`")
 
         for field in [
             f"{self.media_type}_url",

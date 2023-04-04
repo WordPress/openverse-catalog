@@ -265,7 +265,7 @@ def test_MediaStore_clean_media_metadata_does_not_replace_category_with_default(
 @pytest.mark.parametrize(
     "field", ("foreign_identifier", "foreign_landing_url", "image_url")
 )
-def test_MediaStore_clean_media_metadata_validates_required_fields(
+def test_MediaStore_clean_media_metadata_raises_when_missing_required_field(
     field,
 ):
     image_store = image.ImageStore()
@@ -273,9 +273,8 @@ def test_MediaStore_clean_media_metadata_validates_required_fields(
         **TEST_REQUIRED_FIELDS,
         field: None,  # Override the test field with None
     }
-    cleaned_data = image_store.clean_media_metadata(**image_data)
-
-    assert cleaned_data is None
+    with pytest.raises(ValueError, match=f"Record missing required field: `{field}`"):
+        image_store.clean_media_metadata(**image_data)
 
 
 def test_MediaStore_clean_media_metadata_adds_license_urls_to_meta_data(monkeypatch):
