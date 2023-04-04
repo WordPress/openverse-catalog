@@ -93,9 +93,9 @@ class MetMuseumDataIngester(ProviderDataIngester):
 
         main_image = object_json.get("primaryImage")
         other_images = object_json.get("additionalImages", [])
-        image_list = [img for img in ([main_image] + other_images) if img is not None]
+        image_list = [img for img in [main_image, *other_images] if img is not None]
         if not image_list:
-            logger.info("No images detected.")
+            logger.info(f"No images detected for {object_id=}.")
             return None
 
         meta_data = self._get_meta_data(object_json)
