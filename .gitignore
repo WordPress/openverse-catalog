@@ -147,3 +147,6 @@ si_samples_*
 
 # macOS
 .DS_Store
+
+# pre-commit
+pre-commit.pyz
