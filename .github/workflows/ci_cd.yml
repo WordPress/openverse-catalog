@@ -32,7 +32,7 @@ jobs:
 
       - name: Get Python version
         id: python-version
-        run: echo "value=$(just py-version)" >> "$GITHUB_OUTPUT"
+        run: echo "value=$(just openverse_catalog/py-version)" >> "$GITHUB_OUTPUT"
 
       - name: Setup Python
         uses: actions/setup-python@v4
@@ -63,11 +63,11 @@ jobs:
 
       - name: Get Python version
         id: python-version
-        run: echo "value=$(just py-version)" >> "$GITHUB_OUTPUT"
+        run: echo "value=$(just openverse_catalog/py-version)" >> "$GITHUB_OUTPUT"
 
       - name: Get Airflow version
         id: airflow-version
-        run: echo "value=$(just airflow-version)" >> "$GITHUB_OUTPUT"
+        run: echo "value=$(just openverse_catalog/airflow-version)" >> "$GITHUB_OUTPUT"
 
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -107,7 +107,7 @@ jobs:
 
       - name: Get Python version
         id: python-version
-        run: echo "value=$(just py-version)" >> "$GITHUB_OUTPUT"
+        run: echo "value=$(just openverse_catalog/py-version)" >> "$GITHUB_OUTPUT"
 
       - name: Setup Python
         uses: actions/setup-python@v4
