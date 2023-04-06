@@ -370,5 +370,3 @@ def _delete_malformed_row_in_file(tsv_file_name, line_number):
         for index, line in enumerate(lines):
             if index + 1 != line_number:
                 write_obj.write(line)
-
-
