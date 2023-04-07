@@ -21,7 +21,6 @@ x-airflow-common: &airflow-common
       - PROJECT_AIRFLOW_VERSION=${PROJECT_AIRFLOW_VERSION}
   volumes:
     - ./catalog:/opt/airflow/catalog
-    - ./catalog/pytest.ini:/opt/airflow/pytest.ini
     - ipython:/home/airflow/.ipython
 
 services:

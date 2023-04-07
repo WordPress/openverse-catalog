@@ -92,6 +92,7 @@ _mount-test command: up-deps
     just ../run \
         --rm \
         -e AIRFLOW_VAR_INGESTION_LIMIT=1000000 \
+        -w /opt/airflow/catalog \
         --volume {{ justfile_directory() }}/../docker:/opt/airflow/docker/ \
         {{ SERVICE }} \
         {{ command }}
