@@ -4,3 +4,4 @@ archive
 tests
 *.md
 .git
+DAGs.md

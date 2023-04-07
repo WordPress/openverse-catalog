@@ -22,7 +22,7 @@ the internet.
 ### API Workflows
 
 To view more information about all the available workflows (DAGs) within the
-project, see [DAGs.md](DAGs.md).
+project, see [DAGs.md](openverse_catalog/DAGs.md).
 
 See each provider API script's notes in their respective [handbook][ov-handbook]
 entry.

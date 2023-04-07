@@ -134,10 +134,10 @@ jobs:
         run: just build
 
       - name: Check DAG documentation
-        run: just generate-dag-docs true
+        run: just openverse_catalog/generate-dag-docs true
 
       - name: Test
-        run: just test --extended
+        run: just openverse_catalog/test --extended
 
   push:
     name: Publish Docker images
