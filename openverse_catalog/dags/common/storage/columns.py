@@ -137,7 +137,6 @@ class Column(ABC):
         self,
         name: str,
         required: bool,
-        description: str,
         datatype: Datatype = Datatype.char,
         upsert_strategy: UpsertStrategy | None = UpsertStrategy.newest_non_null,
         constraint: str | None = None,
@@ -150,7 +149,6 @@ class Column(ABC):
         :param name: The column name used in TSV, ImageStore and provider API scripts,
         can be different from the name in the database.
         :param required: If True, the database column will be set to 'NOT NULL'
-        :param description: A description of the column used to generate documentation.
         :param datatype: Postgres datatype representation
         :param upsert_strategy: Shows the strategy used when the data for a media item
         is re-ingested: Simple values are replaced with newer non-null values,
@@ -160,7 +158,6 @@ class Column(ABC):
         """
         self.name = name
         self.required = required
-        self.description = description
         self.datatype = datatype
         self.upsert_strategy = upsert_strategy
         self.constraint = constraint
@@ -249,14 +246,12 @@ class IntegerColumn(Column):
         self,
         name: str,
         required: bool,
-        description: str,
         constraint: str | None = None,
         db_name: str | None = None,
     ):
         super().__init__(
             name,
             required,
-            description,
             datatype=Datatype.int,
             upsert_strategy=UpsertStrategy.newest_non_null,
             constraint=constraint,
@@ -294,7 +289,6 @@ class BooleanColumn(Column):
         self,
         name: str,
         required: bool,
-        description: str,
         upsert_strategy: UpsertStrategy | None = UpsertStrategy.newest_non_null,
         constraint: str | None = None,
         db_name: str | None = None,
@@ -302,7 +296,6 @@ class BooleanColumn(Column):
         super().__init__(
             name,
             required,
-            description,
             datatype=Datatype.bool,
             upsert_strategy=upsert_strategy,
             constraint=constraint,
@@ -344,7 +337,6 @@ class JSONColumn(Column):
         self,
         name: str,
         required: bool,
-        description: str,
         db_name: str | None = None,
         upsert_strategy: UpsertStrategy | None = None,
     ):
@@ -352,7 +344,6 @@ class JSONColumn(Column):
         super().__init__(
             name,
             required,
-            description,
             datatype=Datatype.jsonb,
             upsert_strategy=strategy,
             db_name=db_name,
@@ -422,7 +413,6 @@ class StringColumn(Column):
         self,
         name: str,
         required: bool,
-        description: str,
         size: int,
         truncate: bool,
         db_name: str | None = None,
@@ -432,7 +422,6 @@ class StringColumn(Column):
         super().__init__(
             name,
             required,
-            description,
             datatype=Datatype.char,
             upsert_strategy=UpsertStrategy.newest_non_null,
             constraint=f"varying({size})",
@@ -457,8 +446,6 @@ class UUIDColumn(Column):
         super().__init__(
             name,
             required=True,
-            description="Unique identifier (UUID) for each media item, "
-            "created when the item is saved to the loading table.",
             datatype=Datatype.uuid,
             upsert_strategy=None,
             constraint="PRIMARY KEY DEFAULT public.uuid_generate_v4()",
@@ -482,13 +469,11 @@ class TimestampColumn(Column):
         self,
         name: str,
         required: bool,
-        description: str,
         upsert_strategy: UpsertStrategy | None = UpsertStrategy.now,
     ):
         super().__init__(
             name,
             required,
-            description,
             datatype=Datatype.timestamp,
             upsert_strategy=upsert_strategy,
         )
@@ -522,7 +507,6 @@ class URLColumn(Column):
         self,
         name: str,
         required: bool,
-        description: str,
         size: int,
         nullable: bool = False,
         db_name: str | None = None,
@@ -531,7 +515,6 @@ class URLColumn(Column):
         super().__init__(
             name,
             required,
-            description,
             datatype=Datatype.char,
             upsert_strategy=UpsertStrategy.newest_non_null,
             constraint=f"varying({size})",
@@ -569,7 +552,6 @@ class ArrayColumn(Column):
         self,
         name: str,
         required: bool,
-        description: str,
         base_column: Column,
         db_name: str | None = None,
     ):
@@ -577,7 +559,6 @@ class ArrayColumn(Column):
         super().__init__(
             name,
             required,
-            description,
             datatype=Datatype.char,
             upsert_strategy=UpsertStrategy.merge_array,
             constraint="varying(80)[]",
@@ -614,147 +595,140 @@ FOREIGN_ID = StringColumn(
     required=True,
     size=3000,
     truncate=False,
-    description=foreign_id_description,
 )
+FOREIGN_ID.__doc__ = foreign_id_description
 LANDING_URL = URLColumn(
     name="foreign_landing_url",
     required=True,
     size=1000,
     nullable=True,
-    description=landing_url_description,
 )
+LANDING_URL.__doc__ = landing_url_description
 DIRECT_URL = URLColumn(
     # `url` in DB
     name="url",
     required=True,
     size=3000,
     db_name="url",
-    description=direct_url_description,
 )
+DIRECT_URL.__doc__ = direct_url_description
 THUMBNAIL = URLColumn(
     # `thumbnail` in DB
     name="thumbnail_url",
     required=False,
     size=3000,
     db_name="thumbnail",
-    description=thumbnail_url_description,
 )
-FILESIZE = IntegerColumn(
-    name="filesize", required=False, description=filesize_description
-)
+THUMBNAIL.__doc__ = thumbnail_url_description
+FILESIZE = IntegerColumn(name="filesize", required=False)
+FILESIZE.__doc__ = filesize_description
 LICENSE = StringColumn(
     name="license_",
     required=True,
     size=50,
     truncate=False,
     db_name="license",
-    description=license_description,
 )
+LICENSE.__doc__ = license_description
 LICENSE_VERSION = StringColumn(
     name="license_version",
     required=True,
     size=25,
     truncate=False,
-    description=license_version_description,
 )
+LICENSE_VERSION.__doc__ = license_version_description
 CREATOR = StringColumn(
     name="creator",
     required=False,
     size=2000,
     truncate=True,
-    description=creator_description,
 )
-CREATOR_URL = URLColumn(
-    name="creator_url", required=False, size=2000, description=creator_url_description
-)
+CREATOR.__doc__ = creator_description
+CREATOR_URL = URLColumn(name="creator_url", required=False, size=2000)
+CREATOR_URL.__doc__ = creator_url_description
 TITLE = StringColumn(
     name="title",
     required=False,
     size=5000,
     truncate=True,
-    description=title_description,
 )
-META_DATA = JSONColumn(
-    name="meta_data", required=False, description=meta_data_description
-)
+TITLE.__doc__ = title_description
+META_DATA = JSONColumn(name="meta_data", required=False)
+META_DATA.__doc__ = meta_data_description
 TAGS = JSONColumn(
     name="tags",
     required=False,
     upsert_strategy=UpsertStrategy.merge_jsonb_arrays,
-    description=tags_description,
 )
-WATERMARKED = BooleanColumn(
-    name="watermarked", required=False, description=watermarked_description
-)
+TAGS.__doc__ = tags_description
+WATERMARKED = BooleanColumn(name="watermarked", required=False)
+WATERMARKED.__doc__ = watermarked_description
 PROVIDER = StringColumn(
     name="provider",
     required=False,
     size=80,
     truncate=False,
-    description=provider_description,
 )
+PROVIDER.__doc__ = provider_description
 SOURCE = StringColumn(
     name="source",
     required=False,
     size=80,
     truncate=False,
-    description=source_description,
 )
+SOURCE.__doc__ = source_description
 INGESTION_TYPE = StringColumn(
     name="ingestion_type",
     required=False,
     size=80,
     truncate=False,
-    description=ingestion_type_description,
 )
-WIDTH = IntegerColumn(name="width", required=False, description=width_description)
-HEIGHT = IntegerColumn(name="height", required=False, description=height_description)
+INGESTION_TYPE.__doc__ = ingestion_type_description
+WIDTH = IntegerColumn(name="width", required=False)
+WIDTH.__doc__ = width_description
+HEIGHT = IntegerColumn(name="height", required=False)
+HEIGHT.__doc__ = height_description
 
-DURATION = IntegerColumn(
-    name="duration", required=False, description=duration_description
-)
-BIT_RATE = IntegerColumn(
-    name="bit_rate",
-    required=False,
-    description=bit_rate_description,
-)
-
+DURATION = IntegerColumn(name="duration", required=False)
+DURATION.__doc__ = duration_description
+BIT_RATE = IntegerColumn(name="bit_rate", required=False)
+BIT_RATE.__doc__ = bit_rate_description
 SAMPLE_RATE = IntegerColumn(
     name="sample_rate",
     required=False,
-    description=sample_rate_description,
 )
+SAMPLE_RATE.__doc__ = sample_rate_description
 CATEGORY = StringColumn(
     name="category",
     required=False,
     size=80,
     truncate=False,
-    description=category_description,
 )
+CATEGORY.__doc__ = category_description
 GENRES = ArrayColumn(
     name="genres",
     required=False,
     base_column=StringColumn(name="genre", required=False, size=80, truncate=False),
-    description=genres_description,
 )
+GENRES.__doc__ = genres_description
 AUDIO_SET = JSONColumn(
     # set name, thumbnail, url, identifier etc.
     name="audio_set",
     required=False,
-    description=audio_set_description,
 )
+AUDIO_SET.__doc__ = audio_set_description
 SET_POSITION = IntegerColumn(
     name="set_position",
     required=False,
-    description=set_position_description,
 )
+SET_POSITION.__doc__ = set_position_description
 ALT_FILES = JSONColumn(
     # Alternative files: url, filesize, bit_rate, sample_rate
     name="alt_files",
     required=False,
     upsert_strategy=UpsertStrategy.merge_jsonb_arrays,
-    description=alt_files_description,
 )
+ALT_FILES.__doc__ = alt_files_description
 
 IDENTIFIER = UUIDColumn(
     name="identifier",
@@ -764,30 +738,29 @@ CREATED_ON = TimestampColumn(
     name="created_on",
     required=True,
     upsert_strategy=UpsertStrategy.no_change,
-    description=created_on_description,
 )
+CREATED_ON.__doc__ = created_on_description
 
 UPDATED_ON = TimestampColumn(
     name="updated_on",
     required=True,
-    description=updated_on_description,
 )
+UPDATED_ON.__doc__ = updated_on_description
 
-LAST_SYNCED = TimestampColumn(
-    name="last_synced_with_source", required=False, description=last_synced_description
-)
+LAST_SYNCED = TimestampColumn(name="last_synced_with_source", required=False)
+LAST_SYNCED.__doc__ = last_synced_description
 
 REMOVED = BooleanColumn(
     name="removed_from_source",
     required=True,
     upsert_strategy=UpsertStrategy.false,
-    description=removed_description,
 )
+REMOVED.__doc__ = removed_description
 
 FILETYPE = StringColumn(
     name="filetype",
     required=False,
     truncate=False,
     size=5,
-    description=filetype_description,
 )
+FILETYPE.__doc__ = filetype_description

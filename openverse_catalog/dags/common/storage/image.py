@@ -1,5 +1,6 @@
 import logging
 from collections import namedtuple
+from dataclasses import dataclass
 
 from common.licenses import LicenseInfo
 from common.storage.media import MediaStore
@@ -9,6 +10,131 @@ from common.storage.tsv_columns import CURRENT_IMAGE_TSV_COLUMNS
 logger = logging.getLogger(__name__)
 
 Image = namedtuple("Image", [c.name for c in CURRENT_IMAGE_TSV_COLUMNS])
+
+
+@dataclass
+class ProviderImageData:
+    """
+    A class that stores the image data collected from the provider.
+    The data is then processed by the MediaStore class.
+
+    Required parameters are `foreign_landing_url`, `image_url`, `license_info`.
+    Image data without the required parameters will be discarded.
+
+    @param foreign_landing_url: URL of page where the image lives on the source website.
+    ## Selection criteria
+    The URL should be the direct link and not have redirects, if possible.
+
+    @param image_url: Direct link to the image file.
+    ## Selection criteria
+    This is a URL from which the image can be downloaded directly. It should not
+    have any query parameters if possible. Some providers, like SMK, have very large
+    images (TODO: how much is too much?)
+    In this case, it is necessary to also save the `thumbnail_url` for showing the
+    image on the frontend.
+
+    @param license_info: LicenseInfo object that has
+        - the URL of the license for the image,
+        - string representation of the license,
+        - version of the license,
+        - raw license URL that was by provider, if different from canonical URL
+    ## Selection criteria
+    Openverse accepts the 6 CC licenses, the `public domain` mark and the `CC0` mark.
+    There are several versions of each license.
+    For valid options of licenses (the combination of the license name and
+    license variant),
+    see `common.license.constants.get_license_path_map()`.
+    To get the LicenseInfo object, use `get_license_info` with either
+    (license_ and license_version) or (license_url) named parameters.
+    In the case of the `publicdomain` license, which has no version, one should pass
+    `common.license.constants.NO_VERSION` here.
+    The license is taken from the provider API response.
+
+    @param thumbnail_url: URL of the image's thumbnail. This is used for the
+    image preview on the frontend.
+    ## Selection criteria
+    Since the thumbnails are used to on the search page, and when the main
+    image is being loaded by the frontend, thumbnail needs to be of a good quality.
+     While there's no strict criteria for the thumbnail, it should be at least
+     400px wide.
+
+    @param filesize: Size of the image file in bytes.
+    ## Selection criteria
+     TODO: Add details on what to do for invalid file sizes.
+
+
+    @param filetype: eg. 'jpg', 'svg' # TODO: Add a list of valid file types. Add
+    details on validation (jpg -> jpeg, etc.). If the image filetype is in the URL
+    extension, then we don't need to pass it here. Instead, the MediaStore class
+    will extract the filetype.
+
+    @param foreign_identifier: The unique identifier of the image on the provider's
+    website.
+    Often, this will be a part of the image's foreign_landing_url.
+
+    @param width: Width of the image in pixels. Sometimes, the width can be extracted by
+    sending a head request for the image's direct `url`. However, this can be imprecise.
+
+    @param height: Height of the image in pixels. Sometimes, the height can be
+    extracted by sending a head request for the image's direct `url`. However, this
+    can be imprecise.
+
+    @param creator: Name of the creator of the image.
+    ## Selection criteria
+    This can be the name of the photographer,
+    the artist, etc. Sometimes, it can be the name of the maker of
+    the object in the image.
+
+    @param creator_url: URL of the creator's website
+
+    @param title: The title of the image.
+
+    @param meta_data: A dictionary of additional metadata. Details such as a
+    full-text description, the date the image was created, geographical
+    location of the object or a photo, etc. can be stored here.
+
+    @param raw_tags: A list of strings (tags associated with the image on the
+    provider site).
+
+    @param category: The category of the image. This is one of the values in the
+    `category` Enum.
+    # TODO: Add details on how to validate the category.
+     defaults to the default category for the provider from
+     `openverse_catalog/dags/common/loader/provider_details.py`.
+
+    @param watermarked: Whether the image is watermarked. It is often not
+    possible to determine
+    this for each individual image, so we only set this value to True if the provider
+    watermarks all their images. # TODO: check if this is true.
+
+    @param source: The name of the source on the provider's website. Some providers are
+    a collection of different organizations. For example, the Smithsonian has many
+    different museums. In this case, the `source` is the name of the individual museum.
+    Other providers host images from multiple sources. For example, the Flickr hosts
+    images by NASA. In this case, `source` is NASA, and `provider` is Flickr.
+    In all other cases, the `source` is the same as the `provider`.
+
+    @param ingestion_type: The type of ingestion # TODO: this should be an Enum.
+    """
+
+    foreign_landing_url: str
+    image_url: str
+    license_info: LicenseInfo
+    thumbnail_url: str
+    width: int
+    height: int
+    filesize: int
+    filetype: str
+    foreign_identifier: str
+    creator: str
+    creator_url: str
+    title: str
+    meta_data: dict
+    raw_tags: list
+    category: str
+    watermarked: bool
+    source: str
+    ingestion_type: str
 
 
 class ImageStore(MediaStore):
