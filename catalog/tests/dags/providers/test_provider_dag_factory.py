@@ -54,7 +54,7 @@ def clean_db():
 )
 def test_skipped_pull_data_runs_successfully(side_effect, clean_db):
     with mock.patch(
-        "tests.dags.providers.provider_api_scripts.resources.provider_data_ingester.mock_provider_data_ingester.MockProviderDataIngester.ingest_records"
+        "catalog.tests.dags.providers.provider_api_scripts.resources.provider_data_ingester.mock_provider_data_ingester.MockProviderDataIngester.ingest_records"
     ) as ingest_records_mock:
         ingest_records_mock.side_effect = side_effect
         dag = provider_dag_factory.create_provider_api_workflow_dag(

@@ -132,7 +132,7 @@ exec +args:
 
 # Execute statement in a new service container using Docker Compose
 run +args:
-    just dc run -u {{ DC_USER }} {{ EXEC_DEFAULTS }} {{ args }}
+    just dc run -u {{ DC_USER }} {{ EXEC_DEFAULTS }} "{{ args }}"
 
 ########
 # Misc #
