@@ -53,8 +53,14 @@ lint hook="" *files="": precommit
 ########
 
 # Create .env files from templates
-env:
-    @([ ! -f .env ] && cp env.template .env) || true
+@env:
+    # Root
+    ([ ! -f .env ] && cp env.template .env) || true
+    # Docker
+    ([ ! -f docker/local_postgres/.env ] && cp docker/local_postgres/env.template docker/local_postgres/.env) || true
+    ([ ! -f docker/minio/.env ] && cp docker/minio/env.template docker/minio/.env) || true
+    # First party services
+    ([ ! -f catalog/.env ] && cp catalog/env.template catalog/.env) || true
 
 ##########
 # Docker #

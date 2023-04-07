@@ -3,7 +3,8 @@ version: "3"
 services:
   scheduler:
     image: ghcr.io/wordpress/openverse-catalog:${DOCKER_IMAGE_TAG:-latest}
-    env_file: .env
+    env_file:
+      - catalog/.env
     restart: always
     environment:
       # Upgrade the DB on startup
@@ -19,7 +20,8 @@ services:
     image: ghcr.io/wordpress/openverse-catalog:${DOCKER_IMAGE_TAG:-latest}
     depends_on:
       - scheduler
-    env_file: .env
+    env_file:
+      - catalog/.env
     restart: always
     command: webserver
     ports:

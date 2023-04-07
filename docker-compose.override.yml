@@ -27,13 +27,8 @@ services:
       - catalog_dependencies
       - catalog
     build: docker/local_postgres
-    environment:
-      - POSTGRES_USER=deploy
-      - POSTGRES_PASSWORD=deploy
-      - POSTGRES_DB=openledger
-      - PGUSER=deploy
-      - PGDATABASE=openledger
-    env_file: .env
+    env_file:
+      - docker/local_postgres/.env
     ports:
       - "5434:5432"
     volumes:
@@ -49,11 +44,7 @@ services:
       - "5011:5001"
     env_file:
       - .env
-    environment:
-      MINIO_ROOT_USER: ${AWS_ACCESS_KEY}
-      MINIO_ROOT_PASSWORD: ${AWS_SECRET_KEY}
-      # Comma separated list of buckets to create on startup
-      BUCKETS_TO_CREATE: ${OPENVERSE_BUCKET},openverse-airflow-logs
+      - docker/minio/.env
     # Create empty buckets on every container startup
     # Note: $0 is included in the exec because "/bin/bash -c" swallows the first
     # argument, so it must be re-added at the beginning of the exec call
@@ -79,6 +70,7 @@ services:
     image: minio/mc:latest
     env_file:
       - .env
+      - docker/minio/.env
     depends_on:
       - s3
     volumes:
@@ -94,7 +86,7 @@ services:
     # and `just up` or `just recreate` to see the minio bucket without those files.
     entrypoint: >
       /bin/sh -c "
-      /usr/bin/mc config host add s3 http://s3:5000 ${AWS_ACCESS_KEY} ${AWS_SECRET_KEY};
+      /usr/bin/mc config host add s3 http://s3:5000 $${AWS_ACCESS_KEY} $${AWS_SECRET_KEY};
       cd /data;
       for b in */ ; do
         echo \"Loading bucket $$b\"
