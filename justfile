@@ -66,9 +66,9 @@ lint hook="" *files="": precommit
 # Docker #
 ##########
 
-DOCKER_FILE := "-f docker-compose.yml -f " + (
-    if IS_PROD == "true" { "" }
-    else { "docker-compose.override.yml" }
+DOCKER_FILE := "-f " + (
+    if IS_PROD == "true" { "catalog/docker-compose.yml" }
+    else { "docker-compose.yml" }
 )
 EXEC_DEFAULTS := if IS_CI == "" { "" } else { "-T" }
 DC_USER := env_var_or_default("DC_USER", "airflow")

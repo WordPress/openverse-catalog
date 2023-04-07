@@ -227,7 +227,7 @@ just recreate
 > [generate-dag-docs recipe](https://github.com/WordPress/openverse-catalog/blob/c9be67e483e49e9eda7cd21b52bcde8857cd3922/justfile#L126).
 
 [justfile]: justfile
-[dockercompose]: docker-compose.yml
+[dockercompose]: catalog/docker-compose.yml
 [cc_airflow]: catalog/
 
 ## Directory Structure
