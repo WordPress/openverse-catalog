@@ -9,13 +9,13 @@ x-airflow-common: &airflow-common
   depends_on:
     - postgres
     - s3
+  image: openverse_catalog
   build:
-    context: .
+    context: ./openverse_catalog/
     args:
       - REQUIREMENTS_FILE=requirements_dev.txt
       - PROJECT_PY_VERSION=${PROJECT_PY_VERSION}
       - PROJECT_AIRFLOW_VERSION=${PROJECT_AIRFLOW_VERSION}
-    dockerfile: docker/airflow/Dockerfile
   volumes:
     - ./openverse_catalog:/opt/airflow/openverse_catalog
     - ipython:/home/airflow/.ipython

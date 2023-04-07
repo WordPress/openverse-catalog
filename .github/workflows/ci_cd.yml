@@ -77,7 +77,7 @@ jobs:
       - name: Build image
         uses: docker/build-push-action@v4
         with:
-          file: docker/airflow/Dockerfile
+          context: openverse_catalog
           push: false
           tags: openverse-catalog
           cache-from: type=gha,scope=catalog
