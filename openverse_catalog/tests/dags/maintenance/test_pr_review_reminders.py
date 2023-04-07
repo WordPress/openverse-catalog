@@ -8,7 +8,7 @@ from openverse_catalog.dags.maintenance.pr_review_reminders.pr_review_reminders 
     days_without_weekends,
     post_reminders,
 )
-from tests.factories.github import (
+from openverse_catalog.tests.factories.github import (
     make_branch_protection,
     make_current_pr_comment,
     make_outdated_pr_comment,

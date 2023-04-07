@@ -4,10 +4,10 @@ from unittest import mock
 import pytest
 from airflow.models import DagRun, TaskInstance
 
-from providers import factory_utils
-from tests.dags.common.test_resources.fake_provider_data_ingester import (
+from openverse_catalog.tests.dags.common.test_resources.fake_provider_data_ingester import (
     FakeDataIngester,
 )
+from providers import factory_utils
 
 
 @pytest.fixture

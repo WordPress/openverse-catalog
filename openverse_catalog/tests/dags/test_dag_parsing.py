@@ -12,7 +12,7 @@ from providers.provider_workflows import PROVIDER_WORKFLOWS as PROVIDER_WORKFLOW
 
 # The path to DAGs *within the container*, though that should mirror the current
 # directory structure.
-DAG_FOLDER = Path(__file__).parents[2] / "openverse_catalog" / "dags"
+DAG_FOLDER = Path(__file__).parents[2] / "dags"
 
 # DAG paths to test
 DAG_PATHS = [

@@ -4,7 +4,7 @@ import pytest
 from airflow.exceptions import AirflowSkipException
 
 from oauth2 import oauth2
-from tests.dags.conftest import FAKE_OAUTH_PROVIDER_NAME
+from openverse_catalog.tests.dags.conftest import FAKE_OAUTH_PROVIDER_NAME
 
 
 FAKE_OAUTH_PROVIDER = oauth2.OauthProvider(

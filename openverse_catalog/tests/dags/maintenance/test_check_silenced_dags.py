@@ -8,7 +8,7 @@ from maintenance.check_silenced_dags import (
     get_dags_with_closed_issues,
     get_issue_info,
 )
-from tests.factories.github import make_issue
+from openverse_catalog.tests.factories.github import make_issue
 
 
 p = pytest.param

@@ -7,7 +7,7 @@ from psycopg2.errors import QueryCanceled
 
 from common.constants import DAG_DEFAULT_ARGS, POSTGRES_CONN_ID
 from common.sql import PGExecuteQueryOperator, PostgresHook
-from tests.conftest import mark_extended
+from openverse_catalog.tests.conftest import mark_extended
 
 
 logger = logging.getLogger(__name__)

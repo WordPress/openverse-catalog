@@ -7,7 +7,7 @@ import requests
 from requests_oauthlib import OAuth2Session
 
 from common import requester
-from tests.dags.conftest import FAKE_OAUTH_PROVIDER_NAME
+from openverse_catalog.tests.dags.conftest import FAKE_OAUTH_PROVIDER_NAME
 
 
 @patch("common.requester.time")

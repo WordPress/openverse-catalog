@@ -3,12 +3,12 @@ from unittest import mock
 
 import pytest
 
-from providers.provider_workflows import ProviderWorkflow, get_time_override
-from tests.dags.providers.provider_api_scripts.resources.provider_data_ingester.mock_provider_data_ingester import (
+from openverse_catalog.tests.dags.providers.provider_api_scripts.resources.provider_data_ingester.mock_provider_data_ingester import (
     MockAudioOnlyProviderDataIngester,
     MockImageOnlyProviderDataIngester,
     MockProviderDataIngester,
 )
+from providers.provider_workflows import ProviderWorkflow, get_time_override
 
 
 @pytest.mark.parametrize(

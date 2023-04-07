@@ -126,7 +126,7 @@ jobs:
         run: pip install pre-commit
 
       - name: Change permissions for Docker steps
-        run: chmod -R 777 openverse_catalog/ tests/
+        run: chmod -R 777 openverse_catalog/
 
       - name: Build dev container
         # The containers must be rebuilt here because we need the dev dependencies

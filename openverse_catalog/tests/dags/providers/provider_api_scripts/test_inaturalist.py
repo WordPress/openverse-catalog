@@ -43,8 +43,7 @@ from providers.provider_api_scripts import inaturalist
 INAT = inaturalist.INaturalistDataIngester()
 PG = PostgresHook(default_statement_timeout=5)
 SQL_SCRIPT_DIR = (
-    Path(__file__).parents[4]
-    / "openverse_catalog/dags/providers/provider_csv_load_scripts/inaturalist"
+    Path(__file__).parents[4] / "dags/providers/provider_csv_load_scripts/inaturalist"
 )
 RESOURCE_DIR = Path(__file__).parent / "resources/inaturalist"
 # postgres always returns a list of tuples, which is not a valid json format

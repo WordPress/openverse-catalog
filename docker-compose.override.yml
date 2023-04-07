@@ -84,7 +84,7 @@ services:
     volumes:
       # Buckets for testing provider data imported from s3 are subdirectories under
       # /tests/s3-data/
-      - ./tests/s3-data:/data:rw
+      - ./openverse_catalog/tests/s3-data:/data:rw
     # Loop through subdirectories mounted to the volume and load them to s3/minio.
     # This takes care of filesystem delays on some local dev environments that may make
     # minio miss files included directly in the minio volume.

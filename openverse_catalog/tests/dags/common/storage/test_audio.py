@@ -4,7 +4,7 @@ import pytest
 
 from common.licenses import LicenseInfo
 from common.storage import audio
-from tests.dags.common.storage import test_media
+from openverse_catalog.tests.dags.common.storage import test_media
 
 
 logger = logging.getLogger(__name__)
