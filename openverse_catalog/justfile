@@ -91,7 +91,7 @@ pgcli db_host="postgres" db_name="openledger" db_user="airflow":
 _mount-test command: up-deps
     just ../run \
         --rm \
-        --env AIRFLOW_VAR_INGESTION_LIMIT=1000000 \
+        -e AIRFLOW_VAR_INGESTION_LIMIT=1000000 \
         --volume {{ justfile_directory() }}/../docker:/opt/airflow/docker/ \
         {{ SERVICE }} \
         {{ command }}
