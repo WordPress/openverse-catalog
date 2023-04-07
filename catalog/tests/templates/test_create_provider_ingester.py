@@ -52,7 +52,7 @@ def test_files_created(tmp_path):
     # Make temporary output directorys for testing
     dags_path = tmp_path / "catalog" / "dags" / "providers"
     (dags_path / "provider_api_scripts").mkdir(parents=True)
-    test_path = tmp_path / "tests"
+    test_path = tmp_path / "catalog" / "tests"
     (test_path / "dags" / "providers" / "provider_api_scripts").mkdir(parents=True)
 
     provider = "foobar_industries"

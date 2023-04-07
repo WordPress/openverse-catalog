@@ -143,7 +143,3 @@ deploy:
     -git pull
     @just pull
     @just up
-
-# Generate files for a new provider
-add-provider provider_name endpoint +media_types="image":
-    python3 catalog/templates/create_provider_ingester.py "{{ provider_name }}" "{{ endpoint }}" -m {{ media_types }}

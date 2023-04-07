@@ -89,7 +89,7 @@ def fill_template(
 
     # Render the tests
     script_template_path = TEMPLATES_PATH / "template_test.py_template"
-    tests_path = repo_path / "tests"
+    tests_path = project_path / "tests"
     # Mirror the directory structure, but under the "tests" top level directory
     test_script_path = tests_path.joinpath(*api_path.parts[-3:]) / f"test_{filename}.py"
 

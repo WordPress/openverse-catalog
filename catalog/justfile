@@ -104,9 +104,9 @@ test-session:
 test *args:
     just _mount-test "bash -c \'pytest {{ args }}\'"
 
-########
-# Docs #
-########
+#############
+# Utilities #
+#############
 
 # Generate the DAG documentation
 generate-dag-docs fail_on_diff="false":
@@ -129,3 +129,7 @@ generate-dag-docs fail_on_diff="false":
           exit 1
       fi
     fi
+
+# Generate files for a new provider
+add-provider provider_name endpoint +media_types="image":
+    python3 templates/create_provider_ingester.py "{{ provider_name }}" "{{ endpoint }}" -m {{ media_types }}
