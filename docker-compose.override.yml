@@ -3,6 +3,8 @@ version: "3"
 # Common build configuration for Airflow
 # Extension field, see https://docs.docker.com/compose/compose-file/compose-file-v3/#extension-fields
 x-airflow-common: &airflow-common
+  profiles:
+    - catalog
   restart: on-failure
   depends_on:
     - postgres
@@ -21,6 +23,9 @@ x-airflow-common: &airflow-common
 services:
   # Services only needed for local development
   postgres:
+    profiles:
+      - catalog_dependencies
+      - catalog
     build: docker/local_postgres
     environment:
       - POSTGRES_USER=deploy
@@ -35,6 +40,9 @@ services:
       - postgres:/var/lib/postgresql/data
 
   s3:
+    profiles:
+      - catalog_dependencies
+      - catalog
     image: minio/minio:latest
     ports:
       - "5010:5000"
@@ -65,6 +73,9 @@ services:
       retries: 3
 
   load_to_s3:
+    profiles:
+      - catalog_dependencies
+      - catalog
     image: minio/mc:latest
     env_file:
       - .env
