@@ -11,13 +11,13 @@ x-airflow-common: &airflow-common
     - s3
   image: openverse_catalog
   build:
-    context: ./openverse_catalog/
+    context: ./catalog/
     args:
       - REQUIREMENTS_FILE=requirements_dev.txt
       - PROJECT_PY_VERSION=${PROJECT_PY_VERSION}
       - PROJECT_AIRFLOW_VERSION=${PROJECT_AIRFLOW_VERSION}
   volumes:
-    - ./openverse_catalog:/opt/airflow/openverse_catalog
+    - ./catalog:/opt/airflow/catalog
     - ipython:/home/airflow/.ipython
 
 services:
@@ -84,7 +84,7 @@ services:
     volumes:
       # Buckets for testing provider data imported from s3 are subdirectories under
       # /tests/s3-data/
-      - ./openverse_catalog/tests/s3-data:/data:rw
+      - ./catalog/tests/s3-data:/data:rw
     # Loop through subdirectories mounted to the volume and load them to s3/minio.
     # This takes care of filesystem delays on some local dev environments that may make
     # minio miss files included directly in the minio volume.

@@ -89,4 +89,4 @@ out to the maintainers if you're interested).
 
 Any migrations to the Catalog database must either be performed by hand or as
 part of a DAG's normal operation (see:
-[iNaturalist](openverse_catalog/dags/providers/provider_api_scripts/inaturalist.py)).
+[iNaturalist](catalog/dags/providers/provider_api_scripts/inaturalist.py)).

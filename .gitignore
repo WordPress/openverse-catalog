@@ -152,5 +152,5 @@ si_samples_*
 pre-commit.pyz
 
 # These logs must be Git-tracked
-!openverse_catalog/tests/dags/common/test_resources/logs/**/*.log
-!openverse_catalog/tests/dags/common/test_resources/logs/
+!catalog/tests/dags/common/test_resources/logs/**/*.log
+!catalog/tests/dags/common/test_resources/logs/

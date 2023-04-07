@@ -11,7 +11,7 @@ IS_CI := env_var_or_default("CI", "")
 # Show all available recipes
 @_default:
   just --list --unsorted
-  cd openverse_catalog/ && just
+  cd catalog/ && just
 
 #######
 # Dev #
@@ -67,8 +67,8 @@ DOCKER_FILE := "-f docker-compose.yml -f " + (
 EXEC_DEFAULTS := if IS_CI == "" { "" } else { "-T" }
 DC_USER := env_var_or_default("DC_USER", "airflow")
 
-export PROJECT_PY_VERSION := `just openverse_catalog/py-version`
-export PROJECT_AIRFLOW_VERSION := `just openverse_catalog/airflow-version`
+export PROJECT_PY_VERSION := `just catalog/py-version`
+export PROJECT_AIRFLOW_VERSION := `just catalog/airflow-version`
 
 # Run `docker-compose` configured with the correct files and environment
 dc *args:
@@ -95,7 +95,7 @@ up *flags:
 # Also see `wait-up` recipe in sub-justfiles
 # Wait for all services to be up
 wait-up: up
-    just openverse_catalog/wait-up
+    just catalog/wait-up
 
 # Also see `init` recipe in sub-justfiles
 # Load sample data into the Docker Compose services
@@ -140,4 +140,4 @@ deploy:
 
 # Generate files for a new provider
 add-provider provider_name endpoint +media_types="image":
-    python3 openverse_catalog/templates/create_provider_ingester.py "{{ provider_name }}" "{{ endpoint }}" -m {{ media_types }}
+    python3 catalog/templates/create_provider_ingester.py "{{ provider_name }}" "{{ endpoint }}" -m {{ media_types }}
