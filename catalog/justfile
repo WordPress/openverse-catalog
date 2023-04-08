@@ -115,7 +115,7 @@ generate-dag-docs fail_on_diff="false":
     set -e
     DC_USER=root just ../run \
       {{ SERVICE }} \
-      "bash -c \'python catalog/utilities/dag_doc_gen/dag_doc_generation.py \&\& chmod 666 /opt/airflow/catalog/utilities/dag_doc_gen/DAGs.md\'"
+      "bash -c 'python catalog/utilities/dag_doc_gen/dag_doc_generation.py && chmod 666 /opt/airflow/catalog/utilities/dag_doc_gen/DAGs.md'"
     # Move the file to the top level, since that level is not mounted into the container
     mv utilities/dag_doc_gen/DAGs.md DAGs.md
     echo -n "Running linting..."
