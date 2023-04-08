@@ -43,10 +43,10 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # Create and set the ownership of directories so airflow user can write to them
-# The .ipython directories are not needed in production but it's easier to perform
+# These directories are not needed in production but it's easier to perform
 # this step here while we're doing it for the output directory
-RUN mkdir -p ${OUTPUT_DIR} /home/airflow/.ipython && \
-    chown airflow ${OUTPUT_DIR} /home/airflow/.ipython
+RUN mkdir -p ${OUTPUT_DIR} /home/airflow/.ipython /home/airflow/.cache/pytest && \
+    chown airflow ${OUTPUT_DIR} /home/airflow/.ipython /home/airflow/.cache/pytest
 
 USER airflow
 
