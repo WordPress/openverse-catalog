@@ -422,7 +422,7 @@ def test_extract_license_url_handles_missing_license_url(wmc):
     with open(RESOURCES / "image_info_artist_partial_link.json") as f:
         image_info = json.load(f)
     expect_license_url = None
-    actual_license_url = wmc.extract_license_info(image_info).url
+    actual_license_url = wmc.extract_license_info(image_info)
     assert actual_license_url == expect_license_url
 
 

@@ -115,7 +115,7 @@ from types import MappingProxyType
 import lxml.html as html
 
 from common.constants import AUDIO, IMAGE
-from common.licenses import get_license_info
+from common.licenses import LicenseInfo, get_license_info
 from common.loader import provider_details as prov
 from providers.provider_api_scripts.provider_data_ingester import ProviderDataIngester
 
@@ -302,17 +302,14 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
 
         media_info = self.extract_media_info_dict(record)
 
-        valid_media_type = self.extract_media_type(media_info)
-        if not valid_media_type:
+        if not (valid_media_type := self.extract_media_type(media_info)):
             # Do not process unsupported media types, like Video
             return None
 
-        license_info = self.extract_license_info(media_info)
-        if license_info.url is None:
+        if not (license_info := self.extract_license_info(media_info)):
             return None
 
-        media_url = media_info.get("url")
-        if media_url is None:
+        if not (media_url := media_info.get("url")):
             return None
 
         creator, creator_url = self.extract_creator_info(media_info)
@@ -542,7 +539,7 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
         return None if filetype == "" else filetype
 
     @staticmethod
-    def extract_license_info(media_info):
+    def extract_license_info(media_info) -> LicenseInfo | None:
         license_url = (
             WikimediaCommonsDataIngester.extract_ext_value(media_info, "LicenseUrl")
             or ""
@@ -553,8 +550,7 @@ class WikimediaCommonsDataIngester(ProviderDataIngester):
         #     if license_name.lower() in {"public_domain", "pdm-owner"}:
         #         pass
 
-        license_info = get_license_info(license_url=license_url.strip())
-        return license_info
+        return get_license_info(license_url=license_url.strip())
 
     @staticmethod
     def extract_geo_data(media_data):
