@@ -1,7 +1,7 @@
 from unittest import mock
 
 import pytest
-
+from airflow.exceptions import AirflowSkipException
 from common.loader.reporting import (
     RecordMetrics,
     clean_duration,
@@ -155,15 +155,21 @@ def test_report_completion_contents(
     expected_date_range,
 ):
     with mock.patch("common.loader.reporting.send_message"):
-        message = report_completion(
-            "jamendo_workflow",
-            ["audio", "image"],
-            None,
-            {**audio_data, **image_data},
-            dated,
-            date_range_start,
-            date_range_end,
-        )
+        record_counts_by_media_type = {**audio_data, **image_data}
+        should_skip = skip_report_completion(None, record_counts_by_media_type)
+        try:
+            message = report_completion(
+                "jamendo_workflow",
+                ["audio", "image"],
+                None,
+                record_counts_by_media_type,
+                dated,
+                date_range_start,
+                date_range_end,
+            )
+        except AirflowSkipException:
+            assert should_skip, "AirflowSkipException raised unexpectedly"
+            return
         for expected in [audio_expected, image_expected]:
             assert (
                 expected in message
@@ -259,47 +265,32 @@ def test_clean_time_duration(seconds, expected):
 
 
 @pytest.mark.parametrize(
-    "duration, record_counts_by_media_type, expected",
+    "duration, duration_expected",
     [
-        # Should skip
-        (None, {}, True),
-        ("less than 1 sec", {}, True),
-        ("inf", {}, True),
-        # Should report metrics
+        (None, True),
+        ("less than 1 sec", True),
+        ("inf", True),
+        ("10 secs", False),
+        ("16 weeks, 3 days, 17 hours, 46 mins, 40 secs", False),
+    ],
+)
+@pytest.mark.parametrize(
+    "record_counts_by_media_type, expected_counts",
+    [
+        (None, True),
+        ({}, True),
+        ({"image": None, "audio": None}, True),
         (
-            None,
             {"image": RecordMetrics(1, 2, 3, 4), "audio": RecordMetrics(1, 2, 0, 0)},
             False,
         ),
-        (
-            "less than 1 sec",
-            {"image": RecordMetrics(1, 2, 3, 4), "audio": RecordMetrics(1, 2, 0, 0)},
-            False,
-        ),
-        (
-            "inf",
-            {"image": RecordMetrics(1, 2, 3, 4), "audio": RecordMetrics(1, 2, 0, 0)},
-            False,
-        ),
-        (
-            "10 secs",
-            {"image": RecordMetrics(1, 2, 3, 4), "audio": RecordMetrics(1, 2, 0, 0)},
-            False,
-        ),
-        ("10 secs", {}, False),
-        (
-            "16 weeks, 3 days, 17 hours, 46 mins, 40 secs",
-            {"image": RecordMetrics(1, 2, 3, 4), "audio": RecordMetrics(1, 2, 0, 0)},
-            False,
-        ),
-        ("16 weeks, 3 days, 17 hours, 46 mins, 40 secs", {}, False),
     ],
 )
 def test_skip_report_completion(
-    duration, record_counts_by_media_type, expected
+    duration, duration_expected, record_counts_by_media_type, expected_counts
 ) -> None:
     actual = skip_report_completion(duration, record_counts_by_media_type)
-    assert actual == expected
+    assert actual == (duration_expected and expected_counts)
 
 
 @pytest.mark.parametrize(

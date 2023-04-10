@@ -90,8 +90,15 @@ def skip_report_completion(
     duration: str | None,
     record_counts_by_media_type: dict[str, RecordMetrics],
 ) -> bool:
-    return (duration is None or duration in ("inf", "less than 1 sec")) and (
+    return (
+        # Duration must be provided and be a value greater than 1 second
+        duration is None
+        or duration in ("inf", "less than 1 sec")
+    ) and (
+        # Record counts by media type must be provided and at least one value must
+        # be truthy (i.e. not None)
         not record_counts_by_media_type
+        or all([val is None for val in record_counts_by_media_type.values()])
     )
 
 
