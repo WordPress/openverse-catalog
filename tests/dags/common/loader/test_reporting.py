@@ -2,6 +2,7 @@ from unittest import mock
 
 import pytest
 from airflow.exceptions import AirflowSkipException
+
 from common.loader.reporting import (
     RecordMetrics,
     clean_duration,
