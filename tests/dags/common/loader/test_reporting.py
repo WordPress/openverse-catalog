@@ -261,24 +261,26 @@ def test_clean_time_duration(seconds, expected):
 @pytest.mark.parametrize(
     "duration, record_counts_by_media_type, expected",
     [
+        # Should skip
+        (None, {}, True),
+        ("less than 1 sec", {}, True),
+        ("inf", {}, True),
+        # Should report metrics
         (
             None,
             {"image": RecordMetrics(1, 2, 3, 4), "audio": RecordMetrics(1, 2, 0, 0)},
             False,
         ),
-        (None, {}, True),
         (
             "less than 1 sec",
             {"image": RecordMetrics(1, 2, 3, 4), "audio": RecordMetrics(1, 2, 0, 0)},
             False,
         ),
-        ("less than 1 sec", {}, True),
         (
             "inf",
             {"image": RecordMetrics(1, 2, 3, 4), "audio": RecordMetrics(1, 2, 0, 0)},
             False,
         ),
-        ("inf", {}, True),
         (
             "10 secs",
             {"image": RecordMetrics(1, 2, 3, 4), "audio": RecordMetrics(1, 2, 0, 0)},
