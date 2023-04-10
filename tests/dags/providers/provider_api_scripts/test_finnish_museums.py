@@ -158,16 +158,19 @@ def test_get_image_url():
                     "link": "http://creativecommons.org/licenses/by/4.0/deed.fi"
                 }
             },
-            "http://creativecommons.org/licenses/by/4.0/",
+            "https://creativecommons.org/licenses/by/4.0/",
         ),
         (
             {"imageRights": {"link": "http://creativecommons.org/licenses/by/4.0/"}},
-            "http://creativecommons.org/licenses/by/4.0/",
+            "https://creativecommons.org/licenses/by/4.0/",
         ),
     ],
 )
 def test_get_license_url(image_rights_obj, expected_license_url):
-    assert fm.get_license_url(image_rights_obj) == expected_license_url
+    if expected_license_url is None:
+        assert fm.get_license_info(image_rights_obj) is None
+    else:
+        assert fm.get_license_info(image_rights_obj).url == expected_license_url
 
 
 @pytest.mark.parametrize(

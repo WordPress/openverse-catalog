@@ -70,19 +70,11 @@ def test_get_license_info_prefers_derived_values(monkeypatch):
     assert actual_raw_url == expected_raw_url
 
 
-def test_get_license_info_falls_back_with_invalid_license_url(
-    mock_rewriter,
-    monkeypatch,
-):
+def test_get_license_info_falls_back_with_invalid_license_url():
     expected_license = "cc0"
     expected_version = "1.0"
     expected_url = "https://creativecommons.org/publicdomain/zero/1.0/"
     expected_raw_url = "https://licenses.com/my/license"
-
-    def mock_cc_license_validator(url_string):
-        return None
-
-    monkeypatch.setattr(licenses, "_get_valid_cc_url", mock_cc_license_validator)
 
     (
         actual_license,

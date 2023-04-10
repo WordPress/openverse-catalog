@@ -80,8 +80,10 @@ def get_license_info(
         f"Trying to get the license using given license_ {license_}"
         f" and license_version {license_version}"
     )
-    license_info = get_license_info_from_license_pair(license_, license_version)
-    if license_info is None:
+    validated_license_info = get_license_info_from_license_pair(
+        license_, license_version
+    )
+    if validated_license_info is None:
         logger.debug(
             f"No valid license_info could be derived. Inputs were"
             f" license_: {license_}"
@@ -94,7 +96,7 @@ def get_license_info(
             f"Falling back to given license_ {license_}"
             f" and license_version {license_version}"
         )
-        return license_info
+        return LicenseInfo(*validated_license_info, license_url)
 
 
 def _get_license_info_from_url(
@@ -188,7 +190,7 @@ def _get_valid_cc_url(license_url) -> str | None:
 
     if parsed_url.netloc != "creativecommons.org":
         logger.info(f"The license at {license_url} is not issued by Creative Commons.")
-        return
+        return None
 
     rewritten_url = urls.rewrite_redirected_url(https_url)
 
@@ -206,7 +208,7 @@ def _get_valid_cc_url(license_url) -> str | None:
 
 def get_license_info_from_license_pair(
     license_: str | None, license_version: str | int | float | None, pair_map=None
-) -> LicenseInfo | None:
+) -> tuple[str, str, str] | None:
     """
     Validate a given license pair, and derive a license URL from it.
 
@@ -226,7 +228,7 @@ def get_license_info_from_license_pair(
     valid_url = _build_license_url(license_path)
     valid_license, valid_version = license_, string_version
 
-    return LicenseInfo(valid_license, valid_version, valid_url, None)
+    return valid_license, valid_version, valid_url
 
 
 def _ensure_license_version_string_or_none(
