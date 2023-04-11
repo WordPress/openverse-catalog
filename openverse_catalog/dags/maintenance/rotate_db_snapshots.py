@@ -71,18 +71,23 @@ def delete_previous_snapshots(rds_arn: str, snapshots_to_retain: int):
 def rotate_db_snapshots():
     snapshot_id = "airflow-{{ ds }}"
     db_identifier_template = "{{ var.value.AIRFLOW_RDS_ARN }}"
+    hook_params = {"region_name": "{{ var.value.AIRFLOW_RDS_REGION }}"}
+
     create_db_snapshot = RdsCreateDbSnapshotOperator(
         task_id="create_snapshot",
         db_type="instance",
         db_identifier=db_identifier_template,
         db_snapshot_identifier=snapshot_id,
+        hook_params=hook_params,
     )
+
     wait_for_snapshot_availability = RdsSnapshotExistenceSensor(
         task_id="await_snapshot_availability",
         db_type="instance",
         db_snapshot_identifier=snapshot_id,
         # This is the default for ``target_statuses`` but making it explicit is clearer
         target_statuses=["available"],
+        hook_params=hook_params,
     )
 
     (
