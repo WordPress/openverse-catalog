@@ -31,8 +31,8 @@ MAX_ACTIVE = 1
 
 
 @task()
-def delete_previous_snapshots(rds_arn: str, snapshots_to_retain: int):
-    rds = boto3.client("rds")
+def delete_previous_snapshots(rds_arn: str, snapshots_to_retain: int, rds_region: str):
+    rds = boto3.client("rds", region_name=rds_region)
     # Snapshot object documentation:
     # https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_DBSnapshot.html
     snapshots = rds.describe_db_snapshots(
@@ -96,6 +96,7 @@ def rotate_db_snapshots():
         >> delete_previous_snapshots(
             rds_arn=db_identifier_template,
             snapshots_to_retain="{{ var.json.AIRFLOW_RDS_SNAPSHOTS_TO_RETAIN }}",
+            rds_region=hook_params["region_name"],
         )
     )
 
