@@ -1,9 +1,10 @@
-import json
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 
+from catalog.tests.dags.providers.provider_api_scripts.resources.json_load import (
+    make_resource_json_func,
+)
 from common.licenses import LicenseInfo
 from providers.provider_api_scripts.nypl import (
     NyplDataIngester,
@@ -11,7 +12,6 @@ from providers.provider_api_scripts.nypl import (
 )
 
 
-RESOURCES = Path(__file__).parent / "resources/nypl"
 CC0 = LicenseInfo(
     license="cc0",
     version="1.0",
@@ -29,12 +29,7 @@ def validate_url_string():
 
 nypl = NyplDataIngester()
 image_store = nypl.media_stores["image"]
-
-
-def _get_resource_json(json_name):
-    with open(RESOURCES / json_name) as f:
-        resource_json = json.load(f)
-        return resource_json
+_get_resource_json = make_resource_json_func("nypl")
 
 
 def test_get_next_query_params_default():

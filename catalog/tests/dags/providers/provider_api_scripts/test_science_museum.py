@@ -1,11 +1,11 @@
-import json
 import logging
-import os
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 
+from catalog.tests.dags.providers.provider_api_scripts.resources.json_load import (
+    make_resource_json_func,
+)
 from common.licenses import LicenseInfo
 from common.loader import provider_details as prov
 from common.storage.image import ImageStore
@@ -27,8 +27,6 @@ BY_SA = LicenseInfo(
 sm = ScienceMuseumDataIngester()
 image_store = ImageStore(provider=prov.SCIENCE_DEFAULT_PROVIDER)
 sm.media_stores = {"image": image_store}
-RESOURCES = Path(__file__).parent / "resources/sciencemuseum"
-
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s:  %(message)s", level=logging.DEBUG
@@ -41,10 +39,7 @@ def after_test():
     sm.RECORD_IDS = set()
 
 
-def _get_resource_json(json_name):
-    with open(os.path.join(RESOURCES, json_name)) as f:
-        resource_json = json.load(f)
-        return resource_json
+_get_resource_json = make_resource_json_func("sciencemuseum")
 
 
 @pytest.fixture
