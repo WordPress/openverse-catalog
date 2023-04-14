@@ -183,7 +183,7 @@ If you just need to run an airflow command, you can use the `airflow` recipe.
 Arguments passed to airflow must be quoted:
 
 ```shell
-just run airflow config list
+just run scheduler airflow config list
 ```
 
 To follow the logs of the running container:
